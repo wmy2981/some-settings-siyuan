@@ -1,0 +1,13 @@
+node_modules
+dist
+package.zip
+index.js
+index.css
+kernel.js
+/i18n
+.eslintcache
+.dprint
+.idea
+.DS_Store
+dev-refs
+dev-refs/
