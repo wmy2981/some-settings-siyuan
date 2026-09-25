@@ -4,9 +4,6 @@
   "url": "https://github.com/wmy2981/some-settings-siyuan",
   "version": "0.0.1",
   "minAppVersion": "3.8.6-alpha.4",
-  "kernels": [
-    "all"
-  ],
   "backends": [
     "all"
   ],

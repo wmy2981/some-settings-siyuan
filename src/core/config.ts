@@ -260,10 +260,24 @@ export class ConfigStore {
         return result;
     }
 
-    /** 插件卸载时清掉未落盘的定时器。 */
+    /**
+     * 插件卸载时收尾：把还没落盘的改动尽力写完，避免用户刚改完就被禁用导致配置丢失。
+     * 写失败只记录日志（此时已经不能再弹提示，也不该阻塞卸载）。
+     */
     dispose(): void {
-        this.timers.forEach((timer) => window.clearTimeout(timer));
-        this.timers.clear();
+        const pending = [...this.timers.keys()];
+        pending.forEach((id) => {
+            const timer = this.timers.get(id);
+            if (typeof timer === "number") {
+                window.clearTimeout(timer);
+            }
+            this.timers.delete(id);
+        });
+        pending.forEach((id) => {
+            this.saveNow(id).catch((error) => {
+                console.warn(`[some-settings-siyuan] 卸载时保存 ${storageNameOf(id)} 失败`, error);
+            });
+        });
         this.listeners.clear();
     }
 }
