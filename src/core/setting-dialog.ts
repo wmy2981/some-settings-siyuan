@@ -108,11 +108,12 @@ export class SettingsPanel {
         return this.t(feature.name, feature.id);
     }
 
-    /** 当前分类下要显示设置界面的功能（showUi 为真）。 */
+    /**
+     * 当前分类下要显示设置界面的功能。
+     * 与建草稿走的是同一个判定，避免出现「渲染了但没草稿」的错位。
+     */
     private visibleFeatures(category: FeatureCategory): FeatureDefinition[] {
-        return this.options.features.filter((feature) =>
-            feature.category === category && this.options.controlOf(feature.id).showUi
-        );
+        return this.visibleFeaturesAll().filter((feature) => feature.category === category);
     }
 
     // ------------------------------------------------------------ 生命周期
@@ -148,6 +149,11 @@ export class SettingsPanel {
                 this.drafts = new Map();
             },
         });
+
+        // 面板自己的窄屏样式需要挂作用域，才能改掉内核给 .b3-dialog__content 的内边距。
+        // 这里直接给容器加类，而不是依赖 Dialog 的 containerClassName 选项——
+        // SDK 1.2.8 的类型里没有这个选项，加类能同时兼容新旧宿主。
+        this.dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add("some-settings-dialog");
 
         this.render();
         this.bindActions();
@@ -334,7 +340,9 @@ export class SettingsPanel {
                 console.warn(`[some-settings-siyuan] 控件 "${encodedKey}" 找不到对应功能，改动被丢弃`);
                 return;
             }
-            console.warn(
+            // 正常情况下草稿已在 show() 里建好；走到这里说明两者判定不一致，
+            // 补建一份以免用户改过的东西被丢掉，同时留一条可检索的错误。
+            console.error(
                 `[some-settings-siyuan] 控件 "${encodedKey}" 缺草稿（当前 ${this.drafts.size} 份），已按已提交配置补建`,
             );
             draft = {...this.options.store.get(featureId)};
