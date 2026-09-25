@@ -1,23 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Some Settings">
-  <!-- 无圆角的满版底色；方块本身就是形状，靠边距而不是圆角留白 -->
-  <rect width="160" height="160" fill="#232A43"/>
+  <!-- 浅色满版底色（思源 daylight 主题的 surface），无圆角 -->
+  <rect width="160" height="160" fill="#F1F2F5"/>
 
-  <!-- 三条轨道：等距 y=44/80/116，未生效部分用略亮的灰蓝保证小尺寸下可读 -->
-  <g fill="#525E7E">
+  <!-- 三条轨道：未生效部分用浅灰，够淡但仍有边界 -->
+  <g fill="#C8CCD6">
     <rect x="30" y="40" width="96" height="8"/>
     <rect x="30" y="76" width="96" height="8"/>
     <rect x="30" y="112" width="96" height="8"/>
   </g>
 
-  <!-- 已生效的部分用思源主色标出，三条长度不同，读起来是「被调过的一列推子」 -->
+  <!-- 已生效的部分用思源主色，三条长度不同 -->
   <g fill="#3575F0">
     <rect x="30" y="40" width="60" height="8"/>
     <rect x="30" y="76" width="84" height="8"/>
     <rect x="30" y="112" width="46" height="8"/>
   </g>
 
-  <!-- 三个把手：深色描边保证在任何底色上都读得出来 -->
-  <g fill="#FFFFFF" stroke="#232A43" stroke-width="4">
+  <!-- 三个把手：浅色描边，与底色一致 -->
+  <g fill="#3575F0" stroke="#F1F2F5" stroke-width="4">
     <circle cx="90" cy="44" r="11"/>
     <circle cx="114" cy="80" r="11"/>
     <circle cx="76" cy="116" r="11"/>
