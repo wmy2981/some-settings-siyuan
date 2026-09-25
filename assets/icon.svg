@@ -1,41 +1,25 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Some Settings">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#3b5bdb"/>
-      <stop offset="1" stop-color="#7048e8"/>
-    </linearGradient>
-    <linearGradient id="slider" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.95"/>
-    </linearGradient>
-  </defs>
+  <!-- 无圆角的满版底色；方块本身就是形状，靠边距而不是圆角留白 -->
+  <rect width="160" height="160" fill="#232A43"/>
 
-  <rect x="0" y="0" width="160" height="160" rx="36" fill="url(#bg)"/>
-
-  <!-- 背景装饰：同心圆与刻度，暗示“设置” -->
-  <g stroke="#ffffff" stroke-opacity="0.14" fill="none">
-    <circle cx="80" cy="80" r="52" stroke-width="2"/>
-    <circle cx="80" cy="80" r="40" stroke-width="2"/>
-  </g>
-  <g stroke="#ffffff" stroke-opacity="0.28" stroke-width="4" stroke-linecap="round">
-    <path d="M80 16v10"/>
-    <path d="M80 134v10"/>
-    <path d="M16 80h10"/>
-    <path d="M134 80h10"/>
+  <!-- 三条轨道：等距 y=44/80/116，未生效部分用略亮的灰蓝保证小尺寸下可读 -->
+  <g fill="#525E7E">
+    <rect x="30" y="40" width="96" height="8"/>
+    <rect x="30" y="76" width="96" height="8"/>
+    <rect x="30" y="112" width="96" height="8"/>
   </g>
 
-  <!-- 三条可独立启停的设置行 -->
-  <g>
-    <rect x="34" y="46" width="92" height="8" rx="4" fill="url(#slider)" opacity="0.5"/>
-    <rect x="34" y="46" width="42" height="8" rx="4" fill="#ffffff"/>
-    <circle cx="76" cy="50" r="9" fill="#ffffff" stroke="#3b5bdb" stroke-width="3"/>
+  <!-- 已生效的部分用思源主色标出，三条长度不同，读起来是「被调过的一列推子」 -->
+  <g fill="#3575F0">
+    <rect x="30" y="40" width="60" height="8"/>
+    <rect x="30" y="76" width="84" height="8"/>
+    <rect x="30" y="112" width="46" height="8"/>
+  </g>
 
-    <rect x="34" y="76" width="92" height="8" rx="4" fill="url(#slider)" opacity="0.5"/>
-    <rect x="34" y="76" width="76" height="8" rx="4" fill="#ffffff"/>
-    <circle cx="110" cy="80" r="9" fill="#ffffff" stroke="#3b5bdb" stroke-width="3"/>
-
-    <rect x="34" y="106" width="92" height="8" rx="4" fill="url(#slider)" opacity="0.5"/>
-    <rect x="34" y="106" width="24" height="8" rx="4" fill="#ffffff"/>
-    <circle cx="58" cy="110" r="9" fill="#ffffff" stroke="#3b5bdb" stroke-width="3"/>
+  <!-- 三个把手：深色描边保证在任何底色上都读得出来 -->
+  <g fill="#FFFFFF" stroke="#232A43" stroke-width="4">
+    <circle cx="90" cy="44" r="11"/>
+    <circle cx="114" cy="80" r="11"/>
+    <circle cx="76" cy="116" r="11"/>
   </g>
 </svg>

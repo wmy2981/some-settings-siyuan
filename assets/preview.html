@@ -1,52 +1,51 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="midnight">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8"/>
 <title>Some Settings · preview</title>
 <style>
-/* 基础调色板取自思源内置 midnight / daylight 主题，保证预览与真实界面同色系 */
+/* 调色板与控件样式全部取自思源内置 midnight 主题与 b3-* 组件，
+   保证这张预览图和插件实际打开的设置面板是同一种东西。 */
 :root {
     --b3-theme-primary: #3575f0;
-    --b3-theme-primary-light: rgba(53,117,240,.72);
-    --b3-theme-primary-lighter: rgba(53,117,240,.48);
-    --b3-theme-primary-lightest: rgba(53,117,240,.24);
     --b3-theme-background: #1e1e1e;
-    --b3-theme-background-light: rgba(255,255,255,.1);
     --b3-theme-surface: #2c2c2c;
-    --b3-theme-surface-lighter: rgba(230,230,230,.1);
-    --b3-theme-error: #d23f31;
+    --b3-theme-surface-lighter: rgba(230, 230, 230, .1);
     --b3-theme-on-background: #dadada;
     --b3-theme-on-surface: #9aa0a6;
     --b3-theme-on-surface-light: #bababa;
     --b3-border-color: var(--b3-theme-surface-lighter);
     --b3-border-radius: 4px;
     --b3-border-radius-b: 6px;
-    --b3-list-hover: rgba(255,255,255,.075);
+    --b3-list-hover: rgba(255, 255, 255, .075);
     --b3-select-background: #3b3b3b;
     --b3-switch-background: #525252;
     --b3-switch-border: var(--b3-theme-on-surface-light);
-    --b3-switch-hover: rgba(255,255,255,.06);
     --b3-switch-checked: #fff;
     --b3-switch-checked-background: var(--b3-theme-primary);
-    --b3-switch-checked-hover: #d3e3fd;
-    --b3-switch-checked-hover2: rgba(255,255,255,.06);
-    --b3-dialog-shadow: 0 8px 24px rgba(0,0,0,.5);
+    --b3-dialog-shadow: 0 8px 24px rgba(0, 0, 0, .55);
     --b3-font-family: "Segoe UI", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
     --b3-font-family-code: "JetBrains Mono", Consolas, "Liberation Mono", monospace;
 }
+
 * { box-sizing: border-box; }
+
 body {
     width: 1024px;
     height: 768px;
     overflow: hidden;
     margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-family: var(--b3-font-family);
     font-size: 14px;
+    line-height: 1.5;
     color: var(--b3-theme-on-background);
     background-color: var(--b3-theme-background);
 }
 
-/* ---------------------------------------------------------------- 原生控件 */
+/* ------------------------------------------------------------ 原生控件 */
 .b3-switch {
     flex-shrink: 0;
     -webkit-appearance: none;
@@ -64,23 +63,33 @@ body {
 .b3-switch::after {
     width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 1;
     content: ""; background-color: var(--b3-switch-border); display: block;
-    left: 7px; position: absolute; top: 50%; transform: translate(-50%,-50%);
-    transition: left 80ms linear, background-color 80ms linear, width 80ms linear, height 80ms linear;
+    left: 7px; position: absolute; top: 50%; transform: translate(-50%, -50%);
 }
 .b3-switch:checked { background-color: var(--b3-switch-checked-background); border-color: transparent; }
 .b3-switch:checked::after { background-color: var(--b3-switch-checked); height: 12px; width: 12px; left: 17px; }
 
+.b3-text-field {
+    border: 0;
+    border-radius: var(--b3-border-radius);
+    padding: 4px 8px;
+    height: 28px;
+    font-size: 14px;
+    font-family: inherit;
+    color: var(--b3-theme-on-background);
+    background-color: var(--b3-select-background);
+    box-shadow: inset 0 0 0 1px var(--b3-border-color);
+    outline: none;
+}
 .b3-select {
     border: 0;
     border-radius: var(--b3-border-radius);
     padding: 4px 26px 4px 8px;
-    line-height: 20px;
-    color: var(--b3-theme-on-background);
     height: 28px;
     font-size: 14px;
     font-family: inherit;
+    color: var(--b3-theme-on-background);
+    background-color: var(--b3-select-background);
     box-shadow: inset 0 0 0 1px var(--b3-border-color);
-    background: var(--b3-select-background);
     appearance: none;
     cursor: pointer;
     outline: none;
@@ -91,239 +100,227 @@ body {
     background-size: 5px 5px, 5px 5px;
     background-repeat: no-repeat;
 }
-
 .b3-button {
-    border: 0; border-radius: var(--b3-border-radius); padding: 4px 8px; height: 28px;
-    font-size: 14px; font-family: inherit; cursor: pointer;
-    color: var(--b3-theme-on-background); background-color: transparent;
-    box-shadow: inset 0 0 0 1px var(--b3-border-color);
+    border: 0;
+    border-radius: var(--b3-border-radius);
+    padding: 4px 8px;
+    height: 28px;
+    font-size: 14px;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--b3-theme-on-background);
+    background-color: transparent;
 }
-.b3-button--outline:hover { background-color: var(--b3-list-hover); }
+.b3-button--cancel { box-shadow: inset 0 0 0 1px var(--b3-border-color); }
+.b3-button--text { color: var(--b3-theme-primary); }
 
 .fn__flex { display: flex; }
 .fn__flex-1 { flex: 1; min-width: 0; }
 .fn__flex-center { display: flex; align-items: center; justify-content: center; }
 .fn__size200 { width: 200px; flex-shrink: 0; }
 .fn__space { width: 8px; flex-shrink: 0; }
-.b3-label { padding: 8px 0; }
-.b3-label__text { font-size: 12px; color: var(--b3-theme-on-surface); line-height: 16px; margin-top: 2px; }
+
+/* ------------------------------------------------------------ 面板样式（与 src/core/ui.ts 中一致） */
+.b3-label { padding: 6px 0; }
+.b3-label__text { font-size: 12px; color: var(--b3-theme-on-surface); line-height: 15px; margin-top: 2px; }
 .config-item { border-bottom: 1px solid var(--b3-border-color); }
 .config-item:last-child { border-bottom: 0; }
 .config-item__main { display: flex; flex-direction: column; justify-content: center; }
-.config-title {
-    font-size: 12px; font-weight: 600; color: var(--b3-theme-on-surface);
-    padding: 8px 0 4px; letter-spacing: .04em;
-}
+.config-title { font-size: 12px; font-weight: 600; color: var(--b3-theme-on-surface); padding: 6px 0 2px; }
 .config-items { padding: 0 4px; }
+.ss-panel__section { padding: 8px 0 2px; }
+.ss-panel__section:first-child { padding-top: 0; }
+.ss-panel__section-name { font-size: 14px; font-weight: 600; color: var(--b3-theme-on-background); }
+.config-group + .config-group { margin-top: 4px; }
+.config-item__number { gap: 8px; }
 
-/* ---------------------------------------------------------------- 页面骨架 */
-.page { width: 1024px; height: 768px; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; overflow: hidden; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.brand__logo { width: 38px; height: 38px; border-radius: 10px; box-shadow: 0 4px 12px rgba(53,117,240,.35); }
-.brand__title { font-size: 17px; font-weight: 600; }
-.brand__sub { font-size: 12px; color: var(--b3-theme-on-surface); }
-.brand__tag {
-    margin-left: auto; font-size: 11px; color: var(--b3-theme-primary);
-    background: var(--b3-theme-primary-lightest); border-radius: 999px; padding: 4px 10px;
+/* ------------------------------------------------------------ 弹窗外壳
+   结构与宿主的 Dialog 完全一致：`.b3-dialog__body` 是纵向 flex，
+   界面自带的 content 负责滚动，动作区固定在底部。 */
+.b3-dialog {
+    width: 768px;
+    height: 630px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--b3-theme-surface);
+    border-radius: var(--b3-border-radius-b);
+    box-shadow: var(--b3-dialog-shadow);
+    overflow: hidden;
 }
-.workspace { display: flex; gap: 14px; flex: 1; min-height: 0; }
-.dialog {
-    flex: 0 0 476px; display: flex; flex-direction: column; min-height: 0;
-    background-color: var(--b3-theme-surface); border-radius: var(--b3-border-radius-b);
-    box-shadow: var(--b3-dialog-shadow); overflow: hidden;
+.b3-dialog__header {
+    display: flex;
+    align-items: center;
+    height: 38px;
+    padding: 0 24px;
+    flex: 0 0 auto;
+    font-weight: 600;
+    border-bottom: 1px solid var(--b3-border-color);
 }
-.dialog__head {
-    display: flex; align-items: center; height: 40px; padding: 0 12px; flex: 0 0 auto;
-    border-bottom: 1px solid var(--b3-border-color); font-weight: 600;
+.b3-dialog__body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
 }
-.dialog__body { display: flex; flex: 1; min-height: 0; }
-.dialog__nav {
-    flex: 0 0 118px; padding: 8px 6px; border-right: 1px solid var(--b3-border-color);
-    display: flex; flex-direction: column; gap: 2px;
+.b3-dialog__content {
+    padding: 12px 24px 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
-.dialog__nav-item {
-    display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--b3-border-radius);
-    color: var(--b3-theme-on-surface); font-size: 13px;
+.b3-dialog__action {
+    padding: 7px 24px;
+    border-top: 1px solid var(--b3-border-color);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    user-select: none;
 }
-.dialog__nav-item[data-active="true"] { background-color: var(--b3-theme-primary-lightest); color: var(--b3-theme-primary); }
-.dialog__nav-item .badge { margin-left: auto; font-size: 11px; opacity: .7; }
-.dialog__main { flex: 1; min-width: 0; padding: 4px 14px 14px; overflow: hidden; }
-.dialog__foot {
-    display: flex; align-items: center; gap: 8px; flex: 0 0 auto;
-    padding: 8px 14px; border-top: 1px solid var(--b3-border-color);
-}
-.dialog__hint { flex: 1; font-size: 11px; color: var(--b3-theme-on-surface); line-height: 14px; }
 
-.group { border: 1px solid var(--b3-border-color); border-radius: var(--b3-border-radius-b); margin-bottom: 10px; padding: 2px 10px 6px; }
-.group__title { display: flex; align-items: center; gap: 6px; padding: 8px 0 4px; font-weight: 600; font-size: 13px; }
-.group__dot { width: 6px; height: 6px; border-radius: 50%; background: var(--b3-theme-primary); }
-.group__desc { font-size: 11px; color: var(--b3-theme-on-surface); line-height: 15px; margin-bottom: 2px; }
-
-.panel {
-    flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;
-    border: 1px solid var(--b3-border-color); border-radius: var(--b3-border-radius-b); padding: 14px;
-    background-color: rgba(255,255,255,.015);
+/* ------------------------------------------------------------ 画布排版 */
+.sheet {
+    width: 1024px;
+    height: 768px;
+    padding: 40px 48px;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
 }
-.panel__title { font-size: 13px; font-weight: 600; }
-.panel__sub { font-size: 11px; color: var(--b3-theme-on-surface); }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--b3-border-color); }
-th { color: var(--b3-theme-on-surface); font-weight: 600; }
-td code, th code { font-family: var(--b3-font-family-code); font-size: 11px; color: var(--b3-theme-primary); }
-.legend { display: flex; gap: 8px; flex-wrap: wrap; }
-.legend__item {
-    display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--b3-theme-on-surface);
-    border: 1px solid var(--b3-border-color); border-radius: 999px; padding: 3px 9px;
+.legend {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--b3-theme-on-surface);
 }
-.legend__key { font-family: var(--b3-font-family-code); color: var(--b3-theme-primary); }
-.legend__key--dim { color: var(--b3-theme-on-surface); }
-
-.preview-code {
-    margin-top: auto; font-family: var(--b3-font-family-code); font-size: 11px; line-height: 16px;
-    color: var(--b3-theme-on-surface); background-color: rgba(0,0,0,.25);
-    border-radius: var(--b3-border-radius); padding: 10px 12px; white-space: pre;
+.legend__item { display: flex; align-items: center; gap: 6px; }
+.legend__value {
+    font-family: var(--b3-font-family-code);
+    font-size: 11px;
+    color: var(--b3-theme-primary);
 }
-.preview-code b { color: var(--b3-theme-primary); font-weight: 500; }
+.legend__value--off { color: var(--b3-theme-on-surface); }
+.legend__spacer { flex: 1; }
+.legend__path { font-family: var(--b3-font-family-code); font-size: 11px; color: var(--b3-theme-on-surface-light); }
 </style>
 </head>
 <body>
-<div class="page">
-    <div class="brand">
-        <svg class="brand__logo" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <defs>
-                <linearGradient id="brandBg" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stop-color="#3b5bdb"/>
-                    <stop offset="1" stop-color="#7048e8"/>
-                </linearGradient>
-            </defs>
-            <rect width="160" height="160" rx="36" fill="url(#brandBg)"/>
-            <g stroke="#ffffff" stroke-opacity="0.14" fill="none">
-                <circle cx="80" cy="80" r="52" stroke-width="2"/>
-                <circle cx="80" cy="80" r="40" stroke-width="2"/>
-            </g>
-            <g>
-                <rect x="34" y="46" width="92" height="8" rx="4" fill="#ffffff" fill-opacity="0.5"/>
-                <rect x="34" y="46" width="42" height="8" rx="4" fill="#ffffff"/>
-                <circle cx="76" cy="50" r="9" fill="#ffffff"/>
-                <rect x="34" y="76" width="92" height="8" rx="4" fill="#ffffff" fill-opacity="0.5"/>
-                <rect x="34" y="76" width="76" height="8" rx="4" fill="#ffffff"/>
-                <circle cx="110" cy="80" r="9" fill="#ffffff"/>
-                <rect x="34" y="106" width="92" height="8" rx="4" fill="#ffffff" fill-opacity="0.5"/>
-                <rect x="34" y="106" width="24" height="8" rx="4" fill="#ffffff"/>
-                <circle cx="58" cy="110" r="9" fill="#ffffff"/>
-            </g>
-        </svg>
-        <div>
-            <div class="brand__title">Some Settings · 一些设置</div>
-            <div class="brand__sub">独立启停的思源增强功能 / independently toggleable enhancements</div>
+<div class="sheet">
+    <div class="b3-dialog">
+        <div class="b3-dialog__header">Some Settings</div>
+        <div class="b3-dialog__body">
+            <div class="b3-dialog__content">
+                <div class="some-settings-panel">
+                    <div class="ss-panel__scroll">
+                        <!-- 功能 -->
+                        <div class="ss-panel__section"><div class="ss-panel__section-name">功能</div></div>
+            <div class="config-group">
+                <div class="config-title">示例：插件命令</div>
+                <div class="config-items">
+                    <div class="b3-label config-item">
+                        <div class="fn__flex-1 config-item__main"><div class="b3-label__text">注册一个插件命令并响应本面板的设置，验证配置文件、保存流程与清理逻辑。</div></div>
+                    </div>
+                    <label class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main">
+                            <div>启用示例命令</div>
+                        </div>
+                        <span class="fn__space"></span>
+                        <input class="b3-switch fn__flex-center" type="checkbox" checked/>
+                    </label>
+                    <div class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main"><div>命令显示的消息</div></div>
+                        <span class="fn__space"></span>
+                        <input class="b3-text-field fn__flex-center fn__size200" value="一些设置"/>
+                    </div>
+                    <div class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main">
+                            <div>显示消息前的延迟（毫秒）</div>
+                        </div>
+                        <span class="fn__space"></span>
+                        <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                            <input class="b3-text-field fn__flex-1" value="300"/>
+                            <span class="ft__on-surface fn__flex-center">ms</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 界面 -->
+            <div class="ss-panel__section"><div class="ss-panel__section-name">界面</div></div>
+            <div class="config-group">
+                <div class="config-title">示例：注入样式</div>
+                <div class="config-items">
+                    <div class="b3-label config-item">
+                        <div class="fn__flex-1 config-item__main"><div class="b3-label__text">注入一段带命名空间的样式表，不改动核心 DOM，验证可回退的界面类功能。</div></div>
+                    </div>
+                    <label class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main">
+                            <div>启用注入样式</div>
+                        </div>
+                        <span class="fn__space"></span>
+                        <input class="b3-switch fn__flex-center" type="checkbox" checked/>
+                    </label>
+                    <div class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main"><div>强调色</div></div>
+                        <span class="fn__space"></span>
+                        <select class="b3-select fn__flex-center fn__size200">
+                            <option>蓝色</option>
+                            <option selected>橙色</option>
+                            <option>绿色</option>
+                            <option>红色</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 开发 -->
+            <div class="ss-panel__section"><div class="ss-panel__section-name">开发</div></div>
+            <div class="config-group">
+                <div class="config-title">示例：开发日志</div>
+                <div class="config-items">
+                    <div class="b3-label config-item">
+                        <div class="fn__flex-1 config-item__main"><div class="b3-label__text">开发期诊断：日志开关，以及每次配置变更时打印一次注册表快照。</div></div>
+                    </div>
+                    <label class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main">
+                            <div>调试日志</div>
+                            <div class="b3-label__text">插件运行期间在控制台输出更多诊断信息。</div>
+                        </div>
+                        <span class="fn__space"></span>
+                        <input class="b3-switch fn__flex-center" type="checkbox"/>
+                    </label>
+                    <div class="fn__flex b3-label config-item">
+                        <div class="fn__flex-1 config-item__main">
+                            <div>控制台日志上限</div>
+                            <div class="b3-label__text">一次最多打印多少条。</div>
+                        </div>
+                        <span class="fn__space"></span>
+                        <input class="b3-text-field fn__flex-center fn__size200" value="50"/>
+                    </div>
+                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="b3-dialog__action">
+                <button class="b3-button b3-button--cancel">取消</button>
+                <div class="fn__space"></div>
+                <button class="b3-button b3-button--text">保存</button>
+            </div>
         </div>
-        <div class="brand__tag">settings panel + feature-control.json</div>
     </div>
 
-    <div class="workspace">
-        <!-- 插件设置面板示意 -->
-        <div class="dialog">
-            <div class="dialog__head">Some Settings</div>
-            <div class="dialog__body">
-                <div class="dialog__nav">
-                    <div class="dialog__nav-item" data-active="true">功能<span class="badge">3</span></div>
-                    <div class="dialog__nav-item">界面<span class="badge">4</span></div>
-                    <div class="dialog__nav-item">开发<span class="badge">1+2</span></div>
-                </div>
-                <div class="dialog__main">
-                    <div class="group">
-                        <div class="group__title"><span class="group__dot"></span>Example · switch</div>
-                        <div class="group__desc">布尔设置项，变更即时写入该功能自己的 JSON 文件。</div>
-                        <label class="fn__flex b3-label config-item">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>Enable</div>
-                                <div class="b3-label__text">默认关闭，除非有明确说明</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <input class="b3-switch fn__flex-center" type="checkbox" checked/>
-                        </label>
-                        <label class="fn__flex b3-label config-item">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>Hidden from panel</div>
-                                <div class="b3-label__text">state 2：仍然运行，只是不显示</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <input class="b3-switch fn__flex-center" type="checkbox"/>
-                        </label>
-                    </div>
-
-                    <div class="group">
-                        <div class="group__title"><span class="group__dot"></span>Example · select &amp; number</div>
-                        <div class="group__desc">同一个面板里可以混合任意控件类型。</div>
-                        <div class="fn__flex b3-label config-item">
-                            <div class="fn__flex-1 config-item__main"><div>Accent</div></div>
-                            <span class="fn__space"></span>
-                            <select class="b3-select fn__flex-center fn__size200">
-                                <option>Red</option>
-                                <option selected>Orange</option>
-                                <option>Green</option>
-                                <option>Blue</option>
-                            </select>
-                        </div>
-                        <div class="fn__flex b3-label config-item">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>Delay</div>
-                                <div class="b3-label__text">带单位的数字输入</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <div class="fn__flex" style="width:200px;gap:8px;align-items:center">
-                                <input class="b3-select" style="flex:1;background-image:none;padding-right:8px" value="300"/>
-                                <span style="color:var(--b3-theme-on-surface);font-size:12px">ms</span>
-                            </div>
-                        </div>
-                        <div class="fn__flex b3-label config-item">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>Reset</div>
-                                <div class="b3-label__text">删除该功能的 JSON 并恢复默认值</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <button class="b3-button b3-button--outline fn__flex-center fn__size200">Reset</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="dialog__foot">
-                <div class="dialog__hint">改动即时保存。启停与显隐在 feature-control.json 里调整。</div>
-                <button class="b3-button b3-button--outline fn__flex-center fn__size200">Copy snippet</button>
-            </div>
-        </div>
-
-        <!-- feature-control 语义示意 -->
-        <div class="panel">
-            <div class="panel__title">feature-control.json · four-state gate</div>
-            <div class="panel__sub">同一个开关同时决定「是否加载已有配置」「是否显示设置界面」</div>
-            <table>
-                <thead>
-                <tr><th>state</th><th>load config</th><th>show UI</th><th>run feature</th></tr>
-                </thead>
-                <tbody>
-                <tr><td><code>0</code></td><td>no</td><td>no</td><td>no</td></tr>
-                <tr><td><code>1</code></td><td>yes</td><td>yes</td><td>yes</td></tr>
-                <tr><td><code>2</code></td><td>yes</td><td>no</td><td>yes</td></tr>
-                <tr><td><code>3</code></td><td>no</td><td>yes</td><td>yes</td></tr>
-                </tbody>
-            </table>
-            <div class="panel__sub" style="margin-top:2px">常用组合</div>
-            <div class="legend">
-                <span class="legend__item"><span class="legend__key">4</span> enabled but hidden</span>
-                <span class="legend__item"><span class="legend__key">1</span> enabled and shown</span>
-                <span class="legend__item"><span class="legend__key">2</span> hide UI only</span>
-                <span class="legend__item"><span class="legend__key legend__key--dim">0</span> disabled</span>
-                <span class="legend__item"><span class="legend__key legend__key--dim">3</span> keep config hidden</span>
-            </div>
-            <div class="panel__sub" style="margin-top:6px">每个功能独立一个子文件夹，独立一个 JSON 文件</div>
-            <div class="preview-code">src/
-├── core/            <b>机制层</b>：四态 / 配置 / 面板 / 装载
-└── features/
-    ├── &lt;feature-a&gt;/  config → feature-&lt;feature-a&gt;.json
-    ├── &lt;feature-b&gt;/  config → feature-&lt;feature-b&gt;.json
-    └── &lt;feature-c&gt;/  config → feature-&lt;feature-c&gt;.json</div>
-        </div>
+    <div class="legend">
+        <span class="legend__item"><span class="legend__value">0</span> 不加载不显示</span>
+        <span class="legend__item"><span class="legend__value">1</span> 加载并显示</span>
+        <span class="legend__item"><span class="legend__value">2</span> 加载但不显示</span>
+        <span class="legend__item"><span class="legend__value">3</span> 不加载但显示</span>
+        <span class="legend__spacer"></span>
+        <span class="legend__path">feature-control.json</span>
     </div>
 </div>
 </body>
