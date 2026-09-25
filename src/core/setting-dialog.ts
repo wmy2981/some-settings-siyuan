@@ -56,11 +56,23 @@ export interface SettingsPanelOptions {
 
 const isReadonly = (): boolean => Boolean(window.siyuan?.config?.readonly || window.siyuan?.isPublish);
 
-/** 每个控件用「功能 id + 字段 key」复合标识，避免不同功能重名时互相串台。 */
-const bindKey = (featureId: string, key: string): string => `${featureId}\u0000${key}`;
+/**
+ * 每个控件用「功能 id + 字段 key」复合标识，避免不同功能重名时互相串台。
+ *
+ * 分隔符必须是可打印字符：这里最终会写进 HTML 属性，
+ * 而 HTML 解析器会把属性里的 U+0000 换成 U+FFFD（实测会变成 65533），
+ * 于是 id 永远匹配不上、草稿也永远查不到——这正是此前「保存后依旧是默认值」的根因。
+ * 功能 id 只允许小写字母/数字/连字符，字段 key 只允许字母/数字/下划线，
+ * 因此 "::" 不会与任何一侧冲突。用 indexOf 取第一个分隔符，
+ * 即使 key 里含 "::" 也能正确切分。
+ */
+const BIND_SEPARATOR = "::";
+const bindKey = (featureId: string, key: string): string => `${featureId}${BIND_SEPARATOR}${key}`;
 const parseBindKey = (value: string): [string, string] => {
-    const index = value.indexOf("\u0000");
-    return index < 0 ? [value, ""] : [value.slice(0, index), value.slice(index + 1)];
+    const index = value.indexOf(BIND_SEPARATOR);
+    return index < 0 ?
+        [value, ""] :
+        [value.slice(0, index), value.slice(index + BIND_SEPARATOR.length)];
 };
 
 /** 打开后这段时间内的 blur 视为弹窗自身的焦点变化，不作为「窗口失焦」处理。 */
@@ -113,15 +125,11 @@ export class SettingsPanel {
         this.openedAt = Date.now();
         const features = this.visibleFeaturesAll();
         this.drafts = new Map(features.map((feature) => [feature.id, {...this.options.store.get(feature.id)}]));
-        console.log(
-            `[some-settings-siyuan] 打开面板：可见功能 ${features.length} 个，草稿 ${this.drafts.size} 份`,
-            features.map((item) => item.id),
-        );
 
         this.dialog = new Dialog({
             title: this.options.plugin.displayName || this.options.plugin.name,
             // 注意：宿主的 Dialog 不会自动生成动作区，取消/保存必须由 content 自带，
-            // 否则弹窗里根本没有保存按钮——这正是「设置无法保存」的根因。
+            // 否则弹窗里根本没有保存按钮。
             content: `<div class="b3-dialog__content">
     <div class="${PANEL_CLASS}"><div class="ss-panel__scroll"></div></div>
 </div>
@@ -136,10 +144,6 @@ export class SettingsPanel {
             width: isMobileFrontend() ? "92vw" : "768px",
             height: "80vh",
             destroyCallback: () => {
-                console.log(
-                    `[some-settings-siyuan] 面板销毁回调（草稿 ${this.drafts.size} 份）`,
-                    new Error("destroy stack").stack,
-                );
                 this.dialog = undefined;
                 this.drafts = new Map();
             },
@@ -318,9 +322,8 @@ export class SettingsPanel {
     /**
      * 暂存一次控件变更，只改内存里的草稿，不落盘。
      *
-     * 缺草稿时不再直接丢弃：用当前已提交配置补一份再写入，保证用户改过的东西
-     * 一定能进到「保存」里。这种情况本身不该发生，所以同时打出醒目错误，
-     * 方便定位草稿为什么没建起来。
+     * 正常路径下草稿在打开面板时就建好了；缺草稿属于异常，此时补建一份而不是丢弃，
+     * 保证用户改过的东西一定能进到「保存」里，同时打出告警便于定位。
      */
     private stage(encodedKey: string, value: unknown): void {
         const [featureId, key] = parseBindKey(encodedKey);
@@ -328,17 +331,16 @@ export class SettingsPanel {
         if (!draft) {
             const feature = this.options.features.find((item) => item.id === featureId);
             if (!feature) {
-                console.warn(`[some-settings-siyuan] 控件 ${encodedKey} 找不到对应功能，改动被丢弃`);
+                console.warn(`[some-settings-siyuan] 控件 "${encodedKey}" 找不到对应功能，改动被丢弃`);
                 return;
             }
-            console.error(
-                `[some-settings-siyuan] 控件 ${featureId}.${key} 缺草稿（当前 ${this.drafts.size} 份），已按已提交配置补建`,
+            console.warn(
+                `[some-settings-siyuan] 控件 "${encodedKey}" 缺草稿（当前 ${this.drafts.size} 份），已按已提交配置补建`,
             );
             draft = {...this.options.store.get(featureId)};
             this.drafts.set(featureId, draft);
         }
         draft[key] = value;
-        console.log(`[some-settings-siyuan] 暂存 ${featureId}.${key} =`, value, `（草稿 ${this.drafts.size} 份）`);
     }
 
     private bindActions(): void {
@@ -385,11 +387,9 @@ export class SettingsPanel {
     private save(): void {
         const changed = this.changedDrafts();
         if (!changed) {
-            console.log("[some-settings-siyuan] 面板没有改动，直接关闭");
             this.close();
             return;
         }
-        console.log("[some-settings-siyuan] 保存以下改动", changed);
         this.options.store.saveMany(changed).then(() => {
             showMessage(this.t("dialog.saved"), 3000);
             this.close();

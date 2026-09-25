@@ -166,6 +166,57 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .config-item:last-child {
     border-bottom: 0;
 }
+
+/* 窄面板适配 -------------------------------------------------------------
+   弹窗宽度由用户拖拽决定，思源给 .config-item__main 的 flex:1 在窄宽度下
+   会把文案挤成一列单字。这里给文案一个最小宽度，空间不够就让整行折成
+   上下两段（文案在上、控件在下并撑满宽度），而不是把字竖向排开。 */
+.${PANEL_CLASS} .config-item,
+.${PANEL_CLASS} .config-item__main {
+    min-width: 0;
+}
+.${PANEL_CLASS} label.config-item > .config-item__main:first-child,
+.${PANEL_CLASS} div.config-item > .config-item__main:first-child {
+    flex: 1 1 12rem;
+}
+.${PANEL_CLASS} .config-item .fn__size200,
+.${PANEL_CLASS} .config-item .config-item__number {
+    max-width: 100%;
+}
+.${PANEL_CLASS} .config-item .b3-select,
+.${PANEL_CLASS} .config-item .b3-text-field {
+    min-width: 0;
+}
+.${PANEL_CLASS} .b3-switch {
+    margin-inline-start: auto;
+}
+.${PANEL_CLASS} .config-group {
+    container-type: inline-size;
+}
+/* 窄于 30rem 时改为纵向：文案占满一行，控件另起一行撑满宽度 */
+@container (max-width: 30rem) {
+    .${PANEL_CLASS} .config-item {
+        flex-wrap: wrap;
+    }
+    .${PANEL_CLASS} .config-item > .config-item__main {
+        flex: 1 1 100%;
+    }
+    .${PANEL_CLASS} .config-item > .fn__space {
+        display: none;
+    }
+    .${PANEL_CLASS} .config-item > .fn__size200,
+    .${PANEL_CLASS} .config-item > .config-item__number,
+    .${PANEL_CLASS} .config-item > .b3-text-field,
+    .${PANEL_CLASS} .config-item > .b3-select {
+        flex: 1 1 100%;
+        width: auto;
+        max-width: none;
+    }
+    .${PANEL_CLASS} .config-item > .b3-switch {
+        margin-inline-start: 0;
+        margin-top: 6px;
+    }
+}
 `;
 
 const PANEL_CSS_ID = `${PANEL_CLASS}-local-css`;
