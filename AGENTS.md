@@ -49,8 +49,6 @@ scripts/                      check-features / render-icon / render-preview / re
 **硬性边界**
 
 * `src/core/` 只放机制，不放业务逻辑。
-* `src/features/<id>/` 只能 import `src/core/` 与外部依赖，**禁止 import 另一个 feature**。
-* 跨功能协作只能通过 `core/` 提供的接口。
 * 不要直接改 `src/` 之外的东西来实现功能；`feature-control.json` 是数据配置，不是代码。
 
 ---
@@ -173,7 +171,7 @@ log(...)                    带功能前缀的控制台日志
 
 ---
 
-## 8. ⚠️ 已踩过的坑（写代码前先读）
+## 8. ⚠️ 已踩过的坑
 
 1. **HTML 属性会把 U+0000 换成 U+FFFD（65533）。**
    控件标识最初用 `\u0000` 拼接并写进 `data-*` 属性，读回时已经变成 `\uFFFD`，
@@ -229,8 +227,8 @@ CD（`.github/workflows/cd.yml`）会：校验两个版本号一致 → `npm ci`
 
 * **Conventional Commits**，分点提交，一个小改动一个 commit。
   类型用 `feat` / `fix` / `refactor` / `style` / `docs` / `build` / `chore`。
-* 提交信息用中文或英文都行，但要说清「为什么」而不只是「改了什么」。
-  **踩坑类的修复必须在提交信息里写清根因**，否则后人会重复踩。
+* 提交信息用英文，说清「改了什么」。
+  **踩坑类的修复必须在提交信息里写清根因**
 * 用户可见的文案必须**中英双语**同时写进两份 i18n，缺一即构建失败。
 * `README.md` / `README.zh-CN.md` 是集市展示页，改动用户可见行为时要同步更新。
 * **`dev-refs/` 是本地开发参考资料，不得纳入版本管理，也不得在任何文档、注释、提交信息里引用或提及。**
