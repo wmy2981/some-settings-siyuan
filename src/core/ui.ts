@@ -96,8 +96,9 @@ export const numberRowHtml = (
     min="${typeof options.min === "number" ? options.min : ""}"
     max="${typeof options.max === "number" ? options.max : ""}"
     step="${typeof options.step === "number" ? options.step : ""}"${options.disabled ? " disabled" : ""}/>`;
+    // 单位用独立 span 承载（内核用的是 fn__flex-center，窄屏下会被压成一列一个字）
     const control = options.unit ?
-        `<div class="fn__size200 fn__flex-center fn__flex config-item__number">${input}<span class="fn__space"></span><span class="ft__on-surface fn__flex-center">${
+        `<div class="fn__size200 fn__flex-center fn__flex config-item__number">${input}<span class="fn__space"></span><span class="config-item__unit ft__on-surface">${
             escapeHtml(options.unit)
         }</span></div>` :
         input;
@@ -167,6 +168,12 @@ export const PANEL_CSS = `
     border-bottom: 0;
 }
 
+/* 单位标签：窄屏下内核那套 fn__flex-center 会被压成一列一个字，这里改成不换行 */
+.${PANEL_CLASS} .config-item__unit {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 /* 窄面板适配 -------------------------------------------------------------
    弹窗宽度由用户拖拽决定，思源给 .config-item__main 的 flex:1 在窄宽度下
    会把文案挤成一列单字。这里给文案一个最小宽度，空间不够就让整行折成
@@ -190,16 +197,30 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .b3-switch {
     margin-inline-start: auto;
 }
-.${PANEL_CLASS} .config-group {
-    container-type: inline-size;
-}
-/* 窄于 30rem 时改为纵向：文案占满一行，控件另起一行撑满宽度 */
-@container (max-width: 30rem) {
+
+/* 移动端 / 窄窗口 ---------------------------------------------------------
+   用媒体查询而不是容器查询：内核给 .b3-dialog__content 的 16px 24px 内边距
+   在手机屏上几乎吃掉一半宽度，必须由插件改掉；纯容器查询的后果无法反向影响
+   外层那个容器。作用域用容器上的 some-settings-dialog 类限定，不会波及别的弹窗。 */
+@media (max-width: 480px) {
+    .some-settings-dialog .b3-dialog__content {
+        padding: 12px 12px 0;
+    }
+    .some-settings-dialog .b3-dialog__action {
+        padding: 7px 12px;
+    }
+    .${PANEL_CLASS} .ss-panel__scroll {
+        padding: 0 0 12px;
+    }
+    .${PANEL_CLASS} .ss-panel__section {
+        padding: 10px 0 4px;
+    }
+    /* 文案与控件都由内核加了 .fn__flex 行内样式，必须 !important 才能折行 */
     .${PANEL_CLASS} .config-item {
-        flex-wrap: wrap;
+        flex-wrap: wrap !important;
     }
     .${PANEL_CLASS} .config-item > .config-item__main {
-        flex: 1 1 100%;
+        flex: 1 1 100% !important;
     }
     .${PANEL_CLASS} .config-item > .fn__space {
         display: none;
@@ -208,12 +229,12 @@ export const PANEL_CSS = `
     .${PANEL_CLASS} .config-item > .config-item__number,
     .${PANEL_CLASS} .config-item > .b3-text-field,
     .${PANEL_CLASS} .config-item > .b3-select {
-        flex: 1 1 100%;
-        width: auto;
-        max-width: none;
+        flex: 1 1 100% !important;
+        width: auto !important;
+        max-width: none !important;
     }
     .${PANEL_CLASS} .config-item > .b3-switch {
-        margin-inline-start: 0;
+        margin-inline-start: 0 !important;
         margin-top: 6px;
     }
 }
