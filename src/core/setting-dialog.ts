@@ -111,10 +111,12 @@ export class SettingsPanel {
         }
         ensurePanelCss();
         this.openedAt = Date.now();
-        this.drafts = new Map();
-        this.visibleFeaturesAll().forEach((feature) => {
-            this.drafts.set(feature.id, {...this.options.store.get(feature.id)});
-        });
+        const features = this.visibleFeaturesAll();
+        this.drafts = new Map(features.map((feature) => [feature.id, {...this.options.store.get(feature.id)}]));
+        console.log(
+            `[some-settings-siyuan] 打开面板：可见功能 ${features.length} 个，草稿 ${this.drafts.size} 份`,
+            features.map((item) => item.id),
+        );
 
         this.dialog = new Dialog({
             title: this.options.plugin.displayName || this.options.plugin.name,
@@ -134,6 +136,10 @@ export class SettingsPanel {
             width: isMobileFrontend() ? "92vw" : "768px",
             height: "80vh",
             destroyCallback: () => {
+                console.log(
+                    `[some-settings-siyuan] 面板销毁回调（草稿 ${this.drafts.size} 份）`,
+                    new Error("destroy stack").stack,
+                );
                 this.dialog = undefined;
                 this.drafts = new Map();
             },
@@ -309,16 +315,30 @@ export class SettingsPanel {
         });
     }
 
-    /** 只改面板草稿，不落盘。 */
+    /**
+     * 暂存一次控件变更，只改内存里的草稿，不落盘。
+     *
+     * 缺草稿时不再直接丢弃：用当前已提交配置补一份再写入，保证用户改过的东西
+     * 一定能进到「保存」里。这种情况本身不该发生，所以同时打出醒目错误，
+     * 方便定位草稿为什么没建起来。
+     */
     private stage(encodedKey: string, value: unknown): void {
         const [featureId, key] = parseBindKey(encodedKey);
-        const draft = this.drafts.get(featureId);
+        let draft = this.drafts.get(featureId);
         if (!draft) {
-            console.warn(`[some-settings-siyuan] 控件 ${encodedKey} 没有对应的草稿，改动被丢弃`);
-            return;
+            const feature = this.options.features.find((item) => item.id === featureId);
+            if (!feature) {
+                console.warn(`[some-settings-siyuan] 控件 ${encodedKey} 找不到对应功能，改动被丢弃`);
+                return;
+            }
+            console.error(
+                `[some-settings-siyuan] 控件 ${featureId}.${key} 缺草稿（当前 ${this.drafts.size} 份），已按已提交配置补建`,
+            );
+            draft = {...this.options.store.get(featureId)};
+            this.drafts.set(featureId, draft);
         }
         draft[key] = value;
-        console.log(`[some-settings-siyuan] 暂存 ${featureId}.${key} =`, value);
+        console.log(`[some-settings-siyuan] 暂存 ${featureId}.${key} =`, value, `（草稿 ${this.drafts.size} 份）`);
     }
 
     private bindActions(): void {
