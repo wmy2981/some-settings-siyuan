@@ -70,6 +70,16 @@ the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field
 discard). Nothing is written until you save, and if a value fails validation the panel stays open with the
 problem reported. If you have unsaved changes, closing asks for confirmation first.
 
+Every save is **verified**: after writing each feature's file, the plugin reads it straight back and compares.
+SiYuan's `saveData` can resolve before the file actually lands on disk (and never inspects the kernel's
+response code), so a write can fail while looking successful. If the read-back disagrees, the panel stays open
+and tells you exactly which field differs, and the console gets a `[some-settings-siyuan]` line — check there
+first if a setting ever appears not to stick.
+
+On narrow screens (mobile, or a window narrower than 480px) the panel switches to a stacked layout: the label
+takes a full row and the control moves to the next row at full width, and the dialog's padding is reduced so
+the content uses the whole screen.
+
 Because a feature with `state: 3` still shows its controls, saving there writes the feature's own JSON file
 even though nothing was loaded from it at startup — the four states govern _reading_, never whether an
 explicit user edit persists.
