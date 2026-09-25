@@ -12,7 +12,10 @@ import {execFileSync} from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import {fileURLToPath, pathToFileURL} from "node:url";
+import {
+    fileURLToPath,
+    pathToFileURL,
+} from "node:url";
 import sharp from "sharp";
 
 const EXPECTED_WIDTH = 1024;
@@ -34,7 +37,9 @@ const width = /body\s*\{[^}]*?width:\s*(\d+)px/s.exec(html)?.[1];
 const height = /body\s*\{[^}]*?height:\s*(\d+)px/s.exec(html)?.[1];
 
 if (width !== String(EXPECTED_WIDTH) || height !== String(EXPECTED_HEIGHT)) {
-    console.error(`assets/preview.html declares ${width}x${height}; the marketplace expects ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT}`);
+    console.error(
+        `assets/preview.html declares ${width}x${height}; the marketplace expects ${EXPECTED_WIDTH}x${EXPECTED_HEIGHT}`,
+    );
     process.exit(1);
 }
 
@@ -69,7 +74,9 @@ try {
         .png({compressionLevel: 9, palette: true, quality: 92, effort: 10})
         .toBuffer();
     if (optimized.length > MAX_BYTES) {
-        throw new Error(`The compressed preview is ${optimized.length} bytes, over the marketplace limit of ${MAX_BYTES}`);
+        throw new Error(
+            `The compressed preview is ${optimized.length} bytes, over the marketplace limit of ${MAX_BYTES}`,
+        );
     }
 
     fs.writeFileSync(pngPath, optimized);

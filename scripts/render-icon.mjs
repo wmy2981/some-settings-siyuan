@@ -8,10 +8,10 @@
 //
 // 软件内显示的图标不走这里：它以 24x24 内联在 src/icons.ts 里，
 // 由 addIcons 注入，不随插件包分发文件。
-import sharp from "sharp";
 import fs from "node:fs";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
+import sharp from "sharp";
 
 const SIZE = 160;
 const MAX_BYTES = 64 * 1024;

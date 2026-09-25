@@ -7,8 +7,7 @@
   "scripts": {
     "format": "dprint fmt",
     "format:check": "dprint check",
-    "lint": "eslint . --fix --cache",
-    "lint:check": "eslint . --cache",
+    "lint": "eslint . --cache",
     "typecheck": "tsc --noEmit",
     "check": "node scripts/check-features.mjs",
     "dev": "webpack --config webpack.config.js --mode development",
