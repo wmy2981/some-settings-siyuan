@@ -49,22 +49,30 @@ A missing key, an out-of-range value or an unknown id is treated as `0` at runti
 This release is the plugin skeleton plus one example item per category, so the whole chain is verifiable
 end to end. Real features are added one folder at a time.
 
-| Feature         | Category      | First-run state | What it verifies                                                                 |
-| --------------- | ------------- | --------------- | -------------------------------------------------------------------------------- |
-| `function-demo` | Functionality | `1`             | Top bar button + plugin command + `switch` / `text` / `number` settings          |
-| `ui-demo`       | Interface     | `1`             | Reversible namespace-scoped CSS injection + `select` setting                     |
-| `dev-demo`      | Development   | `0`             | `action` settings, config export, registry diagnostics — and the `state: 0` path |
+| Feature         | Category      | First-run state | What it verifies                                                        |
+| --------------- | ------------- | --------------- | ----------------------------------------------------------------------- |
+| `function-demo` | Functionality | `1`             | A plugin command that reads its settings — `switch` / `text` / `number` |
+| `ui-demo`       | Interface     | `1`             | Reversible namespace-scoped CSS injection + `select` setting            |
+| `dev-demo`      | Development   | `0`             | Logging settings and a registry snapshot — plus the `state: 0` path     |
 
 ## Settings panel
 
-Open it from the plugin's top bar button (on mobile, tap the icon; on desktop, the same button also has a
-right-click menu entry). The panel has three categories — **Functionality / Interface / Development** — and
-uses SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-button`, `config-item`,
-`config-title`, `config-items`) with the same sizing and spacing as the built-in settings panels.
+The plugin registers **no top bar button, no status bar item, no dock and no panel of its own**. It overrides
+`Plugin.openSetting()`, which is exactly how SiYuan decides to show the _Settings_ button on a plugin card,
+so open it from **Settings → Marketplace → Downloaded → (this plugin) → Settings**.
 
-Changes are written immediately. The one deliberate difference from the built-in `Setting` component is that
-this panel has no global _Save_ button: each control persists on change, because every item must be
-independently resettable. Use **Reset this feature** to delete that feature's JSON file and restore defaults.
+The panel is a single vertical list with the three categories (Functionality / Interface / Development) as
+section headings — no side tabs, no footer bar, no extra buttons. Every row is "label on the left, control on
+the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`, `config-item`,
+`config-title`).
+
+**Saving** follows the built-in dialog: edit any number of settings, then click **Save** (or **Cancel** to
+discard). Nothing is written until you save, and if a value fails validation the panel stays open with the
+problem reported. If you have unsaved changes, closing asks for confirmation first.
+
+Because a feature with `state: 3` still shows its controls, saving there writes the feature's own JSON file
+even though nothing was loaded from it at startup — the four states govern _reading_, never whether an
+explicit user edit persists.
 
 ## Repository layout
 
@@ -73,17 +81,17 @@ some-settings-siyuan/
 ├── feature-control.json        # the only switchboard: four states per feature id
 ├── plugin.json                 # marketplace manifest
 ├── src/
-│   ├── index.ts                # plugin entry: onload / onLayoutReady / onunload / uninstall
+│   ├── index.ts                # plugin entry: onload / onunload / uninstall / openSetting
 │   ├── i18n/{en,zh-CN}.json    # UI strings
 │   ├── core/                   # mechanism layer, no business feature lives here
 │   │   ├── types.ts            # FeatureDefinition / SettingField / FeatureHost
 │   │   ├── control.ts          # reads feature-control.json, normalises the four states
 │   │   ├── registry.ts         # the only file that imports every feature
-│   │   ├── config.ts           # per-feature JSON load / save / reset
+│   │   ├── config.ts           # per-feature JSON load / save (draft commit) / reset
 │   │   ├── style.ts            # reversible CSS injection
 │   │   ├── ui.ts               # native-style UI primitives
 │   │   ├── error.ts            # error isolation, never lets a feature break the plugin
-│   │   ├── setting-dialog.ts   # the three-category settings panel
+│   │   ├── setting-dialog.ts   # the single-list settings panel with Save / Cancel
 │   │   └── bootstrap.ts        # loads and mounts features according to the manifest
 │   └── features/
 │       ├── function-demo/{index.ts,demo.ts}
@@ -110,8 +118,10 @@ Where the data lives at runtime, in the workspace:
 4. Add its id to `feature-control.json` and choose a state.
 5. Add every i18n key you referenced to **both** `src/i18n/en.json` and `src/i18n/zh-CN.json`.
 6. Run `npm run check`, `npm run typecheck`, `npm run lint`.
-7. Only use `FeatureHost` for platform access (`addTopBar`, `addCommand`, `addEventBus`, `addStyle`, …).
+7. Only use `FeatureHost` for platform access (`addCommand`, `addEventBus`, `addStyle`, `addTopBar`, …).
    Features must not import each other; shared logic goes in `src/core/`.
+8. `settings` accepts `switch` / `text` / `number` / `select` / `group`. There is deliberately no button
+   control: the settings panel registers nothing but setting rows.
 
 ## Development
 
@@ -143,7 +153,11 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * Turning a feature off does **not** remove its code from the bundle. Gating is runtime-only, so that
   changing `feature-control.json` never requires a source edit or a conditional import. The trade-off is
   bundle size versus the ability to disable something by editing one data file.
-* The settings panel has no global _Save_ button (see above).
+* The plugin puts nothing in the top bar or status bar by design; the only entry point is SiYuan's own
+  _Settings_ button on the plugin card in **Marketplace → Downloaded**.
+* Saving is atomic per panel session: **Save** writes every changed feature's JSON file, **Cancel** writes
+  nothing. There is no per-item reset button in the panel; delete the feature's JSON file under
+  `data/storage/petal/some-settings-siyuan/` to restore defaults.
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
 * `dev-refs/` is a local, untracked development reference and is intentionally excluded from version control.

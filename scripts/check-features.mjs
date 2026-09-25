@@ -108,9 +108,9 @@ for (const dir of featureDirs) {
     });
 
     const i18nKeys = new Set();
-    // title / description / button / placeholder 的值必须是 i18n key。
+    // title / description / placeholder 的值必须是 i18n key。
     // default 是「实际内容」，不是 key，所以刻意不检查。
-    [...settingsSource.matchAll(/\b(title|description|button|placeholder)\s*:\s*"([^"]+)"/g)]
+    [...settingsSource.matchAll(/\b(title|description|placeholder)\s*:\s*"([^"]+)"/g)]
         .forEach((match) => i18nKeys.add(match[2]));
     // select 选项的标签
     [...settingsSource.matchAll(/options\s*:\s*\[([\s\S]*?)\]/g)].forEach((match) => {
@@ -119,6 +119,33 @@ for (const dir of featureDirs) {
     // 功能自身的 name / description（defineFeature 顶层字段）
     [...source.matchAll(/\b(name|description)\s*:\s*"(feature\.[^"]+)"/g)]
         .forEach((match) => i18nKeys.add(match[2]));
+    // 实现文件里通过 host.i18n("...") 取用的键（含字符串拼接出的完整 key）
+    for (const file of fs.readdirSync(path.join(FEATURES_DIR, dir))) {
+        if (!file.endsWith(".ts") || file === "index.ts") {
+            continue;
+        }
+        const impl = fs.readFileSync(path.join(FEATURES_DIR, dir, file), "utf8");
+        [...impl.matchAll(/\bi18n\s*\(\s*([^)]*)\)/g)].forEach((match) => {
+            const expression = match[1];
+            const full = /^\s*"([^"]+)"\s*$/.exec(expression);
+            if (full) {
+                i18nKeys.add(full[1]);
+                return;
+            }
+            // 拼接型（如 `uiDemo.accent${x}`）：取所有字面量片段，逐一确认存在
+            [...expression.matchAll(/"([^"]*)"/g)].forEach((part) => {
+                const literal = part[1];
+                if (literal && !/\s/.test(literal) && !literal.startsWith("$")) {
+                    i18nKeys.add(literal);
+                }
+            });
+        });
+    }
+
+    // settings 里不允许出现按钮型控件：面板只放设置项，不放自定义按钮
+    if (/\bkind\s*:\s*"action"/.test(settingsSource)) {
+        fail(`功能 "${id}" 使用了已移除的 action 型设置项；设置面板不注册自定义按钮`);
+    }
 
     // select 的 default 必须出现在自己的 options 里
     const selectBlocks = [...settingsSource.matchAll(/options\s*:\s*\[([\s\S]*?)\]/g)].map((match) => match[1]);

@@ -41,23 +41,6 @@ export default class SomeSettingsPlugin extends Plugin {
         logInfo(`${this.i18n.helloPlugin}`);
     }
 
-    onLayoutReady(): void {
-        this.addTopBar({
-            icon: "iconSSSomeSettings",
-            title: this.i18n.topBarTip as string,
-            position: "right",
-            callback: () => this.openSettings(),
-            contextMenu: (menu) => {
-                menu.addItem({
-                    id: `${this.name}-open-settings`,
-                    icon: "iconSettings",
-                    label: this.i18n.openSettings as string,
-                    click: () => this.openSettings(),
-                });
-            },
-        });
-    }
-
     async onunload(): Promise<void> {
         try {
             this.manager?.dispose();
@@ -77,10 +60,13 @@ export default class SomeSettingsPlugin extends Plugin {
         showMessage(`[${this.name}] ${this.i18n.byePlugin}`, 4000);
     }
 
-    openSettings(): void {
-        if (!this.manager) {
-            return;
-        }
-        this.manager.openSettings();
+    /**
+     * 覆盖基类的 openSetting：本插件不向顶栏/状态栏/停靠栏注册任何入口，
+     * 设置面板只从思源内置入口打开——
+     * 「设置 → 集市 → 已下载」里插件卡片上的「设置」按钮会调用本方法。
+     * 宿主的 hasPluginSetting() 正是靠「覆盖了这个方法」来显示该按钮。
+     */
+    openSetting(): void {
+        this.manager?.openSettings();
     }
 }

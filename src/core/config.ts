@@ -15,8 +15,6 @@ import type {
     SettingField,
 } from "./types";
 
-const DEBOUNCE_MS = 300;
-
 /** 一个功能对应一个存储文件名。只用小写字母、数字与连字符，天然安全。 */
 export const storageNameOf = (id: string): string => `feature-${id}`;
 
@@ -47,9 +45,6 @@ export const normalizeConfig = (
         fields.forEach((field) => {
             if (field.kind === "group") {
                 visit(field.children);
-                return;
-            }
-            if (field.kind === "action") {
                 return;
             }
             const value = source[field.key];
@@ -116,7 +111,6 @@ interface Entry {
 export class ConfigStore {
     private readonly plugin: Plugin;
     private readonly entries = new Map<string, Entry>();
-    private readonly timers = new Map<string, number>();
     private readonly listeners = new Map<string, Set<() => void>>();
 
     constructor(plugin: Plugin) {
@@ -179,21 +173,53 @@ export class ConfigStore {
         this.listeners.get(id)?.forEach((listener) => listener());
     }
 
-    /** 立即写盘。loadEnabled 为假时不写，避免覆盖磁盘上保留的旧配置。 */
+    /**
+     * 立即写盘。
+     *
+     * 注意：即使是四态里「不加载已有配置」的 0 / 3，也允许在用户显式保存后写盘——
+     * 「不加载」约束的是读取，不是让用户的修改凭空消失。
+     */
     async saveNow(id: string): Promise<void> {
         const entry = this.entries.get(id);
         if (!entry) {
             return;
         }
-        const timer = this.timers.get(id);
-        if (typeof timer === "number") {
-            window.clearTimeout(timer);
-            this.timers.delete(id);
-        }
-        if (!entry.loadEnabled) {
-            return;
-        }
         await this.plugin.saveData(storageNameOf(id), entry.config);
+    }
+
+    /**
+     * 批量保存（设置面板点「保存」时调用）。
+     *
+     * 先按每个功能的 schema 归一化并把问题收齐，一旦有问题就整体不写，
+     * 让用户能一次性看到全部问题；校验通过才逐个落盘，最后统一通知订阅者。
+     */
+    async saveMany(drafts: Record<string, FeatureConfig>): Promise<void> {
+        const prepared: {id: string; config: FeatureConfig;}[] = [];
+        const problems: string[] = [];
+        Object.keys(drafts).forEach((id) => {
+            const entry = this.entries.get(id);
+            if (!entry) {
+                return;
+            }
+            const warnings: string[] = [];
+            const config = normalizeConfig(entry.definition.settings, drafts[id], (message) => warnings.push(message));
+            warnings.forEach((warning) => problems.push(`${id}: ${warning}`));
+            prepared.push({id, config});
+        });
+        if (problems.length > 0) {
+            const error = new Error(problems.join("\n")) as Error & {problems: string[];};
+            error.problems = problems;
+            throw error;
+        }
+        for (const {id, config} of prepared) {
+            const entry = this.entries.get(id);
+            if (!entry) {
+                continue;
+            }
+            entry.config = config;
+            await this.plugin.saveData(storageNameOf(id), config);
+        }
+        prepared.forEach(({id}) => this.notify(id));
     }
 
     /** 合并 patch 后落盘，并通知订阅者。写失败时抛出，由调用方回滚 UI。 */
@@ -213,30 +239,7 @@ export class ConfigStore {
         this.notify(id);
     }
 
-    /** 合并 patch 但不立即落盘（节流），用于连续拨动的开关。 */
-    patchDeferred(id: string, patch: FeatureConfig): void {
-        const entry = this.entries.get(id);
-        if (!entry) {
-            return;
-        }
-        entry.config = {...entry.config, ...patch};
-        this.notify(id);
-        const timer = this.timers.get(id);
-        if (typeof timer === "number") {
-            window.clearTimeout(timer);
-        }
-        this.timers.set(
-            id,
-            window.setTimeout(() => {
-                this.timers.delete(id);
-                this.saveNow(id).catch((error) => {
-                    console.error(`[some-settings-siyuan] 保存 ${storageNameOf(id)} 失败`, error);
-                });
-            }, DEBOUNCE_MS),
-        );
-    }
-
-    /** 删除磁盘文件并回落默认值（「重置本功能」）。 */
+    /** 删除磁盘文件并回落默认值。 */
     async reset(id: string): Promise<void> {
         const entry = this.entries.get(id);
         if (!entry) {
@@ -260,24 +263,8 @@ export class ConfigStore {
         return result;
     }
 
-    /**
-     * 插件卸载时收尾：把还没落盘的改动尽力写完，避免用户刚改完就被禁用导致配置丢失。
-     * 写失败只记录日志（此时已经不能再弹提示，也不该阻塞卸载）。
-     */
+    /** 插件卸载时收尾：清掉订阅者，不再需要延迟写盘（保存已改为显式提交）。 */
     dispose(): void {
-        const pending = [...this.timers.keys()];
-        pending.forEach((id) => {
-            const timer = this.timers.get(id);
-            if (typeof timer === "number") {
-                window.clearTimeout(timer);
-            }
-            this.timers.delete(id);
-        });
-        pending.forEach((id) => {
-            this.saveNow(id).catch((error) => {
-                console.warn(`[some-settings-siyuan] 卸载时保存 ${storageNameOf(id)} 失败`, error);
-            });
-        });
         this.listeners.clear();
     }
 }

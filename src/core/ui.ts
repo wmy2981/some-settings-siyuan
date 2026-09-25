@@ -1,15 +1,15 @@
 /**
  * 思源原生风格的 UI 基元。
  *
- * 所有类名刻意取自内核设置面板的真实渲染器
+ * 所有类名与结构都刻意对齐内核设置面板的真实渲染器
  * （app/src/config/render/render.ts、fragments.ts、config/tabs/*），
- * 目标是让插件设置面板与「设置」里的原生面板在视觉与交互上完全一致。
+ * 目标是让插件设置面板与「设置」里的原生面板逐像素一致：
+ * 左侧文案（标题 + 灰色小字说明）在左，控件靠右固定宽度。
  */
-import type {Plugin} from "siyuan";
 import {getFrontend} from "siyuan";
 
 /** 面板内的作用域类名，用于在插件自己的 CSS 里限定样式，不污染全局。 */
-export const PANEL_CLASS = "ss-panel";
+export const PANEL_CLASS = "some-settings-panel";
 
 export const isMobileFrontend = (): boolean => {
     const frontend = getFrontend();
@@ -124,87 +124,38 @@ export const textRowHtml = (
     }${options.disabled ? " disabled" : ""}/>
 </div>`;
 
-/** 原生风格的按钮行。 */
-export const buttonRowHtml = (
-    key: string,
-    title: string,
-    label: string,
-    description?: string,
-    disabled = false,
-): string =>
-    `<div class="fn__flex b3-label config-item" data-ss-row="${escapeHtml(key)}">
-    ${mainHtml(title, description)}
-    <span class="fn__space"></span>
-    <button class="b3-button b3-button--outline fn__flex-center fn__size200" data-ss-action="${
-        escapeHtml(key)
-    }" type="button"${disabled ? " disabled" : ""}>${escapeHtml(label)}</button>
-</div>`;
-
-/** 设置面板所需的局部样式，只在插件自己的弹窗作用域内生效。 */
+/**
+ * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
+ *
+ * 面板本体不加任何自定义外观——每一行都用思源自己的 b3-* 与 config-* 类。
+ * 这里只补内核没有给的两件事：分类标题的间距，以及滚动区的内边距。
+ */
 export const PANEL_CSS = `
 .${PANEL_CLASS} {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    min-height: 0;
-}
-.${PANEL_CLASS} .ss-panel__body {
-    display: flex;
     flex: 1;
     min-height: 0;
-    overflow: hidden;
 }
-.${PANEL_CLASS} .ss-panel__nav {
-    display: flex;
-    flex-direction: column;
-    flex: 0 0 148px;
-    padding: 8px 0;
-    border-right: 1px solid var(--b3-border-color);
-    overflow: auto;
-}
-.${PANEL_CLASS} .ss-panel__nav-item {
-    display: flex;
-    align-items: center;
-    padding: 6px 12px;
-    cursor: pointer;
-    border-radius: var(--b3-border-radius);
-}
-.${PANEL_CLASS} .ss-panel__nav-item:hover {
-    background-color: var(--b3-theme-surface-lighter);
-}
-.${PANEL_CLASS} .ss-panel__nav-item[data-active="true"] {
-    background-color: var(--b3-theme-surface-lighter);
-    color: var(--b3-theme-primary);
-}
-.${PANEL_CLASS} .ss-panel__nav-item .fn__space {
-    width: 8px;
-}
-.${PANEL_CLASS} .ss-panel__nav-badge {
-    margin-left: auto;
-    font-size: 12px;
-    color: var(--b3-theme-on-surface);
-    opacity: .7;
-}
-.${PANEL_CLASS} .ss-panel__main {
+.${PANEL_CLASS} .ss-panel__scroll {
     flex: 1;
-    min-width: 0;
+    min-height: 0;
     overflow: auto;
-    padding: 8px 16px 24px;
+    padding: 2px 2px 16px;
 }
-.${PANEL_CLASS} .ss-panel__footer {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex: 0 0 auto;
-    padding: 8px 16px;
-    border-top: 1px solid var(--b3-border-color);
+.${PANEL_CLASS} .ss-panel__section {
+    padding: 14px 0 6px;
 }
-.${PANEL_CLASS} .ss-panel__hint {
-    flex: 1;
-    min-width: 0;
-    font-size: 12px;
-    color: var(--b3-theme-on-surface);
-    opacity: .75;
+.${PANEL_CLASS} .ss-panel__section:first-child {
+    padding-top: 2px;
+}
+.${PANEL_CLASS} .ss-panel__section-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--b3-theme-on-background);
+}
+.${PANEL_CLASS} .config-group + .config-group {
+    margin-top: 6px;
 }
 .${PANEL_CLASS} .ss-panel__empty {
     padding: 24px 0;
@@ -212,55 +163,20 @@ export const PANEL_CSS = `
     color: var(--b3-theme-on-surface);
     opacity: .7;
 }
-.${PANEL_CLASS} .config-item__main.config-name {
-    font-weight: 600;
-}
-.${PANEL_CLASS} .ss-panel__meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 12px;
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-}
-.${PANEL_CLASS} .ss-panel__meta .fn__flex-1 {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.${PANEL_CLASS} .ss-panel__state {
-    flex: 0 0 auto;
-    font-family: var(--b3-font-family-code);
-}
-.${PANEL_CLASS}--mobile .ss-panel__body {
-    flex-direction: column;
-}
-.${PANEL_CLASS}--mobile .ss-panel__nav {
-    flex: 0 0 auto;
-    flex-direction: row;
-    border-right: none;
-    border-bottom: 1px solid var(--b3-border-color);
-}
-.${PANEL_CLASS}--mobile .ss-panel__nav-item {
-    flex: 1;
-    justify-content: center;
-}
-.${PANEL_CLASS}--mobile .ss-panel__nav-badge {
-    display: none;
+.${PANEL_CLASS} .config-item:last-child {
+    border-bottom: 0;
 }
 `;
 
+const PANEL_CSS_ID = `${PANEL_CLASS}-local-css`;
+
 /** 在当前文档里确保设置面板的局部样式存在（幂等）。 */
 export const ensurePanelCss = (): void => {
-    const id = `${PANEL_CLASS}-local-css`;
-    if (document.getElementById(id)) {
+    if (document.getElementById(PANEL_CSS_ID)) {
         return;
     }
     const element = document.createElement("style");
-    element.id = id;
+    element.id = PANEL_CSS_ID;
     element.textContent = PANEL_CSS;
     document.head.append(element);
 };
-
-/** 用插件与功能信息生成面板标题：插件显示名 + 功能名。 */
-export const panelTitle = (plugin: Plugin): string => plugin.displayName || plugin.name;

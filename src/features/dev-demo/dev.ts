@@ -1,18 +1,12 @@
 /**
  * 示例功能的实现（分类：开发）。
  *
- * 不放常驻 UI：只提供两个 action 型设置项（导出全部配置、打印注册表快照）
- * 和一个日志开关，用来演示开发类功能的写法。
+ * 不放常驻 UI：只有日志开关，以及每次配置变更后打印一次注册表快照。
+ * 顺带说明「面板保存后功能才看到新配置」这条时间线。
  *
- * 读取全部功能配置时直接走 plugin.loadData（官方 API），
- * 不引入 fs / Node API，也不与其它功能模块产生耦合。
+ * 读取配置一律走 host / plugin 的官方 API，不引入 fs 或任何 Node API。
  */
-import {
-    saveExportFile,
-    showMessage,
-} from "siyuan";
 import {storageNameOf} from "../../core/config";
-import {reportError} from "../../core/error";
 import {FEATURES} from "../../core/registry";
 import type {
     FeatureHost,
@@ -26,58 +20,31 @@ const logLimitOf = (host: FeatureHost): number => {
     return Number.isFinite(value) && value > 0 ? Math.floor(value) : 50;
 };
 
-const readAllConfig = async (host: FeatureHost): Promise<Record<string, unknown>> => {
-    const result: Record<string, unknown> = {};
-    for (const feature of FEATURES) {
-        try {
-            const stored = await host.plugin.loadData(storageNameOf(feature.id));
-            result[feature.id] = typeof stored === "object" && stored !== null ? stored : null;
-        } catch (error) {
-            // 单个文件读失败不影响整体导出
-            result[feature.id] = {error: error instanceof Error ? error.message : String(error)};
-            host.log(`读取 ${storageNameOf(feature.id)} 失败`, error);
-        }
-    }
-    return result;
-};
-
-const exportAll = async (host: FeatureHost): Promise<void> => {
-    const payload = {
-        plugin: host.plugin.name,
-        exportedAt: new Date().toISOString(),
-        features: await readAllConfig(host),
-    };
-    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], {type: "application/json"}));
-    try {
-        await saveExportFile(url);
-        showMessage(host.i18n("dev.saved"), 4000);
-    } catch (error) {
-        reportError(`${host.id}.exportAll`, error);
-        showMessage(host.i18n("dev.exportFailed"), 4000, "error");
-    } finally {
-        URL.revokeObjectURL(url);
-    }
-};
-
-const dumpRegistry = async (host: FeatureHost): Promise<void> => {
-    const rows = FEATURES.slice(0, logLimitOf(host)).map((feature) => ({
+/** 打印注册表快照；条数受 logLimit 限制。 */
+const dumpRegistry = (host: FeatureHost): void => {
+    const limit = logLimitOf(host);
+    const rows = FEATURES.slice(0, limit).map((feature) => ({
         id: feature.id,
         category: feature.category,
         configKey: storageNameOf(feature.id),
         settings: feature.settings.length,
     }));
-    host.log("注册表快照", rows);
-    const stored = await readAllConfig(host);
-    host.log("磁盘上的配置", stored);
-    host.log(`debugLog=${debugEnabled(host)} logLimit=${logLimitOf(host)}`);
-    showMessage(host.i18n("dev.dumped"), 4000);
+    host.log(`注册表快照（${rows.length}/${FEATURES.length}，上限 ${limit}）`, rows);
+    host.log("本次生效的配置", {...host.config});
 };
-
-export const devHelpers = {exportAll, dumpRegistry};
 
 export const mountDevDemo = (host: FeatureHost): FeatureInstance => {
     if (debugEnabled(host)) {
-        host.log("开发示例已挂载（debugLog 打开）");
+        dumpRegistry(host);
     }
+    // 只在面板保存后触发：用来确认配置真的写进了内存与磁盘
+    host.onConfigChange(() => {
+        if (debugEnabled(host)) {
+            dumpRegistry(host);
+            return;
+        }
+        host.log(`配置已更新；debugLog=false 跳过快照（logLimit=${logLimitOf(host)}）`);
+    });
+
     return {};
 };

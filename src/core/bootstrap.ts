@@ -96,7 +96,6 @@ export class FeatureManager {
         const host = this.createHost(record);
         record.host = host;
         this.mounted.set(definition.id, record);
-        this.panel.registerHost(definition.id, host);
 
         if (!definition.mount) {
             return;
@@ -223,28 +222,14 @@ export class FeatureManager {
         this.panel.show();
     }
 
-    /** 插件卸载：释放全部功能。幂等。 */
+    /** 插件卸载：释放全部功能与设置面板。幂等。 */
     dispose(): void {
         if (this.disposed) {
             return;
         }
         this.disposed = true;
+        guardSilent("panel.close", () => this.panel.close());
         [...this.mounted.keys()].forEach((id) => this.unmount(id));
         guardSilent("config.dispose", () => this.store.dispose());
-    }
-
-    /** 供开发类功能查看当前装载情况。 */
-    snapshot(): {id: string; category: string; mounted: boolean; configured: boolean;}[] {
-        return FEATURES.map((feature) => ({
-            id: feature.id,
-            category: feature.category,
-            mounted: this.mounted.has(feature.id),
-            configured: Boolean(this.store.definitionOf(feature.id)),
-        }));
-    }
-
-    /** 供开发类功能导出全部配置。 */
-    exportAllConfig(): Record<string, FeatureConfig> {
-        return this.store.exportAll();
     }
 }

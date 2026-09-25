@@ -77,14 +77,6 @@ export type SettingField =
         title: string;
         description?: string;
         children: SettingField[];
-    }
-    | {
-        kind: "action";
-        key: string;
-        title: string;
-        description?: string;
-        button: string;
-        handler: (host: FeatureHost) => void | Promise<void>;
     };
 
 /** 功能被启用时要处理的所有 UI 注册入口。 */
@@ -100,7 +92,7 @@ export interface FeatureHost {
     readonly log: (...args: unknown[]) => void;
     /** 落盘并通知功能自身，patch 会与当前配置合并。 */
     setConfig(patch: FeatureConfig): Promise<void>;
-    /** 订阅本功能配置变化（面板改动、重置都会触发），随插件卸载自动退订。 */
+    /** 订阅本功能配置变化（面板点「保存」后触发），随插件卸载自动退订。 */
     onConfigChange(listener: () => void): void;
     /** 注入一段只属于该功能的 CSS，返回撤销函数。 */
     addStyle(css: string): () => void;

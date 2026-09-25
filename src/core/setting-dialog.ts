@@ -1,15 +1,17 @@
 /**
  * 插件设置面板。
  *
- * 三分类（功能 / 界面 / 开发）在左侧，右侧按功能分组渲染设置项；
- * 显隐完全由 feature-control.json 的四态决定。
+ * 形态与思源内置的插件设置弹窗完全一致：
+ * - 单栏纵向滚动，分类（功能 / 界面 / 开发）作为小节标题，不是独立页签
+ * - 每一行都是「左侧文案 + 右侧控件」，控件用思源的 b3-* 类
+ * - 底部动作区只有「取消 / 保存」，不额外加任何按钮
  *
- * 与原生 Setting 组件的唯一偏差：原生组件是「改完点保存」的一次性弹窗，
- * 而本插件的设置项要求可独立启停/隐藏/重置，所以改为「控件变更即落盘」+
- * 单个关闭按钮。控件外观与原生设置面板逐类对齐。
+ * 保存机制：控件改动先落在面板自己的草稿里，点「保存」才写文件并关闭；
+ * 点「取消」丢弃草稿。这样设置一定能存下去，也符合原生对话框的语义。
  */
 import {
     Dialog,
+    confirm,
     showMessage,
 } from "siyuan";
 import type {Plugin} from "siyuan";
@@ -18,12 +20,11 @@ import type {ControlSnapshot} from "./control";
 import {reportError} from "./error";
 import type {
     FeatureCategory,
+    FeatureConfig,
     FeatureDefinition,
-    FeatureHost,
     SettingField,
 } from "./types";
 import {
-    buttonRowHtml,
     ensurePanelCss,
     escapeHtml,
     groupHtml,
@@ -36,16 +37,15 @@ import {
     textRowHtml,
 } from "./ui";
 
-/** 面板里某个功能当前的四态快照，用于徽标与片段导出。 */
 export type { ControlSnapshot } from "./control";
+
+const CATEGORY_ORDER: FeatureCategory[] = ["function", "ui", "dev"];
 
 const CATEGORY_LABELS: Record<FeatureCategory, string> = {
     function: "category.function",
     ui: "category.ui",
     dev: "category.dev",
 };
-
-const CATEGORY_ORDER: FeatureCategory[] = ["function", "ui", "dev"];
 
 export interface SettingsPanelOptions {
     plugin: Plugin;
@@ -63,35 +63,18 @@ const parseBindKey = (value: string): [string, string] => {
     return index < 0 ? [value, ""] : [value.slice(0, index), value.slice(index + 1)];
 };
 
-const copyText = async (text: string): Promise<boolean> => {
-    try {
-        if (navigator.clipboard && window.isSecureContext) {
-            await navigator.clipboard.writeText(text);
-            return true;
-        }
-    } catch {
-        // 回落到 execCommand
-    }
-    try {
-        const area = document.createElement("textarea");
-        area.value = text;
-        area.style.position = "fixed";
-        area.style.opacity = "0";
-        document.body.append(area);
-        area.select();
-        const ok = document.execCommand("copy");
-        area.remove();
-        return ok;
-    } catch {
-        return false;
-    }
-};
+/** 打开后这段时间内的 blur 视为弹窗自身的焦点变化，不作为「窗口失焦」处理。 */
+const IGNORE_BLUR_MS = 600;
+
+/** 思源确认弹窗的特征（dialog/index.ts 与 confirmDialog.ts 的实际实现）。 */
+const CONFIRM_SELECTOR = "[data-key='dialogConfirm']";
 
 export class SettingsPanel {
     private readonly options: SettingsPanelOptions;
-    private readonly hosts = new Map<string, FeatureHost>();
     private dialog?: Dialog;
-    private activeCategory: FeatureCategory = "function";
+    private drafts = new Map<string, FeatureConfig>();
+    private openedAt = 0;
+    private windowWatcherBound = false;
 
     constructor(options: SettingsPanelOptions) {
         this.options = options;
@@ -99,11 +82,6 @@ export class SettingsPanel {
 
     get isOpen(): boolean {
         return Boolean(this.dialog);
-    }
-
-    /** bootstrap 把已挂载功能的 host 注册进来，供 action 型设置项复用。 */
-    registerHost(id: string, host: FeatureHost): void {
-        this.hosts.set(id, host);
     }
 
     private t(key: string, fallback?: string): string {
@@ -118,128 +96,130 @@ export class SettingsPanel {
         return this.t(feature.name, feature.id);
     }
 
-    private readonlyFeatures(category: FeatureCategory): FeatureDefinition[] {
+    /** 当前分类下要显示设置界面的功能（showUi 为真）。 */
+    private visibleFeatures(category: FeatureCategory): FeatureDefinition[] {
         return this.options.features.filter((feature) =>
             feature.category === category && this.options.controlOf(feature.id).showUi
         );
     }
 
-    private hiddenCount(category: FeatureCategory): number {
-        return this.options.features.filter((feature) =>
-            feature.category === category && !this.options.controlOf(feature.id).showUi
-        ).length;
-    }
+    // ------------------------------------------------------------ 生命周期
 
     show(): void {
         if (this.dialog) {
             return;
         }
         ensurePanelCss();
+        this.openedAt = Date.now();
+        this.drafts = new Map();
+        this.visibleFeaturesAll().forEach((feature) => {
+            this.drafts.set(feature.id, {...this.options.store.get(feature.id)});
+        });
+
         this.dialog = new Dialog({
             title: this.options.plugin.displayName || this.options.plugin.name,
-            content: `<div class="${PANEL_CLASS}${isMobileFrontend() ? ` ${PANEL_CLASS}--mobile` : ""}">
-    <div class="ss-panel__body">
-        <div class="ss-panel__nav" data-ss-nav></div>
-        <div class="ss-panel__main" data-ss-main></div>
-    </div>
-    <div class="ss-panel__footer">
-        <div class="ss-panel__hint" data-ss-hint></div>
-        <button class="b3-button b3-button--outline fn__flex-center fn__size200" data-ss-copy type="button"></button>
-    </div>
+            // 注意：宿主的 Dialog 不会自动生成动作区，取消/保存必须由 content 自带，
+            // 否则弹窗里根本没有保存按钮——这正是「设置无法保存」的根因。
+            content: `<div class="b3-dialog__content">
+    <div class="${PANEL_CLASS}"><div class="ss-panel__scroll"></div></div>
+</div>
+<div class="b3-dialog__action">
+    <button class="b3-button b3-button--cancel" data-ss-cancel type="button">${
+                escapeHtml(this.t("dialog.cancel", window.siyuan.languages.cancel))
+            }</button><div class="fn__space"></div>
+    <button class="b3-button b3-button--text" data-ss-save type="button">${
+                escapeHtml(this.t("dialog.save", window.siyuan.languages.save))
+            }</button>
 </div>`,
             width: isMobileFrontend() ? "92vw" : "768px",
             height: "80vh",
             destroyCallback: () => {
                 this.dialog = undefined;
+                this.drafts = new Map();
             },
         });
-        this.renderNav();
-        this.renderCategory();
-        this.bindFooter();
+
+        this.render();
+        this.bindActions();
+        this.bindWindowWatcher();
+
         if (isReadonly()) {
-            showMessage(this.t("panel.readonlyTip", "当前处于只读或发布模式，设置项不可修改。"), 4000);
+            showMessage(this.t("panel.readonlyTip"), 5000);
         }
     }
 
-    private renderNav(): void {
-        const nav = this.dialog?.element.querySelector<HTMLElement>("[data-ss-nav]");
-        if (!nav) {
+    /** 插件被禁用/重载/卸载时收掉面板；幂等。 */
+    close(): void {
+        this.dialog?.destroy();
+    }
+
+    /**
+     * 面板打开期间窗口失焦（去复制设置、切到别的应用）时不留下失效弹窗：
+     * 失焦后窗口重新获得焦点、而思源确认弹窗并不在场，说明用户已经离开过设置面板。
+     */
+    private bindWindowWatcher(): void {
+        if (this.windowWatcherBound) {
             return;
         }
-        nav.innerHTML = CATEGORY_ORDER.map((category) => {
-            const visible = this.readonlyFeatures(category).length;
-            const hidden = this.hiddenCount(category);
-            const badge = hidden > 0 ? `${visible}+${hidden}` : String(visible);
-            return `<div class="ss-panel__nav-item" data-ss-nav-item="${category}" data-active="${
-                category === this.activeCategory
-            }">${
-                escapeHtml(this.t(CATEGORY_LABELS[category], category))
-            }<span class="fn__space"></span><span class="ss-panel__nav-badge">${escapeHtml(badge)}</span></div>`;
-        }).join("");
-        nav.querySelectorAll<HTMLElement>("[data-ss-nav-item]").forEach((item) => {
-            item.addEventListener("click", () => {
-                this.activeCategory = item.dataset.ssNavItem as FeatureCategory;
-                this.renderNav();
-                this.renderCategory();
-            });
+        this.windowWatcherBound = true;
+        window.addEventListener("blur", () => {
+            if (!this.dialog || Date.now() - this.openedAt < IGNORE_BLUR_MS) {
+                return;
+            }
+            window.addEventListener("focus", () => {
+                if (this.dialog && !document.querySelector(CONFIRM_SELECTOR)) {
+                    this.close();
+                }
+            }, {once: true});
         });
     }
 
-    private renderCategory(): void {
-        const main = this.dialog?.element.querySelector<HTMLElement>("[data-ss-main]");
-        if (!main) {
+    // ------------------------------------------------------------ 渲染
+
+    /** 面板里会出现的全部功能：showUi 为真。 */
+    private visibleFeaturesAll(): FeatureDefinition[] {
+        return this.options.features.filter((feature) => this.options.controlOf(feature.id).showUi);
+    }
+
+    private render(): void {
+        const scroll = this.dialog?.element.querySelector<HTMLElement>(".ss-panel__scroll");
+        if (!scroll) {
             return;
         }
-        const visible = this.readonlyFeatures(this.activeCategory);
         const readonly = isReadonly();
-        if (visible.length === 0) {
-            main.innerHTML = this.hiddenCount(this.activeCategory) > 0 ?
-                `<div class="ss-panel__empty">${
-                    escapeHtml(this.t(
-                        "panel.allHidden",
-                        "该分类下的功能都已在 feature-control.json 中设为不显示",
-                    ))
-                }</div>` :
-                `<div class="ss-panel__empty">${escapeHtml(this.t("panel.none", "该分类下还没有功能"))}</div>`;
-        } else {
-            main.innerHTML = visible.map((feature) => this.featureHtml(feature, readonly)).join("");
-        }
-        if (readonly) {
-            main.insertAdjacentHTML(
-                "afterbegin",
-                `<div class="b3-label config-item">${
-                    mainHtml(
-                        this.t("panel.readonly", "只读模式"),
-                        this.t("panel.readonlyTip", "当前处于只读或发布模式，设置项不可修改。"),
-                    )
-                }</div>`,
+        const sections: string[] = [];
+        CATEGORY_ORDER.forEach((category) => {
+            const features = this.visibleFeatures(category);
+            if (features.length === 0) {
+                return;
+            }
+            sections.push(
+                `<div class="ss-panel__section"><div class="ss-panel__section-name">${
+                    escapeHtml(this.t(CATEGORY_LABELS[category], category))
+                }</div></div>`,
             );
-        }
-        this.bindMain(main);
+            features.forEach((feature) => sections.push(this.featureHtml(feature, readonly)));
+        });
+        scroll.innerHTML = sections.length > 0 ?
+            sections.join("") :
+            `<div class="ss-panel__empty">${escapeHtml(this.t("panel.none"))}</div>`;
+        this.bindControls(scroll);
     }
 
     private featureHtml(feature: FeatureDefinition, readonly: boolean): string {
-        const stored = this.options.store.get(feature.id);
-        const body = feature.settings.map((field) => this.fieldHtml(feature, field, stored, readonly)).join("");
-        const resetRow = `<div class="fn__flex b3-label config-item">
-    ${
-            mainHtml(
-                this.t("config.reset", "重置本功能配置"),
-                this.t("config.resetTip", "删除该功能的 JSON 配置文件并恢复默认值。"),
-            )
-        }
-    <span class="fn__space"></span>
-    <button class="b3-button b3-button--outline fn__flex-center fn__size200" data-ss-reset="${
-            escapeHtml(feature.id)
-        }" type="button"${readonly ? " disabled" : ""}>${escapeHtml(this.t("config.reset", "重置本功能配置"))}</button>
-</div>`;
-        return groupHtml(this.nameOf(feature), resetRow + body, feature.description ? this.t(feature.description) : "");
+        const draft = this.drafts.get(feature.id) || this.options.store.get(feature.id);
+        const body = feature.settings.map((field) => this.fieldHtml(feature, field, draft, readonly)).join("");
+        return groupHtml(
+            this.nameOf(feature),
+            body,
+            feature.description ? this.t(feature.description) : "",
+        );
     }
 
     private fieldHtml(
         feature: FeatureDefinition,
         field: SettingField,
-        config: Record<string, unknown>,
+        config: FeatureConfig,
         readonly: boolean,
     ): string {
         switch (field.kind) {
@@ -296,115 +276,107 @@ export class SettingsPanel {
                         disabled: readonly,
                     },
                 );
-            case "action":
-                return buttonRowHtml(
-                    bindKey(feature.id, field.key),
-                    this.t(field.title),
-                    this.t(field.button),
-                    field.description ? this.t(field.description) : "",
-                );
             default:
                 return "";
         }
     }
 
-    private bindMain(scope: HTMLElement): void {
+    // ------------------------------------------------------------ 交互
+
+    private bindControls(scope: HTMLElement): void {
         scope.querySelectorAll<HTMLInputElement>("[data-ss-switch]").forEach((input) => {
             input.addEventListener("change", () => {
-                this.apply(input.dataset.ssSwitch as string, input.checked);
+                this.stage(input.dataset.ssSwitch as string, input.checked);
             });
         });
         scope.querySelectorAll<HTMLSelectElement>("[data-ss-select]").forEach((select) => {
             select.addEventListener("change", () => {
-                this.apply(select.dataset.ssSelect as string, select.value);
+                this.stage(select.dataset.ssSelect as string, select.value);
             });
         });
         scope.querySelectorAll<HTMLInputElement>("[data-ss-number]").forEach((input) => {
             input.addEventListener("change", () => {
                 const value = Number(input.value);
-                if (!Number.isFinite(value)) {
-                    return;
+                if (Number.isFinite(value)) {
+                    this.stage(input.dataset.ssNumber as string, value);
                 }
-                this.apply(input.dataset.ssNumber as string, value);
             });
         });
         scope.querySelectorAll<HTMLInputElement>("[data-ss-text]").forEach((input) => {
             input.addEventListener("change", () => {
-                this.apply(input.dataset.ssText as string, input.value);
-            });
-        });
-        scope.querySelectorAll<HTMLElement>("[data-ss-action]").forEach((button) => {
-            button.addEventListener("click", () => {
-                const [featureId, key] = parseBindKey(button.dataset.ssAction as string);
-                const feature = this.options.features.find((item) => item.id === featureId);
-                const field = feature ? this.findAction(feature, key) : undefined;
-                const host = this.hosts.get(featureId);
-                if (!field || !host) {
-                    return;
-                }
-                Promise.resolve(field.handler(host)).catch((error) => {
-                    reportError(`${featureId}.${key}`, error);
-                });
-            });
-        });
-        scope.querySelectorAll<HTMLElement>("[data-ss-reset]").forEach((button) => {
-            button.addEventListener("click", () => {
-                const id = button.dataset.ssReset as string;
-                this.options.store.reset(id).then(() => {
-                    this.renderNav();
-                    this.renderCategory();
-                    showMessage(this.t("config.resetDone", "已重置，配置文件已删除"), 4000);
-                }).catch((error) => {
-                    reportError(`${id}.reset`, error);
-                });
+                this.stage(input.dataset.ssText as string, input.value);
             });
         });
     }
 
-    private findAction(feature: FeatureDefinition, key: string): Extract<SettingField, {kind: "action";}> | undefined {
-        const actions: Extract<SettingField, {kind: "action";}>[] = [];
-        const visit = (fields: SettingField[]) => {
-            fields.forEach((field) => {
-                if (field.kind === "action") {
-                    actions.push(field);
-                } else if (field.kind === "group") {
-                    visit(field.children);
-                }
-            });
-        };
-        visit(feature.settings);
-        return actions.find((field) => field.key === key);
-    }
-
-    private apply(encodedKey: string, value: unknown): void {
+    /** 只改面板草稿，不落盘。 */
+    private stage(encodedKey: string, value: unknown): void {
         const [featureId, key] = parseBindKey(encodedKey);
-        this.options.store.patchDeferred(featureId, {[key]: value});
-    }
-
-    private bindFooter(): void {
-        const copyButton = this.dialog?.element.querySelector<HTMLElement>("[data-ss-copy]");
-        const hint = this.dialog?.element.querySelector<HTMLElement>("[data-ss-hint]");
-        if (hint) {
-            hint.textContent = this.t(
-                "panel.hint",
-                "改动即时保存。启停与显隐请在仓库根目录的 feature-control.json 中调整后重新加载插件。",
-            );
-        }
-        if (!copyButton) {
+        const draft = this.drafts.get(featureId);
+        if (!draft) {
             return;
         }
-        copyButton.textContent = this.t("panel.copyControl", "复制 feature-control 片段");
-        copyButton.addEventListener("click", () => {
-            const snippet: Record<string, {state: number;}> = {};
-            this.options.features.forEach((feature) => {
-                snippet[feature.id] = {state: this.options.controlOf(feature.id).state};
-            });
-            copyText(JSON.stringify({features: snippet}, null, 2)).then((ok) => {
-                showMessage(
-                    ok ? this.t("panel.copied", "已复制到剪贴板") : this.t("panel.copyFailed", "复制失败"),
-                    4000,
+        draft[key] = value;
+    }
+
+    private bindActions(): void {
+        const root = this.dialog?.element;
+        if (!root) {
+            return;
+        }
+        root.querySelector<HTMLButtonElement>("[data-ss-cancel]")?.addEventListener("click", () => {
+            if (this.isDirty()) {
+                confirm(
+                    this.t("dialog.discardTitle", this.options.plugin.displayName || this.options.plugin.name),
+                    this.t("dialog.discardText"),
+                    () => this.close(),
                 );
-            });
+                return;
+            }
+            this.close();
+        });
+        root.querySelector<HTMLButtonElement>("[data-ss-save]")?.addEventListener("click", () => {
+            this.save();
+        });
+    }
+
+    private isDirty(): boolean {
+        for (const [id, draft] of this.drafts) {
+            const current = this.options.store.get(id);
+            const keys = new Set([...Object.keys(draft), ...Object.keys(current)]);
+            for (const key of keys) {
+                if (draft[key] !== current[key]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private save(): void {
+        const changed: Record<string, FeatureConfig> = {};
+        for (const [id, draft] of this.drafts) {
+            const current = this.options.store.get(id);
+            const keys = new Set([...Object.keys(draft), ...Object.keys(current)]);
+            if ([...keys].some((key) => draft[key] !== current[key])) {
+                changed[id] = draft;
+            }
+        }
+        if (Object.keys(changed).length === 0) {
+            this.close();
+            return;
+        }
+        this.options.store.saveMany(changed).then(() => {
+            showMessage(this.t("dialog.saved"), 3000);
+            this.close();
+        }).catch((error) => {
+            // 归一化失败时会带出全部问题，一次性提示，面板保持打开等用户修正
+            const problems = (error as {problems?: string[];} | null)?.problems;
+            if (problems && problems.length > 0) {
+                reportError("settings.save", new Error(problems.join("；")));
+                return;
+            }
+            reportError("settings.save", error);
         });
     }
 }
