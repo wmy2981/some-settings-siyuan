@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "features": {
+    "function-demo": {
+      "state": 1
+    },
+    "ui-demo": {
+      "state": 1
+    },
+    "dev-demo": {
+      "state": 0
+    }
+  }
+}
