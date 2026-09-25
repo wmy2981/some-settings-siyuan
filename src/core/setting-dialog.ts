@@ -314,9 +314,11 @@ export class SettingsPanel {
         const [featureId, key] = parseBindKey(encodedKey);
         const draft = this.drafts.get(featureId);
         if (!draft) {
+            console.warn(`[some-settings-siyuan] 控件 ${encodedKey} 没有对应的草稿，改动被丢弃`);
             return;
         }
         draft[key] = value;
+        console.log(`[some-settings-siyuan] 暂存 ${featureId}.${key} =`, value);
     }
 
     private bindActions(): void {
@@ -341,36 +343,38 @@ export class SettingsPanel {
     }
 
     private isDirty(): boolean {
-        for (const [id, draft] of this.drafts) {
-            const current = this.options.store.get(id);
-            const keys = new Set([...Object.keys(draft), ...Object.keys(current)]);
-            for (const key of keys) {
-                if (draft[key] !== current[key]) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return this.changedDrafts() !== null;
     }
 
-    private save(): void {
+    /**
+     * 收集与已提交配置不同的草稿；没有改动时返回 null。
+     * 草稿与已提交配置都在内存里，比较的是同一批 key。
+     */
+    private changedDrafts(): Record<string, FeatureConfig> | null {
         const changed: Record<string, FeatureConfig> = {};
         for (const [id, draft] of this.drafts) {
             const current = this.options.store.get(id);
             const keys = new Set([...Object.keys(draft), ...Object.keys(current)]);
             if ([...keys].some((key) => draft[key] !== current[key])) {
-                changed[id] = draft;
+                changed[id] = {...draft};
             }
         }
-        if (Object.keys(changed).length === 0) {
+        return Object.keys(changed).length > 0 ? changed : null;
+    }
+
+    private save(): void {
+        const changed = this.changedDrafts();
+        if (!changed) {
+            console.log("[some-settings-siyuan] 面板没有改动，直接关闭");
             this.close();
             return;
         }
+        console.log("[some-settings-siyuan] 保存以下改动", changed);
         this.options.store.saveMany(changed).then(() => {
             showMessage(this.t("dialog.saved"), 3000);
             this.close();
         }).catch((error) => {
-            // 归一化失败时会带出全部问题，一次性提示，面板保持打开等用户修正
+            // 校验失败或写入读回不一致时都会带出全部问题，一次性提示，面板保持打开
             const problems = (error as {problems?: string[];} | null)?.problems;
             if (problems && problems.length > 0) {
                 reportError("settings.save", new Error(problems.join("；")));

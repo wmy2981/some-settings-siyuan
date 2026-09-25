@@ -18,6 +18,30 @@ import type {
 /** 一个功能对应一个存储文件名。只用小写字母、数字与连字符，天然安全。 */
 export const storageNameOf = (id: string): string => `feature-${id}`;
 
+const PREFIX = "[some-settings-siyuan]";
+
+/** 给错误挂上可读的问题清单，供面板一次性提示。 */
+export const attachProblems = (problems: string[]): Error & {problems: string[];} => {
+    const error = new Error(problems.join("；")) as Error & {problems: string[];};
+    error.problems = problems;
+    return error;
+};
+
+/**
+ * 比较写入值与读回值，返回差异描述；一致时返回空串。
+ * 只比较写入时真正用到的键，避免宿主额外字段造成误报。
+ */
+export const describeMismatch = (written: FeatureConfig, readBack: unknown): string => {
+    if (typeof readBack !== "object" || readBack === null || Array.isArray(readBack)) {
+        return `读回的不是对象（${JSON.stringify(readBack)}）`;
+    }
+    const actual = readBack as Record<string, unknown>;
+    const diffs = Object.keys(written).filter((key) => actual[key] !== written[key]).map((key) =>
+        `${key}: 写入 ${JSON.stringify(written[key])} / 读回 ${JSON.stringify(actual[key])}`
+    );
+    return diffs.join("；");
+};
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
     typeof value === "object" && value !== null && !Array.isArray(value);
 
@@ -192,6 +216,10 @@ export class ConfigStore {
      *
      * 先按每个功能的 schema 归一化并把问题收齐，一旦有问题就整体不写，
      * 让用户能一次性看到全部问题；校验通过才逐个落盘，最后统一通知订阅者。
+     *
+     * 每个文件写完后立刻读回校验：宿主 saveData 的 Promise 在文件真的落盘前就可能
+     * resolve，光看「没报错」不足以说明存住了。读回不一致就抛出，让面板保持打开、
+     * 把真实原因暴露出来，而不是等用户下次打开时发现又变回默认值。
      */
     async saveMany(drafts: Record<string, FeatureConfig>): Promise<void> {
         const prepared: {id: string; config: FeatureConfig;}[] = [];
@@ -199,6 +227,7 @@ export class ConfigStore {
         Object.keys(drafts).forEach((id) => {
             const entry = this.entries.get(id);
             if (!entry) {
+                problems.push(`${id}: 该功能没有注册到配置存储`);
                 return;
             }
             const warnings: string[] = [];
@@ -207,19 +236,44 @@ export class ConfigStore {
             prepared.push({id, config});
         });
         if (problems.length > 0) {
-            const error = new Error(problems.join("\n")) as Error & {problems: string[];};
-            error.problems = problems;
-            throw error;
+            throw attachProblems(problems);
         }
+
+        const mismatched: string[] = [];
         for (const {id, config} of prepared) {
             const entry = this.entries.get(id);
             if (!entry) {
                 continue;
             }
+            const storageName = storageNameOf(id);
+            console.log(`${PREFIX} 写入 ${storageName}`, config);
+            await this.plugin.saveData(storageName, config);
             entry.config = config;
-            await this.plugin.saveData(storageNameOf(id), config);
+
+            const readBack = await this.readBack(storageName);
+            const detail = describeMismatch(config, readBack);
+            if (detail) {
+                console.error(`${PREFIX} ${storageName} 写入后读回不一致：${detail}`, {written: config, readBack});
+                mismatched.push(`${storageName}：${detail}`);
+            } else {
+                console.log(`${PREFIX} ${storageName} 写入并读回一致`);
+            }
+        }
+        if (mismatched.length > 0) {
+            throw attachProblems(mismatched);
         }
         prepared.forEach(({id}) => this.notify(id));
+    }
+
+    /** 读回磁盘上的文件内容；文件不存在时宿主 resolve 空串，这里归一成 null。 */
+    private async readBack(storageName: string): Promise<unknown> {
+        try {
+            const stored = await this.plugin.loadData(storageName);
+            return typeof stored === "string" && stored === "" ? null : stored;
+        } catch (error) {
+            console.warn(`${PREFIX} 读回 ${storageName} 失败`, error);
+            return null;
+        }
     }
 
     /** 合并 patch 后落盘，并通知订阅者。写失败时抛出，由调用方回滚 UI。 */

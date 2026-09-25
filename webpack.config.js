@@ -86,7 +86,12 @@ module.exports = (env, argv) => {
         optimization: {
             minimize: production,
             minimizer: [
-                new EsbuildPlugin(),
+                // 保留全部 console 调用：插件出问题时可诊断性比几 KB 体积重要得多。
+                // esbuild 的压缩默认会丢掉 console.log，那正是「点了保存但没有任何提示」的帮凶。
+                new EsbuildPlugin({
+                    drop: [],
+                    pure: [],
+                }),
             ],
         },
         resolve: {
