@@ -1,0 +1,41 @@
+{
+  "name": "some-settings-siyuan",
+  "author": "wmy2981",
+  "url": "https://github.com/wmy2981/some-settings-siyuan",
+  "version": "0.0.1",
+  "minAppVersion": "3.8.6-alpha.4",
+  "kernels": [
+    "all"
+  ],
+  "backends": [
+    "all"
+  ],
+  "frontends": [
+    "all"
+  ],
+  "disabledInPublish": false,
+  "displayName": {
+    "default": "Some Settings",
+    "zh-CN": "一些设置"
+  },
+  "description": {
+    "default": "A batch of independently toggleable desktop and mobile enhancements: every setting item can be enabled, disabled, hidden and reset on its own",
+    "zh-CN": "一批可独立启停的桌面端与移动端增强功能：每个设置项都能单独启用、禁用、隐藏和重置"
+  },
+  "readme": {
+    "default": "README.md",
+    "zh-CN": "README.zh-CN.md"
+  },
+  "icon": "icon.png",
+  "preview": "preview.png",
+  "funding": {
+    "custom": []
+  },
+  "keywords": [
+    "settings",
+    "一些设置",
+    "customization",
+    "ui",
+    "enhancement"
+  ]
+}
