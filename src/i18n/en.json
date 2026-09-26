@@ -115,5 +115,7 @@
   "commandPanelSlim.hideMeta": "Hide the per-row shortcut",
   "commandPanelSlim.hideMetaTip": "Removes the shortcut on the right of each row and gives the width back to the command name",
   "commandPanelSlim.rowHeight": "Row height",
-  "commandPanelSlim.rowHeightTip": "The kernel default is 28px; smaller values fit more commands on screen"
+  "commandPanelSlim.rowHeightTip": "The kernel default is 28px; smaller values fit more commands on screen",
+  "feature.codeSnippetHighlight.name": "Syntax highlighting for snippets",
+  "feature.codeSnippetHighlight.desc": "Colours the snippet editor under Settings using CSS/JS syntax, with SiYuan's own highlight.js and the currently selected code theme, so it follows theme changes."
 }

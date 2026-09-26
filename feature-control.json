@@ -66,6 +66,9 @@
     },
     "desktop-command-panel-slim": {
       "state": 1
+    },
+    "code-snippet-highlight": {
+      "state": 1
     }
   }
 }

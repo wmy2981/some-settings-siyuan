@@ -7,6 +7,7 @@
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
+import codeSnippetHighlight from "../features/code-snippet-highlight";
 import dailyNoteDirect from "../features/daily-note-direct";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
@@ -57,6 +58,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileBlockIconAlways,
     inlineCodeCopy,
     desktopCommandPanelSlim,
+    codeSnippetHighlight,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

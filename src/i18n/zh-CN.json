@@ -115,5 +115,7 @@
   "commandPanelSlim.hideMeta": "隐藏每行的快捷键",
   "commandPanelSlim.hideMetaTip": "去掉每行右侧的快捷键提示，把横向空间留给命令名称",
   "commandPanelSlim.rowHeight": "行高",
-  "commandPanelSlim.rowHeightTip": "内核默认 28px；越小同屏能看到的命令越多"
+  "commandPanelSlim.rowHeightTip": "内核默认 28px；越小同屏能看到的命令越多",
+  "feature.codeSnippetHighlight.name": "代码片段编辑区高亮",
+  "feature.codeSnippetHighlight.desc": "设置里的代码片段编辑框按 CSS / JS 语法上色，用的是思源自己那份 highlight.js 与当前选中的高亮主题；主题换了这里跟着换。"
 }
