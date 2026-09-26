@@ -18,6 +18,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.inlineCodeCopy.name",
     description: "feature.inlineCodeCopy.desc",
+    isEnabled: (config) => config.mode !== "off",
     settings: [
         {
             kind: "select",
