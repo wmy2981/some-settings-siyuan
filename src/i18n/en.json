@@ -11,5 +11,9 @@
   "feature.mobileSidebarBlur.name": "Blur behind mobile side panels",
   "feature.mobileSidebarBlur.desc": "Makes the mobile side panels translucent and blurred, so the document behind them is softened.",
   "mobileSidebarBlur.radius": "Blur radius",
-  "mobileSidebarBlur.opacity": "Panel background opacity"
+  "mobileSidebarBlur.opacity": "Panel background opacity",
+  "feature.mobileDockBlur.name": "Blur behind the mobile dock bar",
+  "feature.mobileDockBlur.desc": "Turns the floating mobile dock bar into frosted glass so the document blurs underneath while scrolling.",
+  "mobileDockBlur.radius": "Blur radius",
+  "mobileDockBlur.opacity": "Bar background opacity"
 }

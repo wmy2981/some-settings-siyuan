@@ -7,6 +7,7 @@
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
+import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import modalBlur from "../features/modal-blur";
 import type {
@@ -19,6 +20,7 @@ export const FEATURES: FeatureDefinition[] = [
     modalBlur,
     docTreeOpenedAccent,
     mobileSidebarBlur,
+    mobileDockBlur,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

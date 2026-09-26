@@ -11,5 +11,9 @@
   "feature.mobileSidebarBlur.name": "移动端侧面板高斯模糊",
   "feature.mobileSidebarBlur.desc": "移动端左右侧面板的背景改为半透明并开启高斯模糊，面板下的正文虚化。",
   "mobileSidebarBlur.radius": "模糊半径",
-  "mobileSidebarBlur.opacity": "面板底色不透明度"
+  "mobileSidebarBlur.opacity": "面板底色不透明度",
+  "feature.mobileDockBlur.name": "移动端悬浮 dock 栏高斯模糊",
+  "feature.mobileDockBlur.desc": "移动端悬浮 dock 栏改为半透明毛玻璃，滚动时正文在胶囊下虚化。",
+  "mobileDockBlur.radius": "模糊半径",
+  "mobileDockBlur.opacity": "胶囊底色不透明度"
 }

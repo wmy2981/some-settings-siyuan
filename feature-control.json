@@ -9,6 +9,9 @@
     },
     "mobile-sidebar-blur": {
       "state": 1
+    },
+    "mobile-dock-blur": {
+      "state": 1
     }
   }
 }
