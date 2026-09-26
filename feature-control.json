@@ -57,6 +57,9 @@
     },
     "mobile-longpress-menu-label": {
       "state": 1
+    },
+    "mobile-block-icon-always": {
+      "state": 1
     }
   }
 }

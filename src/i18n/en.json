@@ -95,5 +95,7 @@
   "mobileLongpressMenuLabel.modeOff": "Off (default)",
   "mobileLongpressMenuLabel.modeCopy": "Copy",
   "mobileLongpressMenuLabel.modePaste": "Paste",
-  "mobileLongpressMenuLabel.modeBoth": "Copy and paste"
+  "mobileLongpressMenuLabel.modeBoth": "Copy and paste",
+  "feature.mobileBlockIconAlways.name": "Keep the block icon visible on mobile",
+  "feature.mobileBlockIconAlways.desc": "While a block is being operated on mobile its block icon no longer flickers: it is put back the moment the kernel clears it, and clicking it still opens the native menu."
 }

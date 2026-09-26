@@ -95,5 +95,7 @@
   "mobileLongpressMenuLabel.modeOff": "禁用（默认）",
   "mobileLongpressMenuLabel.modeCopy": "复制",
   "mobileLongpressMenuLabel.modePaste": "粘贴",
-  "mobileLongpressMenuLabel.modeBoth": "复制与粘贴"
+  "mobileLongpressMenuLabel.modeBoth": "复制与粘贴",
+  "feature.mobileBlockIconAlways.name": "移动端块标保持显示",
+  "feature.mobileBlockIconAlways.desc": "移动端操作某个块时，块标不再时而显示时而隐藏：内核把它收起来的瞬间会原样搬回来，点它照样弹原生菜单。"
 }
