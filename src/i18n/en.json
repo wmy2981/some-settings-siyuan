@@ -32,7 +32,7 @@
   "mobileDockBlur.radius": "Blur radius",
   "mobileDockBlur.opacity": "Bar background opacity",
   "feature.mobileBarAnimation.name": "Smoother mobile bars",
-  "feature.mobileBarAnimation.desc": "Adds a smooth transition to the show/hide behaviour of the mobile top bar, breadcrumb and floating dock bar, so fast scrolling never leaves a partially visible bar.",
+  "feature.mobileBarAnimation.desc": "Adds a smooth transition to the show/hide behaviour of the mobile top bar, breadcrumb and floating dock bar; the dock bar only switches between fully shown and fully hidden instead of stopping half faded and half scrolled out.",
   "mobileBarAnimation.duration": "Transition duration",
   "mobileBarAnimation.easing": "Easing curve",
   "mobileBarAnimation.easingEmphasized": "Emphasized (Material)",
