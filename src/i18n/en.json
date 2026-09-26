@@ -86,5 +86,7 @@
   "mobileTabDocIcon.style": "Icon style",
   "mobileTabDocIcon.styleFollow": "Follow SiYuan's setting",
   "mobileTabDocIcon.styleSvg": "SVG (SiYuan default)",
-  "mobileTabDocIcon.styleEmoji": "Emoji"
+  "mobileTabDocIcon.styleEmoji": "Emoji",
+  "feature.mobileSelectNative.name": "Native SiYuan style for mobile dropdowns",
+  "feature.mobileSelectNative.desc": "Opening a dropdown on mobile shows SiYuan's own menu instead of the WebView picker, and still fires change on selection."
 }

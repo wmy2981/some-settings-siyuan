@@ -18,6 +18,7 @@ import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
+import mobileSelectNative from "../features/mobile-select-native";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSlashInsertPanel from "../features/mobile-slash-insert-panel";
 import mobileSyncButton from "../features/mobile-sync-button";
@@ -47,6 +48,7 @@ export const FEATURES: FeatureDefinition[] = [
     hideMobileSidebarItems,
     mobileRefPanelHeight,
     mobileTabDocIcon,
+    mobileSelectNative,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

@@ -86,5 +86,7 @@
   "mobileTabDocIcon.style": "图标样式",
   "mobileTabDocIcon.styleFollow": "跟随思源设置",
   "mobileTabDocIcon.styleSvg": "SVG（思源默认）",
-  "mobileTabDocIcon.styleEmoji": "emoji"
+  "mobileTabDocIcon.styleEmoji": "emoji",
+  "feature.mobileSelectNative.name": "移动端下拉用思源原生样式",
+  "feature.mobileSelectNative.desc": "移动端点开下拉选择器时不再用 WebView 自己的弹层，而是弹出思源原生的菜单；选中后照常补发 change。"
 }
