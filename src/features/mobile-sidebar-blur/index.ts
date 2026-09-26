@@ -18,6 +18,12 @@ export default defineFeature({
     description: "feature.mobileSidebarBlur.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "number",
             key: "radius",
             title: "mobileSidebarBlur.radius",
