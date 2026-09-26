@@ -22,6 +22,7 @@ const HOST_CLASS = "ss-snippet-editor";
 const HIGHLIGHT_CLASS = `${HOST_CLASS}__highlight`;
 const INPUT_CLASS = `${HOST_CLASS}__input`;
 const ACTIVE_CLASS = `${HOST_CLASS}--active`;
+const COMPOSING_CLASS = `${HOST_CLASS}--composing`;
 const SCRIPT_ID = "protyleHljsScript";
 const THIRD_SCRIPT_ID = "protyleHljsThirdScript";
 const STYLE_ID = "protyleHljsStyle";
@@ -81,6 +82,19 @@ const EDITOR_CSS = `
 .${HOST_CLASS}--active .${INPUT_CLASS}::selection {
     color: transparent;
     background-color: var(--b3-theme-primary-lightest);
+}
+
+/* 输入法组字期间（中文、日文等）：组字串只存在于输入框里，textarea.value 里还没有它，
+   高亮层渲染不出来；而输入框的文字刚被藏成透明，组字串就跟着一起看不见了 ——
+   现象正是"光标和文字之间空一段，字要等上屏才出现"。
+   所以组字期间把可见性交还输入框：它恢复原色，高亮层的文字让位（底色留着）。
+   原色在挂载时抄进 --ss-snippet-color，那时输入框还没变透明。 */
+.${HOST_CLASS}--composing .${INPUT_CLASS} {
+    color: var(--ss-snippet-color, var(--b3-theme-on-background));
+}
+
+.${HOST_CLASS}--composing .${HIGHLIGHT_CLASS} {
+    color: transparent !important;
 }
 `;
 
@@ -207,6 +221,8 @@ interface Attached {
     code: HTMLElement;
     onInput: () => void;
     onScroll: () => void;
+    onCompositionStart: () => void;
+    onCompositionEnd: () => void;
     timer: number;
 }
 
@@ -244,8 +260,11 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
      */
     const paint = (textarea: HTMLTextAreaElement, state: Attached) => {
         const computed = window.getComputedStyle(textarea);
+        const color = computed.getPropertyValue("color");
         state.pre.style.setProperty("background-color", computed.getPropertyValue("background-color"));
-        state.pre.style.setProperty("color", computed.getPropertyValue("color"));
+        state.pre.style.setProperty("color", color);
+        // 组字期间要把这个颜色还给输入框，所以留一份在宿主上
+        state.host.style.setProperty("--ss-snippet-color", color);
     };
 
     const mirror = (textarea: HTMLTextAreaElement, state: Attached) => {
@@ -285,12 +304,20 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
                 pre.scrollTop = textarea.scrollTop;
                 pre.scrollLeft = textarea.scrollLeft;
             },
+            // 组字期间由输入框自己显示文字，见 EDITOR_CSS 里 --composing 那段
+            onCompositionStart: () => host.classList.add(COMPOSING_CLASS),
+            onCompositionEnd: () => {
+                host.classList.remove(COMPOSING_CLASS);
+                schedule();
+            },
         };
         attached.set(textarea, state);
         paint(textarea, state);
         mirror(textarea, state);
         textarea.addEventListener("input", state.onInput);
         textarea.addEventListener("scroll", state.onScroll, {passive: true});
+        textarea.addEventListener("compositionstart", state.onCompositionStart);
+        textarea.addEventListener("compositionend", state.onCompositionEnd);
 
         // 加载不出来就彻底拆掉，绝不留一个文字透明的编辑框
         state.timer = window.setTimeout(() => {
@@ -318,8 +345,10 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
         window.clearTimeout(state.timer);
         textarea.removeEventListener("input", state.onInput);
         textarea.removeEventListener("scroll", state.onScroll);
+        textarea.removeEventListener("compositionstart", state.onCompositionStart);
+        textarea.removeEventListener("compositionend", state.onCompositionEnd);
         textarea.classList.remove(INPUT_CLASS);
-        state.host.classList.remove(ACTIVE_CLASS);
+        state.host.classList.remove(ACTIVE_CLASS, COMPOSING_CLASS);
         state.pre.remove();
         // 把 textarea 放回原来的位置，别留下我们那层容器
         if (state.host.parentElement) {
