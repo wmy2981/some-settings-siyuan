@@ -16,6 +16,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.mobileSidebarBlur.name",
     description: "feature.mobileSidebarBlur.desc",
+    frontends: ["mobile"],
     settings: [
         {
             kind: "switch",

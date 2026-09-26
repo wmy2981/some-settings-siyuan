@@ -17,6 +17,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.mobileSyncButton.name",
     description: "feature.mobileSyncButton.desc",
+    frontends: ["mobile"],
     settings: [
         {
             kind: "switch",

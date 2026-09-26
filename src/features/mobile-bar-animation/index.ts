@@ -19,6 +19,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.mobileBarAnimation.name",
     description: "feature.mobileBarAnimation.desc",
+    frontends: ["mobile"],
     settings: [
         {
             kind: "switch",

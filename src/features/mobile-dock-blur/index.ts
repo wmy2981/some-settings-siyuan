@@ -16,6 +16,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.mobileDockBlur.name",
     description: "feature.mobileDockBlur.desc",
+    frontends: ["mobile"],
     settings: [
         {
             kind: "switch",

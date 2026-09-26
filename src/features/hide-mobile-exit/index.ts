@@ -16,6 +16,7 @@ export default defineFeature({
     category: "ui",
     name: "feature.hideMobileExit.name",
     description: "feature.hideMobileExit.desc",
+    frontends: ["mobile"],
     settings: [
         {
             kind: "switch",
