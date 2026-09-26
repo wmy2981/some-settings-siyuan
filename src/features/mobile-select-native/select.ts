@@ -1,13 +1,19 @@
 /**
  * 用思源原生菜单替换下拉弹层的实现。
  *
- * 拦截点选在 `pointerdown` 与 `mousedown` 的捕获阶段：前者覆盖触摸，
- * 后者覆盖外接鼠标；两者都会默认被浏览器用来展开原生弹层，因此都要 preventDefault。
- * 一次点击可能先派发 pointerdown 再派发 mousedown，用一个时间戳去重，
- * 避免弹出两个菜单。
+ * 打开时机是这里最关键的一处：内核的菜单在移动端是**底部弹层**，弹层自带一层遮罩
+ * （`#commonMenuScrim`），遮罩自己的 click 处理器会把弹层关掉，内核 window 上的
+ * click 处理器也会。如果在下拉控件 pointerdown 的瞬间就把菜单弹出来，这次点击的
+ * "尾巴"（浏览器随后补发的 mousedown / mouseup / click）会落在刚出现的遮罩上，
+ * 菜单就会「闪一下就消失」；而手指在控件上滑动不会产生 click，所以现象就成了
+ * 「只有滑动能用、点按不行」。
  *
- * 还要在捕获阶段吞掉这次点击的 `click`：内核的全局 click 处理器见到"点在菜单外面"
- * 就会把所有菜单关掉，菜单会变成"闪一下就消失"。
+ * 因此分两步：
+ * 1. pointerdown / mousedown / touchstart 只负责 preventDefault 挡住浏览器自己的
+ *    原生弹层（原生 select 就是在这时候展开的），并把这次手势记下来；
+ * 2. pointerup / mouseup / touchend 才真正打开菜单 —— 此时手势已经结束；
+ *    另外在弹出后的一小段窗口内，把落在遮罩上的 click 一并吞掉，
+ *    免得被内核「点菜单外面就关掉」的逻辑关走。
  */
 import {Menu} from "siyuan";
 import type {
@@ -17,12 +23,34 @@ import type {
 
 /** 只接管思源自己的下拉控件，原生 select（例如文件上传里的）不动。 */
 const SELECT_SELECTOR = "select.b3-select";
-/** 同一根手指会同时产生 pointerdown 与 mousedown，这段时间内只处理一次。 */
+/** 同一根手指会同时产生 pointer / touch / mouse 多套事件，这段时间内只处理一次。 */
 const DEDUPE_MS = 300;
+/** 菜单弹出后，这次点击的兼容事件尾巴还可能继续派发；这段窗口内要吞掉遮罩上的 click。 */
+const TAIL_MS = 700;
+/** 手指移动超过这个距离就不再当作"点选"，那是滚动。 */
+const TAP_SLOP_PX = 12;
+/** 移动端菜单的遮罩。 */
+const SCRIM_SELECTOR = "#commonMenuScrim, .b3-menu__scrim";
+
+interface Pending {
+    select: HTMLSelectElement;
+    x: number;
+    y: number;
+}
+
+const pointOf = (event: Event): {x: number; y: number;} | undefined => {
+    const pointer = event as PointerEvent & {changedTouches?: TouchList;};
+    if (typeof pointer.clientX === "number") {
+        return {x: pointer.clientX, y: pointer.clientY};
+    }
+    const touch = pointer.changedTouches?.[0];
+    return touch ? {x: touch.clientX, y: touch.clientY} : undefined;
+};
 
 export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
     let lastOpenedAt = 0;
     let menu: Menu | undefined;
+    let pending: Pending | undefined;
 
     const openMenu = (select: HTMLSelectElement) => {
         const now = Date.now();
@@ -55,40 +83,85 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
         host.log(`已用原生菜单接管下拉（${select.options.length} 项）`);
     };
 
-    const intercept = (event: Event) => {
+    const selectOf = (event: Event): HTMLSelectElement | undefined => {
         const target = event.target;
         if (!(target instanceof HTMLSelectElement) || !target.matches(SELECT_SELECTOR) || target.disabled) {
+            return undefined;
+        }
+        return target;
+    };
+
+    /** 按下：挡住浏览器默认弹层，菜单留到这次手势结束时再开。 */
+    const onDown = (event: Event) => {
+        const select = selectOf(event);
+        if (!select) {
             return;
         }
         event.preventDefault();
         event.stopPropagation();
-        openMenu(target);
+        const point = pointOf(event);
+        pending = {select, x: point?.x ?? 0, y: point?.y ?? 0};
     };
 
-    /**
-     * 点按之后浏览器还会补一次 `click`，而内核的全局 click 处理器会关掉所有菜单
-     * （`window.siyuan.menus.menu.remove()`）—— 于是菜单"闪一下就没了"。
-     * 手指在控件上滑动不会产生 click，所以只有滑动时菜单能留住。
-     * 这里把落在下拉控件上的 click 一并吞掉，菜单才能像原生弹层一样留着。
-     */
-    const interceptClick = (event: Event) => {
-        const target = event.target;
-        if (!(target instanceof HTMLSelectElement) || !target.matches(SELECT_SELECTOR) || target.disabled) {
+    /** 抬起：手势已经结束，此刻弹出菜单不会再被这次点击的尾巴关掉。 */
+    const onUp = (event: Event) => {
+        const current = pending;
+        if (!current) {
+            return;
+        }
+        pending = undefined;
+        const point = pointOf(event);
+        if (point && Math.abs(point.x - current.x) + Math.abs(point.y - current.y) > TAP_SLOP_PX) {
+            // 手指划走了，那是在滚动 / 拖选，不是点选
             return;
         }
         event.preventDefault();
         event.stopPropagation();
+        openMenu(current.select);
     };
 
-    document.addEventListener("pointerdown", intercept, true);
-    document.addEventListener("mousedown", intercept, true);
-    document.addEventListener("click", interceptClick, true);
+    const onCancel = () => {
+        pending = undefined;
+    };
+
+    const onClick = (event: Event) => {
+        const target = event.target;
+        if (!(target instanceof Element)) {
+            return;
+        }
+        if (target instanceof HTMLSelectElement && target.matches(SELECT_SELECTOR) && !target.disabled) {
+            event.preventDefault();
+            event.stopPropagation();
+            return;
+        }
+        // 触发菜单的那一下点击，尾巴会落到弹层的遮罩上；只在这个窗口内吞掉它
+        if (menu && Date.now() - lastOpenedAt < TAIL_MS && target.closest(SCRIM_SELECTOR)) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    };
+
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("mousedown", onDown, true);
+    document.addEventListener("touchstart", onDown, {capture: true, passive: false});
+    document.addEventListener("pointerup", onUp, true);
+    document.addEventListener("mouseup", onUp, true);
+    document.addEventListener("touchend", onUp, {capture: true, passive: false});
+    document.addEventListener("pointercancel", onCancel, true);
+    document.addEventListener("touchcancel", onCancel, true);
+    document.addEventListener("click", onClick, true);
 
     return {
         destroy: () => {
-            document.removeEventListener("pointerdown", intercept, true);
-            document.removeEventListener("mousedown", intercept, true);
-            document.removeEventListener("click", interceptClick, true);
+            document.removeEventListener("pointerdown", onDown, true);
+            document.removeEventListener("mousedown", onDown, true);
+            document.removeEventListener("touchstart", onDown, true);
+            document.removeEventListener("pointerup", onUp, true);
+            document.removeEventListener("mouseup", onUp, true);
+            document.removeEventListener("touchend", onUp, true);
+            document.removeEventListener("pointercancel", onCancel, true);
+            document.removeEventListener("touchcancel", onCancel, true);
+            document.removeEventListener("click", onClick, true);
             menu?.close();
             menu = undefined;
         },
