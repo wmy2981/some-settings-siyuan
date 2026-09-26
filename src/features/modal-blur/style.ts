@@ -22,6 +22,12 @@ const buildCss = (radius: number): string =>
     -webkit-backdrop-filter: blur(${radius}px);
     backdrop-filter: blur(${radius}px);
 }
+
+/* 属性视图面板复用了同一个遮罩类名，但它不是 modal，不能被糊上 */
+.av__panel > .b3-dialog__scrim {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 `;
 
 export const mountModalBlur = (host: FeatureHost): FeatureInstance => {
