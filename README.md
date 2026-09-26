@@ -62,9 +62,12 @@ The plugin registers **no top bar button, no status bar item, no dock and no pan
 so open it from **Settings → Marketplace → Downloaded → (this plugin) → Settings**.
 
 The panel is a single vertical list with the three categories (Functionality / Interface / Development) as
-section headings — no side tabs, no footer bar, no extra buttons. Every row is "label on the left, control on
-the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`, `config-item`,
-`config-title`).
+section headings — no side tabs, no footer bar, no extra buttons. Each category is followed directly by its
+setting rows: every feature contributes one subtitle row (its name and description) and then its own rows, and
+rows keep the thin divider line drawn by SiYuan's `.b3-label`. There is **no nested grouping at any level** —
+`SettingField` has no group kind, so a hierarchy cannot even be expressed. Every row is "label on the left,
+control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`,
+`config-item`, `config-title`), with the built-in `16px 24px` row padding left untouched.
 
 **Saving** follows the built-in dialog: edit any number of settings, then click **Save** (or **Cancel** to
 discard). Nothing is written until you save, and if a value fails validation the panel stays open with the
@@ -76,9 +79,9 @@ response code), so a write can fail while looking successful. If the read-back d
 and tells you exactly which field differs, and the console gets a `[some-settings-siyuan]` line — check there
 first if a setting ever appears not to stick.
 
-On narrow screens (mobile, or a window narrower than 480px) the panel switches to a stacked layout: the label
-takes a full row and the control moves to the next row at full width, and the dialog's padding is reduced so
-the content uses the whole screen.
+On narrow screens (mobile, or a window narrower than 750px — the same breakpoint the kernel uses) the panel
+switches to a stacked layout: the label takes a full row and the control moves to the next row at full width,
+and the dialog's padding is reduced so the content uses the whole screen.
 
 Because a feature with `state: 3` still shows its controls, saving there writes the feature's own JSON file
 even though nothing was loaded from it at startup — the four states govern _reading_, never whether an
@@ -130,8 +133,9 @@ Where the data lives at runtime, in the workspace:
 6. Run `npm run check`, `npm run typecheck`, `npm run lint`.
 7. Only use `FeatureHost` for platform access (`addCommand`, `addEventBus`, `addStyle`, `addTopBar`, …).
    Features must not import each other; shared logic goes in `src/core/`.
-8. `settings` accepts `switch` / `text` / `number` / `select` / `group`. There is deliberately no button
-   control: the settings panel registers nothing but setting rows.
+8. `settings` accepts `switch` / `text` / `number` / `select`. There is deliberately no button control: the
+   settings panel registers nothing but setting rows. There is no group kind either — the panel is one flat
+   level, and a group would put the hierarchy straight back.
 
 ## Development
 

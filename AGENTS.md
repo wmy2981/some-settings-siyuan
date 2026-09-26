@@ -133,25 +133,37 @@ log(...)                    带功能前缀的控制台日志
 
 ## 6. 设置面板规范
 
-* **单列纵向列表**，分类（功能 / 界面 / 开发）是**小节标题**，不是独立页签。
+* **单列纵向列表，只有一层**：分类（功能 / 界面 / 开发）是**小节标题**，不是独立页签；
+  小节标题之下直接是设置行，**任何形式的嵌套分组都不允许**。
+  `SettingField` 因此也没有 `group` 型 —— 从类型上就写不出层级。
+* 每个功能的名称与说明渲染成一行**小节标题**（`.some-settings-panel__sub`），
+  它就是一行 `b3-label config-item`，位置在分类标题之后、该功能的设置行之前。
 * 界面自带动作区，**只有「取消 / 保存」两个按钮**，不额外加任何按钮或底栏。
   ⚠️ 宿主的 `Dialog` **不会自动生成动作区**，动作区必须写在自己的 `content` 里。
 * 优先使用思源原生类名，保证与内置设置面板一致：
 
   | 用途        | 类名                                                                             |
   | ----------- | -------------------------------------------------------------------------------- |
-  | 分组        | `config-group` / `config-title` / `config-items`                                 |
+  | 分类        | `config-group` / `config-title` / `config-items`                                 |
   | 行 / 文案   | `b3-label config-item` / `config-item__main` / `b3-label__text`                  |
+  | 功能名标题  | `b3-label config-item some-settings-panel__sub`                                  |
   | 开关        | `b3-switch fn__flex-center`                                                      |
   | 下拉        | `b3-select fn__flex-center fn__size200`                                          |
   | 输入        | `b3-text-field fn__flex-center fn__size200`                                      |
   | 数字 + 单位 | `fn__size200 fn__flex-center fn__flex config-item__number` + `config-item__unit` |
   | 按钮        | `b3-button b3-button--outline fn__flex-center fn__size200`                       |
 
-* 设置字段只支持 `switch` / `text` / `number` / `select` / `group`。
+* 设置字段只支持 `switch` / `text` / `number` / `select`。
   **没有按钮型字段** —— 面板里不放自定义按钮。
-* 窄屏（≤480px）由 `PANEL_CSS` 的媒体查询处理：内边距收窄、文案与控件改上下两行。
-  它靠 `.some-settings-dialog` 类挂作用域，只在弹窗存在期间生效。
+* **间距与分割线全部交给内核**：行内边距 `16px 24px`、行与行之间的 `1px` 分割线都来自
+  `.b3-label`，插件不做覆盖。`PANEL_CSS` 只处理三处：分类标题的间距、
+  去掉 `.config-items` 的灰底大圆角、功能名标题的字号。
+* 一个分类的行是跨功能拼出来的，`:last-child` 看不见真正意义上的最后一行，
+  所以由 `setting-dialog.ts` 的 `markLastRow()` 给最后一行加 `config-item--last-visible`，
+  去掉它多余的下分割线。
+* 窄屏（≤750px，与内核同一断点）由 `PANEL_CSS` 的媒体查询处理：内边距收窄；
+  折行本身由内核的 `.config-item` 规则完成，插件不再自己折。它靠 `.some-settings-dialog`
+  类挂作用域，只在弹窗存在期间生效。
 * **单位标签必须 `white-space: nowrap`**，否则窄屏下会被压成一列一个字。
 
 ---
