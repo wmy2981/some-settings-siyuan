@@ -81,24 +81,24 @@ would be one that can never do anything.
 
 ### Interface
 
-| Feature                       | Frontend | What it does                                                                                    |
-| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
-| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp     |
-| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour |
-| `inline-code-copy`            | both     | Copy button for inline code: off, on hover, always, or automatic by device                      |
-| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme               |
-| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                  |
-| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                     |
-| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                               |
-| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide                            |
-| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area         |
-| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview           |
-| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide             |
-| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                   |
-| `mobile-longpress-menu-label` | mobile   | Adds text to the copy/paste buttons in the long-press menu (off, copy, paste, or both)          |
-| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                           |
-| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                        |
-| `hide-mobile-sidebar-items`   | mobile   | Hides named entries from the mobile side panel tab strips                                       |
+| Feature                       | Frontend | What it does                                                                                                      |
+| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
+| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
+| `inline-code-copy`            | both     | Copy button for inline code: off, on hover, always, or automatic by device                                        |
+| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
+| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                    |
+| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                       |
+| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                 |
+| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole |
+| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                           |
+| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                             |
+| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                               |
+| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                     |
+| `mobile-longpress-menu-label` | mobile   | Adds text to the copy/paste buttons in the long-press menu (off, copy, paste, or both)                            |
+| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                             |
+| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                          |
+| `hide-mobile-sidebar-items`   | mobile   | Hides named entries from the mobile side panel tab strips                                                         |
 
 ### Development
 
@@ -258,8 +258,8 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   calling it again would silently drop every kernel push. Both `kernel-reconnect-button` and
   `kernel-auto-reconnect` therefore reload the page once the kernel is reachable again. Note content always
   lives in the kernel and is written as you go, so a reload never loses a document.
-* `first-doc-icon` covers the document's `icon` attribute and the title-area icon; the document tree and
-  outline pick the new icon up on their next redraw.
+* `first-doc-icon` writes the document's `icon` attribute and refreshes the title area, the document tree,
+  pinned rows and the outline in place.
 * `code-snippet-highlight` depends on SiYuan's own highlight.js. If that never loads, the plugin tears the
   highlight layer down and leaves the editor as plain text rather than leaving an unreadable input.
 * `mobile-select-native` is best-effort: on some kernel/platform combinations the system picker still opens,

@@ -253,6 +253,27 @@ log(...)                    带功能前缀的控制台日志
    `core/ui.ts` 的 `ensurePanelCss()` 现在每次都比对并重写；`core/style.ts` 的 `addStyle()`
    本来就是这样，所以只有面板中过一次招。**排查 UI 改动"没生效"时先怀疑这一条。**
 
+7. **`getAllEditor()` 返回的 `Protyle` 是外壳，真正的编辑器在 `protyle.protyle`（`IProtyle`）。**
+   外壳上**没有** `element` / `block` / `disabled`，取 `editor.element` 会得到 `undefined`
+   （`.find()` 直接失配）；`IProtyle` 才有 `element` / `block.rootID` / `disabled`。
+   另外 `.protyle-wysiwyg` 容器**没有** `data-node-id`（内核注释里写明），
+   想从 DOM 取文档 id 要用 `.protyle-background[data-node-id]` / `.protyle-title[data-node-id]`。
+   `first-doc-icon` 就是因为这两处都取了空值而"完全不生效"，且只留下一条日志。
+
+8. **用自定义菜单顶替原生 `<select>` 时，必须把随后的 `click` 也吞掉。**
+   内核的全局 click 处理器见到"点在菜单外面"就 `window.siyuan.menus.menu.remove()`，
+   于是菜单「闪一下就消失」；而手指在控件上滑动不会产生 click，现象就变成
+   **"只有滑动能用、点按不行"**。捕获阶段 `preventDefault()` + `stopPropagation()`
+   即可同时挡住浏览器默认弹层与这次 click。
+
+9. **两层对齐（透明输入框 + 底层高亮层）时，主题自带的高亮样式必须压掉。**
+   highlight.js 的主题里写着 `pre code.hljs { padding: 1em }`，
+   它的特异性比"自己写的 `.__highlight code`"更高，会把高亮层整体错开 1em，
+   主题的 `background` 也会盖住输入框 —— 现象是**编辑框"完全没法用"**。
+   压掉它要么用更深的特异性（`.__highlight > code.hljs`），要么 `!important`。
+   同理，输入框的 `color` / `background-color` **只能在变透明之前抄一次**：
+   生效后它俩算出来是透明的，每帧再抄一次会让高亮层的字也一起消失。
+
 ---
 
 ## 9. 命令与发布
