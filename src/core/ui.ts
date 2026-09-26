@@ -328,13 +328,23 @@ export const PANEL_CSS = `
 
 const PANEL_CSS_ID = `${PANEL_CLASS}-local-css`;
 
-/** 在当前文档里确保设置面板的局部样式存在（幂等）。 */
+/**
+ * 在当前文档里确保设置面板的局部样式**是最新的一份**。
+ *
+ * 这里必须每次都重写 `textContent`，不能在元素已存在时直接返回：
+ * 关掉插件再打开、或者「重载插件」都不会重载页面，`<style>` 元素还留在 `<head>` 里，
+ * 于是新代码会配上一份**旧样式表**——现象就是「功能行的开关变了（JS 生效），
+ * 但字重、间距还是改动前那一套（CSS 没生效）」，而且怎么重载插件都不好，
+ * 只有整页刷新才恢复正常。样式内容由本文件生成，重写一次的开销可以忽略。
+ */
 export const ensurePanelCss = (): void => {
-    if (document.getElementById(PANEL_CSS_ID)) {
-        return;
+    let element = document.getElementById(PANEL_CSS_ID) as HTMLStyleElement | null;
+    if (!element) {
+        element = document.createElement("style");
+        element.id = PANEL_CSS_ID;
+        document.head.append(element);
     }
-    const element = document.createElement("style");
-    element.id = PANEL_CSS_ID;
-    element.textContent = PANEL_CSS;
-    document.head.append(element);
+    if (element.textContent !== PANEL_CSS) {
+        element.textContent = PANEL_CSS;
+    }
 };
