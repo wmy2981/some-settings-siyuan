@@ -6,16 +6,14 @@
  *
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
-import devDemo from "../features/dev-demo";
-import functionDemo from "../features/function-demo";
-import uiDemo from "../features/ui-demo";
 import type {
     FeatureCategory,
     FeatureDefinition,
 } from "./types";
 import {FEATURE_CATEGORIES} from "./types";
 
-export const FEATURES: FeatureDefinition[] = [functionDemo, uiDemo, devDemo];
+export const FEATURES: FeatureDefinition[] = [
+];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
 
