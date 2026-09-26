@@ -19,6 +19,7 @@ export default defineFeature({
     name: "feature.mobileLongpressMenuLabel.name",
     description: "feature.mobileLongpressMenuLabel.desc",
     frontends: ["mobile"],
+    isEnabled: (config) => config.mode !== "off",
     settings: [
         {
             kind: "select",
