@@ -98,13 +98,15 @@ export const normalizeConfig = (
                     }
                     break;
                 case "select":
-                    if (typeof value === "string" && field.options.some((option) => option.value === value)) {
+                    // 静态 options 走白名单；optionsProvider 的候选集只有运行时才知道，
+                    // 这里无法校验，交给功能自己在使用处兜底。
+                    if (typeof value === "string" && (!field.options || field.options.some((option) => option.value === value))) {
                         result[field.key] = value;
                     } else {
                         warn?.(
-                            `"${field.key}" 应为 ${field.options.map((option) => option.value).join("/")} 之一，收到 ${
-                                JSON.stringify(value)
-                            }，已回落默认值`,
+                            `"${field.key}" 应为 ${
+                                (field.options || []).map((option) => option.value).join("/")
+                            } 之一，收到 ${JSON.stringify(value)}，已回落默认值`,
                         );
                         result[field.key] = field.default;
                     }

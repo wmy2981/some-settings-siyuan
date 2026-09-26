@@ -44,6 +44,12 @@ export enum ControlState {
 /** 每个功能的配置值。字符串 key 与 SettingField.key 一一对应。 */
 export type FeatureConfig = Record<string, unknown>;
 
+/** 下拉选项。label 是 i18n key，不是字面量。 */
+export interface SettingOption {
+    value: string;
+    label: string;
+}
+
 /**
  * 设置面板里的一行控件。
  *
@@ -83,7 +89,16 @@ export type SettingField =
         title: string;
         description?: string;
         default: string;
-        options: {value: string; label: string;}[];
+        /**
+         * 静态选项。与 optionsProvider 二选一。
+         */
+        options?: SettingOption[];
+        /**
+         * 运行时生成的选项，面板每次打开时求值。
+         * 用于「笔记本 / 插件 / 标签」这类只有运行时才知道的候选集；
+         * 走这条路时不再做白名单校验，失效的值由功能自己兜底。
+         */
+        optionsProvider?: () => SettingOption[];
     };
 
 /** 功能被启用时要处理的所有 UI 注册入口。 */

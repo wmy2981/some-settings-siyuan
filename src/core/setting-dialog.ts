@@ -371,15 +371,19 @@ export class SettingsPanel {
                     field.description ? this.t(field.description) : "",
                     readonly,
                 );
-            case "select":
+            case "select": {
+                // 候选集可以在打开面板时才算出来（笔记本、插件列表这类运行时数据）；
+                // 两者同时给出时以动态来源为准，避免静态列表与真实数据打架。
+                const raw = field.optionsProvider ? field.optionsProvider() : (field.options ?? []);
                 return selectRowHtml(
                     bindKey(feature.id, field.key),
                     this.t(field.title),
-                    field.options.map((option) => ({value: option.value, label: this.t(option.label)})),
+                    raw.map((option) => ({value: option.value, label: this.t(option.label)})),
                     String(config[field.key] ?? field.default),
                     field.description ? this.t(field.description) : "",
                     readonly,
                 );
+            }
             case "number":
                 return numberRowHtml(
                     bindKey(feature.id, field.key),
