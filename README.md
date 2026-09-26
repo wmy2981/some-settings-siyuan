@@ -124,9 +124,11 @@ so open it from **Settings → Marketplace → Downloaded → (this plugin) → 
 
 The panel is a single vertical list with the three categories (Functionality / Interface / Development) as
 section headings — no side tabs, no footer bar. Each category is followed directly by its setting rows:
-every feature contributes one subtitle row (its name and description) and then its own rows, and rows keep
-the thin divider line drawn by SiYuan's `.b3-label`. There is **no nested grouping at any level** —
-`SettingField` has no group kind, so a hierarchy cannot even be expressed. Every row is "label on the left,
+a feature's first row is the feature itself (name, description and its off-by-default switch) and its
+parameters follow underneath, with rows keeping the thin divider line drawn by SiYuan's `.b3-label`.
+There is **no nested grouping at any level** —
+`SettingField` has no group kind, so a hierarchy cannot even be expressed. Text has two roles and two
+weights only: item names are bold, descriptions are not. Every row is "label on the left,
 control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`,
 `config-item`, `config-title`), with the built-in `16px 24px` row padding left untouched.
 
