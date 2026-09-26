@@ -63,5 +63,11 @@
   "feature.kernelReconnectButton.desc": "Adds a Reconnect button to the kernel-disconnected panel: it probes whether the kernel is back and, if so, reloads the frontend to rebuild the connection.",
   "kernelReconnectButton.label": "Reconnect now",
   "kernelReconnectButton.working": "Reconnecting...",
-  "kernelReconnectButton.offline": "The kernel is still unreachable; please try again in a moment."
+  "kernelReconnectButton.offline": "The kernel is still unreachable; please try again in a moment.",
+  "feature.kernelAutoReconnect.name": "Automatic reconnect after a disconnect",
+  "feature.kernelAutoReconnect.desc": "When the kernel connection drops, probes the kernel using the count and interval below and reloads the frontend as soon as it answers, instead of waiting for SiYuan's own 3-second retry.",
+  "kernelAutoReconnect.attempts": "Attempts",
+  "kernelAutoReconnect.attemptsTip": "Set to 0 to disable automatic attempts",
+  "kernelAutoReconnect.times": "times",
+  "kernelAutoReconnect.interval": "Interval"
 }

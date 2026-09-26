@@ -36,6 +36,9 @@
     },
     "kernel-reconnect-button": {
       "state": 1
+    },
+    "kernel-auto-reconnect": {
+      "state": 1
     }
   }
 }

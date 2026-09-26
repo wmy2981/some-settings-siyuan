@@ -63,5 +63,11 @@
   "feature.kernelReconnectButton.desc": "内核断开连接的面板上加一个「立即重连」按钮：先探测内核是否恢复，恢复后立刻重载前端重建连接。",
   "kernelReconnectButton.label": "立即重连",
   "kernelReconnectButton.working": "正在重连…",
-  "kernelReconnectButton.offline": "内核还没有恢复，请稍后再试。"
+  "kernelReconnectButton.offline": "内核还没有恢复，请稍后再试。",
+  "feature.kernelAutoReconnect.name": "断连后自动重连",
+  "feature.kernelAutoReconnect.desc": "与内核断开连接时立刻按下面的次数与间隔探测内核，探测到恢复就立即重载前端重建连接，不等思源自己那 3 秒一次的重试。",
+  "kernelAutoReconnect.attempts": "重试次数",
+  "kernelAutoReconnect.attemptsTip": "设为 0 表示不自动重试",
+  "kernelAutoReconnect.times": "次",
+  "kernelAutoReconnect.interval": "重试间隔"
 }
