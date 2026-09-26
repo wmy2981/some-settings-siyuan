@@ -57,10 +57,8 @@ if (control && typeof control.features === "object" && control.features !== null
 }
 
 // ---------------------------------------------------------------- 2. 功能目录
-if (!fs.existsSync(FEATURES_DIR)) {
-    fail("找不到 src/features 目录");
-}
-
+// 目录不存在是合法状态（功能被删光时 git 也留不住空目录），按"零个功能"处理；
+// 只有清单里还留着条目时，第 4 步才会把「找不到对应文件夹」报出来。
 const featureDirs = fs.existsSync(FEATURES_DIR) ?
     fs.readdirSync(FEATURES_DIR, {withFileTypes: true})
         .filter((entry) => entry.isDirectory())
