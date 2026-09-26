@@ -19,6 +19,14 @@ export type FeatureCategory = "function" | "ui" | "dev";
 export const FEATURE_CATEGORIES: FeatureCategory[] = ["function", "ui", "dev"];
 
 /**
+ * 功能适用的前端。
+ *
+ * 不写表示「两端都适用」；写了则只在该前端注册面板、挂载实现。
+ * 只有那些天生只对一个前端有意义的项才需要声明，例如只在移动端存在的入口。
+ */
+export type FeatureFrontend = "desktop" | "mobile";
+
+/**
  * feature-control.json 中每个 id 的四态开关。
  *
  * - 0: 该功能不加载已有配置，前端不显示
@@ -132,6 +140,8 @@ export interface FeatureDefinition {
     /** i18n key，不是字面量。 */
     name: string;
     description?: string;
+    /** 不写表示桌面端与移动端都适用。 */
+    frontends?: FeatureFrontend[];
     settings: SettingField[];
     /** 仅在 mountEnabled 为真时调用。 */
     mount?(host: FeatureHost): FeatureInstance | void;

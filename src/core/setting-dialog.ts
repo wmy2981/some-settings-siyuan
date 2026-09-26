@@ -22,6 +22,7 @@ import type {Plugin} from "siyuan";
 import type {ConfigStore} from "./config";
 import type {ControlSnapshot} from "./control";
 import {reportError} from "./error";
+import {supportsCurrentFrontend} from "./frontend";
 import type {
     FeatureCategory,
     FeatureConfig,
@@ -308,9 +309,11 @@ export class SettingsPanel {
 
     // ------------------------------------------------------------ 渲染
 
-    /** 面板里会出现的全部功能：showUi 为真。 */
+    /** 面板里会出现的全部功能：showUi 为真，且适用于当前前端。 */
     private visibleFeaturesAll(): FeatureDefinition[] {
-        return this.options.features.filter((feature) => this.options.controlOf(feature.id).showUi);
+        return this.options.features.filter((feature) =>
+            this.options.controlOf(feature.id).showUi && supportsCurrentFrontend(feature)
+        );
     }
 
     private render(): void {

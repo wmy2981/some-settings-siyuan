@@ -25,6 +25,7 @@ import {
     guardSilent,
     reportError,
 } from "./error";
+import {supportsCurrentFrontend} from "./frontend";
 import {
     ALL_FEATURE_IDS,
     FEATURES,
@@ -83,7 +84,9 @@ export class FeatureManager {
                 reportError(`${definition.id}.config`, error);
                 continue;
             }
-            if (control.mountEnabled) {
+            // 只对一个前端有意义的功能（例如只有移动端存在的入口）在另一端既不挂载、
+            // 也不在面板里出现；判定与设置面板共用 core/frontend.ts，不会出现两边打架。
+            if (control.mountEnabled && supportsCurrentFrontend(definition)) {
                 this.mount(definition);
             }
         }
