@@ -69,5 +69,7 @@
   "kernelAutoReconnect.attempts": "Attempts",
   "kernelAutoReconnect.attemptsTip": "Set to 0 to disable automatic attempts",
   "kernelAutoReconnect.times": "times",
-  "kernelAutoReconnect.interval": "Interval"
+  "kernelAutoReconnect.interval": "Interval",
+  "feature.mobileSlashPanel.name": "Desktop insert panel for the mobile slash menu",
+  "feature.mobileSlashPanel.desc": "Typing / on mobile shows the desktop insert panel instead of the compact keyboard-toolbar list; the candidates and the insert behaviour stay SiYuan's own."
 }

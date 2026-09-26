@@ -17,6 +17,7 @@ import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
+import mobileSlashInsertPanel from "../features/mobile-slash-insert-panel";
 import mobileSyncButton from "../features/mobile-sync-button";
 import modalBlur from "../features/modal-blur";
 import type {
@@ -39,6 +40,7 @@ export const FEATURES: FeatureDefinition[] = [
     externalLinkConfirm,
     kernelReconnectButton,
     kernelAutoReconnect,
+    mobileSlashInsertPanel,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

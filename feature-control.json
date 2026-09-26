@@ -39,6 +39,9 @@
     },
     "kernel-auto-reconnect": {
       "state": 1
+    },
+    "mobile-slash-insert-panel": {
+      "state": 1
     }
   }
 }

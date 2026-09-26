@@ -69,5 +69,7 @@
   "kernelAutoReconnect.attempts": "重试次数",
   "kernelAutoReconnect.attemptsTip": "设为 0 表示不自动重试",
   "kernelAutoReconnect.times": "次",
-  "kernelAutoReconnect.interval": "重试间隔"
+  "kernelAutoReconnect.interval": "重试间隔",
+  "feature.mobileSlashPanel.name": "移动端斜杠面板用桌面样式",
+  "feature.mobileSlashPanel.desc": "移动端输入 / 时显示桌面端那套插入块面板，而不是键盘工具栏里的紧凑候选；候选项与插入行为都沿用思源自己的实现。"
 }
