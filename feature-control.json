@@ -33,6 +33,9 @@
     },
     "external-link-confirm": {
       "state": 1
+    },
+    "kernel-reconnect-button": {
+      "state": 1
     }
   }
 }

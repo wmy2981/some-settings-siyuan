@@ -58,5 +58,10 @@
   "externalLinkConfirm.title": "Open this external link?",
   "externalLinkConfirm.prompt": "The following link will be opened in your system browser:",
   "externalLinkConfirm.cancel": "Cancel",
-  "externalLinkConfirm.open": "Open"
+  "externalLinkConfirm.open": "Open",
+  "feature.kernelReconnectButton.name": "Reconnect button on the disconnect panel",
+  "feature.kernelReconnectButton.desc": "Adds a Reconnect button to the kernel-disconnected panel: it probes whether the kernel is back and, if so, reloads the frontend to rebuild the connection.",
+  "kernelReconnectButton.label": "Reconnect now",
+  "kernelReconnectButton.working": "Reconnecting...",
+  "kernelReconnectButton.offline": "The kernel is still unreachable; please try again in a moment."
 }

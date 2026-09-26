@@ -12,6 +12,7 @@ import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import hideMobileExit from "../features/hide-mobile-exit";
+import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
@@ -35,6 +36,7 @@ export const FEATURES: FeatureDefinition[] = [
     dailyNoteDirect,
     firstDocIcon,
     externalLinkConfirm,
+    kernelReconnectButton,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
