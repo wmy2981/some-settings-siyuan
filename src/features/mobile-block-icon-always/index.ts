@@ -22,6 +22,13 @@ export default defineFeature({
     name: "feature.mobileBlockIconAlways.name",
     description: "feature.mobileBlockIconAlways.desc",
     frontends: ["mobile"],
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountMobileBlockIconAlways,
 });
