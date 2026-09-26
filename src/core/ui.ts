@@ -53,13 +53,31 @@ export const categoryHtml = (title: string, bodyHtml: string): string =>
 <div class="config-items">${bodyHtml}</div>`;
 
 /**
- * 功能名小节标题。
+ * 功能自己的那一行：功能名 + 说明，右边直接跟它那个默认关闭的开关。
  *
- * 它就是一行设置行，所以照样带内核的分割线——分割线在功能名与它下面的
- * 第一个设置项之间也必须留着，否则设置项会看起来像挂在功能名上。
+ * 开关不单独占一行：功能只有开关时，那样会多出一个孤零零的「启用」行；
+ * 功能还有别的参数时，「启用」又会插在功能说明和它的参数之间——两种都不好看。
+ * 开关跟着功能名走之后，面板里就只剩一种行：左边文案、右边控件。
+ *
+ * 它照样带内核的分割线——分割线在功能行与它下面的第一个参数行之间必须留着，
+ * 否则参数会看起来像挂在功能名上。
  */
-export const subtitleRowHtml = (title: string, description?: string): string =>
-    `<div class="b3-label config-item ${PANEL_CLASS}__sub">${mainHtml(title, description)}</div>`;
+export const subtitleRowHtml = (
+    title: string,
+    description?: string,
+    toggle?: {key: string; label: string; checked: boolean; disabled?: boolean;},
+): string => {
+    if (!toggle) {
+        return `<div class="b3-label config-item ${PANEL_CLASS}__sub">${mainHtml(title, description)}</div>`;
+    }
+    return `<div class="fn__flex b3-label config-item ${PANEL_CLASS}__sub" data-ss-row="${escapeHtml(toggle.key)}">
+    ${mainHtml(title, description)}
+    <span class="fn__space"></span>
+    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="${escapeHtml(toggle.key)}" aria-label="${
+        escapeHtml(toggle.label)
+    }"${toggle.checked ? " checked" : ""}${toggle.disabled ? " disabled" : ""}/>
+</div>`;
+};
 
 /** 原生风格的开关行。 */
 export const switchRowHtml = (
@@ -276,6 +294,11 @@ export const PANEL_CSS = `
     .b3-dialog__body .${PANEL_CLASS} .config-item__main {
         flex: 1 1 100%;
         margin: 0;
+    }
+    /* 功能行的右边只有一个开关，把标题也撑满整行只会把开关挤到第二行去，
+       所以这一行保持左右布局，让标题自己让出空间。 */
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__sub > .config-item__main {
+        flex: 1 1 auto;
     }
     .b3-dialog__body .${PANEL_CLASS} .config-item > .fn__space {
         display: none;

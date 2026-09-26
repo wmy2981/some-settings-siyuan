@@ -336,13 +336,28 @@ export class SettingsPanel {
             const rows: string[] = [];
             features.forEach((feature) => {
                 const draft = this.drafts.get(feature.id) || this.options.store.get(feature.id);
+                // 功能自己的开关跟着功能名走，不单独占一行；剩下的才是它的参数
+                const toggle = feature.settings.find(
+                    (field): field is Extract<SettingField, {kind: "switch";}> =>
+                        field.kind === "switch" && field.key === "enabled",
+                );
                 rows.push(
                     subtitleRowHtml(
                         this.nameOf(feature),
                         feature.description ? this.t(feature.description) : "",
+                        toggle ?
+                            {
+                                key: bindKey(feature.id, toggle.key),
+                                label: this.t(toggle.title),
+                                checked: Boolean(draft[toggle.key]),
+                                disabled: readonly,
+                            } :
+                            undefined,
                     ),
                 );
-                feature.settings.forEach((field) => rows.push(this.fieldHtml(feature, field, draft, readonly)));
+                feature.settings
+                    .filter((field) => field !== toggle)
+                    .forEach((field) => rows.push(this.fieldHtml(feature, field, draft, readonly)));
             });
             sections.push(
                 categoryHtml(
