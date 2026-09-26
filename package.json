@@ -1,6 +1,6 @@
 {
   "name": "some-settings-siyuan",
-  "version": "0.0.5",
+  "version": "0.1.0",
   "description": "A SiYuan plugin that ships a batch of independently toggleable desktop and mobile enhancements",
   "main": "dist/index.js",
   "private": false,
