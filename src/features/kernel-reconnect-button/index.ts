@@ -16,6 +16,13 @@ export default defineFeature({
     category: "function",
     name: "feature.kernelReconnectButton.name",
     description: "feature.kernelReconnectButton.desc",
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountReconnectButton,
 });
