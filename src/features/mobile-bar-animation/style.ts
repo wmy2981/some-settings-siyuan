@@ -49,18 +49,23 @@ const buildCss = (duration: number, easing: string): string => {
     const transition = `transition: transform ${duration}ms ${easing}, opacity ${duration}ms ${easing};`;
     // (不透明度 - 阈值) 放大 100 倍后夹在 0 / 1 之间：跨过阈值就整体切换
     const visible = `clamp(0, calc((var(--mobile-bar-opacity, 1) - ${VISIBLE_THRESHOLD}) * 100), 1)`;
-    return `/* 移动端标题栏 / 面包屑的滚动显隐过渡 */
+    return `/* 移动端标题栏 / 面包屑 / 悬浮 dock 栏的滚动显隐过渡 */
 #mobileTopBar,
-#editor > .protyle-breadcrumb {
+#editor > .protyle-breadcrumb,
+#mobileBottomBar {
     ${transition}
 }
 
-/* 悬浮 dock 栏：连续进度折成两档，不再停在半透明、只露出一部分的中间状态 */
-#mobileBottomBar {
-    --ss-mobile-bar-visible: ${visible};
-    opacity: var(--ss-mobile-bar-visible);
-    transform: translate3d(0, calc((1 - var(--ss-mobile-bar-visible)) * 100%), 0);
-    ${transition}
+/* 悬浮 dock 栏：连续进度折成两档，不再停在半透明、只露出一部分的中间状态。
+   折档要用 clamp()，不支持的引擎整块跳过，栏体退回内核自己的连续显隐。
+   （不能只把这一条声明写进同一个规则里：自定义属性取到非法值时整条声明会变成
+   unset，opacity 就永远是 1 —— 栏体反而再也藏不住了。） */
+@supports (opacity: clamp(0, 1, 1)) {
+    #mobileBottomBar {
+        --ss-mobile-bar-visible: ${visible};
+        opacity: var(--ss-mobile-bar-visible);
+        transform: translate3d(0, calc((1 - var(--ss-mobile-bar-visible)) * 100%), 0);
+    }
 }
 `;
 };
