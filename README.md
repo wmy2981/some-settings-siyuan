@@ -241,7 +241,7 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   changing `feature-control.json` never requires a source edit or a conditional import. The trade-off is
   bundle size versus the ability to disable something by editing one data file.
 * **A feature that is off is not mounted**, so it cannot use `addTopBar` / `addDock` / `addTab` /
-  `addCommand`, which must be registered synchronously during onload. None of the 24 features need them;
+  `addCommand`, which must be registered synchronously during onload. None of the 22 features need them;
   one that does would have to mount unconditionally and gate itself on the switch.
 * `mobile-console-log` only starts collecting console output once its switch is on, so by design the logs
   from plugin startup, and from before you flipped the switch, are not recorded. Turn it on and reproduce
