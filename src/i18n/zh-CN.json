@@ -1,4 +1,18 @@
 {
+  "pluginName": "一些设置",
+  "pluginDescription": "一批可独立启停的思源增强功能：每个设置项都能单独启用、禁用或隐藏。",
+  "helloPlugin": "一些设置已加载",
+  "byePlugin": "一些设置已卸载",
+  "category.function": "功能",
+  "category.ui": "界面",
+  "category.dev": "开发",
+  "panel.none": "当前没有可见的设置项，请检查仓库根目录的 feature-control.json。",
+  "panel.readonlyTip": "当前处于只读或发布模式，设置无法保存。",
+  "dialog.cancel": "取消",
+  "dialog.save": "保存",
+  "dialog.saved": "设置已保存。",
+  "dialog.discardTitle": "放弃更改？",
+  "dialog.discardText": "还有未保存的更改，现在关闭会丢弃它们。",
   "feature.modalBlur.name": "modal 高斯模糊",
   "feature.modalBlur.desc": "给弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰。",
   "modalBlur.radius": "模糊半径",
@@ -24,5 +38,7 @@
   "mobileBarAnimation.easingStandard": "标准",
   "mobileBarAnimation.easingLinear": "线性",
   "feature.mobileSyncButton.name": "移动端常显立即同步",
-  "feature.mobileSyncButton.desc": "移动端右上角总是显示「立即同步」按钮，行为沿用思源原生的同步引导。"
+  "feature.mobileSyncButton.desc": "移动端右上角总是显示「立即同步」按钮，行为沿用思源原生的同步引导。",
+  "feature.hideMobileExit.name": "隐藏移动端退出应用按钮",
+  "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标、极易误触的「退出应用」按钮。"
 }

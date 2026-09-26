@@ -1,4 +1,18 @@
 {
+  "pluginName": "Some Settings",
+  "pluginDescription": "Independently toggleable desktop and mobile enhancements for SiYuan; every setting item can be enabled, disabled or hidden on its own.",
+  "helloPlugin": "Some Settings loaded",
+  "byePlugin": "Some Settings unloaded",
+  "category.function": "Functionality",
+  "category.ui": "Interface",
+  "category.dev": "Development",
+  "panel.none": "No setting item is visible right now. Check feature-control.json at the repository root.",
+  "panel.readonlyTip": "SiYuan is in read-only or publish mode, so settings cannot be saved.",
+  "dialog.cancel": "Cancel",
+  "dialog.save": "Save",
+  "dialog.saved": "Settings saved.",
+  "dialog.discardTitle": "Discard changes?",
+  "dialog.discardText": "You have unsaved changes. Closing now discards them.",
   "feature.modalBlur.name": "Blur behind modals",
   "feature.modalBlur.desc": "Applies a backdrop blur to the dialog scrim so the editor behind it is softened while the dialog itself stays sharp.",
   "modalBlur.radius": "Blur radius",
@@ -24,5 +38,7 @@
   "mobileBarAnimation.easingStandard": "Standard",
   "mobileBarAnimation.easingLinear": "Linear",
   "feature.mobileSyncButton.name": "Always show Sync on mobile",
-  "feature.mobileSyncButton.desc": "Keeps the Sync button visible in the mobile top-right corner; the click behaviour stays SiYuan's own sync guide."
+  "feature.mobileSyncButton.desc": "Keeps the Sync button visible in the mobile top-right corner; the click behaviour stays SiYuan's own sync guide.",
+  "feature.hideMobileExit.name": "Hide the mobile Quit button",
+  "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel that is very easy to tap by accident."
 }

@@ -18,6 +18,9 @@
     },
     "mobile-sync-button": {
       "state": 1
+    },
+    "hide-mobile-exit": {
+      "state": 1
     }
   }
 }
