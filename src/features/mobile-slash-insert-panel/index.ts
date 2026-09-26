@@ -18,6 +18,13 @@ export default defineFeature({
     name: "feature.mobileSlashPanel.name",
     description: "feature.mobileSlashPanel.desc",
     frontends: ["mobile"],
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountMobileSlashPanel,
 });
