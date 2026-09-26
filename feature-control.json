@@ -3,6 +3,9 @@
   "features": {
     "modal-blur": {
       "state": 1
+    },
+    "doc-tree-opened-accent": {
+      "state": 1
     }
   }
 }

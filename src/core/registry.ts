@@ -6,6 +6,7 @@
  *
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
+import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import modalBlur from "../features/modal-blur";
 import type {
     FeatureCategory,
@@ -15,6 +16,7 @@ import {FEATURE_CATEGORIES} from "./types";
 
 export const FEATURES: FeatureDefinition[] = [
     modalBlur,
+    docTreeOpenedAccent,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

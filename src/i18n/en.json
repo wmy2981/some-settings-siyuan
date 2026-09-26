@@ -1,5 +1,11 @@
 {
   "feature.modalBlur.name": "Blur behind modals",
   "feature.modalBlur.desc": "Applies a backdrop blur to the dialog scrim so the editor behind it is softened while the dialog itself stays sharp.",
-  "modalBlur.radius": "Blur radius"
+  "modalBlur.radius": "Blur radius",
+  "feature.docTreeOpenedAccent.name": "Accent for the opened note",
+  "feature.docTreeOpenedAccent.desc": "Draws a flush accent bar on the left edge of the currently opened note in the document tree, with a customisable colour.",
+  "docTreeOpenedAccent.color": "Accent colour",
+  "docTreeOpenedAccent.colorTip": "Leave empty to follow the SiYuan theme primary; any CSS colour such as #rrggbb, rgb() or var(--b3-theme-primary) works",
+  "docTreeOpenedAccent.colorPlaceholder": "Follow SiYuan when empty",
+  "docTreeOpenedAccent.width": "Accent bar width"
 }
