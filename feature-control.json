@@ -48,6 +48,9 @@
     },
     "mobile-ref-panel-height": {
       "state": 1
+    },
+    "mobile-tab-doc-icon": {
+      "state": 1
     }
   }
 }

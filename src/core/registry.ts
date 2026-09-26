@@ -21,6 +21,7 @@ import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSlashInsertPanel from "../features/mobile-slash-insert-panel";
 import mobileSyncButton from "../features/mobile-sync-button";
+import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
 import type {
     FeatureCategory,
@@ -45,6 +46,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileSlashInsertPanel,
     hideMobileSidebarItems,
     mobileRefPanelHeight,
+    mobileTabDocIcon,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

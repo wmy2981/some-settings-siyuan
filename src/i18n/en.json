@@ -80,5 +80,11 @@
   "feature.mobileRefPanelHeight.name": "Taller mobile candidate panel",
   "feature.mobileRefPanelHeight.desc": "Raises the height of the mobile candidate panel used for reference search and friends to a share of the viewport, never past the bottom of the visible area.",
   "mobileRefPanelHeight.maxHeight": "Target height",
-  "mobileRefPanelHeight.maxHeightTip": "Share of the viewport height; the real height is still capped by the space between the panel and the bottom of the screen"
+  "mobileRefPanelHeight.maxHeightTip": "Share of the viewport height; the real height is still capped by the space between the panel and the bottom of the screen",
+  "feature.mobileTabDocIcon.name": "Default document icon in the mobile tab overview",
+  "feature.mobileTabDocIcon.desc": "Chooses whether documents without an icon show the SVG placeholder, an emoji, or follow SiYuan's own 'use SVG icon' file-tree setting.",
+  "mobileTabDocIcon.style": "Icon style",
+  "mobileTabDocIcon.styleFollow": "Follow SiYuan's setting",
+  "mobileTabDocIcon.styleSvg": "SVG (SiYuan default)",
+  "mobileTabDocIcon.styleEmoji": "Emoji"
 }

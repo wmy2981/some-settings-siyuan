@@ -80,5 +80,11 @@
   "feature.mobileRefPanelHeight.name": "移动端增大候选浮层高度",
   "feature.mobileRefPanelHeight.desc": "移动端把引用搜索等候选浮层的高度放宽到视口的指定比例，且永远不会超出当前可视区底部。",
   "mobileRefPanelHeight.maxHeight": "目标高度",
-  "mobileRefPanelHeight.maxHeightTip": "占视口高度的比例；实际高度还会受面板当前位置到屏幕底部之间的空间限制"
+  "mobileRefPanelHeight.maxHeightTip": "占视口高度的比例；实际高度还会受面板当前位置到屏幕底部之间的空间限制",
+  "feature.mobileTabDocIcon.name": "移动端页签默认文档图标",
+  "feature.mobileTabDocIcon.desc": "移动端页签页对没有图标的文档使用 SVG、emoji，或跟随「设置 - 文件树 - 使用 SVG 图标」。",
+  "mobileTabDocIcon.style": "图标样式",
+  "mobileTabDocIcon.styleFollow": "跟随思源设置",
+  "mobileTabDocIcon.styleSvg": "SVG（思源默认）",
+  "mobileTabDocIcon.styleEmoji": "emoji"
 }
