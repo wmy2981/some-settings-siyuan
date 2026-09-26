@@ -168,7 +168,7 @@ export const buttonRowHtml = (
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
  * - 分类标题与 .config-items 平级（同参考插件），不再多包一层 .config-group
  * - 去掉 .config-items 的灰底大圆角，面板不再有"卡片"这件多余的东西
- * - 功能名小节标题比设置行轻一档
+ * - 文案只有两种角色：设置项名（标题，统一加粗）与说明（统一不加粗、更淡）
  * - 窄屏（≤750px，与内核同一断点）把行内边距压到 8px 10px、内容区压到 8px：
  *   内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，这是"边距特别大"的主因
  * 桌面端的行内边距与行间分割线完全交给内核 .b3-label，不做任何覆盖。
@@ -190,10 +190,15 @@ export const PANEL_CSS = `
     background-color: transparent;
     border-radius: 0;
 }
-/* 功能名小节标题：比设置行轻一档，但仍然是一行带分割线的设置行 */
-.${PANEL_CLASS}__sub .config-item__main {
-    font-size: 13px;
+/* 面板里的文案只有两种角色：设置项名（标题）与说明。
+   标题统一加粗、说明统一不加粗——在此之前，只有功能名是粗体（而且它的说明
+   被一起带粗了），设置项名却是常规字重，同一块面板里出现两种「标题」和一种
+   被加粗的说明，看起来就是乱的。 */
+.${PANEL_CLASS} .config-item__main {
     font-weight: 600;
+}
+.${PANEL_CLASS} .config-item__main .b3-label__text {
+    font-weight: 400;
     color: var(--b3-theme-on-surface);
 }
 .${PANEL_CLASS} .config-item:last-child,
