@@ -4,9 +4,11 @@
  * 三个关键点：
  * 1. 两层对齐靠"把 textarea 的计算样式抄到高亮层上"，而不是靠手写一套近似的
  *    padding / font-size；主题改了、内核调了控件样式，抄一遍就跟着对。
- * 2. highlight.js 与主题样式表都复用思源自己的那份（同一个 URL），
+ * 2. highlight.js 与主题样式表都复用思源自己的那份（同一个 URL 与同一个元素 id），
  *    思源已经渲染过代码块时直接用它挂好的 `window.hljs` 与 `#protyleHljsStyle`。
  *    样式表在验证失败（主题名非法）时退回内核默认的 default / github-dark。
+ *    ⚠️ 主题样式表里那条 `pre code.hljs { padding: 1em }` 必须按更深的特异性压掉，
+ *    否则高亮层整体错开 1em —— 两层对不上，编辑框看起来就是"完全没法用"。
  * 3. 文本只在两层都就绪后才透明；加载失败就整体拆掉，编辑框照旧可用。
  */
 import type {
@@ -21,12 +23,14 @@ const HIGHLIGHT_CLASS = `${HOST_CLASS}__highlight`;
 const INPUT_CLASS = `${HOST_CLASS}__input`;
 const ACTIVE_CLASS = `${HOST_CLASS}--active`;
 const SCRIPT_ID = "protyleHljsScript";
+const THIRD_SCRIPT_ID = "protyleHljsThirdScript";
 const STYLE_ID = "protyleHljsStyle";
-/** 与内核 highlightRender.ts 完全相同的资源地址。 */
+/** 与内核 highlightRender.ts 完全相同的资源地址与元素 id：内核加载过就直接复用。 */
 const CDN = "/stage/protyle";
 const VERSION = "11.12.0";
+const THIRD_VERSION = "2.0.1";
 const HLJS_URL = `${CDN}/js/highlight.js/highlight.min.js?v=${VERSION}`;
-const HLJS_THIRD_URL = `${CDN}/js/highlight.js/third-languages.js?v=${VERSION}`;
+const HLJS_THIRD_URL = `${CDN}/js/highlight.js/third-languages.js?v=${THIRD_VERSION}`;
 const STYLE_URL = (name: string): string => `${CDN}/js/highlight.js/styles/${name}.min.css?v=${VERSION}`;
 /** 等 highlight.js 的上限；超时就把编辑框还原。 */
 const HLJS_TIMEOUT_MS = 10000;
@@ -47,13 +51,22 @@ const EDITOR_CSS = `
     pointer-events: none;
     tab-size: 4;
     white-space: pre-wrap;
-    word-break: break-word;
-    overflow-wrap: anywhere;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 .${HOST_CLASS}__highlight code {
     display: block;
     min-height: 100%;
+}
+
+/* highlight.js 的主题会给 \`pre code.hljs\` 加 1em 内边距，而它的选择器比这里更深，
+   所以必须有 !important + 更高的特异性：不然高亮层整体错开 1em，两层对不上，
+   编辑框里的字看起来就是"乱"的。主题自带的底色同样要压掉，否则会盖住编辑框。 */
+.${HOST_CLASS}__highlight > code.hljs {
+    padding: 0 !important;
+    overflow: visible;
+    background-color: transparent;
 }
 
 /* 只有高亮层渲染成功后才把输入框的文字隐藏，避免出现看不见字的编辑框 */
@@ -146,7 +159,7 @@ const ensureHljs = (): Promise<HighlightLike | undefined> => {
     libPromise = (async () => {
         await Promise.all([
             loadScript(HLJS_URL, SCRIPT_ID),
-            loadScript(HLJS_THIRD_URL, `${SCRIPT_ID}Third`),
+            loadScript(HLJS_THIRD_URL, THIRD_SCRIPT_ID),
         ]);
         const loaded = (window as unknown as {hljs?: HighlightLike;}).hljs;
         highlightLib = loaded?.highlight ? loaded : undefined;
@@ -183,6 +196,9 @@ const MIRRORED = [
     "textAlign",
     "textIndent",
     "tabSize",
+    "whiteSpace",
+    "overflowWrap",
+    "wordBreak",
 ] as const;
 
 interface Attached {
@@ -222,6 +238,16 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
         return true;
     };
 
+    /**
+     * 底色与字色只在挂载时抄一次：高亮层生效之后输入框这两项都被我们改成了透明，
+     * 再抄一次就会把高亮层也变成透明的（字直接看不见）。
+     */
+    const paint = (textarea: HTMLTextAreaElement, state: Attached) => {
+        const computed = window.getComputedStyle(textarea);
+        state.pre.style.setProperty("background-color", computed.getPropertyValue("background-color"));
+        state.pre.style.setProperty("color", computed.getPropertyValue("color"));
+    };
+
     const mirror = (textarea: HTMLTextAreaElement, state: Attached) => {
         const computed = window.getComputedStyle(textarea);
         MIRRORED.forEach((key) => {
@@ -230,8 +256,6 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
                 state.pre.style.setProperty(toKebab(key), value);
             }
         });
-        state.pre.style.setProperty("background-color", "transparent");
-        state.pre.style.setProperty("color", computed.getPropertyValue("color"));
     };
 
     const attach = (textarea: HTMLTextAreaElement) => {
@@ -263,6 +287,7 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
             },
         };
         attached.set(textarea, state);
+        paint(textarea, state);
         mirror(textarea, state);
         textarea.addEventListener("input", state.onInput);
         textarea.addEventListener("scroll", state.onScroll, {passive: true});
