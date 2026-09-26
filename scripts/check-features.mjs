@@ -145,6 +145,21 @@ for (const dir of featureDirs) {
         fail(`功能 "${id}" 使用了已移除的 action 型设置项；设置面板不注册自定义按钮`);
     }
 
+    // 每个功能都必须能在面板里被打开：至少有一个设置行，且默认是关闭的。
+    // 默认关闭有两种合法写法——一个 default: false 的 enabled 开关，
+    // 或者自己声明 isEnabled 谓词（拿 select 的「禁用」选项当开关时走这条）。
+    if (/settings\s*:\s*\[\s*\]/.test(source)) {
+        fail(`功能 "${id}" 没有任何设置行：每个功能都必须有开关 / 下拉 / 输入框`);
+    }
+    const hasEnabledSwitch = /kind:\s*"switch",\s*\n\s*key:\s*"enabled",[\s\S]{0,240}?default:\s*false,/.test(
+        settingsSource,
+    );
+    if (!hasEnabledSwitch && !/\bisEnabled\s*:/.test(source)) {
+        fail(
+            `功能 "${id}" 没有默认关闭的开关：要么加 key 为 "enabled" 且 default: false 的 switch，要么声明 isEnabled`,
+        );
+    }
+
     // select 的 default 必须出现在自己的 options 里
     const selectBlocks = [...settingsSource.matchAll(/options\s*:\s*\[([\s\S]*?)\]/g)].map((match) => match[1]);
     selectBlocks.forEach((block) => {
