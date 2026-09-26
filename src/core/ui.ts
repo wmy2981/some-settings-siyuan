@@ -229,7 +229,7 @@ export const PANEL_CSS = `
    只有功能名加粗；「重试次数」「重试间隔」这类子设置项一律常规字重，
    说明再淡一档。之前把所有 .config-item__main 都加粗，子设置项跟着变粗，
    和它的父项抢视线。 */
-.${PANEL_CLASS} .config-item__main {
+.${PANEL_CLASS} .${PANEL_CLASS}__sub > .config-item__main {
     font-weight: 600;
 }
 .${PANEL_CLASS} .config-item__main .b3-label__text {
