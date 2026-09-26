@@ -11,10 +11,10 @@
 
 * 最低思源版本 `3.8.6-alpha.4`；前端 `all`，后端 `all`
 * 名称：`plugin.json` 的 `name` 必须与仓库名一致（`some-settings-siyuan`）
-* 当前阶段：机制层已完成并验证通过，接下来进入真实业务功能开发
+* 当前阶段：机制层 + 24 个真实功能已交付，功能开发按同一套约定继续往下加
 
-核心机制一句话：**`feature-control.json` 里的四态决定「读不读磁盘上的配置」和「显不显示设置行」**，
-而 `src/features/` 下每个文件夹就是一个功能单元。
+核心机制：**`feature-control.json` 里的四态决定「读不读磁盘上的配置」和「显不显示设置行」；
+功能跑不跑由它自己那个默认关闭的开关决定**（见 §3）。`src/features/` 下每个文件夹就是一个功能单元。
 
 ---
 
@@ -32,13 +32,14 @@ src/
 ├── core/                     机制层：这里不放任何业务功能
 │   ├── types.ts              FeatureDefinition / SettingField / FeatureHost
 │   ├── control.ts            读 feature-control.json，归一化四态
+│   ├── frontend.ts           「桌面端 / 移动端」的唯一判定入口
 │   ├── registry.ts           唯一静态导入全部功能的文件
 │   ├── config.ts             每个功能的 JSON 读 / 写（含写后读回校验）/ 重置
 │   ├── style.ts              可撤销的 CSS 注入
 │   ├── ui.ts                 原生风格 UI 基元 + PANEL_CSS
 │   ├── error.ts              错误隔离与统一上报
 │   ├── setting-dialog.ts     单列设置面板（取消 / 保存）
-│   └── bootstrap.ts          按四态装载并挂载各功能
+│   └── bootstrap.ts          按四态 + 各功能开关装载并挂载
 └── features/<id>/            一个功能一个子文件夹
     ├── index.ts              只做声明：defineFeature({...})
     └── <impl>.ts             具体实现
@@ -61,14 +62,14 @@ scripts/                      check-features / render-icon / render-preview / re
 {
   "version": 1,
   "features": {
-    "function-demo": { "state": 1 },
-    "ui-demo": { "state": 1 },
-    "dev-demo": { "state": 0 }
+    "modal-blur": { "state": 1 },
+    "code-block-lang-empty": { "state": 1 },
+    "mobile-console-log": { "state": 0 }
   }
 }
 ```
 
-| `state` | 加载已有配置 | 前端显示设置行 | 运行功能 |
+| `state` | 加载已有配置 | 前端显示设置行 | 允许运行 |
 | ------- | ------------ | -------------- | -------- |
 | `0`     | 否           | 否             | 否       |
 | `1`     | 是           | 是             | 是       |
@@ -77,13 +78,34 @@ scripts/                      check-features / render-icon / render-preview / re
 
 * 缺失 key、非法值、未知 id 在运行期一律按 `0` 处理，并只告警一次。
 * **`state` 约束的是「读取」，不是「写入」**：`0` / `3` 的功能不读盘，但用户在面板里显式保存的值仍会写进它自己的 JSON。
-* `npm run check` 会在构建前拦住：清单缺条目 / 多条目 / 状态越界 / 文件夹名与 id 不一致 / settings key 重复 / i18n 缺 key / 用了已移除的 `action` 字段。
+* `npm run check` 会在构建前拦住：清单缺条目 / 多条目 / 状态越界 / 文件夹名与 id 不一致 / settings key 重复 / i18n 缺 key / 用了已移除的 `action` 字段 / 功能没有默认关闭的开关。
+
+### 清单管「能不能」，开关管「做不做」
+
+这两件事**必须分开**，不要用 `state` 去表达「功能开没开」：
+
+* `feature-control.json` 只决定**加不加载已有配置**、**设置面板显不显示**这个功能；
+* 功能**实际跑不跑**由它自己的控件决定 —— 面板里每个功能的第一行都是一个**默认关闭**的
+  开关（`key: "enabled"`、`default: false`），后面的下拉 / 输入框才是它的参数。
+
+因此：新装插件时所有功能都是关的；用户保存开关后 `FeatureManager` 会立刻挂载或
+**完整卸载**该功能（`bootstrap.ts` 的 `syncMount`），不需要重载插件。
+
+两个例外：需求本身就是「用一个 selector 当开关」的功能（`inline-code-copy`、
+`mobile-longpress-menu-label`）不额外加开关，改为声明 `isEnabled(config)` 谓词把
+那个 selector 的「禁用」选项映射成「不运行」。`state: 2` 的功能面板里没有开关可点，
+按「已允许运行」处理。
+
+**推论（很重要）**：功能关着的时候**根本不会被挂载**，所以实现里不能用
+`addTopBar` / `addDock` / `addTab` / `addCommand` 这类必须在 onload 同步注册的 API。
+真需要的话，把 `mount` 写成无条件执行、内部自己按开关收放。
 
 **新增一个功能 = 7 步**（顺序不能省）：
 
 1. 新建 `src/features/<id>/`（`<id>` 只允许小写字母、数字、连字符）
 2. 写 `index.ts`，默认导出 `defineFeature({id, category, name, description, settings, mount})`；
-   `name` / `description` 是 **i18n key**，不是字面量
+   `name` / `description` 是 **i18n key**，不是字面量；`settings` 里第一个必须是
+   默认关闭的开关（或声明 `isEnabled`）
 3. 在 `src/core/registry.ts` 登记：一行 import + 一个数组条目（顺序即面板里的显示顺序）
 4. 在 `feature-control.json` 里补上该 id 并选一个 state
 5. 把用到的所有 i18n key **同时**补进 `src/i18n/en.json` 与 `src/i18n/zh-CN.json`
@@ -138,7 +160,7 @@ log(...)                    带功能前缀的控制台日志
   `SettingField` 因此也没有 `group` 型 —— 从类型上就写不出层级。
 * 每个功能的名称与说明渲染成一行**小节标题**（`.some-settings-panel__sub`），
   它就是一行 `b3-label config-item`，位置在分类标题之后、该功能的设置行之前。
-* 界面自带动作区，**只有「取消 / 保存」两个按钮**，不额外加任何按钮或底栏。
+* 界面自带动作区，**面板底栏只有「取消 / 保存」两个按钮**，不额外加任何底栏按钮。
   ⚠️ 宿主的 `Dialog` **不会自动生成动作区**，动作区必须写在自己的 `content` 里。
 * 优先使用思源原生类名，保证与内置设置面板一致：
 
@@ -153,8 +175,14 @@ log(...)                    带功能前缀的控制台日志
   | 数字 + 单位 | `fn__size200 fn__flex-center fn__flex config-item__number` + `config-item__unit` |
   | 按钮        | `b3-button b3-button--outline fn__flex-center fn__size200`                       |
 
-* 设置字段只支持 `switch` / `text` / `number` / `select`。
-  **没有按钮型字段** —— 面板里不放自定义按钮。
+* 设置字段支持 `switch` / `text` / `number` / `select` 四种取值控件，外加一种 `button` 动作行：
+  * `select` 的 `options` 可以换成 `optionsProvider: () => SettingOption[]`，
+    在面板每次打开时现算候选集（笔记本、插件列表这类只有运行时才知道的数据）；
+    走这条路时 `core/config.ts` 不做白名单校验，失效的值由功能自己兜底
+  * `button`（`label` + `onClick`）**只用于「点击即打开某个窗口」这类没有可持久化取值的入口**，
+    不进草稿、不受「取消 / 保存」影响，只读 / 发布模式下禁用。
+    它不是用来放普通操作按钮的 —— 面板底栏仍然只有取消 / 保存
+* **每个功能的第一个设置行必须是默认关闭的开关**（或声明 `isEnabled`），见 §3。
 * **间距与分割线全部交给内核**：行内边距 `16px 24px`、行与行之间的 `1px` 分割线都来自
   `.b3-label`，插件不做覆盖。`PANEL_CSS` 只处理三处：分类标题的间距、
   去掉 `.config-items` 的灰底大圆角、功能名标题的字号。
@@ -175,11 +203,13 @@ log(...)                    带功能前缀的控制台日志
 3. **模块隔离**：功能之间零 import，只依赖 `core/`。
 4. **可回退**：任何功能异常都被 `core/error.ts` 隔离上报，绝不冒泡到插件入口；
    错误处理必须保证 UI 状态与磁盘状态一致（保存失败要回滚控件）。
-5. **默认关闭**：未明确要求的默认值一律取「关闭」或「跟随思源自身设置」。
+5. **默认关闭**：每个功能都必须有一个默认关闭的开关（或 `isEnabled` 谓词），
+   未明确要求的其它默认值一律取「关闭」或「跟随思源自身设置」。
 6. **移动端**：`getFrontend()` 返回 `mobile` / `browser-mobile` 时弹窗 92vw；
    不要依赖只有桌面端存在的 DOM。
 7. 每个功能都要在三种状态下自测：`state: 1`（正常）、`state: 0`（不加载不显示）、
-   `state: 2`（加载但不显示）。
+   `state: 2`（加载但不显示）；开关本身也要测「开着 → 关掉」是否真的把样式、监听、
+   注入的节点全部撤干净。
 
 ---
 
