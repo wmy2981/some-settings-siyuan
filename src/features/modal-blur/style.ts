@@ -28,6 +28,13 @@ const buildCss = (radius: number): string =>
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
+
+/* 非模态浮层（emoji / 图标选择面板、发布权限浮层）由内核把遮罩写成内联的
+   透明底色：它只是用来接"点外面关掉"的，糊上去会把背后的正文一起糊掉 */
+.b3-dialog__scrim[style*="transparent"] {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 `;
 
 export const mountModalBlur = (host: FeatureHost): FeatureInstance => {
