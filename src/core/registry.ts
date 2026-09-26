@@ -12,6 +12,7 @@ import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import hideMobileExit from "../features/hide-mobile-exit";
+import hideMobileSidebarItems from "../features/hide-mobile-sidebar-items";
 import kernelAutoReconnect from "../features/kernel-auto-reconnect";
 import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
@@ -41,6 +42,7 @@ export const FEATURES: FeatureDefinition[] = [
     kernelReconnectButton,
     kernelAutoReconnect,
     mobileSlashInsertPanel,
+    hideMobileSidebarItems,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

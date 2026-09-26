@@ -42,6 +42,9 @@
     },
     "mobile-slash-insert-panel": {
       "state": 1
+    },
+    "hide-mobile-sidebar-items": {
+      "state": 1
     }
   }
 }
