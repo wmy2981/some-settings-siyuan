@@ -17,6 +17,8 @@ const CODE_SELECTOR = "span[data-type~='code']";
 const WYSIWYG_SELECTOR = ".protyle-wysiwyg";
 const BUTTON_CLASS = "ss-inline-code-copy";
 const DEFAULT_MODE = "off";
+/** 行内代码与复制按钮之间那段空隙的容差（px）。 */
+const HOVER_GAP = 8;
 
 const COPY_CSS = `
 .${BUTTON_CLASS} {
@@ -162,16 +164,55 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         });
     };
 
+    /** 指针落在行内代码上，或落在它自己那个复制按钮上，都算"还在这一段上"。 */
+    const spanOfTarget = (target: Element): HTMLElement | undefined => {
+        const span = target.closest<HTMLElement>(CODE_SELECTOR);
+        if (span) {
+            return span;
+        }
+        const button = target.closest<HTMLElement>(`.${BUTTON_CLASS}`);
+        if (!button) {
+            return undefined;
+        }
+        for (const [owner, item] of buttons) {
+            if (item === button) {
+                return owner;
+            }
+        }
+        return undefined;
+    };
+
+    const insideOf = (span: HTMLElement, node: Node): boolean =>
+        span.contains(node) || Boolean(buttons.get(span)?.contains(node));
+
+    /**
+     * 按钮浮在行内代码的右上角，指针从代码滑过去时会先擦过两者之间那一小段空隙，
+     * 那一瞬间它在页面上是"什么都不属于"的，不能算离开。
+     */
+    const nearButtonOf = (span: HTMLElement, event: Event): boolean => {
+        const button = buttons.get(span);
+        const {clientX, clientY} = event as MouseEvent;
+        if (!button || typeof clientX !== "number" || typeof clientY !== "number") {
+            return false;
+        }
+        const rect = button.getBoundingClientRect();
+        return clientX >= rect.left - HOVER_GAP && clientX <= rect.right + HOVER_GAP &&
+            clientY >= rect.top - HOVER_GAP && clientY <= rect.bottom + HOVER_GAP;
+    };
+
     const onPointerOver = (event: Event) => {
         const target = event.target;
         if (!(target instanceof Element)) {
             return;
         }
-        const span = target.closest<HTMLElement>(CODE_SELECTOR);
+        const span = spanOfTarget(target);
         if (span === hovered) {
             return;
         }
-        hovered = span ?? undefined;
+        if (!span && hovered && nearButtonOf(hovered, event)) {
+            return;
+        }
+        hovered = span;
         if (modeOf(host) === "hover") {
             schedule();
         }
@@ -182,7 +223,10 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
             return;
         }
         const related = (event as PointerEvent).relatedTarget;
-        if (related instanceof Node && hovered.contains(related)) {
+        if (related instanceof Node && insideOf(hovered, related)) {
+            return;
+        }
+        if (nearButtonOf(hovered, event)) {
             return;
         }
         hovered = undefined;
