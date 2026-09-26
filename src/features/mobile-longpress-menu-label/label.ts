@@ -4,6 +4,10 @@
  * 只处理我们加过标记的 `<span>`：同一个菜单里「更多」二级项自带的 `<span>`
  * 不能被我们当成自己的删除掉。
  *
+ * 内核的 `.keyboard__action` 是按"里面只有一个图标"排的（`svg` 是左浮动，
+ * 按钮宽度就由这个浮动盒子撑开），所以补文字必须同时改按钮的排版，
+ * 否则文字会挤到浮动图标右边、把整条工具栏撑乱。
+ *
  * 容器的 `innerHTML` 由内核每次重写，所以观察它的 childList 并按帧合并重扫。
  */
 import type {
@@ -15,7 +19,34 @@ import type {
 const CONTAINER_SELECTOR = ".protyle-util--mobile";
 /** 我们自己补的文字标记。 */
 const MARK = "ss-menu-label";
+const MARK_ATTR = `data-${MARK}`;
 const RESCAN_INTERVAL_MS = 2000;
+
+const LABEL_CSS = `
+/* 补过文字的按钮改成"上图下字"的一列，总高与原生图标按钮一致（48px） */
+.keyboard__action[${MARK_ATTR}] {
+    box-sizing: border-box;
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.keyboard__action[${MARK_ATTR}] > svg {
+    width: 18px;
+    height: 18px;
+    padding: 6px 7px;
+    margin: 2px 3px 0;
+}
+
+.keyboard__action[${MARK_ATTR}] > span[${MARK_ATTR}] {
+    padding: 0 4px 4px;
+    color: var(--b3-theme-on-surface-light);
+    font-size: 10px;
+    line-height: 12px;
+}
+`;
 
 const wantedActions = (host: FeatureHost): string[] => {
     switch (String(host.config.mode ?? "off")) {
@@ -31,6 +62,8 @@ const wantedActions = (host: FeatureHost): string[] => {
 };
 
 export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
+    host.addStyle(LABEL_CSS);
+
     const observed = new WeakSet<HTMLElement>();
     const observers: MutationObserver[] = [];
     let frame = 0;
@@ -38,9 +71,10 @@ export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
     const apply = (container: HTMLElement) => {
         const actions = wantedActions(host);
         container.querySelectorAll<HTMLButtonElement>(".keyboard__action[data-action]").forEach((button) => {
-            const mine = button.querySelector<HTMLElement>(`span[data-${MARK}]`);
+            const mine = button.querySelector<HTMLElement>(`span[${MARK_ATTR}]`);
             if (!actions.includes(button.dataset.action ?? "")) {
                 mine?.remove();
+                button.removeAttribute(MARK_ATTR);
                 return;
             }
             if (mine) {
@@ -51,9 +85,10 @@ export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
                 return;
             }
             const label = document.createElement("span");
-            label.setAttribute(`data-${MARK}`, "true");
+            label.setAttribute(MARK_ATTR, "true");
             label.textContent = text;
             button.append(label);
+            button.setAttribute(MARK_ATTR, "true");
         });
     };
 
@@ -92,7 +127,10 @@ export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
                 frame = 0;
             }
             observers.forEach((observer) => observer.disconnect());
-            document.querySelectorAll<HTMLElement>(`span[data-${MARK}]`).forEach((label) => label.remove());
+            document.querySelectorAll<HTMLElement>(`span[${MARK_ATTR}]`).forEach((label) => label.remove());
+            document.querySelectorAll<HTMLElement>(`.keyboard__action[${MARK_ATTR}]`).forEach((button) =>
+                button.removeAttribute(MARK_ATTR)
+            );
         },
     };
 };
