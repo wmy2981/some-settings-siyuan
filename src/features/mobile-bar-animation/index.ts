@@ -21,6 +21,12 @@ export default defineFeature({
     description: "feature.mobileBarAnimation.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "number",
             key: "duration",
             title: "mobileBarAnimation.duration",
