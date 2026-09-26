@@ -99,6 +99,19 @@ export type SettingField =
          * 走这条路时不再做白名单校验，失效的值由功能自己兜底。
          */
         optionsProvider?: () => SettingOption[];
+    }
+    | {
+        /**
+         * 纯动作行：点击立刻执行，不参与配置的读写与「保存 / 取消」语义。
+         * 只允许用于「打开某个诊断窗口」这类没有可持久化取值的入口。
+         */
+        kind: "button";
+        key: string;
+        title: string;
+        description?: string;
+        /** 按钮文字，i18n key。 */
+        label: string;
+        onClick: () => void;
     };
 
 /** 功能被启用时要处理的所有 UI 注册入口。 */

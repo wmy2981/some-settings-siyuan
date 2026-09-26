@@ -106,9 +106,9 @@ for (const dir of featureDirs) {
     });
 
     const i18nKeys = new Set();
-    // title / description / placeholder 的值必须是 i18n key。
+    // title / description / placeholder / label 的值必须是 i18n key。
     // default 是「实际内容」，不是 key，所以刻意不检查。
-    [...settingsSource.matchAll(/\b(title|description|placeholder)\s*:\s*"([^"]+)"/g)]
+    [...settingsSource.matchAll(/\b(title|description|placeholder|label)\s*:\s*"([^"]+)"/g)]
         .forEach((match) => i18nKeys.add(match[2]));
     // select 选项的标签
     [...settingsSource.matchAll(/options\s*:\s*\[([\s\S]*?)\]/g)].forEach((match) => {

@@ -30,6 +30,7 @@ import type {
     SettingField,
 } from "./types";
 import {
+    buttonRowHtml,
     categoryHtml,
     ensurePanelCss,
     escapeHtml,
@@ -384,6 +385,17 @@ export class SettingsPanel {
                     readonly,
                 );
             }
+            case "button":
+                return buttonRowHtml(
+                    bindKey(feature.id, field.key),
+                    this.t(field.title),
+                    this.t(field.label),
+                    {
+                        description: field.description ? this.t(field.description) : "",
+                        // 动作行在只读/发布模式下不提供，避免点了没有反应
+                        disabled: readonly,
+                    },
+                );
             case "number":
                 return numberRowHtml(
                     bindKey(feature.id, field.key),
@@ -438,6 +450,25 @@ export class SettingsPanel {
         scope.querySelectorAll<HTMLInputElement>("[data-ss-text]").forEach((input) => {
             input.addEventListener("change", () => {
                 this.stage(input.dataset.ssText as string, input.value);
+            });
+        });
+        // 动作行：点击立刻执行，不进草稿，因此不受「取消 / 保存」影响
+        scope.querySelectorAll<HTMLButtonElement>("[data-ss-button]").forEach((button) => {
+            button.addEventListener("click", () => {
+                const encoded = button.dataset.ssButton as string;
+                const [featureId, key] = parseBindKey(encoded);
+                const field = this.options.features
+                    .find((feature) => feature.id === featureId)
+                    ?.settings.find((item) => item.kind === "button" && item.key === key);
+                if (!field || field.kind !== "button") {
+                    console.warn(`[some-settings-siyuan] 动作行 "${encoded}" 找不到对应的 onClick，已忽略`);
+                    return;
+                }
+                try {
+                    field.onClick();
+                } catch (error) {
+                    reportError(`${featureId}.${key}`, error);
+                }
             });
         });
     }

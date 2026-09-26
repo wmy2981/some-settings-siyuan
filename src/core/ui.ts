@@ -144,6 +144,25 @@ export const textRowHtml = (
 </div>`;
 
 /**
+ * 原生风格的动作行：右侧一个 `b3-button--outline`。
+ *
+ * 只用于「点击即打开某个窗口」这类没有可持久化取值的入口。
+ * 按钮不参与草稿：点击立刻执行，不受「取消 / 保存」影响。
+ */
+export const buttonRowHtml = (
+    key: string,
+    title: string,
+    label: string,
+    options: {description?: string; disabled?: boolean;} = {},
+): string =>
+    `<div class="fn__flex b3-label config-item" data-ss-row="${escapeHtml(key)}">
+    ${mainHtml(title, options.description)}
+    <span class="fn__space"></span>
+    <button class="b3-button b3-button--outline fn__flex-center fn__size200" type="button"
+    data-ss-button="${escapeHtml(key)}"${options.disabled ? " disabled" : ""}>${escapeHtml(label)}</button>
+</div>`;
+
+/**
  * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
  *
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
