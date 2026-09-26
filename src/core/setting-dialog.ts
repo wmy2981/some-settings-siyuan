@@ -420,7 +420,10 @@ export class SettingsPanel {
                         min: field.min,
                         max: field.max,
                         step: field.step,
-                        unit: field.unit,
+                        // 单位同样按 i18n key 解析：像 "px" 这种查不到的会原样返回，
+                        // 而 "kernelAutoReconnect.times" 这种才能翻成「次」/ "times"。
+                        // 以前这里直接把 key 当字面量渲染，面板上真的会显示那串 key。
+                        unit: field.unit ? this.t(field.unit) : undefined,
                         description: field.description ? this.t(field.description) : "",
                         disabled: readonly,
                     },
