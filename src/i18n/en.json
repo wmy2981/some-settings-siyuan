@@ -97,5 +97,15 @@
   "mobileLongpressMenuLabel.modePaste": "Paste",
   "mobileLongpressMenuLabel.modeBoth": "Copy and paste",
   "feature.mobileBlockIconAlways.name": "Keep the block icon visible on mobile",
-  "feature.mobileBlockIconAlways.desc": "While a block is being operated on mobile its block icon no longer flickers: it is put back the moment the kernel clears it, and clicking it still opens the native menu."
+  "feature.mobileBlockIconAlways.desc": "While a block is being operated on mobile its block icon no longer flickers: it is put back the moment the kernel clears it, and clicking it still opens the native menu.",
+  "feature.inlineCodeCopy.name": "Copy button for inline code",
+  "feature.inlineCodeCopy.desc": "Adds a copy button to inline code, with hover-only, always-on, device-dependent or disabled behaviour.",
+  "inlineCodeCopy.mode": "Visibility",
+  "inlineCodeCopy.modeOff": "Off (default)",
+  "inlineCodeCopy.modeHover": "On hover",
+  "inlineCodeCopy.modeAlways": "Always",
+  "inlineCodeCopy.modeAuto": "Automatic by device",
+  "inlineCodeCopy.label": "Copy inline code",
+  "inlineCodeCopy.copied": "Inline code copied",
+  "inlineCodeCopy.failed": "Copy failed"
 }

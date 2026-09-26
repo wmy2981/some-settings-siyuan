@@ -60,6 +60,9 @@
     },
     "mobile-block-icon-always": {
       "state": 1
+    },
+    "inline-code-copy": {
+      "state": 1
     }
   }
 }
