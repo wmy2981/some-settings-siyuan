@@ -73,6 +73,7 @@
   "kernelAutoReconnect.interval": "重试间隔",
   "feature.mobileSlashPanel.name": "移动端斜杠面板用桌面样式",
   "feature.mobileSlashPanel.desc": "移动端输入 / 时显示桌面端那套插入块面板，而不是键盘工具栏里的紧凑候选；候选项与插入行为都沿用思源自己的实现。",
+  "mobileSlashPanel.saveFailed": "没能把「移动端斜杠菜单」偏好写进思源，重启后会失效（本次会话内仍有效）",
   "feature.mobileRefPanelHeight.name": "移动端增大候选浮层高度",
   "feature.mobileRefPanelHeight.desc": "移动端把引用搜索等候选浮层的高度放宽到视口的指定比例，且永远不会超出当前可视区底部。",
   "mobileRefPanelHeight.maxHeight": "目标高度",

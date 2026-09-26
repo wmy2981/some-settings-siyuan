@@ -47,6 +47,22 @@ const persist = (value: SlashMenuFlag): void => {
     });
 };
 
+/**
+ * 写盘后读回校验：宿主的接口在真正落盘前就可能 resolve，不校验等于静默失败
+ * （与 `core/config.ts` 的约定一致）。内存里那一份已经生效，所以失败也必须让用户看见，
+ * 否则现象就是"重开之后这个功能自己失效了"。
+ */
+const verify = (host: FeatureHost, expected: boolean): void => {
+    fetchPost("/api/storage/getLocalStorageVal", {key: STORAGE_KEY}, (response) => {
+        const stored = response.code === 0 ? (response.data as SlashMenuFlag | null) : null;
+        if (stored?.enabled === expected) {
+            return;
+        }
+        host.log(`读回 ${STORAGE_KEY} 与写入不一致：${JSON.stringify(stored ?? null)}`);
+        host.showMessage(host.i18n("mobileSlashPanel.saveFailed"));
+    });
+};
+
 export const mountMobileSlashPanel = (host: FeatureHost): FeatureInstance => {
     const saved = readFlag();
 
@@ -61,6 +77,7 @@ export const mountMobileSlashPanel = (host: FeatureHost): FeatureInstance => {
         const next: SlashMenuFlag = {...readFlag(), enabled: true};
         target[STORAGE_KEY] = next;
         persist(next);
+        verify(host, true);
     };
 
     apply();
