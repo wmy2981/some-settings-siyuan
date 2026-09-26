@@ -40,5 +40,7 @@
   "feature.mobileSyncButton.name": "Always show Sync on mobile",
   "feature.mobileSyncButton.desc": "Keeps the Sync button visible in the mobile top-right corner; the click behaviour stays SiYuan's own sync guide.",
   "feature.hideMobileExit.name": "Hide the mobile Quit button",
-  "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel that is very easy to tap by accident."
+  "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel that is very easy to tap by accident.",
+  "feature.codeBlockLangEmpty.name": "Never remember the code language",
+  "feature.codeBlockLangEmpty.desc": "New code blocks always start with an empty language instead of reusing the language picked last time."
 }

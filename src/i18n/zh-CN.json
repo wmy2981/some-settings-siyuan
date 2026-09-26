@@ -40,5 +40,7 @@
   "feature.mobileSyncButton.name": "移动端常显立即同步",
   "feature.mobileSyncButton.desc": "移动端右上角总是显示「立即同步」按钮，行为沿用思源原生的同步引导。",
   "feature.hideMobileExit.name": "隐藏移动端退出应用按钮",
-  "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标、极易误触的「退出应用」按钮。"
+  "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标、极易误触的「退出应用」按钮。",
+  "feature.codeBlockLangEmpty.name": "代码块语言不记忆",
+  "feature.codeBlockLangEmpty.desc": "新建代码块时语言总是为空，不再沿用上一次选过的语言。"
 }

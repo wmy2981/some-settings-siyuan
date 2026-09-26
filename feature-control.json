@@ -21,6 +21,9 @@
     },
     "hide-mobile-exit": {
       "state": 1
+    },
+    "code-block-lang-empty": {
+      "state": 1
     }
   }
 }
