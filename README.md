@@ -27,25 +27,43 @@ One manifest at the repository root decides what loads and what is visible:
 }
 ```
 
-| `state` | Load existing config | Show settings UI | Run the feature |
-| ------- | -------------------- | ---------------- | --------------- |
-| `0`     | no                   | no               | no              |
-| `1`     | yes                  | yes              | yes             |
-| `2`     | yes                  | no               | yes             |
-| `3`     | no                   | yes              | yes             |
+| `state` | Load existing config | Show settings UI | Allowed to run |
+| ------- | -------------------- | ---------------- | -------------- |
+| `0`     | no                   | no               | no             |
+| `1`     | yes                  | yes              | yes            |
+| `2`     | yes                  | no               | yes            |
+| `3`     | no                   | yes              | yes            |
 
 Every state is useful:
 
 * **`0`** — retire an outdated feature entirely while keeping its code in the repository
-* **`1`** — normal, fully working feature
-* **`2`** — keep the behaviour running for existing users but hide it from new ones
-* **`3`** — show and edit the settings without letting the feature run
+* **`1`** — normal, available
+* **`2`** — keeps running, but its rows are hidden from the panel
+* **`3`** — show and edit the settings without loading the stored config
 
 A missing key, an out-of-range value or an unknown id is treated as `0` at runtime, and
 `npm run check` refuses to build until the manifest and the code agree again.
 
 A feature can also declare that it only applies to one frontend (`frontends: ["mobile"]`). When it does,
 the other frontend neither mounts it nor lists it in the settings panel.
+
+### The manifest decides "may", the switch decides "does"
+
+Those are deliberately two different things:
+
+* `feature-control.json` only decides whether **stored config is loaded** and whether the feature's
+  **rows appear in the panel**
+* whether a feature actually **runs** is its own control's job — the first row of every feature is an
+  `enabled` switch that defaults to **off**, and its dropdowns/inputs are its parameters
+
+So a fresh install has **every feature off** and you turn them on one by one under
+**Settings → Marketplace → Downloaded → (this plugin) → Settings**. Switching one off unmounts it
+completely — styles, listeners and injected nodes are all released — with no plugin reload.
+Two features are the exception because their own requirement is a selector that already includes an
+"off" option: `inline-code-copy` and `mobile-longpress-menu-label`.
+
+A feature with `state: 2` has no switch to click, so it counts as allowed to run; otherwise that state
+would be one that can never do anything.
 
 ## Features
 
@@ -175,12 +193,19 @@ Where the data lives at runtime, in the workspace:
 7. Only use `FeatureHost` for platform access (`addCommand`, `addEventBus`, `addStyle`, `addTopBar`, …).
    Features must not import each other; shared logic goes in `src/core/`.
 8. `settings` offers four value controls and one action row:
+   * every feature **must** have a control that defaults to off: a `switch` with `key: "enabled"` and
+     `default: false`, or an `isEnabled(config)` predicate (the escape hatch for a feature whose own
+     requirement is a selector that already includes an "off" option). `npm run check` refuses a feature
+     that has neither
    * `switch` / `text` / `number` / `select` take part in config reading and in Save / Cancel
    * a `select` can use `optionsProvider` instead of a static `options` list to compute its candidates each
      time the panel opens (notebooks, plugin lists and other runtime-only data); no whitelist is applied then
    * `button` fires an action and has no persisted value at all (for example "open the console log").
      It stays out of the draft and is disabled in read-only / publish mode
      There is still no group kind — the panel is one flat level, and a group would put the hierarchy straight back.
+9. A feature that is **off is not mounted**, so its implementation must not rely on `addTopBar` / `addDock` /
+   `addTab` / `addCommand`, which have to be registered synchronously during onload. If one ever needs them,
+   its `mount` has to run unconditionally and gate itself on the switch.
 
 ## Development
 
@@ -215,6 +240,12 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * Turning a feature off does **not** remove its code from the bundle. Gating is runtime-only, so that
   changing `feature-control.json` never requires a source edit or a conditional import. The trade-off is
   bundle size versus the ability to disable something by editing one data file.
+* **A feature that is off is not mounted**, so it cannot use `addTopBar` / `addDock` / `addTab` /
+  `addCommand`, which must be registered synchronously during onload. None of the 24 features need them;
+  one that does would have to mount unconditionally and gate itself on the switch.
+* `mobile-console-log` only starts collecting console output once its switch is on, so by design the logs
+  from plugin startup, and from before you flipped the switch, are not recorded. Turn it on and reproduce
+  the problem.
 * The plugin puts nothing in the top bar or status bar by design; the only entry point is SiYuan's own
   _Settings_ button on the plugin card in **Marketplace → Downloaded**.
 * Saving is atomic per panel session: **Save** writes every changed feature's JSON file, **Cancel** writes
