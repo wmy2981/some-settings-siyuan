@@ -171,7 +171,14 @@ export interface FeatureDefinition {
     /** 不写表示桌面端与移动端都适用。 */
     frontends?: FeatureFrontend[];
     settings: SettingField[];
-    /** 仅在 mountEnabled 为真时调用。 */
+    /**
+     * 该功能此刻是否应当运行。
+     *
+     * 不写表示看面板里那个 `enabled` 开关（默认关闭）。只有当开关不是一个布尔量时
+     * 才需要自己声明，例如用一个 `select` 的「禁用」选项当开关的功能。
+     */
+    isEnabled?(config: FeatureConfig): boolean;
+    /** 仅在 mountEnabled 为真、且 isEnabled 为真时调用。 */
     mount?(host: FeatureHost): FeatureInstance | void;
 }
 

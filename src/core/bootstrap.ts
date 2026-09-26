@@ -42,6 +42,15 @@ import type {
     FeatureInstance,
 } from "./types";
 
+/**
+ * 功能此刻是否应当运行。
+ *
+ * 默认看面板里那个 `enabled` 开关（每个功能都必须有一个，默认关闭）；
+ * 用别的控件当开关的功能（例如拿 select 的「禁用」选项当开关）自己声明 isEnabled。
+ */
+const isEnabled = (definition: FeatureDefinition, config: FeatureConfig): boolean =>
+    definition.isEnabled ? definition.isEnabled(config) : config.enabled === true;
+
 interface MountedFeature {
     definition: FeatureDefinition;
     host: FeatureHost;
@@ -69,7 +78,7 @@ export class FeatureManager {
     }
 
     /**
-     * 建立全部功能的配置内存态，并按四态真正启动功能。
+     * 建立全部功能的配置内存态，并按四态 + 各功能自己的开关决定挂不挂载。
      * 由插件在 onload 阶段调用一次。
      */
     async load(): Promise<void> {
@@ -86,10 +95,31 @@ export class FeatureManager {
             }
             // 只对一个前端有意义的功能（例如只有移动端存在的入口）在另一端既不挂载、
             // 也不在面板里出现；判定与设置面板共用 core/frontend.ts，不会出现两边打架。
-            if (control.mountEnabled && supportsCurrentFrontend(definition)) {
-                this.mount(definition);
+            if (!control.mountEnabled || !supportsCurrentFrontend(definition)) {
+                continue;
             }
+            // 面板里能看到开关的功能才受开关约束。state 2 没有开关可点，
+            // 若也要求 enabled 为真，它就变成了一个永远不工作的状态。
+            const gated = control.showUi;
+            this.syncMount(definition, gated);
+            // 面板一保存就立刻按新开关生效：打开即挂载、关闭即完整卸载，
+            // 不需要为了关掉一个功能去重载插件。
+            this.store.subscribe(definition.id, () => this.syncMount(definition, gated));
         }
+    }
+
+    /** 按「该不该运行」调整挂载状态；幂等。 */
+    private syncMount(definition: FeatureDefinition, gated: boolean): void {
+        const wanted = !gated || isEnabled(definition, this.store.get(definition.id));
+        const mounted = this.mounted.has(definition.id);
+        if (wanted === mounted) {
+            return;
+        }
+        if (wanted) {
+            this.mount(definition);
+            return;
+        }
+        this.unmount(definition.id);
     }
 
     private mount(definition: FeatureDefinition): void {
