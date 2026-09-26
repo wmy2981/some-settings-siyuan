@@ -20,6 +20,12 @@ export default defineFeature({
     frontends: ["mobile"],
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "number",
             key: "maxHeight",
             title: "mobileRefPanelHeight.maxHeight",
