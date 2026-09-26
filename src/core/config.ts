@@ -67,6 +67,10 @@ export const normalizeConfig = (
 
     const visit = (fields: SettingField[]) => {
         fields.forEach((field) => {
+            // 动作行只负责触发一次行为，没有可持久化的取值，配置里不该出现它的 key
+            if (field.kind === "button") {
+                return;
+            }
             const value = source[field.key];
             if (typeof value === "undefined") {
                 result[field.key] = field.default;
