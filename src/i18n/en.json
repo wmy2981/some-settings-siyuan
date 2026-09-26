@@ -117,5 +117,20 @@
   "commandPanelSlim.rowHeight": "Row height",
   "commandPanelSlim.rowHeightTip": "The kernel default is 28px; smaller values fit more commands on screen",
   "feature.codeSnippetHighlight.name": "Syntax highlighting for snippets",
-  "feature.codeSnippetHighlight.desc": "Colours the snippet editor under Settings using CSS/JS syntax, with SiYuan's own highlight.js and the currently selected code theme, so it follows theme changes."
+  "feature.codeSnippetHighlight.desc": "Colours the snippet editor under Settings using CSS/JS syntax, with SiYuan's own highlight.js and the currently selected code theme, so it follows theme changes.",
+  "feature.mobileConsoleLog.name": "Console log viewer",
+  "feature.mobileConsoleLog.desc": "Mobile has no developer console: this collects console output from the moment the plugin loads and shows the full log in a dialog from the button below.",
+  "mobileConsoleLog.capacity": "Retained entries",
+  "mobileConsoleLog.capacityTip": "The oldest entries are dropped once this is exceeded",
+  "mobileConsoleLog.entries": "entries",
+  "mobileConsoleLog.open": "View the log",
+  "mobileConsoleLog.openTip": "The dialog lets you read every entry, copy the whole log, or clear it",
+  "mobileConsoleLog.openLabel": "Open console log",
+  "mobileConsoleLog.title": "Console log",
+  "mobileConsoleLog.count": "${count} entries",
+  "mobileConsoleLog.copy": "Copy all",
+  "mobileConsoleLog.clear": "Clear",
+  "mobileConsoleLog.copied": "Log copied",
+  "mobileConsoleLog.copyFailed": "Copy failed",
+  "mobileConsoleLog.empty": "No log entries yet"
 }

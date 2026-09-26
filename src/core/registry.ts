@@ -20,6 +20,7 @@ import kernelAutoReconnect from "../features/kernel-auto-reconnect";
 import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileBlockIconAlways from "../features/mobile-block-icon-always";
+import mobileConsoleLog from "../features/mobile-console-log";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
@@ -59,6 +60,7 @@ export const FEATURES: FeatureDefinition[] = [
     inlineCodeCopy,
     desktopCommandPanelSlim,
     codeSnippetHighlight,
+    mobileConsoleLog,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

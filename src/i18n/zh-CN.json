@@ -117,5 +117,20 @@
   "commandPanelSlim.rowHeight": "行高",
   "commandPanelSlim.rowHeightTip": "内核默认 28px；越小同屏能看到的命令越多",
   "feature.codeSnippetHighlight.name": "代码片段编辑区高亮",
-  "feature.codeSnippetHighlight.desc": "设置里的代码片段编辑框按 CSS / JS 语法上色，用的是思源自己那份 highlight.js 与当前选中的高亮主题；主题换了这里跟着换。"
+  "feature.codeSnippetHighlight.desc": "设置里的代码片段编辑框按 CSS / JS 语法上色，用的是思源自己那份 highlight.js 与当前选中的高亮主题；主题换了这里跟着换。",
+  "feature.mobileConsoleLog.name": "控制台日志查看器",
+  "feature.mobileConsoleLog.desc": "移动端没有开发者控制台：这个功能从插件加载起收集控制台输出，点下面的按钮即可在弹窗里查看完整日志。",
+  "mobileConsoleLog.capacity": "日志保留条数",
+  "mobileConsoleLog.capacityTip": "超出后会丢弃最早的日志",
+  "mobileConsoleLog.entries": "条",
+  "mobileConsoleLog.open": "查看日志",
+  "mobileConsoleLog.openTip": "弹窗里可以逐条查看、一键复制全部，也可以清空",
+  "mobileConsoleLog.openLabel": "打开控制台日志",
+  "mobileConsoleLog.title": "控制台日志",
+  "mobileConsoleLog.count": "共 ${count} 条",
+  "mobileConsoleLog.copy": "复制全部",
+  "mobileConsoleLog.clear": "清空",
+  "mobileConsoleLog.copied": "已复制全部日志",
+  "mobileConsoleLog.copyFailed": "复制失败",
+  "mobileConsoleLog.empty": "还没有日志"
 }
