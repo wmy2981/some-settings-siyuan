@@ -98,7 +98,6 @@ would be one that can never do anything.
 | `mobile-longpress-menu-label` | mobile   | Adds text to the copy/paste buttons in the long-press menu (off, copy, paste, or both)                            |
 | `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                             |
 | `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                          |
-| `hide-mobile-sidebar-items`   | mobile   | Hides named entries from the mobile side panel tab strips                                                         |
 
 ### Development
 

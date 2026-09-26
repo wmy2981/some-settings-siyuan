@@ -14,7 +14,6 @@ import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import hideMobileExit from "../features/hide-mobile-exit";
-import hideMobileSidebarItems from "../features/hide-mobile-sidebar-items";
 import inlineCodeCopy from "../features/inline-code-copy";
 import kernelAutoReconnect from "../features/kernel-auto-reconnect";
 import kernelReconnectButton from "../features/kernel-reconnect-button";
@@ -51,7 +50,6 @@ export const FEATURES: FeatureDefinition[] = [
     kernelReconnectButton,
     kernelAutoReconnect,
     mobileSlashInsertPanel,
-    hideMobileSidebarItems,
     mobileRefPanelHeight,
     mobileTabDocIcon,
     mobileSelectNative,

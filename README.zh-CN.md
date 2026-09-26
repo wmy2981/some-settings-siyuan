@@ -96,7 +96,6 @@
 | `mobile-longpress-menu-label` | 移动端   | 长按菜单里的复制 / 粘贴补上文字（禁用 / 复制 / 粘贴 / 两者）              |
 | `mobile-block-icon-always`    | 移动端   | 操作某个块时它的块标保持显示，不再时而显示时而隐藏                        |
 | `hide-mobile-exit`            | 移动端   | 隐藏侧面板里只有图标的「退出应用」按钮                                    |
-| `hide-mobile-sidebar-items`   | 移动端   | 按标识隐藏侧面板页签条里的指定导航项                                      |
 
 ### 开发
 
