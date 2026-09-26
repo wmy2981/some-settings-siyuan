@@ -85,7 +85,7 @@
 | `doc-tree-opened-accent`      | 两端     | 文档树中当前打开的笔记左边缘显示贴合强调色，色值与宽度可自定义         |
 | `inline-code-copy`            | 两端     | 行内代码复制按钮：禁用 / 悬浮 / 总是 / 按设备自动                      |
 | `code-snippet-highlight`      | 两端     | 代码片段编辑框按 CSS / JS 上色，复用思源的 highlight.js 与当前高亮主题 |
-| `desktop-command-panel-slim`  | 桌面端   | 压紧命令面板行高、去掉底部与每行的快捷键提示                           |
+| `desktop-command-panel-slim`  | 桌面端   | 命令面板宽度缩到思源原生宽度的指定百分比（默认 50%）                   |
 | `mobile-sidebar-blur`         | 移动端   | 移动端侧面板高斯模糊                                                   |
 | `mobile-dock-blur`            | 移动端   | 移动端悬浮 dock 栏高斯模糊                                             |
 | `mobile-bar-animation`        | 移动端   | 顶栏 / 面包屑 / 悬浮 dock 栏滚动显隐的平滑过渡                         |

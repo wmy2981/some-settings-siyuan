@@ -4,54 +4,36 @@
  * 选择器统一挂在 `[data-key="dialog-commandpanel"]` 上（那是 Dialog 外层 wrapper 的属性），
  * 不用 `.b3-dialog__container` 之类的通用类，避免顺手把别的弹窗也改了。
  *
- * 底部的快捷键提示条只是移除显示，不删节点——面板的行为完全不受影响，
- * 插件卸载后立刻恢复原样。
+ * 宽度是内核写在容器上的**内联样式**（`width: 80vw`），插件不去改内核的 DOM，
+ * 所以只能靠 `!important` 压过它，并按同一个基准值等比缩放。
  */
 import type {
     FeatureHost,
     FeatureInstance,
 } from "../../core/types";
 
-const DEFAULT_ROW_HEIGHT = 24;
+/** 内核给命令面板的宽度，来自它的 `new Dialog({width: "80vw"})`。 */
+const NATIVE_WIDTH_VW = 80;
+const DEFAULT_PERCENT = 50;
 
-const hideTipOf = (host: FeatureHost): boolean => host.config.hideTip !== false;
-
-const hideMetaOf = (host: FeatureHost): boolean => host.config.hideMeta === true;
-
-const rowHeightOf = (host: FeatureHost): number => {
-    const value = Number(host.config.rowHeight);
+const percentOf = (host: FeatureHost): number => {
+    const value = Number(host.config.width);
     if (!Number.isFinite(value)) {
-        return DEFAULT_ROW_HEIGHT;
+        return DEFAULT_PERCENT;
     }
-    return Math.min(32, Math.max(20, Math.round(value)));
+    return Math.min(100, Math.max(20, Math.round(value)));
 };
 
-const buildCss = (hideTip: boolean, hideMeta: boolean, rowHeight: number): string =>
-    `/* 桌面端命令面板瘦身 */
-${
-        hideTip ?
-            `[data-key="dialog-commandpanel"] .search__tip {
-    display: none;
-}
-` :
-            ""
-    }${
-        hideMeta ?
-            `[data-key="dialog-commandpanel"] .b3-list-item__meta {
-    display: none;
-}
-` :
-            ""
-    }[data-key="dialog-commandpanel"] #commands > .b3-list-item {
-    min-height: ${rowHeight}px;
-    line-height: ${rowHeight}px;
-    margin: 0 6px;
+const buildCss = (percent: number): string =>
+    `/* 桌面端命令面板瘦身：宽度按思源原生值等比缩放 */
+[data-key="dialog-commandpanel"] .b3-dialog__container {
+    width: ${NATIVE_WIDTH_VW * percent / 100}vw !important;
 }
 `;
 
 export const mountCommandPanelSlim = (host: FeatureHost): FeatureInstance => {
     const apply = () => {
-        host.addStyle(buildCss(hideTipOf(host), hideMetaOf(host), rowHeightOf(host)));
+        host.addStyle(buildCss(percentOf(host)));
     };
 
     apply();
