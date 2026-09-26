@@ -16,6 +16,12 @@ export default defineFeature({
     description: "feature.kernelAutoReconnect.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "number",
             key: "attempts",
             title: "kernelAutoReconnect.attempts",
