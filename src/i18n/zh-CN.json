@@ -88,5 +88,12 @@
   "mobileTabDocIcon.styleSvg": "SVG（思源默认）",
   "mobileTabDocIcon.styleEmoji": "emoji",
   "feature.mobileSelectNative.name": "移动端下拉用思源原生样式",
-  "feature.mobileSelectNative.desc": "移动端点开下拉选择器时不再用 WebView 自己的弹层，而是弹出思源原生的菜单；选中后照常补发 change。"
+  "feature.mobileSelectNative.desc": "移动端点开下拉选择器时不再用 WebView 自己的弹层，而是弹出思源原生的菜单；选中后照常补发 change。",
+  "feature.mobileLongpressMenuLabel.name": "移动端长按菜单补文字",
+  "feature.mobileLongpressMenuLabel.desc": "给移动端长按选区菜单里只有图标的复制 / 粘贴按钮补上文字，使用思源原生的菜单项样式。",
+  "mobileLongpressMenuLabel.mode": "补文字的项目",
+  "mobileLongpressMenuLabel.modeOff": "禁用（默认）",
+  "mobileLongpressMenuLabel.modeCopy": "复制",
+  "mobileLongpressMenuLabel.modePaste": "粘贴",
+  "mobileLongpressMenuLabel.modeBoth": "复制与粘贴"
 }

@@ -17,6 +17,7 @@ import kernelAutoReconnect from "../features/kernel-auto-reconnect";
 import kernelReconnectButton from "../features/kernel-reconnect-button";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
+import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
@@ -49,6 +50,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileRefPanelHeight,
     mobileTabDocIcon,
     mobileSelectNative,
+    mobileLongpressMenuLabel,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

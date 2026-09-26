@@ -54,6 +54,9 @@
     },
     "mobile-select-native": {
       "state": 1
+    },
+    "mobile-longpress-menu-label": {
+      "state": 1
     }
   }
 }

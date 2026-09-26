@@ -88,5 +88,12 @@
   "mobileTabDocIcon.styleSvg": "SVG (SiYuan default)",
   "mobileTabDocIcon.styleEmoji": "Emoji",
   "feature.mobileSelectNative.name": "Native SiYuan style for mobile dropdowns",
-  "feature.mobileSelectNative.desc": "Opening a dropdown on mobile shows SiYuan's own menu instead of the WebView picker, and still fires change on selection."
+  "feature.mobileSelectNative.desc": "Opening a dropdown on mobile shows SiYuan's own menu instead of the WebView picker, and still fires change on selection.",
+  "feature.mobileLongpressMenuLabel.name": "Labels in the mobile long-press menu",
+  "feature.mobileLongpressMenuLabel.desc": "Adds text to the icon-only copy and paste buttons in the mobile long-press menu, using SiYuan's own menu item styling.",
+  "mobileLongpressMenuLabel.mode": "Which buttons get a label",
+  "mobileLongpressMenuLabel.modeOff": "Off (default)",
+  "mobileLongpressMenuLabel.modeCopy": "Copy",
+  "mobileLongpressMenuLabel.modePaste": "Paste",
+  "mobileLongpressMenuLabel.modeBoth": "Copy and paste"
 }
