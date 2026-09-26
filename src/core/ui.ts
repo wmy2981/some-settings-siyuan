@@ -52,12 +52,43 @@ export const categoryHtml = (title: string, bodyHtml: string): string =>
     `<div class="config-title">${escapeHtml(title)}</div>
 <div class="config-items">${bodyHtml}</div>`;
 
+/** 开关控件本体（不含行容器）：功能自己那一行与参数行共用同一份标记。 */
+export const switchControlHtml = (
+    key: string,
+    label: string,
+    checked: boolean,
+    disabled = false,
+): string =>
+    `<input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="${escapeHtml(key)}" aria-label="${
+        escapeHtml(label)
+    }"${checked ? " checked" : ""}${disabled ? " disabled" : ""}/>`;
+
+/** 下拉控件本体（不含行容器）。 */
+export const selectControlHtml = (
+    key: string,
+    options: {value: string; label: string;}[],
+    current: string,
+    disabled = false,
+): string =>
+    `<select class="b3-select fn__flex-center fn__size200" data-ss-select="${escapeHtml(key)}"${
+        disabled ? " disabled" : ""
+    }>
+    ${
+        options.map((option) =>
+            `<option value="${escapeHtml(option.value)}"${option.value === current ? " selected" : ""}>${
+                escapeHtml(option.label)
+            }</option>`
+        ).join("")
+    }
+    </select>`;
+
 /**
- * 功能自己的那一行：功能名 + 说明，右边直接跟它那个默认关闭的开关。
+ * 功能自己的那一行：功能名 + 说明，右边直接跟它的开关。
  *
  * 开关不单独占一行：功能只有开关时，那样会多出一个孤零零的「启用」行；
  * 功能还有别的参数时，「启用」又会插在功能说明和它的参数之间——两种都不好看。
  * 开关跟着功能名走之后，面板里就只剩一种行：左边文案、右边控件。
+ * 拿 selector 当开关的功能同理，「显示方式」也不再单独占一行（见 setting-dialog.ts）。
  *
  * 它照样带内核的分割线——分割线在功能行与它下面的第一个参数行之间必须留着，
  * 否则参数会看起来像挂在功能名上。
@@ -65,17 +96,15 @@ export const categoryHtml = (title: string, bodyHtml: string): string =>
 export const subtitleRowHtml = (
     title: string,
     description?: string,
-    toggle?: {key: string; label: string; checked: boolean; disabled?: boolean;},
+    control?: {key: string; html: string;},
 ): string => {
-    if (!toggle) {
+    if (!control) {
         return `<div class="b3-label config-item ${PANEL_CLASS}__sub">${mainHtml(title, description)}</div>`;
     }
-    return `<div class="fn__flex b3-label config-item ${PANEL_CLASS}__sub" data-ss-row="${escapeHtml(toggle.key)}">
+    return `<div class="fn__flex b3-label config-item ${PANEL_CLASS}__sub" data-ss-row="${escapeHtml(control.key)}">
     ${mainHtml(title, description)}
     <span class="fn__space"></span>
-    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="${escapeHtml(toggle.key)}" aria-label="${
-        escapeHtml(toggle.label)
-    }"${toggle.checked ? " checked" : ""}${toggle.disabled ? " disabled" : ""}/>
+    ${control.html}
 </div>`;
 };
 
@@ -90,9 +119,7 @@ export const switchRowHtml = (
     `<label class="fn__flex b3-label config-item" data-ss-row="${escapeHtml(key)}">
     ${mainHtml(title, description)}
     <span class="fn__space"></span>
-    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="${escapeHtml(key)}"${
-        checked ? " checked" : ""
-    }${disabled ? " disabled" : ""}/>
+    ${switchControlHtml(key, title, checked, disabled)}
 </label>`;
 
 /** 原生风格的下拉行。 */
@@ -107,17 +134,7 @@ export const selectRowHtml = (
     `<div class="fn__flex b3-label config-item" data-ss-row="${escapeHtml(key)}">
     ${mainHtml(title, description)}
     <span class="fn__space"></span>
-    <select class="b3-select fn__flex-center fn__size200" data-ss-select="${escapeHtml(key)}"${
-        disabled ? " disabled" : ""
-    }>
-    ${
-        options.map((option) =>
-            `<option value="${escapeHtml(option.value)}"${option.value === current ? " selected" : ""}>${
-                escapeHtml(option.label)
-            }</option>`
-        ).join("")
-    }
-    </select>
+    ${selectControlHtml(key, options, current, disabled)}
 </div>`;
 
 /** 原生风格的数字行，带单位时结构与内核一致。 */
@@ -208,10 +225,10 @@ export const PANEL_CSS = `
     background-color: transparent;
     border-radius: 0;
 }
-/* 面板里的文案只有两种角色：设置项名（标题）与说明。
-   标题统一加粗、说明统一不加粗——在此之前，只有功能名是粗体（而且它的说明
-   被一起带粗了），设置项名却是常规字重，同一块面板里出现两种「标题」和一种
-   被加粗的说明，看起来就是乱的。 */
+/* 面板里的文案只有两种角色：功能名（父项）与它下面的设置项、说明。
+   只有功能名加粗；「重试次数」「重试间隔」这类子设置项一律常规字重，
+   说明再淡一档。之前把所有 .config-item__main 都加粗，子设置项跟着变粗，
+   和它的父项抢视线。 */
 .${PANEL_CLASS} .config-item__main {
     font-weight: 600;
 }
@@ -296,14 +313,33 @@ export const PANEL_CSS = `
         margin: 0;
     }
     /* 功能行的右边只有一个开关，把标题也撑满整行只会把开关挤到第二行去，
-       所以这一行保持左右布局，让标题自己让出空间。 */
-    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__sub > .config-item__main {
-        flex: 1 1 auto;
+       所以这一行保持左右布局，让标题自己让出空间。
+       flex-basis 必须取 0 而不是 auto：内核给 .config-item 开了 flex-wrap，
+       折行判定发生在收缩之前，用的是「基准尺寸之和」——基准取内容宽度时，
+       标题一长（或右边是下拉而不是开关时）就会把控件整个顶到第二行去。
+       取 0 之后先是同一行，再由 grow 把剩下的宽度分给标题。
+       选择器必须多带一个 .config-item：上面那条 div.config-item > ...:first-child
+       的 :first-child 也算一份特异性，不带就跟它打平、按先后顺序输掉。 */
+    .b3-dialog__body .${PANEL_CLASS} .config-item.${PANEL_CLASS}__sub > .config-item__main {
+        flex: 1 1 0;
+    }
+    /* 拿 selector 当开关的功能，那个下拉也在功能行里，同样不许被上面的
+       「控件撑满整行」规则挤到第二行去：让它在标题让出空间之后占满剩余宽度。
+       选择器多一级（带 __sub），不论样式表顺序如何都稳定生效。 */
+    .b3-dialog__body .${PANEL_CLASS} .config-item.${PANEL_CLASS}__sub > .b3-select {
+        flex: 0 1 auto;
+        width: auto;
+        min-width: 7rem;
+        max-width: 55%;
+        margin-top: 0;
     }
     .b3-dialog__body .${PANEL_CLASS} .config-item > .fn__space {
         display: none;
     }
-    .b3-dialog__body .${PANEL_CLASS} .config-item > .fn__size200:not(.b3-switch),
+    /* 参数行上的控件撑满整行；功能行（__sub）不算参数行，它右边的下拉要留在
+       功能名那一行，所以这里把 __sub 排除掉，交给下面那条规则处理。
+       少了这个排除，同样特异性的「撑满整行」会按后来的顺序压掉那条规则。 */
+    .b3-dialog__body .${PANEL_CLASS} .config-item:not(.${PANEL_CLASS}__sub) > .fn__size200:not(.b3-switch),
     .b3-dialog__body .${PANEL_CLASS} .config-item > .b3-text-field,
     .b3-dialog__body .${PANEL_CLASS} .config-item > .b3-select {
         width: 100%;

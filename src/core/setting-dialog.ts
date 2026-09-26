@@ -37,8 +37,10 @@ import {
     isMobileFrontend,
     numberRowHtml,
     PANEL_CLASS,
+    selectControlHtml,
     selectRowHtml,
     subtitleRowHtml,
+    switchControlHtml,
     switchRowHtml,
     textRowHtml,
 } from "./ui";
@@ -341,22 +343,42 @@ export class SettingsPanel {
                     (field): field is Extract<SettingField, {kind: "switch";}> =>
                         field.kind === "switch" && field.key === "enabled",
                 );
+                // 拿 selector 当开关的功能（声明了 isEnabled）没有 enabled 开关，
+                // 那个 selector 就是它的开关，同样提到功能名那一行，不另起一行。
+                // 只有 select 型才会被提上来：别的控件不是「开关」这个角色的写法。
+                const inlineSelect = !toggle && feature.isEnabled ?
+                    feature.settings.find((field): field is Extract<SettingField, {kind: "select";}> =>
+                        field.kind === "select"
+                    ) :
+                    undefined;
+                const inline = toggle ?
+                    {
+                        key: bindKey(feature.id, toggle.key),
+                        html: switchControlHtml(
+                            bindKey(feature.id, toggle.key),
+                            this.t(toggle.title),
+                            Boolean(draft[toggle.key]),
+                            readonly,
+                        ),
+                    } :
+                    inlineSelect && {
+                        key: bindKey(feature.id, inlineSelect.key),
+                        html: selectControlHtml(
+                            bindKey(feature.id, inlineSelect.key),
+                            this.selectOptionsOf(inlineSelect),
+                            String(draft[inlineSelect.key] ?? inlineSelect.default),
+                            readonly,
+                        ),
+                    };
                 rows.push(
                     subtitleRowHtml(
                         this.nameOf(feature),
                         feature.description ? this.t(feature.description) : "",
-                        toggle ?
-                            {
-                                key: bindKey(feature.id, toggle.key),
-                                label: this.t(toggle.title),
-                                checked: Boolean(draft[toggle.key]),
-                                disabled: readonly,
-                            } :
-                            undefined,
+                        inline || undefined,
                     ),
                 );
                 feature.settings
-                    .filter((field) => field !== toggle)
+                    .filter((field) => field !== toggle && field !== inlineSelect)
                     .forEach((field) => rows.push(this.fieldHtml(feature, field, draft, readonly)));
             });
             sections.push(
@@ -370,6 +392,16 @@ export class SettingsPanel {
             sections.join("") :
             `<div class="ss-panel__empty">${escapeHtml(this.t("panel.none"))}</div>`;
         this.bindControls(panel);
+    }
+
+    /**
+     * 下拉的候选集。功能自己那一行与参数行都要用它，所以只在这里算一次。
+     * 候选集可以在打开面板时才算出来（笔记本、插件列表这类运行时数据）；
+     * 两者同时给出时以动态来源为准，避免静态列表与真实数据打架。
+     */
+    private selectOptionsOf(field: Extract<SettingField, {kind: "select";}>): {value: string; label: string;}[] {
+        const raw = field.optionsProvider ? field.optionsProvider() : (field.options ?? []);
+        return raw.map((option) => ({value: option.value, label: this.t(option.label)}));
     }
 
     private fieldHtml(
@@ -387,19 +419,15 @@ export class SettingsPanel {
                     field.description ? this.t(field.description) : "",
                     readonly,
                 );
-            case "select": {
-                // 候选集可以在打开面板时才算出来（笔记本、插件列表这类运行时数据）；
-                // 两者同时给出时以动态来源为准，避免静态列表与真实数据打架。
-                const raw = field.optionsProvider ? field.optionsProvider() : (field.options ?? []);
+            case "select":
                 return selectRowHtml(
                     bindKey(feature.id, field.key),
                     this.t(field.title),
-                    raw.map((option) => ({value: option.value, label: this.t(option.label)})),
+                    this.selectOptionsOf(field),
                     String(config[field.key] ?? field.default),
                     field.description ? this.t(field.description) : "",
                     readonly,
                 );
-            }
             case "button":
                 return buttonRowHtml(
                     bindKey(feature.id, field.key),
