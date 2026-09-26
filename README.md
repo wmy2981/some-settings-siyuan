@@ -69,15 +69,14 @@ would be one that can never do anything.
 
 ### Functionality
 
-| Feature                     | Frontend | What it does                                                                                                      |
-| --------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| `code-block-lang-empty`     | both     | New code blocks always start with an empty language instead of reusing the last one picked                        |
-| `daily-note-direct`         | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code         |
-| `first-doc-icon`            | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                            |
-| `external-link-confirm`     | both     | Asks before opening an http/https link and shows the full original URL                                            |
-| `kernel-reconnect-button`   | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                    |
-| `kernel-auto-reconnect`     | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default) |
-| `mobile-slash-insert-panel` | mobile   | Typing `/` on mobile shows the desktop insert panel instead of the compact keyboard-toolbar list                  |
+| Feature                   | Frontend | What it does                                                                                                      |
+| ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `code-block-lang-empty`   | both     | New code blocks always start with an empty language instead of reusing the last one picked                        |
+| `daily-note-direct`       | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code         |
+| `first-doc-icon`          | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                            |
+| `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                            |
+| `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                    |
+| `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default) |
 
 ### Interface
 

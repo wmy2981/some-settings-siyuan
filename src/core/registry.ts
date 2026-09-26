@@ -25,7 +25,6 @@ import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
-import mobileSlashInsertPanel from "../features/mobile-slash-insert-panel";
 import mobileSyncButton from "../features/mobile-sync-button";
 import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
@@ -49,7 +48,6 @@ export const FEATURES: FeatureDefinition[] = [
     externalLinkConfirm,
     kernelReconnectButton,
     kernelAutoReconnect,
-    mobileSlashInsertPanel,
     mobileRefPanelHeight,
     mobileTabDocIcon,
     mobileSelectNative,
