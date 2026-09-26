@@ -17,6 +17,12 @@ export default defineFeature({
     description: "feature.docTreeOpenedAccent.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "text",
             key: "color",
             title: "docTreeOpenedAccent.color",
