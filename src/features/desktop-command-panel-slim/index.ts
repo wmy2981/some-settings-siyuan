@@ -25,6 +25,12 @@ export default defineFeature({
     settings: [
         {
             kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
+            kind: "switch",
             key: "hideTip",
             title: "commandPanelSlim.hideTip",
             description: "commandPanelSlim.hideTipTip",
