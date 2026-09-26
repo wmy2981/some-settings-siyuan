@@ -13,6 +13,7 @@
   "dialog.saved": "设置已保存。",
   "dialog.discardTitle": "放弃更改？",
   "dialog.discardText": "还有未保存的更改，现在关闭会丢弃它们。",
+  "common.enabled": "启用",
   "feature.modalBlur.name": "modal 高斯模糊",
   "feature.modalBlur.desc": "给弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰。",
   "modalBlur.radius": "模糊半径",
