@@ -104,16 +104,6 @@ would be one that can never do anything.
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 
-### Not implemented
-
-* **Always-visible heading block icon**: SiYuan's block icon is not a CSS-driven element. It is one
-  `position: fixed` container per editor whose `innerHTML` the kernel renders for the current block and
-  clears together with `fn__none` when the pointer leaves. No stylesheet can make that permanent, and no
-  official extension point exists; doing it properly would mean the plugin drawing its own block icons and
-  taking over their positioning and interaction. Confirmed to be skipped.
-* **DS models restricted to one account**, **DS balance display** and **a simple reference breadcrumb** are
-  deliberately deferred.
-
 ## Settings panel
 
 The plugin registers **no top bar button, no status bar item and no dock**. It overrides
@@ -284,4 +274,4 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 
 ## License
 
-MIT
+[MIT](./LICENSE)
