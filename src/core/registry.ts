@@ -9,6 +9,7 @@
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import dailyNoteDirect from "../features/daily-note-direct";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
+import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import hideMobileExit from "../features/hide-mobile-exit";
 import mobileBarAnimation from "../features/mobile-bar-animation";
@@ -33,6 +34,7 @@ export const FEATURES: FeatureDefinition[] = [
     hideMobileExit,
     dailyNoteDirect,
     firstDocIcon,
+    externalLinkConfirm,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

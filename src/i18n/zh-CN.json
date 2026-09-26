@@ -52,5 +52,11 @@
   "feature.firstDocIcon.desc": "文档首次添加图标时使用下面指定的 emoji，而不是思源随机挑一个；选择面板照旧打开，随时可以改。",
   "firstDocIcon.emoji": "首次图标",
   "firstDocIcon.emojiTip": "填一个 emoji；留空则回到思源的随机图标",
-  "firstDocIcon.emojiPlaceholder": "例如 📄"
+  "firstDocIcon.emojiPlaceholder": "例如 📄",
+  "feature.externalLinkConfirm.name": "外链跳转前确认",
+  "feature.externalLinkConfirm.desc": "跳转 http/https 链接前弹窗询问，弹窗里显示完整的原始链接，确认后才跳转。",
+  "externalLinkConfirm.title": "打开外部链接？",
+  "externalLinkConfirm.prompt": "即将在系统浏览器中打开下面的链接：",
+  "externalLinkConfirm.cancel": "取消",
+  "externalLinkConfirm.open": "打开"
 }

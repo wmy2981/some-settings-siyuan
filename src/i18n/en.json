@@ -52,5 +52,11 @@
   "feature.firstDocIcon.desc": "Uses the emoji below the first time a document gets an icon instead of a random one; the emoji picker still opens so it can be changed.",
   "firstDocIcon.emoji": "First icon",
   "firstDocIcon.emojiTip": "Enter a single emoji; leave empty to go back to a random icon",
-  "firstDocIcon.emojiPlaceholder": "For example 📄"
+  "firstDocIcon.emojiPlaceholder": "For example 📄",
+  "feature.externalLinkConfirm.name": "Confirm before opening a web link",
+  "feature.externalLinkConfirm.desc": "Asks before opening an http/https link and shows the full original URL, so nothing is opened until it is confirmed.",
+  "externalLinkConfirm.title": "Open this external link?",
+  "externalLinkConfirm.prompt": "The following link will be opened in your system browser:",
+  "externalLinkConfirm.cancel": "Cancel",
+  "externalLinkConfirm.open": "Open"
 }

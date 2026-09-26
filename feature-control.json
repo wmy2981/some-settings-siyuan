@@ -30,6 +30,9 @@
     },
     "first-doc-icon": {
       "state": 1
+    },
+    "external-link-confirm": {
+      "state": 1
     }
   }
 }
