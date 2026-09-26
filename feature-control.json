@@ -15,6 +15,9 @@
     },
     "mobile-bar-animation": {
       "state": 1
+    },
+    "mobile-sync-button": {
+      "state": 1
     }
   }
 }

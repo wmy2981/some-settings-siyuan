@@ -10,6 +10,7 @@ import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileSidebarBlur from "../features/mobile-sidebar-blur";
+import mobileSyncButton from "../features/mobile-sync-button";
 import modalBlur from "../features/modal-blur";
 import type {
     FeatureCategory,
@@ -23,6 +24,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileSidebarBlur,
     mobileDockBlur,
     mobileBarAnimation,
+    mobileSyncButton,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

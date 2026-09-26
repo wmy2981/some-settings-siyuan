@@ -22,5 +22,7 @@
   "mobileBarAnimation.easing": "Easing curve",
   "mobileBarAnimation.easingEmphasized": "Emphasized (Material)",
   "mobileBarAnimation.easingStandard": "Standard",
-  "mobileBarAnimation.easingLinear": "Linear"
+  "mobileBarAnimation.easingLinear": "Linear",
+  "feature.mobileSyncButton.name": "Always show Sync on mobile",
+  "feature.mobileSyncButton.desc": "Keeps the Sync button visible in the mobile top-right corner; the click behaviour stays SiYuan's own sync guide."
 }

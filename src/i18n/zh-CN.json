@@ -22,5 +22,7 @@
   "mobileBarAnimation.easing": "缓动曲线",
   "mobileBarAnimation.easingEmphasized": "强调（Material 风格）",
   "mobileBarAnimation.easingStandard": "标准",
-  "mobileBarAnimation.easingLinear": "线性"
+  "mobileBarAnimation.easingLinear": "线性",
+  "feature.mobileSyncButton.name": "移动端常显立即同步",
+  "feature.mobileSyncButton.desc": "移动端右上角总是显示「立即同步」按钮，行为沿用思源原生的同步引导。"
 }
