@@ -76,5 +76,9 @@
   "feature.hideMobileSidebarItems.desc": "Hides the named entries from the mobile side panel tab strips; hidden entries are also skipped when switching tabs.",
   "hideMobileSidebarItems.items": "Entries to hide",
   "hideMobileSidebarItems.itemsTip": "Comma separated; left: file, bookmark, tag, inbox; right: outline, backlink, agent; for plugin panels use its own id",
-  "hideMobileSidebarItems.itemsPlaceholder": "For example tag,inbox"
+  "hideMobileSidebarItems.itemsPlaceholder": "For example tag,inbox",
+  "feature.mobileRefPanelHeight.name": "Taller mobile candidate panel",
+  "feature.mobileRefPanelHeight.desc": "Raises the height of the mobile candidate panel used for reference search and friends to a share of the viewport, never past the bottom of the visible area.",
+  "mobileRefPanelHeight.maxHeight": "Target height",
+  "mobileRefPanelHeight.maxHeightTip": "Share of the viewport height; the real height is still capped by the space between the panel and the bottom of the screen"
 }

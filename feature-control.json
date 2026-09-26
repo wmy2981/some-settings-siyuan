@@ -45,6 +45,9 @@
     },
     "hide-mobile-sidebar-items": {
       "state": 1
+    },
+    "mobile-ref-panel-height": {
+      "state": 1
     }
   }
 }

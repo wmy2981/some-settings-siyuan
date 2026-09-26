@@ -76,5 +76,9 @@
   "feature.hideMobileSidebarItems.desc": "按标识隐藏移动端左右侧面板页签条里的导航项，隐藏项会同时从页签切换里排除。",
   "hideMobileSidebarItems.items": "要隐藏的项",
   "hideMobileSidebarItems.itemsTip": "逗号分隔；左侧：file、bookmark、tag、inbox，右侧：outline、backlink、agent；插件面板填它的标识",
-  "hideMobileSidebarItems.itemsPlaceholder": "例如 tag,inbox"
+  "hideMobileSidebarItems.itemsPlaceholder": "例如 tag,inbox",
+  "feature.mobileRefPanelHeight.name": "移动端增大候选浮层高度",
+  "feature.mobileRefPanelHeight.desc": "移动端把引用搜索等候选浮层的高度放宽到视口的指定比例，且永远不会超出当前可视区底部。",
+  "mobileRefPanelHeight.maxHeight": "目标高度",
+  "mobileRefPanelHeight.maxHeightTip": "占视口高度的比例；实际高度还会受面板当前位置到屏幕底部之间的空间限制"
 }
