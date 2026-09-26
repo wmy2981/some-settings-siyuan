@@ -2,8 +2,14 @@
  * 移动端页签默认文档图标样式的实现。
  *
  * 只对"内容就是内核默认 SVG 图标"的图标容器下手：
- * 先把自己上一轮换成 emoji 的还原成 SVG，再按当前配置决定要不要换成 emoji。
+ * 先把自己上一轮换出来的 emoji 还原成 SVG，再按当前配置决定要不要换成 emoji。
  * 这个顺序让配置在 svg / emoji / follow 之间来回切换时都能立刻还原。
+ *
+ * ⚠️ 内核在没有图标的页签上渲染的是 `<svg class="mobile-tabs__item-icon">` ——
+ * **图标容器本身就是那个 svg**，不是包着 svg 的一层 span。往 `<svg>` 上写
+ * `textContent` 只会插一个文本节点，而 SVG 不渲染裸文本，页签于是变成一片空白。
+ * 所以这里连同元素一起换掉：换成内核自己给 emoji 图标用的
+ * `<span class="mobile-tabs__item-icon">📄</span>`，样式与内核完全对齐。
  *
  * 复检挂在 body 的 childList 上，但每次先做一次 `querySelector` 判断页签概览
  * 是否存在，不存在就直接返回——概览只在用户手动打开时才在 DOM 里。
@@ -13,18 +19,15 @@ import type {
     FeatureInstance,
 } from "../../core/types";
 
-const ICON_SELECTOR = ".mobile-tabs__item-icon";
+const ICON_CLASS = "mobile-tabs__item-icon";
+const ICON_SELECTOR = `.${ICON_CLASS}`;
 const DEFAULT_ICON_USE = "#iconFile";
 const MARK = "ss-tab-emoji";
 /** 思源对文档的默认 emoji 码点。 */
 const FALLBACK_EMOJI = "1f4c4";
 
-const TAB_ICON_CSS = `
-.${ICON_SELECTOR}.${MARK} {
-    font-size: 16px;
-    line-height: 16px;
-}
-`;
+/** 内核的默认占位图标，与 `getDocumentIconHTML("", ...)` 的输出一致。 */
+const DEFAULT_ICON_HTML = `<svg class="${ICON_CLASS}"><use xlink:href="${DEFAULT_ICON_USE}"></use></svg>`;
 
 interface IconHost {
     siyuan?: {
@@ -53,20 +56,24 @@ const emojiOf = (): string => {
     return emoji || String.fromCodePoint(0x1f4c4);
 };
 
+/**
+ * 这个容器是不是内核的默认占位图标。
+ *
+ * 容器本身可能就是 `<svg>`，`querySelector("use")` 照样能命中它的子 `<use>`
+ * （选择器只在最右侧那一段上受子树限制），所以不需要区分容器是 svg 还是 span。
+ */
 const isDefaultIcon = (element: HTMLElement): boolean => {
-    const use = element.querySelector("svg use");
+    const use = element.querySelector("use");
     return use?.getAttribute("xlink:href") === DEFAULT_ICON_USE ||
         use?.getAttribute("href") === DEFAULT_ICON_USE;
 };
 
 export const mountMobileTabDocIcon = (host: FeatureHost): FeatureInstance => {
-    host.addStyle(TAB_ICON_CSS);
     let frame = 0;
 
     const restore = () => {
-        document.querySelectorAll<HTMLElement>(`.${MARK}`).forEach((element) => {
-            element.classList.remove(MARK);
-            element.innerHTML = `<svg><use xlink:href="${DEFAULT_ICON_USE}"></use></svg>`;
+        document.querySelectorAll<HTMLElement>(`span.${MARK}`).forEach((element) => {
+            element.outerHTML = DEFAULT_ICON_HTML;
         });
     };
 
@@ -83,8 +90,10 @@ export const mountMobileTabDocIcon = (host: FeatureHost): FeatureInstance => {
             if (!isDefaultIcon(element)) {
                 return;
             }
-            element.classList.add(MARK);
-            element.textContent = emoji;
+            const span = document.createElement("span");
+            span.className = `${ICON_CLASS} ${MARK}`;
+            span.textContent = emoji;
+            element.replaceWith(span);
         });
     };
 
@@ -97,13 +106,18 @@ export const mountMobileTabDocIcon = (host: FeatureHost): FeatureInstance => {
             if (!document.querySelector(ICON_SELECTOR)) {
                 return;
             }
+            // 自己这一趟也会改 DOM，不断开的话观察器会被自己触发，
+            // 变成每帧一次的空转。
+            observer.disconnect();
             apply();
+            observer.observe(document.body, {childList: true, subtree: true});
         });
     };
 
+    const observer = new MutationObserver(schedule);
+
     schedule();
     host.onConfigChange(schedule);
-    const observer = new MutationObserver(schedule);
     observer.observe(document.body, {childList: true, subtree: true});
 
     return {
