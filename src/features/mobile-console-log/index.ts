@@ -22,6 +22,12 @@ export default defineFeature({
     frontends: ["mobile"],
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "number",
             key: "capacity",
             title: "mobileConsoleLog.capacity",
