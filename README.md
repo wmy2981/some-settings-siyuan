@@ -20,9 +20,9 @@ One manifest at the repository root decides what loads and what is visible:
 {
   "version": 1,
   "features": {
-    "function-demo": { "state": 1 },
-    "ui-demo": { "state": 1 },
-    "dev-demo": { "state": 0 }
+    "modal-blur": { "state": 1 },
+    "code-block-lang-empty": { "state": 1 },
+    "mobile-console-log": { "state": 0 }
   }
 }
 ```
@@ -44,27 +44,70 @@ Every state is useful:
 A missing key, an out-of-range value or an unknown id is treated as `0` at runtime, and
 `npm run check` refuses to build until the manifest and the code agree again.
 
+A feature can also declare that it only applies to one frontend (`frontends: ["mobile"]`). When it does,
+the other frontend neither mounts it nor lists it in the settings panel.
+
 ## Features
 
-This release is the plugin skeleton plus one example item per category, so the whole chain is verifiable
-end to end. Real features are added one folder at a time.
+### Functionality
 
-| Feature         | Category      | First-run state | What it verifies                                                        |
-| --------------- | ------------- | --------------- | ----------------------------------------------------------------------- |
-| `function-demo` | Functionality | `1`             | A plugin command that reads its settings — `switch` / `text` / `number` |
-| `ui-demo`       | Interface     | `1`             | Reversible namespace-scoped CSS injection + `select` setting            |
-| `dev-demo`      | Development   | `0`             | Logging settings and a registry snapshot — plus the `state: 0` path     |
+| Feature                     | Frontend | What it does                                                                                                      |
+| --------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| `code-block-lang-empty`     | both     | New code blocks always start with an empty language instead of reusing the last one picked                        |
+| `daily-note-direct`         | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code         |
+| `first-doc-icon`            | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                            |
+| `external-link-confirm`     | both     | Asks before opening an http/https link and shows the full original URL                                            |
+| `kernel-reconnect-button`   | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                    |
+| `kernel-auto-reconnect`     | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default) |
+| `mobile-slash-insert-panel` | mobile   | Typing `/` on mobile shows the desktop insert panel instead of the compact keyboard-toolbar list                  |
+
+### Interface
+
+| Feature                       | Frontend | What it does                                                                                    |
+| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------- |
+| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp     |
+| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour |
+| `inline-code-copy`            | both     | Copy button for inline code: off, on hover, always, or automatic by device                      |
+| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme               |
+| `desktop-command-panel-slim`  | desktop  | Tightens command-panel rows and drops the bottom and per-row shortcut hints                     |
+| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                     |
+| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                               |
+| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide                            |
+| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area         |
+| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview           |
+| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide             |
+| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                   |
+| `mobile-longpress-menu-label` | mobile   | Adds text to the copy/paste buttons in the long-press menu (off, copy, paste, or both)          |
+| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                           |
+| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                        |
+| `hide-mobile-sidebar-items`   | mobile   | Hides named entries from the mobile side panel tab strips                                       |
+
+### Development
+
+| Feature              | Frontend | What it does                                                                                             |
+| -------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
+
+### Not implemented
+
+* **Always-visible heading block icon**: SiYuan's block icon is not a CSS-driven element. It is one
+  `position: fixed` container per editor whose `innerHTML` the kernel renders for the current block and
+  clears together with `fn__none` when the pointer leaves. No stylesheet can make that permanent, and no
+  official extension point exists; doing it properly would mean the plugin drawing its own block icons and
+  taking over their positioning and interaction. Confirmed to be skipped.
+* **DS models restricted to one account**, **DS balance display** and **a simple reference breadcrumb** are
+  deliberately deferred.
 
 ## Settings panel
 
-The plugin registers **no top bar button, no status bar item, no dock and no panel of its own**. It overrides
+The plugin registers **no top bar button, no status bar item and no dock**. It overrides
 `Plugin.openSetting()`, which is exactly how SiYuan decides to show the _Settings_ button on a plugin card,
 so open it from **Settings → Marketplace → Downloaded → (this plugin) → Settings**.
 
 The panel is a single vertical list with the three categories (Functionality / Interface / Development) as
-section headings — no side tabs, no footer bar, no extra buttons. Each category is followed directly by its
-setting rows: every feature contributes one subtitle row (its name and description) and then its own rows, and
-rows keep the thin divider line drawn by SiYuan's `.b3-label`. There is **no nested grouping at any level** —
+section headings — no side tabs, no footer bar. Each category is followed directly by its setting rows:
+every feature contributes one subtitle row (its name and description) and then its own rows, and rows keep
+the thin divider line drawn by SiYuan's `.b3-label`. There is **no nested grouping at any level** —
 `SettingField` has no group kind, so a hierarchy cannot even be expressed. Every row is "label on the left,
 control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`,
 `config-item`, `config-title`), with the built-in `16px 24px` row padding left untouched.
@@ -99,6 +142,7 @@ some-settings-siyuan/
 │   ├── core/                   # mechanism layer, no business feature lives here
 │   │   ├── types.ts            # FeatureDefinition / SettingField / FeatureHost
 │   │   ├── control.ts          # reads feature-control.json, normalises the four states
+│   │   ├── frontend.ts         # the single place that decides desktop vs mobile
 │   │   ├── registry.ts         # the only file that imports every feature
 │   │   ├── config.ts           # per-feature JSON load / save (draft commit) / reset
 │   │   ├── style.ts            # reversible CSS injection
@@ -106,11 +150,8 @@ some-settings-siyuan/
 │   │   ├── error.ts            # error isolation, never lets a feature break the plugin
 │   │   ├── setting-dialog.ts   # the single-list settings panel with Save / Cancel
 │   │   └── bootstrap.ts        # loads and mounts features according to the manifest
-│   └── features/
-│       ├── function-demo/{index.ts,demo.ts}
-│       ├── ui-demo/{index.ts,style.ts}
-│       └── dev-demo/{index.ts,dev.ts}
-├── assets/                     # icon.svg/icon.png, preview.html/preview.png + render scripts output
+│   └── features/<id>/{index.ts,<impl>.ts}
+├── assets/                     # icon.svg/icon.png, preview.html/preview.png
 └── scripts/
     ├── check-features.mjs      # manifest <-> registry consistency gate
     ├── render-icon.mjs         # icon.svg -> 160x160 icon.png (<= 64 KiB)
@@ -133,9 +174,13 @@ Where the data lives at runtime, in the workspace:
 6. Run `npm run check`, `npm run typecheck`, `npm run lint`.
 7. Only use `FeatureHost` for platform access (`addCommand`, `addEventBus`, `addStyle`, `addTopBar`, …).
    Features must not import each other; shared logic goes in `src/core/`.
-8. `settings` accepts `switch` / `text` / `number` / `select`. There is deliberately no button control: the
-   settings panel registers nothing but setting rows. There is no group kind either — the panel is one flat
-   level, and a group would put the hierarchy straight back.
+8. `settings` offers four value controls and one action row:
+   * `switch` / `text` / `number` / `select` take part in config reading and in Save / Cancel
+   * a `select` can use `optionsProvider` instead of a static `options` list to compute its candidates each
+     time the panel opens (notebooks, plugin lists and other runtime-only data); no whitelist is applied then
+   * `button` fires an action and has no persisted value at all (for example "open the console log").
+     It stays out of the draft and is disabled in read-only / publish mode
+     There is still no group kind — the panel is one flat level, and a group would put the hierarchy straight back.
 
 ## Development
 
@@ -157,9 +202,12 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 ## Design rules
 
 * **Native first** — only official plugin APIs, the event bus, kernel APIs and SiYuan's own CSS classes.
-* **No core DOM rewrites** — preferences are CSS, event listeners and official extension points.
+* **No core DOM rewrites** — preferences are CSS, event listeners and official extension points. Where the
+  plugin must touch the DOM it only adds (an attribute, a button, or the markup the kernel itself just
+  rendered) and never removes or edits a kernel node.
 * **Module isolation** — one folder per feature; features never import each other.
-* **Always reversible** — any feature failure is caught and reported, never propagated; teardown is idempotent.
+* **Always reversible** — any feature failure is caught and reported, never propagated; teardown is
+  idempotent and restores preferences, property descriptors and markers it added.
 * **Configurable by default off** — anything unspecified defaults to off or follows SiYuan's own setting.
 
 ## Known limitations
@@ -172,9 +220,19 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * Saving is atomic per panel session: **Save** writes every changed feature's JSON file, **Cancel** writes
   nothing. There is no per-item reset button in the panel; delete the feature's JSON file under
   `data/storage/petal/some-settings-siyuan/` to restore defaults.
+* **"Reconnect now" means reloading the frontend.** The kernel gives plugins no way to rebuild the main
+  WebSocket — `Model.connect` needs the `msgCallback` that only exists in the kernel's boot closure, and
+  calling it again would silently drop every kernel push. Both `kernel-reconnect-button` and
+  `kernel-auto-reconnect` therefore reload the page once the kernel is reachable again. Note content always
+  lives in the kernel and is written as you go, so a reload never loses a document.
+* `first-doc-icon` covers the document's `icon` attribute and the title-area icon; the document tree and
+  outline pick the new icon up on their next redraw.
+* `code-snippet-highlight` depends on SiYuan's own highlight.js. If that never loads, the plugin tears the
+  highlight layer down and leaves the editor as plain text rather than leaving an unreadable input.
+* `mobile-select-native` is best-effort: on some kernel/platform combinations the system picker still opens,
+  in which case the select behaves exactly as it does without the plugin.
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
-* `dev-refs/` is a local, untracked development reference and is intentionally excluded from version control.
 
 ## License
 
