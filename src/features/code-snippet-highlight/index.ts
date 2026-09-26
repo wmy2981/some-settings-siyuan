@@ -21,6 +21,13 @@ export default defineFeature({
     category: "ui",
     name: "feature.codeSnippetHighlight.name",
     description: "feature.codeSnippetHighlight.desc",
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountSnippetHighlight,
 });
