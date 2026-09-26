@@ -2,7 +2,7 @@
   "name": "some-settings-siyuan",
   "author": "wmy2981",
   "url": "https://github.com/wmy2981/some-settings-siyuan",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "minAppVersion": "3.8.6-alpha.4",
   "backends": [
     "all"
