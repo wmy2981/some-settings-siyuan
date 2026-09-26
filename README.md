@@ -69,14 +69,14 @@ would be one that can never do anything.
 
 ### Functionality
 
-| Feature                   | Frontend | What it does                                                                                                      |
-| ------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| `code-block-lang-empty`   | both     | New code blocks always start with an empty language instead of reusing the last one picked                        |
-| `daily-note-direct`       | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code         |
-| `first-doc-icon`          | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                            |
-| `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                            |
-| `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                    |
-| `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default) |
+| Feature                   | Frontend | What it does                                                                                                                    |
+| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `code-block-lang-empty`   | both     | New code blocks always start with an empty language instead of reusing the last one picked                                      |
+| `daily-note-direct`       | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code                       |
+| `first-doc-icon`          | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                                          |
+| `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                                          |
+| `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel (experimental)                                                   |
+| `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (experimental, 2 × 500ms by default) |
 
 ### Interface
 
@@ -126,9 +126,13 @@ a feature's first row is the feature itself (name, description and its off-by-de
 parameters follow underneath, with rows keeping the thin divider line drawn by SiYuan's `.b3-label`.
 There is **no nested grouping at any level** —
 `SettingField` has no group kind, so a hierarchy cannot even be expressed. Text has two roles and two
-weights only: item names are bold, descriptions are not. Every row is "label on the left,
-control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`, `b3-text-field`, `b3-label`,
-`config-item`, `config-title`), with the built-in `16px 24px` row padding left untouched.
+weights only: **only the feature name is bold**; its sub-items and descriptions are not. Every row is
+"label on the left, control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`,
+`b3-text-field`, `b3-label`, `config-item`, `config-title`), with the built-in `16px 24px` row padding left
+untouched. Features whose switch _is_ a selector (`inline-code-copy`, `mobile-longpress-menu-label`) keep
+that dropdown on the name row instead of giving it a row of its own.
+Features that only work on one frontend are **hidden from the panel on the other one**: mobile-only items
+never appear on desktop, and desktop-only items (`desktop-command-panel-slim`) never appear on mobile.
 
 **Saving** follows the built-in dialog: edit any number of settings, then click **Save** (or **Cancel** to
 discard). Nothing is written until you save, and if a value fails validation the panel stays open with the
@@ -141,8 +145,9 @@ and tells you exactly which field differs, and the console gets a `[some-setting
 first if a setting ever appears not to stick.
 
 On narrow screens (mobile, or a window narrower than 750px — the same breakpoint the kernel uses) the panel
-switches to a stacked layout: the label takes a full row and the control moves to the next row at full width,
-and the dialog's padding is reduced so the content uses the whole screen.
+switches to a stacked layout: a **parameter** row's label takes a full row and its control moves to the next
+row at full width, and the dialog's padding is reduced so the content uses the whole screen. A feature's own
+name row keeps its left/right layout, so its switch or dropdown is never pushed onto a second line.
 
 Because a feature with `state: 3` still shows its controls, saving there writes the feature's own JSON file
 even though nothing was loaded from it at startup — the four states govern _reading_, never whether an
@@ -262,6 +267,18 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   highlight layer down and leaves the editor as plain text rather than leaving an unreadable input.
 * `mobile-select-native` is best-effort: on some kernel/platform combinations the system picker still opens,
   in which case the select behaves exactly as it does without the plugin.
+* **Copying on mobile goes through the native bridge the apps inject.** The Android and iOS WebViews do not
+  grant clipboard write access to the page, so `navigator.clipboard` is refused there. _Copy all_ in
+  `mobile-console-log` and the `inline-code-copy` button therefore use `JSAndroid.writeClipboard` /
+  `webkit.messageHandlers.setClipboard` on mobile, the Clipboard API on desktop and in browsers, and fall
+  back to `execCommand("copy")` in both cases.
+* `inline-code-copy`'s "on hover" mode follows the **caret** on mobile: there is no hover with a finger, so
+  the button appears as soon as the caret (or a selection) lands inside an inline code span, and the button
+  itself is a size larger. Clicking it does not steal focus from the editor — the keyboard and the caret stay
+  where they were.
+* `mobile-tab-doc-icon` replaces the **whole** icon element when a tab has no icon: SiYuan renders
+  `<svg class="mobile-tabs__item-icon">` in that case and an SVG cannot hold an emoji (raw text nodes are not
+  rendered), so the plugin switches it for the `<span>` SiYuan itself uses for emoji icons.
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
 
