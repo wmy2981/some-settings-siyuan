@@ -17,6 +17,13 @@ export default defineFeature({
     category: "ui",
     name: "feature.mobileSyncButton.name",
     description: "feature.mobileSyncButton.desc",
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountMobileSyncButton,
 });
