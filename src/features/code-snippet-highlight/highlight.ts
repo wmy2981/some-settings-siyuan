@@ -70,6 +70,15 @@ const EDITOR_CSS = `
     background-color: transparent;
 }
 
+/* 字体必须由外层显式继承下来。浏览器的默认样式给 \`code\` 定死了
+   \`font-family: monospace\`，而"直接命中该元素"的规则永远赢过从父级继承来的字体 ——
+   于是高亮层用系统等宽字体、输入框用 --b3-font-family-code，两套字形宽度不同：
+   输入框的光标越到行尾越偏离可见文字（实测 96 个字符差 75px），看起来就是
+   "光标和文字之间空了一段"。font 简写把字号 / 字重 / 行高 / 字体变体一并继承过来。 */
+.${HOST_CLASS}__highlight > code {
+    font: inherit;
+}
+
 /* 只有高亮层渲染成功后才把输入框的文字隐藏，避免出现看不见字的编辑框 */
 .${HOST_CLASS}--active .${INPUT_CLASS} {
     position: relative;
@@ -195,6 +204,9 @@ const MIRRORED = [
     "fontStyle",
     "lineHeight",
     "letterSpacing",
+    // 输入框（.b3-text-field）关掉了连字，高亮层默认是开的：JetBrains Mono 的
+    // calt/liga 会把 -> != ffi 之类合成一个更窄的字形，两层宽度就对不上了。
+    "fontVariantLigatures",
     "paddingTop",
     "paddingRight",
     "paddingBottom",
