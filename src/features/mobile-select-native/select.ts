@@ -5,6 +5,9 @@
  * 后者覆盖外接鼠标；两者都会默认被浏览器用来展开原生弹层，因此都要 preventDefault。
  * 一次点击可能先派发 pointerdown 再派发 mousedown，用一个时间戳去重，
  * 避免弹出两个菜单。
+ *
+ * 还要在捕获阶段吞掉这次点击的 `click`：内核的全局 click 处理器见到"点在菜单外面"
+ * 就会把所有菜单关掉，菜单会变成"闪一下就消失"。
  */
 import {Menu} from "siyuan";
 import type {
@@ -62,13 +65,30 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
         openMenu(target);
     };
 
+    /**
+     * 点按之后浏览器还会补一次 `click`，而内核的全局 click 处理器会关掉所有菜单
+     * （`window.siyuan.menus.menu.remove()`）—— 于是菜单"闪一下就没了"。
+     * 手指在控件上滑动不会产生 click，所以只有滑动时菜单能留住。
+     * 这里把落在下拉控件上的 click 一并吞掉，菜单才能像原生弹层一样留着。
+     */
+    const interceptClick = (event: Event) => {
+        const target = event.target;
+        if (!(target instanceof HTMLSelectElement) || !target.matches(SELECT_SELECTOR) || target.disabled) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
     document.addEventListener("pointerdown", intercept, true);
     document.addEventListener("mousedown", intercept, true);
+    document.addEventListener("click", interceptClick, true);
 
     return {
         destroy: () => {
             document.removeEventListener("pointerdown", intercept, true);
             document.removeEventListener("mousedown", intercept, true);
+            document.removeEventListener("click", interceptClick, true);
             menu?.close();
             menu = undefined;
         },
