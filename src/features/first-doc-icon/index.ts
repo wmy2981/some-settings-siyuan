@@ -18,6 +18,12 @@ export default defineFeature({
     description: "feature.firstDocIcon.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "text",
             key: "emoji",
             title: "firstDocIcon.emoji",
