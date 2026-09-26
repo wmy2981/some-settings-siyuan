@@ -15,5 +15,12 @@
   "feature.mobileDockBlur.name": "Blur behind the mobile dock bar",
   "feature.mobileDockBlur.desc": "Turns the floating mobile dock bar into frosted glass so the document blurs underneath while scrolling.",
   "mobileDockBlur.radius": "Blur radius",
-  "mobileDockBlur.opacity": "Bar background opacity"
+  "mobileDockBlur.opacity": "Bar background opacity",
+  "feature.mobileBarAnimation.name": "Smoother mobile bars",
+  "feature.mobileBarAnimation.desc": "Adds a smooth transition to the show/hide behaviour of the mobile top bar, breadcrumb and floating dock bar, so fast scrolling never leaves a partially visible bar.",
+  "mobileBarAnimation.duration": "Transition duration",
+  "mobileBarAnimation.easing": "Easing curve",
+  "mobileBarAnimation.easingEmphasized": "Emphasized (Material)",
+  "mobileBarAnimation.easingStandard": "Standard",
+  "mobileBarAnimation.easingLinear": "Linear"
 }

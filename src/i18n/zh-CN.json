@@ -15,5 +15,12 @@
   "feature.mobileDockBlur.name": "移动端悬浮 dock 栏高斯模糊",
   "feature.mobileDockBlur.desc": "移动端悬浮 dock 栏改为半透明毛玻璃，滚动时正文在胶囊下虚化。",
   "mobileDockBlur.radius": "模糊半径",
-  "mobileDockBlur.opacity": "胶囊底色不透明度"
+  "mobileDockBlur.opacity": "胶囊底色不透明度",
+  "feature.mobileBarAnimation.name": "移动端栏体动画优化",
+  "feature.mobileBarAnimation.desc": "给移动端顶栏、面包屑与悬浮 dock 栏的滚动显隐加平滑过渡，快速滑动时不再出现只显示一部分的栏体。",
+  "mobileBarAnimation.duration": "过渡时长",
+  "mobileBarAnimation.easing": "缓动曲线",
+  "mobileBarAnimation.easingEmphasized": "强调（Material 风格）",
+  "mobileBarAnimation.easingStandard": "标准",
+  "mobileBarAnimation.easingLinear": "线性"
 }

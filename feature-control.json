@@ -12,6 +12,9 @@
     },
     "mobile-dock-blur": {
       "state": 1
+    },
+    "mobile-bar-animation": {
+      "state": 1
     }
   }
 }
