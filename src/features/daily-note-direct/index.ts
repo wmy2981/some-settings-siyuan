@@ -9,8 +9,8 @@
  * 把它的下拉框设成配置的笔记本并替用户点一下「确定」，
  * 创建仍然是思源自己那条 `/api/filetree/createDailyNote` 通路。
  *
- * 弹窗由 MutationObserver 在同一个任务里发现（观察器的回调是微任务，
- * 浏览器还没绘制），所以用户不会看到弹窗闪一下。
+ * 弹窗由 MutationObserver 发现（观察器的回调是微任务，浏览器还没绘制），
+ * 替用户确定之后再把弹窗同步摘掉，因此它不会出现在画面上。
  */
 import {defineFeature} from "../../core/types";
 import {

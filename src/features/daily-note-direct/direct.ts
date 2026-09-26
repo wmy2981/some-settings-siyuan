@@ -47,6 +47,11 @@ export const mountDailyNoteDirect = (host: FeatureHost): FeatureInstance => {
      * 把弹窗里的笔记本设成配置值并替用户确定。
      * 配置为空、笔记本已不存在/已关闭、或弹窗结构与预期不符时不插手，
      * 让思源自己的询问流程照常走完。
+     *
+     * 确定之后必须**同步**把弹窗从 DOM 里摘掉：内核的 `destroy()` 只是先去掉
+     * `b3-dialog--open`，真正 `element.remove()` 要等 190ms（`TIMEOUT_DBLCLICK`），
+     * 而让弹窗显形的 `--open` 是 50ms 后由另一个定时器加上的 —— 两个定时器之间
+     * 浏览器会绘制一帧，于是弹窗"闪一下"再消失。同步摘掉就没有这一帧。
      */
     const resolve = (dialog: HTMLElement): void => {
         const notebookId = String(host.config.notebook ?? UNSET);
@@ -66,6 +71,7 @@ export const mountDailyNoteDirect = (host: FeatureHost): FeatureInstance => {
         select.value = notebookId;
         // 内核自己就是用 CustomEvent("click") 绑定与触发的，这里保持同一种派发方式
         confirm.dispatchEvent(new CustomEvent("click"));
+        dialog.remove();
     };
 
     const observer = new MutationObserver((records) => {
