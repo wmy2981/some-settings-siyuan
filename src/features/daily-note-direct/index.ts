@@ -25,6 +25,12 @@ export default defineFeature({
     description: "feature.dailyNoteDirect.desc",
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "select",
             key: "notebook",
             title: "dailyNoteDirect.notebook",
