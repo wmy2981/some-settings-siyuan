@@ -9,6 +9,7 @@
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import dailyNoteDirect from "../features/daily-note-direct";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
+import firstDocIcon from "../features/first-doc-icon";
 import hideMobileExit from "../features/hide-mobile-exit";
 import mobileBarAnimation from "../features/mobile-bar-animation";
 import mobileDockBlur from "../features/mobile-dock-blur";
@@ -31,6 +32,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileSyncButton,
     hideMobileExit,
     dailyNoteDirect,
+    firstDocIcon,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

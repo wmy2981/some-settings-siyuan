@@ -47,5 +47,10 @@
   "feature.dailyNoteDirect.desc": "Skips the notebook prompt when creating a daily note and uses the notebook chosen below; creation itself still goes through SiYuan's own flow.",
   "dailyNoteDirect.notebook": "Daily note notebook",
   "dailyNoteDirect.notebookTip": "Only currently opened notebooks are listed; choosing None keeps SiYuan's own prompt",
-  "dailyNoteDirect.notebookUnset": "None (keep SiYuan's prompt)"
+  "dailyNoteDirect.notebookUnset": "None (keep SiYuan's prompt)",
+  "feature.firstDocIcon.name": "Fixed first document icon",
+  "feature.firstDocIcon.desc": "Uses the emoji below the first time a document gets an icon instead of a random one; the emoji picker still opens so it can be changed.",
+  "firstDocIcon.emoji": "First icon",
+  "firstDocIcon.emojiTip": "Enter a single emoji; leave empty to go back to a random icon",
+  "firstDocIcon.emojiPlaceholder": "For example 📄"
 }
