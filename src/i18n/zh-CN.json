@@ -7,5 +7,9 @@
   "docTreeOpenedAccent.color": "强调色",
   "docTreeOpenedAccent.colorTip": "留空则跟随思源主题主色，可填 #rrggbb、rgb()、var(--b3-theme-primary) 等 CSS 颜色",
   "docTreeOpenedAccent.colorPlaceholder": "留空跟随思源",
-  "docTreeOpenedAccent.width": "强调条宽度"
+  "docTreeOpenedAccent.width": "强调条宽度",
+  "feature.mobileSidebarBlur.name": "移动端侧面板高斯模糊",
+  "feature.mobileSidebarBlur.desc": "移动端左右侧面板的背景改为半透明并开启高斯模糊，面板下的正文虚化。",
+  "mobileSidebarBlur.radius": "模糊半径",
+  "mobileSidebarBlur.opacity": "面板底色不透明度"
 }

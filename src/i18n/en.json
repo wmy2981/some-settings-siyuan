@@ -7,5 +7,9 @@
   "docTreeOpenedAccent.color": "Accent colour",
   "docTreeOpenedAccent.colorTip": "Leave empty to follow the SiYuan theme primary; any CSS colour such as #rrggbb, rgb() or var(--b3-theme-primary) works",
   "docTreeOpenedAccent.colorPlaceholder": "Follow SiYuan when empty",
-  "docTreeOpenedAccent.width": "Accent bar width"
+  "docTreeOpenedAccent.width": "Accent bar width",
+  "feature.mobileSidebarBlur.name": "Blur behind mobile side panels",
+  "feature.mobileSidebarBlur.desc": "Makes the mobile side panels translucent and blurred, so the document behind them is softened.",
+  "mobileSidebarBlur.radius": "Blur radius",
+  "mobileSidebarBlur.opacity": "Panel background opacity"
 }
