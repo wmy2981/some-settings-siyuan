@@ -5,6 +5,7 @@
  * 当前可见的那些）。定位分两趟：先读完所有 rect，再统一写样式，
  * 避免"写一个读一个"把浏览器拖进反复重排。
  */
+import {copyText} from "../../core/clipboard";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -56,31 +57,6 @@ type Mode = "off" | "hover" | "always";
 const modeOf = (host: FeatureHost): Mode => {
     const raw = String(host.config.mode ?? DEFAULT_MODE);
     return raw === "hover" || raw === "always" ? raw : "off";
-};
-
-const copyText = async (text: string): Promise<boolean> => {
-    try {
-        await navigator.clipboard.writeText(text);
-        return true;
-    } catch {
-        // 剪贴板 API 在个别内嵌 WebView 上不可用，退回旧接口
-        const area = document.createElement("textarea");
-        area.value = text;
-        area.setAttribute("readonly", "true");
-        area.style.position = "fixed";
-        area.style.opacity = "0";
-        document.body.append(area);
-        area.select();
-        let ok: boolean;
-        try {
-            ok = document.execCommand("copy");
-        } catch {
-            // 个别内核上 execCommand 会直接抛，按复制失败处理
-            ok = false;
-        }
-        area.remove();
-        return ok;
-    }
 };
 
 export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
