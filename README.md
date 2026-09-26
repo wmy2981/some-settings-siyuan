@@ -85,7 +85,7 @@ would be one that can never do anything.
 | ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
 | `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
-| `inline-code-copy`            | both     | Copy button for inline code: off, on hover, always, or automatic by device                                        |
+| `inline-code-copy`            | both     | Copy button for inline code: off, on hover (recommended), or always                                               |
 | `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
 | `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                    |
 | `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                       |

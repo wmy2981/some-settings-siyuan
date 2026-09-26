@@ -7,8 +7,6 @@
  * 按钮不插进行内代码元素内部：那是 `contenteditable` 的内容区，
  * 插进去的节点会被内核当成正文序列化。这里用挂在 body 上的浮动按钮，
  * 按行内代码的位置定位。
- *
- * `auto` 的含义是「按设备自动」：移动端没有悬浮，所以固定显示；桌面端悬浮显示。
  */
 import {defineFeature} from "../../core/types";
 import {mountInlineCodeCopy} from "./copy";
@@ -29,7 +27,6 @@ export default defineFeature({
                 {value: "off", label: "inlineCodeCopy.modeOff"},
                 {value: "hover", label: "inlineCodeCopy.modeHover"},
                 {value: "always", label: "inlineCodeCopy.modeAlways"},
-                {value: "auto", label: "inlineCodeCopy.modeAuto"},
             ],
         },
     ],

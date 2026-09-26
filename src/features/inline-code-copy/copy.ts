@@ -5,7 +5,6 @@
  * 当前可见的那些）。定位分两趟：先读完所有 rect，再统一写样式，
  * 避免"写一个读一个"把浏览器拖进反复重排。
  */
-import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -56,9 +55,6 @@ type Mode = "off" | "hover" | "always";
 
 const modeOf = (host: FeatureHost): Mode => {
     const raw = String(host.config.mode ?? DEFAULT_MODE);
-    if (raw === "auto") {
-        return isMobile() ? "always" : "hover";
-    }
     return raw === "hover" || raw === "always" ? raw : "off";
 };
 
