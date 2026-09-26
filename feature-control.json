@@ -1,4 +1,8 @@
 {
   "version": 1,
-  "features": {}
+  "features": {
+    "modal-blur": {
+      "state": 1
+    }
+  }
 }

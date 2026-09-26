@@ -1,1 +1,5 @@
-{}
+{
+  "feature.modalBlur.name": "Blur behind modals",
+  "feature.modalBlur.desc": "Applies a backdrop blur to the dialog scrim so the editor behind it is softened while the dialog itself stays sharp.",
+  "modalBlur.radius": "Blur radius"
+}

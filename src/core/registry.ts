@@ -6,6 +6,7 @@
  *
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
+import modalBlur from "../features/modal-blur";
 import type {
     FeatureCategory,
     FeatureDefinition,
@@ -13,6 +14,7 @@ import type {
 import {FEATURE_CATEGORIES} from "./types";
 
 export const FEATURES: FeatureDefinition[] = [
+    modalBlur,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
