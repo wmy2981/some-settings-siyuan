@@ -22,6 +22,12 @@ export default defineFeature({
     frontends: ["mobile"],
     settings: [
         {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+        {
             kind: "select",
             key: "style",
             title: "mobileTabDocIcon.style",
