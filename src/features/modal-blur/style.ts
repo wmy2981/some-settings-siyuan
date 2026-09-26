@@ -35,6 +35,13 @@ const buildCss = (radius: number): string =>
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
 }
+
+/* 图标选择面板在移动端不是透明遮罩（是底部弹层），得按 dialog 自己的 data-key 排除；
+   遮罩就在带 data-key 的那层里面，所以不需要 :has() */
+[data-key="dialog-emojis"] .b3-dialog__scrim {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+}
 `;
 
 export const mountModalBlur = (host: FeatureHost): FeatureInstance => {
