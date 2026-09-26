@@ -13,7 +13,7 @@ import type {
     IPluginDockTab,
 } from "siyuan";
 
-/** 设置项分类，对应设置面板左侧的三个入口。 */
+/** 设置项分类，对应设置面板里的三个小节标题（不是页签）。 */
 export type FeatureCategory = "function" | "ui" | "dev";
 
 export const FEATURE_CATEGORIES: FeatureCategory[] = ["function", "ui", "dev"];
@@ -36,7 +36,12 @@ export enum ControlState {
 /** 每个功能的配置值。字符串 key 与 SettingField.key 一一对应。 */
 export type FeatureConfig = Record<string, unknown>;
 
-/** 设置面板里的一行（或一组）控件。 */
+/**
+ * 设置面板里的一行控件。
+ *
+ * 刻意没有分组型字段：面板是「分类标题 + 设置行」的一层结构，
+ * 任何嵌套分组都会重新引入层级，所以从类型上就不提供表达方式。
+ */
 export type SettingField =
     | {
         kind: "switch";
@@ -71,12 +76,6 @@ export type SettingField =
         description?: string;
         default: string;
         options: {value: string; label: string;}[];
-    }
-    | {
-        kind: "group";
-        title: string;
-        description?: string;
-        children: SettingField[];
     };
 
 /** 功能被启用时要处理的所有 UI 注册入口。 */

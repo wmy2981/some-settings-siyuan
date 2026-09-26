@@ -67,10 +67,6 @@ export const normalizeConfig = (
 
     const visit = (fields: SettingField[]) => {
         fields.forEach((field) => {
-            if (field.kind === "group") {
-                visit(field.children);
-                return;
-            }
             const value = source[field.key];
             if (typeof value === "undefined") {
                 result[field.key] = field.default;

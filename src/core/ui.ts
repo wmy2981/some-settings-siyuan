@@ -5,6 +5,18 @@
  * （app/src/config/render/render.ts、fragments.ts、config/tabs/*），
  * 目标是让插件设置面板与「设置」里的原生面板逐像素一致：
  * 左侧文案（标题 + 灰色小字说明）在左，控件靠右固定宽度。
+ *
+ * 结构是扁平的两层，与内核设置页同构：
+ *
+ *   .config
+ *     .config-group                    一个分类
+ *       .config-title                  「功能 / 界面 / 开发」
+ *       .config-items
+ *         .b3-label.config-item        功能名小节标题
+ *         .b3-label.config-item        设置行
+ *         ...                          行与行之间保留内核自带的分割线
+ *
+ * 没有嵌套分组：任何一层多余的分组容器都会让面板重新长出层级。
  */
 import {getFrontend} from "siyuan";
 
@@ -24,24 +36,30 @@ export const escapeHtml = (value: string): string =>
         .replace(/'/g, "&#39;");
 
 /** 原生「主文案 + 说明」块。 */
-export const mainHtml = (title: string, description?: string, nameClass = ""): string =>
-    `<div class="fn__flex-1 config-item__main${nameClass}">${escapeHtml(title)}${
+export const mainHtml = (title: string, description?: string): string =>
+    `<div class="fn__flex-1 config-item__main">${escapeHtml(title)}${
         description ? `<div class="b3-label__text">${escapeHtml(description)}</div>` : ""
     }</div>`;
 
-/** 原生分组容器。 */
-export const groupHtml = (title: string, bodyHtml: string, description?: string): string =>
-    `<div class="config-group">
-    ${title ? `<div class="config-title">${escapeHtml(title)}</div>` : ""}
-    ${
-        description ?
-            `<div class="b3-label config-item"><div class="fn__flex-1 config-item__main"><div class="b3-label__text">${
-                escapeHtml(description)
-            }</div></div></div>` :
-            ""
-    }
-    <div class="config-items">${bodyHtml}</div>
-</div>`;
+/**
+ * 一个分类：小节标题 + 该分类的设置行。
+ *
+ * 标题与 `.config-items` 是**平级**的兄弟节点，都直接挂在 `.config` 之下——
+ * 不再像内核设置页那样包一层 `.config-group`：那层在弹窗里会额外贡献
+ * `margin: 24px 16px 16px`，是窄屏上「分类标题到第一行」空隙过大的来源。
+ */
+export const categoryHtml = (title: string, bodyHtml: string): string =>
+    `<div class="config-title">${escapeHtml(title)}</div>
+<div class="config-items">${bodyHtml}</div>`;
+
+/**
+ * 功能名小节标题。
+ *
+ * 它就是一行设置行，所以照样带内核的分割线——分割线在功能名与它下面的
+ * 第一个设置项之间也必须留着，否则设置项会看起来像挂在功能名上。
+ */
+export const subtitleRowHtml = (title: string, description?: string): string =>
+    `<div class="b3-label config-item ${PANEL_CLASS}__sub">${mainHtml(title, description)}</div>`;
 
 /** 原生风格的开关行。 */
 export const switchRowHtml = (
@@ -128,47 +146,63 @@ export const textRowHtml = (
 /**
  * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
  *
- * 面板本体不加任何自定义外观——每一行都用思源自己的 b3-* 与 config-* 类。
- * 这里只补内核没有给的两件事：分类标题的间距，以及滚动区的内边距。
+ * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
+ * - 分类标题与 .config-items 平级（同参考插件），不再多包一层 .config-group
+ * - 去掉 .config-items 的灰底大圆角，面板不再有"卡片"这件多余的东西
+ * - 功能名小节标题比设置行轻一档
+ * - 窄屏（≤750px，与内核同一断点）把行内边距压到 8px 10px、内容区压到 8px：
+ *   内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，这是"边距特别大"的主因
+ * 桌面端的行内边距与行间分割线完全交给内核 .b3-label，不做任何覆盖。
  */
 export const PANEL_CSS = `
 .${PANEL_CLASS} {
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-height: 0;
+    display: block;
 }
-.${PANEL_CLASS} .ss-panel__scroll {
-    flex: 1;
-    min-height: 0;
-    overflow: auto;
-    padding: 2px 2px 16px;
+/* 分类标题：与 .config-items 平级，和设置行共用同一条左对齐线 */
+.${PANEL_CLASS} > .config-title {
+    margin: 0 0 8px;
+    padding: 0 12px;
 }
-.${PANEL_CLASS} .ss-panel__section {
-    padding: 14px 0 6px;
+.${PANEL_CLASS} > .config-title ~ .config-title {
+    margin-top: 14px;
 }
-.${PANEL_CLASS} .ss-panel__section:first-child {
-    padding-top: 2px;
+/* 设置行直接排在弹窗内容区里，不要卡片底色与大圆角 */
+.${PANEL_CLASS} .config-items {
+    background-color: transparent;
+    border-radius: 0;
 }
-.${PANEL_CLASS} .ss-panel__section-name {
-    font-size: 14px;
+/* 功能名小节标题：比设置行轻一档，但仍然是一行带分割线的设置行 */
+.${PANEL_CLASS}__sub .config-item__main {
+    font-size: 13px;
     font-weight: 600;
-    color: var(--b3-theme-on-background);
+    color: var(--b3-theme-on-surface);
 }
-.${PANEL_CLASS} .config-group + .config-group {
-    margin-top: 6px;
+.${PANEL_CLASS} .config-item:last-child,
+.${PANEL_CLASS} .config-item--last-visible {
+    border-bottom: 0;
 }
 .${PANEL_CLASS} .ss-panel__empty {
-    padding: 24px 0;
+    padding: 18px 12px;
     text-align: center;
     color: var(--b3-theme-on-surface);
     opacity: .7;
 }
-.${PANEL_CLASS} .config-item:last-child {
-    border-bottom: 0;
+
+/* 弹窗容器宽度 -----------------------------------------------------------
+   真正的宽度由 setting-dialog.ts 的 applyPanelWidth() 量完视口写成行内样式，
+   因为 CSS 这条路已经证实不可靠：Dialog 把宽度写成容器上的行内样式
+   （桌面 768px、移动端 92vw），而内核给 .b3-dialog__container 设了
+   flex-shrink: 0 —— 行内宽度 + 不收缩，视口一旦更窄容器就整块溢出屏幕。
+   这里只留一条兜底：CSS 没生效时也别让它宽过视口。
+   必须 !important —— 内核自己也用同优先级的 max-width 声明这一条。 */
+.some-settings-dialog.b3-dialog__container {
+    max-width: 100% !important;
+    min-width: 0;
 }
 
-/* 单位标签：窄屏下内核那套 fn__flex-center 会被压成一列一个字，这里改成不换行 */
+/* 单位标签：内核给 .b3-dialog__content 设了 word-break: break-all，
+   容器一旦容不下，连 "ms" 这种两个字母的单位都会被从中间断成两行。
+   nowrap 才是止血点（keep-all 只约束 CJK，对 "ms" 无效）。 */
 .${PANEL_CLASS} .config-item__unit {
     flex: 0 0 auto;
     white-space: nowrap;
@@ -199,43 +233,48 @@ export const PANEL_CSS = `
 }
 
 /* 移动端 / 窄窗口 ---------------------------------------------------------
-   用媒体查询而不是容器查询：内核给 .b3-dialog__content 的 16px 24px 内边距
-   在手机屏上几乎吃掉一半宽度，必须由插件改掉；纯容器查询的后果无法反向影响
-   外层那个容器。作用域用容器上的 some-settings-dialog 类限定，不会波及别的弹窗。 */
-@media (max-width: 480px) {
+   断点与内核一致（内核在 750px 以下把 .config-item 折成上下两段、输入框撑满整行）。
+   关键是行内边距：内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，
+   上下各 16px 还会把每行之间撑出 32px 的空隙——这正是"边距特别大"的主因。
+   选择器比内核的 .config__tab-container .b3-label 多一级，
+   不论样式表加载顺序如何都稳定生效。作用域用容器上的 some-settings-dialog 类限定。 */
+@media (max-width: 750px) {
     .some-settings-dialog .b3-dialog__content {
-        padding: 12px 12px 0;
+        padding: 8px 8px 0;
     }
     .some-settings-dialog .b3-dialog__action {
-        padding: 7px 12px;
+        padding: 7px 8px;
     }
-    .${PANEL_CLASS} .ss-panel__scroll {
-        padding: 0 0 12px;
+    .b3-dialog__body .${PANEL_CLASS} .b3-label.config-item,
+    .b3-dialog__body .${PANEL_CLASS} .config-item {
+        padding: 8px 10px;
     }
-    .${PANEL_CLASS} .ss-panel__section {
-        padding: 10px 0 4px;
+    .b3-dialog__body .${PANEL_CLASS} .config-item__main {
+        flex: 1 1 100%;
+        margin: 0;
     }
-    /* 文案与控件都由内核加了 .fn__flex 行内样式，必须 !important 才能折行 */
-    .${PANEL_CLASS} .config-item {
-        flex-wrap: wrap !important;
-    }
-    .${PANEL_CLASS} .config-item > .config-item__main {
-        flex: 1 1 100% !important;
-    }
-    .${PANEL_CLASS} .config-item > .fn__space {
+    .b3-dialog__body .${PANEL_CLASS} .config-item > .fn__space {
         display: none;
     }
-    .${PANEL_CLASS} .config-item > .fn__size200,
-    .${PANEL_CLASS} .config-item > .config-item__number,
-    .${PANEL_CLASS} .config-item > .b3-text-field,
-    .${PANEL_CLASS} .config-item > .b3-select {
-        flex: 1 1 100% !important;
-        width: auto !important;
-        max-width: none !important;
-    }
-    .${PANEL_CLASS} .config-item > .b3-switch {
-        margin-inline-start: 0 !important;
+    .b3-dialog__body .${PANEL_CLASS} .config-item > .fn__size200:not(.b3-switch),
+    .b3-dialog__body .${PANEL_CLASS} .config-item > .b3-text-field,
+    .b3-dialog__body .${PANEL_CLASS} .config-item > .b3-select {
+        width: 100%;
+        max-width: 100%;
         margin-top: 6px;
+    }
+    .b3-dialog__body .${PANEL_CLASS} .config-item__number {
+        flex-wrap: nowrap;
+    }
+    .b3-dialog__body .${PANEL_CLASS} .config-item__number > .b3-text-field {
+        width: auto;
+        margin-top: 0;
+    }
+    .${PANEL_CLASS} > .config-title {
+        padding: 0 10px;
+    }
+    .${PANEL_CLASS} > .config-title ~ .config-title {
+        margin-top: 12px;
     }
 }
 `;
