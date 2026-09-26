@@ -111,6 +111,10 @@ export const mountReconnectButton = (host: FeatureHost): FeatureInstance => {
     observer.observe(document.body, {childList: true});
 
     return {
-        destroy: () => observer.disconnect(),
+        destroy: () => {
+            observer.disconnect();
+            // 关掉功能时把已经注入的按钮一并摘掉，不留一个点了没反应的按钮
+            document.querySelectorAll<HTMLElement>(`[${BUTTON_ATTR}]`).forEach((button) => button.remove());
+        },
     };
 };
