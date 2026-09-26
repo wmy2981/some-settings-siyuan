@@ -16,6 +16,13 @@ export default defineFeature({
     category: "ui",
     name: "feature.hideMobileExit.name",
     description: "feature.hideMobileExit.desc",
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountHideMobileExit,
 });
