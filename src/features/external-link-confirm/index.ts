@@ -9,6 +9,13 @@ export default defineFeature({
     category: "function",
     name: "feature.externalLinkConfirm.name",
     description: "feature.externalLinkConfirm.desc",
-    settings: [],
+    settings: [
+        {
+            kind: "switch",
+            key: "enabled",
+            title: "common.enabled",
+            default: false,
+        },
+    ],
     mount: mountExternalLinkConfirm,
 });
