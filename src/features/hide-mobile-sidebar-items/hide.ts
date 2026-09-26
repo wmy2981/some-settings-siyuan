@@ -35,23 +35,26 @@ export const mountHideSidebarItems = (host: FeatureHost): FeatureInstance => {
             if (!panel) {
                 return;
             }
-            panel.querySelectorAll<HTMLElement>("[data-type$='-tab'], [data-mobile-plugin-dock-tab]").forEach((element) => {
-                const type = (element.dataset.type ?? "").replace(/^sidebar-/, "").replace(/-tab$/, "").toLowerCase();
-                const dock = (element.dataset.mobilePluginDockTab ?? "").toLowerCase();
-                const hide = (Boolean(type) && wanted.has(type)) || (Boolean(dock) && wanted.has(dock));
-                if (hide) {
-                    if (!element.classList.contains(MARK)) {
-                        element.classList.add(MARK, "fn__none");
-                        hidden.add(element);
+            panel.querySelectorAll<HTMLElement>("[data-type$='-tab'], [data-mobile-plugin-dock-tab]").forEach(
+                (element) => {
+                    const type = (element.dataset.type ?? "").replace(/^sidebar-/, "").replace(/-tab$/, "")
+                        .toLowerCase();
+                    const dock = (element.dataset.mobilePluginDockTab ?? "").toLowerCase();
+                    const hide = (Boolean(type) && wanted.has(type)) || (Boolean(dock) && wanted.has(dock));
+                    if (hide) {
+                        if (!element.classList.contains(MARK)) {
+                            element.classList.add(MARK, "fn__none");
+                            hidden.add(element);
+                        }
+                        return;
                     }
-                    return;
-                }
-                if (hidden.has(element)) {
-                    hidden.delete(element);
-                    element.classList.remove(MARK);
-                    element.classList.remove("fn__none");
-                }
-            });
+                    if (hidden.has(element)) {
+                        hidden.delete(element);
+                        element.classList.remove(MARK);
+                        element.classList.remove("fn__none");
+                    }
+                },
+            );
         });
     };
 

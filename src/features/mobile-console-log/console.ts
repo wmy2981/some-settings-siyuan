@@ -7,11 +7,11 @@
  * 面板上的按钮也还是能打开已经收到的日志。
  */
 import {Dialog} from "siyuan";
+import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
     FeatureInstance,
 } from "../../core/types";
-import {isMobile} from "../../core/frontend";
 
 const LEVELS = ["debug", "log", "info", "warn", "error"] as const;
 type Level = typeof LEVELS[number];
@@ -207,13 +207,14 @@ const uninstall = (): void => {
     originals.clear();
 };
 
-const rowsHtml = (): string => entries.slice(-MAX_ROWS).map((entry) =>
-    `<div class="ss-console-log__row ss-console-log__row--${entry.level}">` +
-    `<span class="ss-console-log__time">${escapeHtml(formatTime(entry.time))}</span>` +
-    `<span class="ss-console-log__level">${entry.level}</span>` +
-    `<span class="ss-console-log__text">${escapeHtml(entry.text)}</span>` +
-    `</div>`
-).join("");
+const rowsHtml = (): string =>
+    entries.slice(-MAX_ROWS).map((entry) =>
+        `<div class="ss-console-log__row ss-console-log__row--${entry.level}">` +
+        `<span class="ss-console-log__time">${escapeHtml(formatTime(entry.time))}</span>` +
+        `<span class="ss-console-log__level">${entry.level}</span>` +
+        `<span class="ss-console-log__text">${escapeHtml(entry.text)}</span>` +
+        "</div>"
+    ).join("");
 
 const plainText = (): string =>
     entries.map((entry) => `[${formatTime(entry.time)}] ${entry.level.toUpperCase()} ${entry.text}`).join("\n");
@@ -231,8 +232,12 @@ export const openConsoleLog = (): void => {
         content: `<div class="b3-dialog__content ss-console-log">
     <div class="ss-console-log__bar">
         <span class="ss-console-log__count" data-log-count></span>
-        <button class="b3-button b3-button--outline" type="button" data-log-copy>${escapeHtml(t("mobileConsoleLog.copy"))}</button>
-        <button class="b3-button b3-button--outline" type="button" data-log-clear>${escapeHtml(t("mobileConsoleLog.clear"))}</button>
+        <button class="b3-button b3-button--outline" type="button" data-log-copy>${
+            escapeHtml(t("mobileConsoleLog.copy"))
+        }</button>
+        <button class="b3-button b3-button--outline" type="button" data-log-clear>${
+            escapeHtml(t("mobileConsoleLog.clear"))
+        }</button>
     </div>
     <div class="ss-console-log__list" data-log-list></div>
 </div>`,
@@ -250,9 +255,9 @@ export const openConsoleLog = (): void => {
             return;
         }
         count.textContent = t("mobileConsoleLog.count").replace("${count}", entries.length.toString());
-        list.innerHTML = entries.length > 0 ? rowsHtml() : `<div class="ss-console-log__empty">${
-            escapeHtml(t("mobileConsoleLog.empty"))
-        }</div>`;
+        list.innerHTML = entries.length > 0 ?
+            rowsHtml() :
+            `<div class="ss-console-log__empty">${escapeHtml(t("mobileConsoleLog.empty"))}</div>`;
         list.scrollTop = list.scrollHeight;
     };
 

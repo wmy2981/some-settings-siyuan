@@ -26,18 +26,23 @@ const rowHeightOf = (host: FeatureHost): number => {
     return Math.min(32, Math.max(20, Math.round(value)));
 };
 
-const buildCss = (hideTip: boolean, hideMeta: boolean, rowHeight: number): string => `/* 桌面端命令面板瘦身 */
+const buildCss = (hideTip: boolean, hideMeta: boolean, rowHeight: number): string =>
+    `/* 桌面端命令面板瘦身 */
 ${
-    hideTip ? `[data-key="dialog-commandpanel"] .search__tip {
+        hideTip ?
+            `[data-key="dialog-commandpanel"] .search__tip {
     display: none;
 }
-` : ""
-}${
-    hideMeta ? `[data-key="dialog-commandpanel"] .b3-list-item__meta {
+` :
+            ""
+    }${
+        hideMeta ?
+            `[data-key="dialog-commandpanel"] .b3-list-item__meta {
     display: none;
 }
-` : ""
-}[data-key="dialog-commandpanel"] #commands > .b3-list-item {
+` :
+            ""
+    }[data-key="dialog-commandpanel"] #commands > .b3-list-item {
     min-height: ${rowHeight}px;
     line-height: ${rowHeight}px;
     margin: 0 6px;

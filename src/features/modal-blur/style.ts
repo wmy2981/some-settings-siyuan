@@ -16,7 +16,8 @@ const radiusOf = (host: FeatureHost): number => {
     return Number.isFinite(value) && value > 0 ? value : DEFAULT_RADIUS;
 };
 
-const buildCss = (radius: number): string => `/* modal 高斯模糊：只作用在遮罩层，弹窗自身不受影响 */
+const buildCss = (radius: number): string =>
+    `/* modal 高斯模糊：只作用在遮罩层，弹窗自身不受影响 */
 .b3-dialog__scrim {
     -webkit-backdrop-filter: blur(${radius}px);
     backdrop-filter: blur(${radius}px);

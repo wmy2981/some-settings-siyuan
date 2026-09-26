@@ -74,14 +74,16 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
         }
         bypass = true;
         try {
-            anchor.dispatchEvent(new MouseEvent("click", {
-                bubbles: true,
-                cancelable: true,
-                view: window,
-                shiftKey: source instanceof MouseEvent ? source.shiftKey : false,
-                ctrlKey: source instanceof MouseEvent ? source.ctrlKey : false,
-                metaKey: source instanceof MouseEvent ? source.metaKey : false,
-            }));
+            anchor.dispatchEvent(
+                new MouseEvent("click", {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window,
+                    shiftKey: source instanceof MouseEvent ? source.shiftKey : false,
+                    ctrlKey: source instanceof MouseEvent ? source.ctrlKey : false,
+                    metaKey: source instanceof MouseEvent ? source.metaKey : false,
+                }),
+            );
         } finally {
             // dispatchEvent 是同步的，回来就能立刻复位
             bypass = false;

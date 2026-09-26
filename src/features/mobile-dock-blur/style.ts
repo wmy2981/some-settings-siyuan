@@ -25,7 +25,8 @@ const opacityOf = (host: FeatureHost): number => {
     return Math.min(100, Math.max(0, value));
 };
 
-const buildCss = (radius: number, opacity: number): string => `/* 移动端悬浮 dock 栏高斯模糊 */
+const buildCss = (radius: number, opacity: number): string =>
+    `/* 移动端悬浮 dock 栏高斯模糊 */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     .mobile-bottom-bar {
         background-color: color-mix(in srgb, var(--b3-theme-background) ${opacity}%, transparent);

@@ -256,7 +256,7 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
             pre,
             code,
             timer: 0,
-            onInput: () => schedule(textarea),
+            onInput: () => schedule(),
             onScroll: () => {
                 pre.scrollTop = textarea.scrollTop;
                 pre.scrollLeft = textarea.scrollLeft;
@@ -313,7 +313,7 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
         render(textarea, state);
     };
 
-    function schedule(textarea: HTMLTextAreaElement) {
+    function schedule() {
         if (frame) {
             return;
         }

@@ -5,11 +5,11 @@
  * 当前可见的那些）。定位分两趟：先读完所有 rect，再统一写样式，
  * 避免"写一个读一个"把浏览器拖进反复重排。
  */
+import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
     FeatureInstance,
 } from "../../core/types";
-import {isMobile} from "../../core/frontend";
 
 /** 行内代码：data-type 可能带多个值（长文本换行时会加 data-inline-wrap），所以用 ~=。 */
 const CODE_SELECTOR = "span[data-type~='code']";
@@ -73,10 +73,11 @@ const copyText = async (text: string): Promise<boolean> => {
         area.style.opacity = "0";
         document.body.append(area);
         area.select();
-        let ok = false;
+        let ok: boolean;
         try {
             ok = document.execCommand("copy");
         } catch {
+            // 个别内核上 execCommand 会直接抛，按复制失败处理
             ok = false;
         }
         area.remove();
@@ -97,7 +98,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         button.className = BUTTON_CLASS;
         button.title = host.i18n("inlineCodeCopy.label");
         button.setAttribute("aria-label", host.i18n("inlineCodeCopy.label"));
-        button.innerHTML = `<svg><use xlink:href="#iconCopy"></use></svg>`;
+        button.innerHTML = '<svg><use xlink:href="#iconCopy"></use></svg>';
         button.addEventListener("click", (event) => {
             event.preventDefault();
             event.stopPropagation();

@@ -22,7 +22,7 @@ const DEFAULT_EMOJI = "📄";
 
 interface EditorLike {
     element?: HTMLElement;
-    protyle?: {block?: {rootID?: string};};
+    protyle?: {block?: {rootID?: string;};};
 }
 
 const emojiOf = (host: FeatureHost): string => {

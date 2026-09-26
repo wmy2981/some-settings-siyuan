@@ -28,7 +28,7 @@ const TAB_ICON_CSS = `
 
 interface IconHost {
     siyuan?: {
-        config?: {fileTree?: {useSVGDefaultIcon?: boolean};};
+        config?: {fileTree?: {useSVGDefaultIcon?: boolean;};};
         storage?: Record<string, unknown>;
     };
 }

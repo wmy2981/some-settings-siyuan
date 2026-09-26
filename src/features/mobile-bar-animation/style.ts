@@ -37,7 +37,8 @@ const easingOf = (host: FeatureHost): string => {
     return EASINGS[value] || EASINGS.emphasized;
 };
 
-const buildCss = (duration: number, easing: string): string => `/* 移动端标题栏 / 面包屑 / 悬浮 dock 栏的滚动显隐过渡 */
+const buildCss = (duration: number, easing: string): string =>
+    `/* 移动端标题栏 / 面包屑 / 悬浮 dock 栏的滚动显隐过渡 */
 #mobileTopBar,
 #editor > .protyle-breadcrumb,
 #mobileBottomBar {

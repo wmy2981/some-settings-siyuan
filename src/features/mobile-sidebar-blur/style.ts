@@ -26,7 +26,8 @@ const opacityOf = (host: FeatureHost): number => {
     return Math.min(100, Math.max(0, value));
 };
 
-const buildCss = (radius: number, opacity: number): string => `/* 移动端侧面板高斯模糊 */
+const buildCss = (radius: number, opacity: number): string =>
+    `/* 移动端侧面板高斯模糊 */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
     #sidebar,
     #sidebarRight {

@@ -32,8 +32,7 @@ interface StorageHost {
     };
 }
 
-const storageOf = (): Record<string, unknown> | undefined =>
-    (window as unknown as StorageHost).siyuan?.storage;
+const storageOf = (): Record<string, unknown> | undefined => (window as unknown as StorageHost).siyuan?.storage;
 
 /** 挂载前该属性的原始描述符，用于卸载时还原。 */
 let savedDescriptor: PropertyDescriptor | undefined;
