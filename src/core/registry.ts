@@ -8,6 +8,7 @@
  */
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import dailyNoteDirect from "../features/daily-note-direct";
+import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
@@ -55,6 +56,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,
     inlineCodeCopy,
+    desktopCommandPanelSlim,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

@@ -63,6 +63,9 @@
     },
     "inline-code-copy": {
       "state": 1
+    },
+    "desktop-command-panel-slim": {
+      "state": 1
     }
   }
 }

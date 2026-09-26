@@ -107,5 +107,13 @@
   "inlineCodeCopy.modeAuto": "按设备自动",
   "inlineCodeCopy.label": "复制行内代码",
   "inlineCodeCopy.copied": "已复制行内代码",
-  "inlineCodeCopy.failed": "复制失败"
+  "inlineCodeCopy.failed": "复制失败",
+  "feature.commandPanelSlim.name": "桌面端命令面板瘦身",
+  "feature.commandPanelSlim.desc": "压紧桌面端命令面板的行高与间距，并可按需去掉底部快捷键提示与每行的快捷键，同样高度里能多看几项。",
+  "commandPanelSlim.hideTip": "隐藏底部快捷键提示",
+  "commandPanelSlim.hideTipTip": "去掉面板底部那条 ↑/↓、Enter、Esc 的提示",
+  "commandPanelSlim.hideMeta": "隐藏每行的快捷键",
+  "commandPanelSlim.hideMetaTip": "去掉每行右侧的快捷键提示，把横向空间留给命令名称",
+  "commandPanelSlim.rowHeight": "行高",
+  "commandPanelSlim.rowHeightTip": "内核默认 28px；越小同屏能看到的命令越多"
 }

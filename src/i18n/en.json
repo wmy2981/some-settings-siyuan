@@ -107,5 +107,13 @@
   "inlineCodeCopy.modeAuto": "Automatic by device",
   "inlineCodeCopy.label": "Copy inline code",
   "inlineCodeCopy.copied": "Inline code copied",
-  "inlineCodeCopy.failed": "Copy failed"
+  "inlineCodeCopy.failed": "Copy failed",
+  "feature.commandPanelSlim.name": "Slimmer desktop command panel",
+  "feature.commandPanelSlim.desc": "Tightens the desktop command panel's rows and spacing, and can drop the bottom shortcut hint and the per-row shortcut, so more entries fit in the same height.",
+  "commandPanelSlim.hideTip": "Hide the bottom shortcut hint",
+  "commandPanelSlim.hideTipTip": "Removes the arrow/Enter/Esc hint strip along the bottom",
+  "commandPanelSlim.hideMeta": "Hide the per-row shortcut",
+  "commandPanelSlim.hideMetaTip": "Removes the shortcut on the right of each row and gives the width back to the command name",
+  "commandPanelSlim.rowHeight": "Row height",
+  "commandPanelSlim.rowHeightTip": "The kernel default is 28px; smaller values fit more commands on screen"
 }
