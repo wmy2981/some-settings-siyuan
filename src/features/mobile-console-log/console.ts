@@ -7,6 +7,7 @@
  * 面板上的按钮也还是能打开已经收到的日志。
  */
 import {Dialog} from "siyuan";
+import {copyText} from "../../core/clipboard";
 import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
@@ -262,10 +263,8 @@ export const openConsoleLog = (): void => {
     };
 
     dialog.element.querySelector<HTMLButtonElement>("[data-log-copy]")?.addEventListener("click", () => {
-        void navigator.clipboard?.writeText(plainText()).then(() => {
-            host.showMessage(t("mobileConsoleLog.copied"));
-        }).catch(() => {
-            host.showMessage(t("mobileConsoleLog.copyFailed"));
+        void copyText(plainText()).then((ok) => {
+            host.showMessage(ok ? t("mobileConsoleLog.copied") : t("mobileConsoleLog.copyFailed"));
         });
     });
     dialog.element.querySelector<HTMLButtonElement>("[data-log-clear]")?.addEventListener("click", () => {
