@@ -42,5 +42,10 @@
   "feature.hideMobileExit.name": "隐藏移动端退出应用按钮",
   "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标、极易误触的「退出应用」按钮。",
   "feature.codeBlockLangEmpty.name": "代码块语言不记忆",
-  "feature.codeBlockLangEmpty.desc": "新建代码块时语言总是为空，不再沿用上一次选过的语言。"
+  "feature.codeBlockLangEmpty.desc": "新建代码块时语言总是为空，不再沿用上一次选过的语言。",
+  "feature.dailyNoteDirect.name": "日记直接创建",
+  "feature.dailyNoteDirect.desc": "创建日记时不再询问笔记本，直接写进下面指定的笔记本；创建逻辑仍然沿用思源自己的通路。",
+  "dailyNoteDirect.notebook": "日记笔记本",
+  "dailyNoteDirect.notebookTip": "只列出当前已打开的笔记本；选「不指定」则保留思源自己的询问弹窗",
+  "dailyNoteDirect.notebookUnset": "不指定（保留思源询问）"
 }

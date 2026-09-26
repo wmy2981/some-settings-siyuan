@@ -42,5 +42,10 @@
   "feature.hideMobileExit.name": "Hide the mobile Quit button",
   "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel that is very easy to tap by accident.",
   "feature.codeBlockLangEmpty.name": "Never remember the code language",
-  "feature.codeBlockLangEmpty.desc": "New code blocks always start with an empty language instead of reusing the language picked last time."
+  "feature.codeBlockLangEmpty.desc": "New code blocks always start with an empty language instead of reusing the language picked last time.",
+  "feature.dailyNoteDirect.name": "Create the daily note directly",
+  "feature.dailyNoteDirect.desc": "Skips the notebook prompt when creating a daily note and uses the notebook chosen below; creation itself still goes through SiYuan's own flow.",
+  "dailyNoteDirect.notebook": "Daily note notebook",
+  "dailyNoteDirect.notebookTip": "Only currently opened notebooks are listed; choosing None keeps SiYuan's own prompt",
+  "dailyNoteDirect.notebookUnset": "None (keep SiYuan's prompt)"
 }
