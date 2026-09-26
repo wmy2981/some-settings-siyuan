@@ -263,8 +263,8 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   `webkit.messageHandlers.setClipboard` on mobile, the Clipboard API on desktop and in browsers, and fall
   back to `execCommand("copy")` in both cases.
 * `inline-code-copy`'s "on hover" mode follows the **caret** on mobile: there is no hover with a finger, so
-  the button appears as soon as the caret (or a selection) lands inside an inline code span, and the button
-  itself is a size larger. Clicking it does not steal focus from the editor — the keyboard and the caret stay
+  the button appears as soon as the caret (or a selection) lands inside an inline code span, at the same size
+  as on the desktop. Clicking it does not steal focus from the editor — the keyboard and the caret stay
   where they were.
 * `mobile-tab-doc-icon` replaces the **whole** icon element when a tab has no icon: SiYuan renders
   `<svg class="mobile-tabs__item-icon">` in that case and an SVG cannot hold an emoji (raw text nodes are not

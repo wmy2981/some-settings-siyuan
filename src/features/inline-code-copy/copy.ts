@@ -23,8 +23,8 @@ const BUTTON_CLASS = "ss-inline-code-copy";
 const DEFAULT_MODE = "off";
 /** 行内代码与复制按钮之间那段空隙的容差（px）。 */
 const HOVER_GAP = 8;
-/** 按钮尺寸：桌面端 18px，移动端放大到 26px（手指按不到 18px 的目标）。 */
-const BUTTON_SIZE = isMobile() ? 26 : 18;
+/** 按钮尺寸：两个端一致，18px。 */
+const BUTTON_SIZE = 18;
 /** 按钮相对行内代码右上角的偏移。 */
 const OFFSET_X = BUTTON_SIZE + 2;
 const OFFSET_Y = BUTTON_SIZE - 4;

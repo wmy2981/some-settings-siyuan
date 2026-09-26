@@ -250,7 +250,7 @@ npm run build        # check + 生产构建 + package.zip
   `webkit.messageHandlers.setClipboard`，桌面端与浏览器才用 Clipboard API，最后都留了
   `execCommand("copy")` 兜底。
 * `inline-code-copy` 的「悬浮显示」在移动端按**光标位置**判定：移动端没有 hover，
-  所以手指点在（或选到）某段行内代码、光标落进去时按钮就出现，按钮本身也比桌面端大一圈。
+  所以手指点在（或选到）某段行内代码、光标落进去时按钮就出现（按钮尺寸与桌面端一致）。
   点按钮不会抢走编辑区焦点，键盘与光标都留在原处。
 * `mobile-tab-doc-icon` 在没有图标时换掉的是**整个**图标元素：思源在这种情况下渲染的
   `<svg class="mobile-tabs__item-icon">` 里放不了 emoji（SVG 不渲染裸文本），
