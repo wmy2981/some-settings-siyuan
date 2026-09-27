@@ -1,11 +1,12 @@
 /**
  * 「智能体面板显示 DeepSeek 余额」的实现。
  *
- * 展示位置是输入框下面那一行 `.agent-chat__button-options` 的最左边（图片、权限
- * 两个按钮之前）：余额是常驻状态，放在顶栏会和面板标题、按钮抢位置，放在输入区
- * 底部则与「当前模型」挨着，更符合它属于哪套配置。这里刻意不复用 `block__icon`
- * 之类的图标按钮类 —— 那套类在面板里受 `file-tree` 的 hover 规则约束，余额需要
- * 常驻可见，所以走功能自己的类名与样式。
+ * 展示位置是输入框**外面**、紧贴它下沿的一行：`.agent-chat__input-area` 是有边框的
+ * 整块输入区（标题栏那一行按钮也在框内），余额是常驻状态而不是输入动作的一部分，
+ * 塞进按钮行会和图片、权限、模型挤在一起，也让输入框显得更拥挤；挂在框外则和输入区
+ * 分开，读起来像它下面的一行说明。这里刻意不复用 `block__icon` 之类的图标按钮类 ——
+ * 那套类在面板里受 `file-tree` 的 hover 规则约束，余额需要常驻可见，所以走功能自己
+ * 的类名与样式。
  *
  * 面板是懒创建的，也会被销毁重建，因此注入必须幂等、可重入、可清理：
  * 用 MutationObserver 盯着 body 找面板，找到后改成盯面板本身（面板里流式输出时
@@ -30,8 +31,8 @@ import type {
     FeatureInstance,
 } from "../../core/types";
 
-/** 插入余额节点的挂载点：输入框下面那一行按钮条。 */
-const INPUT_ROW_SELECTOR = ".sy__agentChat .agent-chat__button-options";
+/** 余额节点的挂载点：有边框的整块输入区。余额插在它**后面**，即输入框外面。 */
+const INPUT_AREA_SELECTOR = ".sy__agentChat .agent-chat__input-area";
 /** 我们注入的余额节点标记：既用于幂等判断，也用于卸载时兜底清理。 */
 const NODE_ATTR = "data-ss-deepseek-balance";
 /** 智能体面板的模型选择器，它的 `data-model-id` 才是「此刻真正在用哪个模型」。 */
@@ -93,17 +94,20 @@ type RenderState =
     | {kind: "value"; infos: BalanceInfo[]; available: boolean;};
 
 /**
- * 输入区那一小段余额的样式。
+ * 输入框外面那一行余额的样式。
  *
  * 全是布局属性：字号、行高、内外边距与缩略规则。颜色一律继承思源原生变量，
  * 这样浅色 / 深色主题都自动跟随，也不需要和任何原生控件去比特异性。
+ *
+ * 负的上外边距是有意的：输入区自己带 `margin: 0 16px 12px`，直接跟在它后面会离边框
+ * 12px 远、看着像独立的一段；把这一行往上收进那段下外边距里，就成了紧贴边框的一行
+ * 说明。左右外边距与输入区的 16px 对齐，两者内容左边缘在同一条线上。
  */
 const BALANCE_CSS = `
 .ss-deepseek-balance {
-    flex: 0 1 auto;
-    max-width: 120px;
+    margin: -6px 16px 6px;
     overflow: hidden;
-    /* 与同一行里的权限文案、模型名持平，不抢视线 */
+    /* 与输入框里的权限文案、模型名持平，不抢视线 */
     color: var(--b3-theme-on-surface);
     font-size: 12px;
     line-height: 16px;
@@ -387,7 +391,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     };
 
     /**
-     * 确保余额节点在输入区那一行里。
+     * 确保余额节点在输入区**外面**、紧贴它的下沿。
      *
      * 注入前先摘掉两个观察器：否则这次写入会再触发一次自己（典型表现是每帧一次空转）。
      * 两个断开都发生在同步块里，紧接着就按当前面板重新挂上。
@@ -398,7 +402,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         if (destroyed) {
             return;
         }
-        const anchor = document.querySelector<HTMLElement>(INPUT_ROW_SELECTOR);
+        const anchor = document.querySelector<HTMLElement>(INPUT_AREA_SELECTOR);
         if (!anchor) {
             // 面板还没出现，或者刚被移除：连已经注入的节点一起收回，不留孤儿。
             bodyObserver?.disconnect();
@@ -413,7 +417,9 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
             return;
         }
         const visible = isVisible(panel);
-        if (node?.isConnected && node.parentElement === anchor && panel.contains(node)) {
+        // 位置判据用「紧跟在输入区后面」而不是「父节点是谁」：输入区的父节点就是
+        // `.agent-chat`，面板里任何一次改动都可能把节点挪到别处，紧跟其后才是本功能要的位置。
+        if (node?.isConnected && anchor.nextElementSibling === node) {
             if (visible && !panelWasVisible) {
                 logOnChange("panel", "Agent panel became visible");
                 refreshIfEmpty();
@@ -427,10 +433,10 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         observer = undefined;
         currentPanel = undefined;
         node?.remove();
-        node = document.createElement("span");
+        node = document.createElement("div");
         node.className = "ss-deepseek-balance";
         node.setAttribute(NODE_ATTR, "true");
-        anchor.insertAdjacentElement("afterbegin", node);
+        anchor.insertAdjacentElement("afterend", node);
         // 新节点上没有任何已写入的文案，清掉去重缓存，保证这一帧一定渲染
         lastText = undefined;
         lastTitle = undefined;
@@ -438,7 +444,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         observePanel(panel);
         observeBody();
         panelWasVisible = visible;
-        logOnChange("node", `Balance node injected below the composer (panel ${visible ? "visible" : "hidden"})`);
+        logOnChange("node", `Balance node injected outside the composer (panel ${visible ? "visible" : "hidden"})`);
         // 节点刚插上通常就是「面板刚打开 / 刚被重建」，此刻没有余额就立刻查一次
         refreshIfEmpty();
     };
