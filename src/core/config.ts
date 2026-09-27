@@ -67,8 +67,9 @@ export const normalizeConfig = (
 
     const visit = (fields: SettingField[]) => {
         fields.forEach((field) => {
-            // 动作行只负责触发一次行为，没有可持久化的取值，配置里不该出现它的 key
-            if (field.kind === "button") {
+            // 动作行只负责触发一次行为、说明块只负责显示文字，都没有可持久化的取值，
+            // 配置里不该出现它们的 key
+            if (field.kind === "button" || field.kind === "note") {
                 return;
             }
             const value = source[field.key];

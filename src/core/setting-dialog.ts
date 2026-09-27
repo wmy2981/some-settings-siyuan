@@ -43,6 +43,8 @@ import {
     ensurePanelCss,
     escapeHtml,
     isMobileFrontend,
+    noteBodyHtml,
+    noteRowHtml,
     numberRowHtml,
     PANEL_CLASS,
     selectControlHtml,
@@ -108,10 +110,19 @@ const parseBindKey = (value: string): [string, string] => {
  *
  * 一个分类是一张 .config-items 卡片，但它的行要跨功能拼出来，
  * CSS 的 :last-child 只能看见 DOM 里的最后一个元素，所以由这里显式标记。
- * 取的是一次拼接结果的最后一个 class="，即最后一行自己的 class 属性。
+ * 认的是最后一份带 `config-item` 这个整词的 class 属性：说明块这类行内部还有自己的元素与
+ * class（段落是 `b3-label__text`），照着最后一个 class 属性下手会标记到段落的头上。
  */
 const markLastRow = (rowsHtml: string): string => {
-    const index = rowsHtml.lastIndexOf('class="');
+    const pattern = /class="([^"]*)"/g;
+    let index = -1;
+    let match = pattern.exec(rowsHtml);
+    while (match) {
+        if (match[1].split(/\s+/).includes("config-item")) {
+            index = match.index;
+        }
+        match = pattern.exec(rowsHtml);
+    }
     if (index < 0) {
         return rowsHtml;
     }
@@ -406,6 +417,12 @@ export class SettingsPanel {
                     field.description ? this.t(field.description) : "",
                     readonly,
                 );
+            case "note":
+                // 只读说明块：没有取值，只把 i18n 文案里的 {version} / {repo} 之类的占位符填上
+                return noteRowHtml(
+                    bindKey(feature.id, field.key),
+                    noteBodyHtml(this.t(field.text), field.values),
+                );
             case "button":
                 return buttonRowHtml(
                     bindKey(feature.id, field.key),
@@ -474,6 +491,14 @@ export class SettingsPanel {
         scope.querySelectorAll<HTMLInputElement>("[data-ss-text]").forEach((input) => {
             input.addEventListener("change", () => {
                 this.stage(input.dataset.ssText as string, input.value);
+            });
+        });
+        // 说明块里的链接：不让 <a> 走默认跳转 —— 移动端 WebView 可能把整个前端导航走。
+        // 走思源重写过的 window.open，桌面端交给系统浏览器、移动端交给原生桥。
+        scope.querySelectorAll<HTMLAnchorElement>(`.${PANEL_CLASS}__note a[href]`).forEach((anchor) => {
+            anchor.addEventListener("click", (event) => {
+                event.preventDefault();
+                window.open(anchor.href, "_blank");
             });
         });
         // 动作行：点击立刻执行，不进草稿，因此不受「取消 / 保存」影响

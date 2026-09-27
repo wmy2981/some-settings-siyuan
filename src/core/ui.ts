@@ -202,6 +202,37 @@ export const buttonRowHtml = (
 </div>`;
 
 /**
+ * 只读说明块的正文：一行一段，`{name}` 占位符按 values 替换。
+ *
+ * 文案先整体转义再替换，替换值本身是 http(s) 链接时渲染成可点的链接，其余一律是纯文本：
+ * 说明块的文字来自 i18n 与功能声明，不允许直接注入 HTML。
+ * 段落用内核的 `b3-label__text` 渲染，与设置项下面那行说明同一档字号与颜色。
+ */
+export const noteBodyHtml = (text: string, values: Record<string, string> = {}): string =>
+    escapeHtml(text).replace(/\{(\w+)\}/g, (placeholder: string, name: string) => {
+        const value = values[name];
+        if (typeof value !== "string") {
+            return placeholder;
+        }
+        const safe = escapeHtml(value);
+        return /^https?:\/\//i.test(value) ?
+            `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>` :
+            safe;
+    }).split("\n")
+        .filter((line) => line.trim() !== "")
+        .map((line) => `<div class="b3-label__text">${line}</div>`)
+        .join("");
+
+/**
+ * 只读说明块：整行铺满的文字，右侧没有控件。
+ *
+ * 刻意不带 `fn__flex` —— 面板里其余每一行都是「左侧文案 + 右侧控件」，
+ * 说明块不是设置项，没有控件可放，文案必须占满整行。
+ */
+export const noteRowHtml = (key: string, bodyHtml: string): string =>
+    `<div class="b3-label config-item ${PANEL_CLASS}__note" data-ss-row="${escapeHtml(key)}">${bodyHtml}</div>`;
+
+/**
  * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
  *
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
@@ -243,6 +274,18 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .config-item:last-child,
 .${PANEL_CLASS} .config-item--last-visible {
     border-bottom: 0;
+}
+/* 只读说明块：段落沿用内核「说明」那一档（.b3-label__text 的字号与颜色），
+   这里只调段落间距、补窄屏下长链接的换行与链接色。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__note .b3-label__text {
+    margin-top: 0;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__note .b3-label__text + .b3-label__text {
+    margin-top: 6px;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__note a {
+    color: var(--b3-theme-primary);
+    word-break: break-all;
 }
 .${PANEL_CLASS} .ss-panel__empty {
     padding: 18px 12px;
