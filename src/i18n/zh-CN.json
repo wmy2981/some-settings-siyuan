@@ -19,6 +19,8 @@
   "modalBlur.radius": "模糊半径",
   "feature.docTreeOpenedAccent.name": "文档树已打开笔记强调色",
   "feature.docTreeOpenedAccent.desc": "文档树中当前打开的笔记左边缘显示一条贴合的强调色，可用自定义色值。",
+  "feature.docTreeTitleMarkdown.name": "文档树标题渲染行级 Markdown",
+  "feature.docTreeTitleMarkdown.desc": "文档树的笔记本与笔记标题支持加粗、斜体、粗斜体、删除线、高亮与行级代码这几种行级语法，样式沿用思源自己的行级主题，反斜杠转义则不渲染。",
   "feature.headingLevelIcon.name": "标题图标显示层级",
   "feature.headingLevelIcon.desc": "引用列表与搜索面板里，标题块原本只有一个看不出层级的 H 图标；改为使用思源自己的 H1～H6 图标，层级数字显示在右下角。",
   "docTreeOpenedAccent.color": "强调色",
