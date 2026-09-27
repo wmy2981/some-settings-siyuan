@@ -165,8 +165,8 @@ const pickBalance = (
 /** 把状态压成一段可见文案 + 一段详细说明。详细说明统一进 `title`，不额外占位。 */
 const describe = (state: RenderState, t: (key: string) => string): {text: string; title: string;} => {
     if (state.kind === "idle") {
-        // 没有启用中的官网 DeepSeek 配置（或者当前不是官网模型）：不显示任何余额之类的东西，
-        // 只留一个最淡的占位，避免顶栏为了一个不适用的功能闪来闪去。
+        // 当前模型不在官方 DeepSeek 上（见 `resolveTarget`）：`render` 会把整行收起来，
+        // 这里给出的占位与说明只在状态刚要切换的那一帧可能被用到。
         const notConfigured = t("deepseekBalance.noProvider");
         return {text: "—", title: notConfigured};
     }
@@ -301,6 +301,8 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     let lastText: string | undefined;
     let lastTitle: string | undefined;
     let lastState: RenderState = {kind: "idle"};
+    /** 上一帧面板里选中的模型 id，用来发现「用户换了模型」。 */
+    let lastModelId = "";
     /** 上一帧面板是否可见，用来识别「刚展开停靠栏」。 */
     let panelWasVisible = false;
     /** 每个日志主题上一次输出的内容，相同就不再重复输出。 */
@@ -418,6 +420,13 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         if (!panel) {
             return;
         }
+        // 「当前用哪个模型」随时可能在面板里被换掉：换到非官方 provider 要立刻收起这一行，
+        // 换回官方要立刻查一次。所以每次 apply 都核一遍，变了就重查（幂等）。
+        const modelId = document.querySelector<HTMLElement>(MODEL_PICKER_SELECTOR)?.dataset.modelId ?? "";
+        if (modelId !== lastModelId) {
+            lastModelId = modelId;
+            runNow();
+        }
         const visible = isVisible(panel);
         // 位置判据用「紧跟在输入区后面」而不是「父节点是谁」：输入区的父节点就是
         // `.agent-chat`，面板里任何一次改动都可能把节点挪到别处，紧跟其后才是本功能要的位置。
@@ -456,11 +465,15 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
      *
      * 「DeepSeek 余额：」这段前缀由 i18n 给出（含它自己的分隔符：中文用全角冒号、英文用
      * 冒号加空格），所以这里直接拼接、不再自己插空格 —— 不然中文会多出一个半角空格。
+     *
+     * `idle` 就是「当前模型不在官方 DeepSeek 上」：这种时候整行收起来，不留「—」占位。
+     * 节点留在原地只切 `fn__none`，切回官方模型时不必重新注入。
      */
     const render = () => {
         if (!node) {
             return;
         }
+        node.classList.toggle("fn__none", lastState.kind === "idle");
         const {text, title} = describe(lastState, t);
         const shown = `${t("deepseekBalance.label")}${text}`;
         if (shown !== lastText) {
