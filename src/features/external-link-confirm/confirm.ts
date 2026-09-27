@@ -12,6 +12,7 @@
  * 链接元素已经不在文档里（编辑器重绘过）时退回 `window.open`。
  */
 import {Dialog} from "siyuan";
+import {copyText} from "../../core/clipboard";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -37,6 +38,25 @@ const escapeHtml = (value: string): string =>
 const LINK_SELECTOR = "[data-type='a'][data-href], [data-type='a'][href], a[href]";
 
 const URL_CSS = `
+/* 提问那一行：左边是文案，右边是复制按钮。
+   自己写这层 flex 而不是套 fn__flex：窄屏（移动端 92vw）下必须允许按钮换行，
+   否则文案会把按钮挤出弹窗。 */
+.ss-external-link__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.ss-external-link__prompt {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.ss-external-link__copy {
+    flex: 0 0 auto;
+}
+
 .ss-external-link__url {
     box-sizing: border-box;
     max-height: 30vh;
@@ -96,15 +116,22 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
             title: host.i18n("externalLinkConfirm.title"),
             width: "520px",
             content: `<div class="b3-dialog__content">
-    <div>${escapeHtml(host.i18n("externalLinkConfirm.prompt"))}</div>
+    <div class="ss-external-link__head">
+        <div class="ss-external-link__prompt">${escapeHtml(host.i18n("externalLinkConfirm.prompt"))}</div>
+        <button class="b3-button b3-button--outline ss-external-link__copy" type="button" data-ss-copy-link>
+            <svg class="b3-button__icon"><use xlink:href="#iconCopy"></use></svg>${
+                escapeHtml(host.i18n("externalLinkConfirm.copy"))
+            }
+        </button>
+    </div>
     <div class="fn__hr"></div>
     <div class="ss-external-link__url">${escapeHtml(href)}</div>
 </div>
 <div class="b3-dialog__action">
-    <button class="b3-button b3-button--cancel" type="button">${
+    <button class="b3-button b3-button--cancel" type="button" data-ss-cancel-link>${
                 escapeHtml(host.i18n("externalLinkConfirm.cancel"))
             }</button><div class="fn__space"></div>
-    <button class="b3-button b3-button--text" type="button">${
+    <button class="b3-button b3-button--text" type="button" data-ss-open-link>${
                 escapeHtml(host.i18n("externalLinkConfirm.open"))
             }</button>
 </div>`,
@@ -112,9 +139,19 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
                 dialog = undefined;
             },
         });
-        const buttons = dialog.element.querySelectorAll<HTMLButtonElement>(".b3-button");
-        buttons[0]?.addEventListener("click", () => dialog?.destroy());
-        buttons[1]?.addEventListener("click", () => {
+        // 按钮一律按自定义属性取：动作区里还有一个复制按钮，按 .b3-button 的下标取会错位
+        dialog.element.querySelector<HTMLButtonElement>("[data-ss-copy-link]")?.addEventListener("click", () => {
+            void copyText(href).then((ok) => {
+                host.showMessage(
+                    ok ? host.i18n("externalLinkConfirm.copied") : host.i18n("externalLinkConfirm.copyFailed"),
+                );
+            });
+        });
+        dialog.element.querySelector<HTMLButtonElement>("[data-ss-cancel-link]")?.addEventListener(
+            "click",
+            () => dialog?.destroy(),
+        );
+        dialog.element.querySelector<HTMLButtonElement>("[data-ss-open-link]")?.addEventListener("click", () => {
             const current = dialog;
             dialog = undefined;
             current?.destroy();
