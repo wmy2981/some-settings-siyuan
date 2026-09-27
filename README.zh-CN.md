@@ -79,24 +79,24 @@
 
 ### 界面
 
-| 功能                          | 适用前端 | 说明                                                                      |
-| ----------------------------- | -------- | ------------------------------------------------------------------------- |
-| `modal-blur`                  | 两端     | 弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰                  |
-| `doc-tree-opened-accent`      | 两端     | 文档树中当前打开的笔记左边缘显示贴合强调色，色值与宽度可自定义            |
-| `heading-level-icon`          | 两端     | 引用列表与搜索面板里的标题块改用思源自己的 H1～H6 图标，能直接看出层级    |
-| `inline-code-copy`            | 两端     | 行内代码复制按钮：禁用 / 悬浮（推荐）/ 总是                               |
-| `code-snippet-highlight`      | 两端     | 代码片段编辑框按 CSS / JS 上色，复用思源的 highlight.js 与当前高亮主题    |
-| `desktop-command-panel-slim`  | 桌面端   | 命令面板宽度缩到思源原生宽度的指定百分比（默认 50%）                      |
-| `mobile-sidebar-blur`         | 移动端   | 移动端侧面板高斯模糊                                                      |
-| `mobile-dock-blur`            | 移动端   | 移动端悬浮 dock 栏高斯模糊                                                |
-| `mobile-bar-animation`        | 移动端   | 顶栏 / 面包屑 / 悬浮 dock 栏滚动显隐的平滑过渡，dock 栏只做整体显示或隐藏 |
-| `mobile-ref-panel-height`     | 移动端   | 移动端候选浮层（含引用搜索）按视口比例增高，不会超出可视区底部            |
-| `mobile-tab-doc-icon`         | 移动端   | 移动端页签页默认文档图标用 SVG、emoji 或跟随思源设置                      |
-| `mobile-sync-button`          | 移动端   | 右上角总是显示「立即同步」，点击行为沿用思源原生同步引导                  |
-| `mobile-select-native`        | 移动端   | 下拉选择器用思源原生菜单，而不是 WebView 默认弹层                         |
-| `mobile-longpress-menu-label` | 移动端   | 给长按菜单里只有图标的按钮补上文字（「返回上一层」保持纯图标）            |
-| `mobile-block-icon-always`    | 移动端   | 操作某个块时它的块标保持显示，不再时而显示时而隐藏                        |
-| `hide-mobile-exit`            | 移动端   | 隐藏侧面板里只有图标的「退出应用」按钮                                    |
+| 功能                          | 适用前端 | 说明                                                                        |
+| ----------------------------- | -------- | --------------------------------------------------------------------------- |
+| `modal-blur`                  | 两端     | 弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰                    |
+| `doc-tree-opened-accent`      | 两端     | 文档树中当前打开的笔记左边缘显示贴合强调色，色值与宽度可自定义              |
+| `heading-level-icon`          | 两端     | 引用列表与搜索面板里的标题块改用思源自己的 H1～H6 图标，能直接看出层级      |
+| `inline-code-copy`            | 两端     | 行内代码复制按钮：禁用 / 悬浮（推荐）/ 总是，凡是渲染出行内代码的地方都支持 |
+| `code-snippet-highlight`      | 两端     | 代码片段编辑框按 CSS / JS 上色，复用思源的 highlight.js 与当前高亮主题      |
+| `desktop-command-panel-slim`  | 桌面端   | 命令面板宽度缩到思源原生宽度的指定百分比（默认 50%）                        |
+| `mobile-sidebar-blur`         | 移动端   | 移动端侧面板高斯模糊                                                        |
+| `mobile-dock-blur`            | 移动端   | 移动端悬浮 dock 栏高斯模糊                                                  |
+| `mobile-bar-animation`        | 移动端   | 顶栏 / 面包屑 / 悬浮 dock 栏滚动显隐的平滑过渡，dock 栏只做整体显示或隐藏   |
+| `mobile-ref-panel-height`     | 移动端   | 移动端候选浮层（含引用搜索）按视口比例增高，不会超出可视区底部              |
+| `mobile-tab-doc-icon`         | 移动端   | 移动端页签页默认文档图标用 SVG、emoji 或跟随思源设置                        |
+| `mobile-sync-button`          | 移动端   | 右上角总是显示「立即同步」，点击行为沿用思源原生同步引导                    |
+| `mobile-select-native`        | 移动端   | 下拉选择器用思源原生菜单，而不是 WebView 默认弹层                           |
+| `mobile-longpress-menu-label` | 移动端   | 给长按菜单里只有图标的按钮补上文字（「返回上一层」保持纯图标）              |
+| `mobile-block-icon-always`    | 移动端   | 操作某个块时它的块标保持显示，不再时而显示时而隐藏                          |
+| `hide-mobile-exit`            | 移动端   | 隐藏侧面板里只有图标的「退出应用」按钮                                      |
 
 ### 开发
 

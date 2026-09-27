@@ -77,7 +77,7 @@ would be one that can never do anything.
 | `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                                          |
 | `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel (experimental)                                                   |
 | `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (experimental, 2 × 500ms by default) |
-| `deepseek-balance`        | both     | Shows the account balance below the agent panel composer while the official api.deepseek.com DeepSeek model is in use |
+| `deepseek-balance`        | both     | Shows the account balance below the agent panel composer while the official api.deepseek.com DeepSeek model is in use           |
 
 ### Interface
 
@@ -86,7 +86,7 @@ would be one that can never do anything.
 | `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
 | `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
 | `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level      |
-| `inline-code-copy`            | both     | Copy button for inline code: off, on hover (recommended), or always                                               |
+| `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                       |
 | `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
 | `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                    |
 | `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                       |

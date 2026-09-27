@@ -5,6 +5,10 @@
  * 当前可见的那些）。定位分两趟：先读完所有 rect，再统一写样式，
  * 避免"写一个读一个"把浏览器拖进反复重排。
  *
+ * 作用范围是**所有渲染出来的块内容**，不只主编辑器：编辑器正文、搜索与反链的
+ * 预览区、悬浮预览、闪卡、大纲、脑图、AV 富文本单元格、编辑器只读预览、智能体
+ * 回复。这几处的标记不一样（见下面的选择器），所以两种都要认。
+ *
  * 移动端没有 hover，"悬浮显示"改成"把光标放进这段行内代码即显示"：
  * 手指点在行内代码上会落下光标，`selectionchange` 就是它的信号。
  */
@@ -15,10 +19,26 @@ import type {
     FeatureInstance,
 } from "../../core/types";
 
-/** 行内代码：data-type 可能带多个值（长文本换行时会加 data-inline-wrap），所以用 ~=。 */
-const CODE_SELECTOR = "span[data-type~='code']";
-/** 编辑器正文容器。 */
-const WYSIWYG_SELECTOR = ".protyle-wysiwyg";
+/**
+ * 行内代码在思源里有两套标记，取决于渲染路径，两套都要认：
+ *
+ * - Protyle 渲染出来的 DOM（编辑器正文、搜索/反链预览、悬浮预览、闪卡、大纲、
+ *   脑图、AV 富文本单元格）用 `span[data-type~="code"]`，`~=` 是因为长文本换行时
+ *   还会带上 `data-inline-wrap`；
+ * - 内核直接交给 Lute 渲染 HTML 的区域（编辑器只读预览、智能体回复、集市 README、
+ *   收集箱）用 `<code>`，这些内容都挂在 `.b3-typography` 下——**必须限定这个容器**，
+ *   否则会把设置界面里那些裸 `<code>` 也当成行内代码。
+ *
+ * 代码块要排掉，判据是 `:not(pre code)` 而不是思源自己的 `:not(.hljs)`：
+ * 高亮类由脚本异步加上去，在那之前 `.hljs` 还不存在，会把整段代码块匹配进来。
+ *
+ * 智能体**流式**输出每 100ms 重解析一次、节点被反复替换，等消息落定（类名换成
+ * 不带 `--streaming`）再挂按钮，既省事也不会闪。
+ */
+const PROTYLE_CODE_SELECTOR = "span[data-type~='code']";
+const HTML_CODE_SELECTOR = ".b3-typography code:not(pre code):not(.hljs)";
+const CODE_SELECTOR = `${PROTYLE_CODE_SELECTOR}, ${HTML_CODE_SELECTOR}`;
+const STREAMING_SELECTOR = ".agent-chat__body--streaming";
 const BUTTON_CLASS = "ss-inline-code-copy";
 const DEFAULT_MODE = "off";
 /** 行内代码与复制按钮之间那段空隙的容差（px）。 */
@@ -99,6 +119,17 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     };
 
     /**
+     * 这段行内代码此刻看得见吗。
+     *
+     * 它可能落在被隐藏的容器里（切走的页签、折叠的面板），而按钮是 `position: fixed`
+     * 的：容器一藏，按钮就会「飘」在别的面板上，既认不出来源、点它也没有意义。
+     * `getClientRects()` 为空即说明它没有布局盒（即在 `display: none` 子树里），
+     * 再加上流式输出的排除。
+     */
+    const isVisible = (element: HTMLElement): boolean =>
+        !element.closest(STREAMING_SELECTOR) && element.getClientRects().length > 0;
+
+    /**
      * 移动端的"悬浮"目标：光标所在的那段行内代码。
      *
      * 手指点在行内代码上不会产生 hover，只会落下光标，所以悬浮模式在移动端
@@ -111,9 +142,9 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         }
         for (const node of [selection.anchorNode, selection.focusNode]) {
             const element = node instanceof Element ? node : node?.parentElement;
-            const span = element?.closest<HTMLElement>(CODE_SELECTOR);
-            if (span) {
-                return span;
+            const code = element?.closest<HTMLElement>(CODE_SELECTOR);
+            if (code) {
+                return code;
             }
         }
         return undefined;
@@ -127,12 +158,12 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         }
         if (mode === "hover") {
             const targets: HTMLElement[] = [];
-            if (hovered?.isConnected && hovered.closest(WYSIWYG_SELECTOR)) {
+            if (hovered?.isConnected && isVisible(hovered)) {
                 targets.push(hovered);
             }
             if (isMobile()) {
                 const focused = focusedCode();
-                if (focused && focused.isConnected && focused !== hovered) {
+                if (focused && focused.isConnected && focused !== hovered && isVisible(focused)) {
                     targets.push(focused);
                 }
             }
@@ -140,9 +171,9 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         }
         const viewportHeight = window.innerHeight;
         return Array.from(document.querySelectorAll<HTMLElement>(CODE_SELECTOR))
-            .filter((span) => span.closest(WYSIWYG_SELECTOR))
-            .filter((span) => {
-                const rect = span.getBoundingClientRect();
+            .filter((code) => isVisible(code))
+            .filter((code) => {
+                const rect = code.getBoundingClientRect();
                 return rect.height > 0 && rect.bottom > 0 && rect.top < viewportHeight;
             });
     };
@@ -150,21 +181,21 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     const update = () => {
         const targets = visibleCodes();
         const wanted = new Set(targets);
-        buttons.forEach((button, span) => {
-            if (!wanted.has(span) || !span.isConnected) {
+        buttons.forEach((button, code) => {
+            if (!wanted.has(code) || !code.isConnected) {
                 button.remove();
-                buttons.delete(span);
+                buttons.delete(code);
             }
         });
         if (targets.length === 0) {
             return;
         }
         // 先读完，再统一写，避免读写交替触发重排
-        const rects = targets.map((span) => span.getBoundingClientRect());
+        const rects = targets.map((code) => code.getBoundingClientRect());
         // 贴边时把按钮压回视口内：按钮是 fixed 定位，落在视口外的部分点不到
         const maxLeft = Math.max(2, window.innerWidth - BUTTON_SIZE - 2);
-        targets.forEach((span, index) => {
-            const button = buttons.get(span) ?? createButton(span);
+        targets.forEach((code, index) => {
+            const button = buttons.get(code) ?? createButton(code);
             const rect = rects[index];
             const left = Math.min(Math.max(rect.right - OFFSET_X, 2), maxLeft);
             const top = Math.max(rect.top - OFFSET_Y, 2);
@@ -184,10 +215,10 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     };
 
     /** 指针落在行内代码上，或落在它自己那个复制按钮上，都算"还在这一段上"。 */
-    const spanOfTarget = (target: Element): HTMLElement | undefined => {
-        const span = target.closest<HTMLElement>(CODE_SELECTOR);
-        if (span) {
-            return span;
+    const codeOfTarget = (target: Element): HTMLElement | undefined => {
+        const code = target.closest<HTMLElement>(CODE_SELECTOR);
+        if (code) {
+            return code;
         }
         const button = target.closest<HTMLElement>(`.${BUTTON_CLASS}`);
         if (!button) {
@@ -201,15 +232,15 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         return undefined;
     };
 
-    const insideOf = (span: HTMLElement, node: Node): boolean =>
-        span.contains(node) || Boolean(buttons.get(span)?.contains(node));
+    const insideOf = (code: HTMLElement, node: Node): boolean =>
+        code.contains(node) || Boolean(buttons.get(code)?.contains(node));
 
     /**
      * 按钮浮在行内代码的右上角，指针从代码滑过去时会先擦过两者之间那一小段空隙，
      * 那一瞬间它在页面上是"什么都不属于"的，不能算离开。
      */
-    const nearButtonOf = (span: HTMLElement, event: Event): boolean => {
-        const button = buttons.get(span);
+    const nearButtonOf = (code: HTMLElement, event: Event): boolean => {
+        const button = buttons.get(code);
         const {clientX, clientY} = event as MouseEvent;
         if (!button || typeof clientX !== "number" || typeof clientY !== "number") {
             return false;
@@ -224,14 +255,14 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         if (!(target instanceof Element)) {
             return;
         }
-        const span = spanOfTarget(target);
-        if (span === hovered) {
+        const code = codeOfTarget(target);
+        if (code === hovered) {
             return;
         }
-        if (!span && hovered && nearButtonOf(hovered, event)) {
+        if (!code && hovered && nearButtonOf(hovered, event)) {
             return;
         }
-        hovered = span;
+        hovered = code;
         if (modeOf(host) === "hover") {
             schedule();
         }
@@ -274,6 +305,9 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     }
     window.addEventListener("scroll", schedule, {capture: true, passive: true});
     window.addEventListener("resize", schedule);
+    // 切页签、换面板、开弹窗都只改 class，不动正文结构，却会让按钮依附的那段
+    // 行内代码从视野里消失。一次点击是这些变化最可靠的信号，顺手把游离的按钮收掉。
+    document.addEventListener("pointerdown", schedule, true);
     // 编辑会让行内代码的位置整体变化，正文的突变是最直接的信号
     const observer = new MutationObserver(schedule);
     observer.observe(document.body, {childList: true, subtree: true, characterData: true});
@@ -296,6 +330,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
             document.removeEventListener("pointerover", onPointerOver, true);
             document.removeEventListener("pointerout", onPointerOut, true);
             document.removeEventListener("selectionchange", onSelectionChange);
+            document.removeEventListener("pointerdown", schedule, true);
             window.removeEventListener("scroll", schedule, {capture: true});
             window.removeEventListener("resize", schedule);
             observer.disconnect();
