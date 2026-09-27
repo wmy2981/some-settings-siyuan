@@ -116,8 +116,8 @@ const markLastRow = (rowsHtml: string): string => {
     return `${head}config-item--last-visible ${tail}`;
 };
 
-/** 打开后这段时间内的 blur 视为弹窗自身的焦点变化，不作为「窗口失焦」处理。 */
-const IGNORE_BLUR_MS = 600;
+/** 「用户离开」判定的宽限期：打开面板后这段时间内的信号视为弹窗自身的抖动。 */
+const IGNORE_AWAY_MS = 600;
 
 /** 视口变化轮询间隔。 */
 const VIEWPORT_POLL_MS = 250;
@@ -130,7 +130,7 @@ export class SettingsPanel {
     private dialog?: Dialog;
     private drafts = new Map<string, FeatureConfig>();
     private openedAt = 0;
-    private windowWatcherBound = false;
+    private leaveWatcherBound = false;
     private viewportTimer?: number;
 
     constructor(options: SettingsPanelOptions) {
@@ -211,7 +211,7 @@ export class SettingsPanel {
 
         this.render();
         this.bindActions();
-        this.bindWindowWatcher();
+        this.bindLeaveWatcher();
 
         if (isReadonly()) {
             showMessage(this.t("panel.readonlyTip"), 5000);
@@ -294,24 +294,44 @@ export class SettingsPanel {
     }
 
     /**
-     * 面板打开期间窗口失焦（去复制设置、切到别的应用）时不留下失效弹窗：
-     * 失焦后窗口重新获得焦点、而思源确认弹窗并不在场，说明用户已经离开过设置面板。
+     * 面板打开期间用户离开（去复制设置、切到别的应用）时不留下失效弹窗。
+     *
+     * 判定信号按前端分开，因为 window 的 blur/focus **只在桌面端**等于「用户离开了」：
+     * 移动端只要软键盘收起或弹起、系统弹层或思源自己的菜单出现（菜单会主动
+     * blur 掉当前输入框并收起键盘），一样会派发这一对事件。把它们当成离开，
+     * 就会在用户聚焦一个输入框时把整个设置面板关掉。
+     * 移动端因此改用 document 的可见性变化：只有真的被切走才会 hidden。
      */
-    private bindWindowWatcher(): void {
-        if (this.windowWatcherBound) {
+    private bindLeaveWatcher(): void {
+        if (this.leaveWatcherBound) {
             return;
         }
-        this.windowWatcherBound = true;
+        this.leaveWatcherBound = true;
+        if (isMobileFrontend()) {
+            document.addEventListener("visibilitychange", () => {
+                if (
+                    !this.dialog || document.visibilityState !== "hidden" ||
+                    Date.now() - this.openedAt < IGNORE_AWAY_MS
+                ) {
+                    return;
+                }
+                this.closeUnlessConfirming();
+            });
+            return;
+        }
         window.addEventListener("blur", () => {
-            if (!this.dialog || Date.now() - this.openedAt < IGNORE_BLUR_MS) {
+            if (!this.dialog || Date.now() - this.openedAt < IGNORE_AWAY_MS) {
                 return;
             }
-            window.addEventListener("focus", () => {
-                if (this.dialog && !document.querySelector(CONFIRM_SELECTOR)) {
-                    this.close();
-                }
-            }, {once: true});
+            window.addEventListener("focus", () => this.closeUnlessConfirming(), {once: true});
         });
+    }
+
+    /** 思源自己的确认弹窗还开着（「放弃未保存的更改？」）时不动面板。 */
+    private closeUnlessConfirming(): void {
+        if (this.dialog && !document.querySelector(CONFIRM_SELECTOR)) {
+            this.close();
+        }
     }
 
     // ------------------------------------------------------------ 渲染
