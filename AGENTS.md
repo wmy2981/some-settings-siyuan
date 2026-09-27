@@ -144,7 +144,8 @@ log(...)                    带功能前缀的控制台日志
 ---
 
 ## 6. 设置面板规范
-  [设置面板规范文档](./docs/setting-panel.md)
+
+[设置面板规范文档](./docs/setting-panel.md)
 
 ---
 
@@ -163,7 +164,8 @@ log(...)                    带功能前缀的控制台日志
 ---
 
 ## 8. ⚠️ 已踩过的坑和开发经验
-  [ExperienceDoc](./docs/experience.md)
+
+[ExperienceDoc](./docs/experience.md)
 
 ---
 
@@ -188,7 +190,7 @@ node scripts/render-preview.mjs   # assets/preview.html -> preview.png
 
 1. 本地提交完成，`plugin.json` 与 `package.json` 的 `version` **同步**提升
 2. `git push origin main`
-**非用户要求禁止自行发布新版本**
+   **非用户要求禁止自行发布新版本**
 
 ---
 
