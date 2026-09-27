@@ -294,36 +294,27 @@ export class SettingsPanel {
     }
 
     /**
-     * 面板打开期间用户离开（去复制设置、切到别的应用）时不留下失效弹窗。
+     * 面板打开期间用户离开（切到别的应用、停靠到后台）时不留下失效弹窗。
      *
-     * 判定信号按前端分开，因为 window 的 blur/focus **只在桌面端**等于「用户离开了」：
-     * 移动端只要软键盘收起或弹起、系统弹层或思源自己的菜单出现（菜单会主动
-     * blur 掉当前输入框并收起键盘），一样会派发这一对事件。把它们当成离开，
-     * 就会在用户聚焦一个输入框时把整个设置面板关掉。
-     * 移动端因此改用 document 的可见性变化：只有真的被切走才会 hidden。
+     * 判据是 document 的可见性变化，**不是** window 的失焦：失焦在两端都不等于「用户离开了」。
+     * 移动端软键盘收起或弹起、系统弹层、思源自己的菜单（展开前会 blur 掉输入框并收起键盘）
+     * 都会产生 blur；桌面端窗口失去焦点再聚焦同样常见 —— 去看一眼别的应用再回来接着改，
+     * 是再正常不过的操作，这中间把面板关掉纯属干扰。只有真的被切走（最小化、停靠到后台、
+     * 换页签）document 才会 hidden。
      */
     private bindLeaveWatcher(): void {
         if (this.leaveWatcherBound) {
             return;
         }
         this.leaveWatcherBound = true;
-        if (isMobileFrontend()) {
-            document.addEventListener("visibilitychange", () => {
-                if (
-                    !this.dialog || document.visibilityState !== "hidden" ||
-                    Date.now() - this.openedAt < IGNORE_AWAY_MS
-                ) {
-                    return;
-                }
-                this.closeUnlessConfirming();
-            });
-            return;
-        }
-        window.addEventListener("blur", () => {
-            if (!this.dialog || Date.now() - this.openedAt < IGNORE_AWAY_MS) {
+        document.addEventListener("visibilitychange", () => {
+            if (
+                !this.dialog || document.visibilityState !== "hidden" ||
+                Date.now() - this.openedAt < IGNORE_AWAY_MS
+            ) {
                 return;
             }
-            window.addEventListener("focus", () => this.closeUnlessConfirming(), {once: true});
+            this.closeUnlessConfirming();
         });
     }
 
@@ -532,7 +523,7 @@ export class SettingsPanel {
                     .find((feature) => feature.id === featureId)
                     ?.settings.find((item) => item.kind === "button" && item.key === key);
                 if (!field || field.kind !== "button") {
-                    console.warn(`[some-settings-siyuan] 动作行 "${encoded}" 找不到对应的 onClick，已忽略`);
+                    console.warn(`[some-settings-siyuan] action row "${encoded}" has no matching onClick, ignoring it`);
                     return;
                 }
                 guardAsync(`${featureId}.${key}`, () => Promise.resolve(field.onClick(this.actionContext())));
@@ -564,13 +555,15 @@ export class SettingsPanel {
         if (!draft) {
             const feature = this.options.features.find((item) => item.id === featureId);
             if (!feature) {
-                console.warn(`[some-settings-siyuan] 控件 "${encodedKey}" 找不到对应功能，改动被丢弃`);
+                console.warn(
+                    `[some-settings-siyuan] control "${encodedKey}" has no matching feature, change discarded`,
+                );
                 return;
             }
             // 正常情况下草稿已在 show() 里建好；走到这里说明两者判定不一致，
             // 补建一份以免用户改过的东西被丢掉，同时留一条可检索的错误。
             console.error(
-                `[some-settings-siyuan] 控件 "${encodedKey}" 缺草稿（当前 ${this.drafts.size} 份），已按已提交配置补建`,
+                `[some-settings-siyuan] control "${encodedKey}" has no draft (currently ${this.drafts.size}), rebuilt from the saved config`,
             );
             draft = {...this.options.store.get(featureId)};
             this.drafts.set(featureId, draft);
