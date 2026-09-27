@@ -9,11 +9,16 @@
  * 「只有滑动能用、点按不行」。
  *
  * 因此分两步：
- * 1. pointerdown / mousedown / touchstart 只负责 preventDefault 挡住浏览器自己的
- *    原生弹层（原生 select 就是在这时候展开的），并把这次手势记下来；
+ * 1. pointerdown / mousedown 只负责 preventDefault 挡住浏览器自己的原生弹层
+ *    （原生 select 是在 mousedown 这一层展开的），并把这次手势记下来；
  * 2. pointerup / mouseup / touchend 才真正打开菜单 —— 此时手势已经结束；
  *    另外在弹出后的一小段窗口内，把落在遮罩上的 click 一并吞掉，
  *    免得被内核「点菜单外面就关掉」的逻辑关走。
+ *
+ * 触摸还有一个坑：**不能在 touchstart 里 preventDefault**。在 touchstart
+ * （或第一个 touchmove）里取消默认行为会连页面滚动一起取消，手指落在下拉上时
+ * 页面就再也划不动了。触摸路径因此只在 touchend 取消一次——那才是「点击」的
+ * 默认行为所在，也是原生弹层的触发点；滑动（pointercancel / 位移超阈值）一律不碰。
  */
 import {Menu} from "siyuan";
 import type {
@@ -103,6 +108,22 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
         pending = {select, x: point?.x ?? 0, y: point?.y ?? 0};
     };
 
+    /**
+     * 触摸按下：只记下这次手势，绝不 preventDefault。
+     *
+     * 这里一取消，页面就跟着划不动了；而原生弹层的触发点在「点击」上，
+     * 由 pointerdown / touchend 去挡就够了（见本文件顶部的说明）。
+     */
+    const onTouchStart = (event: Event) => {
+        const select = selectOf(event);
+        if (!select) {
+            return;
+        }
+        event.stopPropagation();
+        const point = pointOf(event);
+        pending = {select, x: point?.x ?? 0, y: point?.y ?? 0};
+    };
+
     /** 抬起：手势已经结束，此刻弹出菜单不会再被这次点击的尾巴关掉。 */
     const onUp = (event: Event) => {
         const current = pending;
@@ -143,7 +164,7 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
 
     document.addEventListener("pointerdown", onDown, true);
     document.addEventListener("mousedown", onDown, true);
-    document.addEventListener("touchstart", onDown, {capture: true, passive: false});
+    document.addEventListener("touchstart", onTouchStart, true);
     document.addEventListener("pointerup", onUp, true);
     document.addEventListener("mouseup", onUp, true);
     document.addEventListener("touchend", onUp, {capture: true, passive: false});
@@ -155,7 +176,7 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
         destroy: () => {
             document.removeEventListener("pointerdown", onDown, true);
             document.removeEventListener("mousedown", onDown, true);
-            document.removeEventListener("touchstart", onDown, true);
+            document.removeEventListener("touchstart", onTouchStart, true);
             document.removeEventListener("pointerup", onUp, true);
             document.removeEventListener("mouseup", onUp, true);
             document.removeEventListener("touchend", onUp, true);
