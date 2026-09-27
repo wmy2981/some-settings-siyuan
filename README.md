@@ -59,8 +59,8 @@ Those are deliberately two different things:
 So a fresh install has **every feature off** and you turn them on one by one under
 **Settings → Marketplace → Downloaded → (this plugin) → Settings**. Switching one off unmounts it
 completely — styles, listeners and injected nodes are all released — with no plugin reload.
-Two features are the exception because their own requirement is a selector that already includes an
-"off" option: `inline-code-copy` and `mobile-longpress-menu-label`.
+One feature is the exception because its own requirement is a selector that already includes an
+"off" option: `inline-code-copy`.
 
 A feature with `state: 2` has no switch to click, so it counts as allowed to run; otherwise that state
 would be one that can never do anything.
@@ -94,7 +94,7 @@ would be one that can never do anything.
 | `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                             |
 | `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                               |
 | `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                     |
-| `mobile-longpress-menu-label` | mobile   | Adds text to the copy/paste buttons in the long-press menu (off, copy, paste, or both)                            |
+| `mobile-longpress-menu-label` | mobile   | Adds text to every icon-only button in the mobile long-press menu                                                 |
 | `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                             |
 | `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                          |
 
@@ -120,7 +120,7 @@ There is **no nested grouping at any level** —
 weights only: **only the feature name is bold**; its sub-items and descriptions are not. Every row is
 "label on the left, control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`,
 `b3-text-field`, `b3-label`, `config-item`, `config-title`), with the built-in `16px 24px` row padding left
-untouched. Features whose switch _is_ a selector (`inline-code-copy`, `mobile-longpress-menu-label`) keep
+untouched. Features whose switch _is_ a selector (`inline-code-copy`) keep
 that dropdown on the name row instead of giving it a row of its own.
 Features that only work on one frontend are **hidden from the panel on the other one**: mobile-only items
 never appear on desktop, and desktop-only items (`desktop-command-panel-slim`) never appear on mobile.

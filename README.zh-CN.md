@@ -57,8 +57,8 @@
 
 所以新装插件时**所有功能都是关的**，得你自己去「设置 → 集市 → 已下载 →（本插件）→ 设置」
 里逐项打开；关掉时功能会被**完整卸载**（样式、监听、注入的节点全部撤掉），不需要重载插件。
-只有两个功能例外，它们的需求本身就是「用一个 selector 当开关」，那个 selector 的
-**禁用**选项就是关：`inline-code-copy`、`mobile-longpress-menu-label`。
+只有一个功能例外，它的需求本身就是「用一个 selector 当开关」，那个 selector 的
+**禁用**选项就是关：`inline-code-copy`。
 
 `state: 2` 的功能在面板里没有开关可点，因此按「已允许运行」处理 —— 否则它就变成了一个
 永远不工作的状态。
@@ -92,7 +92,7 @@
 | `mobile-tab-doc-icon`         | 移动端   | 移动端页签页默认文档图标用 SVG、emoji 或跟随思源设置                      |
 | `mobile-sync-button`          | 移动端   | 右上角总是显示「立即同步」，点击行为沿用思源原生同步引导                  |
 | `mobile-select-native`        | 移动端   | 下拉选择器用思源原生菜单，而不是 WebView 默认弹层                         |
-| `mobile-longpress-menu-label` | 移动端   | 长按菜单里的复制 / 粘贴补上文字（禁用 / 复制 / 粘贴 / 两者）              |
+| `mobile-longpress-menu-label` | 移动端   | 给长按菜单里所有只有图标的按钮补上文字                                    |
 | `mobile-block-icon-always`    | 移动端   | 操作某个块时它的块标保持显示，不再时而显示时而隐藏                        |
 | `hide-mobile-exit`            | 移动端   | 隐藏侧面板里只有图标的「退出应用」按钮                                    |
 
@@ -115,7 +115,7 @@
 它的参数行排在下面，行与行之间保留思源 `.b3-label` 自带的那条细分割线。
 **任何一层都没有嵌套分组** ——
 `SettingField` 里根本没有分组型字段，层级在类型上就写不出来。
-拿 selector 当开关的功能（`inline-code-copy`、`mobile-longpress-menu-label`）同理：
+拿 selector 当开关的功能（`inline-code-copy`）同理：
 那个下拉就排在功能名这一行的右边，不另起一行。
 文案只有两种角色、两档字重：**只有功能名加粗**，它下面的子设置项与说明都是常规字重。
 每一行都是「左侧文案 + 右侧控件」，用思源自己的类名

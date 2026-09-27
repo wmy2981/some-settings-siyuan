@@ -1,8 +1,9 @@
 /**
  * 长按菜单补文字的实现。
  *
- * 只处理我们加过标记的 `<span>`：同一个菜单里「更多」二级项自带的 `<span>`
- * 不能被我们当成自己的删除掉。
+ * 只处理「里面除了图标什么都没有」的按钮：内核同一个菜单里「更多」打开的那一行
+ * （`copyPlainText` 等）本来就带 `<span>` 文字，那些既不该被补，也不该被我们改写。
+ * 判据用 `textContent`，因为内核给按钮写文字既可能是 `<span>`，也可能是裸文本节点。
  *
  * 内核的 `.keyboard__action` 是按"里面只有一个图标"排的（`svg` 是左浮动，
  * 按钮宽度就由这个浮动盒子撑开），所以补文字必须同时改按钮的排版，
@@ -48,19 +49,6 @@ const LABEL_CSS = `
 }
 `;
 
-const wantedActions = (host: FeatureHost): string[] => {
-    switch (String(host.config.mode ?? "off")) {
-        case "both":
-            return ["copy", "paste"];
-        case "copy":
-            return ["copy"];
-        case "paste":
-            return ["paste"];
-        default:
-            return [];
-    }
-};
-
 export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
     host.addStyle(LABEL_CSS);
 
@@ -69,15 +57,12 @@ export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
     let frame = 0;
 
     const apply = (container: HTMLElement) => {
-        const actions = wantedActions(host);
         container.querySelectorAll<HTMLButtonElement>(".keyboard__action[data-action]").forEach((button) => {
-            const mine = button.querySelector<HTMLElement>(`span[${MARK_ATTR}]`);
-            if (!actions.includes(button.dataset.action ?? "")) {
-                mine?.remove();
-                button.removeAttribute(MARK_ATTR);
+            if (button.querySelector(`span[${MARK_ATTR}]`)) {
                 return;
             }
-            if (mine) {
+            // 内核自己给了文字的按钮保持原样，那里已经有它自己的一套排版
+            if (button.textContent?.trim()) {
                 return;
             }
             const text = button.getAttribute("aria-label")?.trim();
