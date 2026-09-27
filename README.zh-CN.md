@@ -170,7 +170,7 @@ some-settings-siyuan/
 ```
 
 运行期数据落在工作空间的
-`data/storage/petal/some-settings-siyuan/feature-<id>.json`。
+`data/storage/petal/some-settings-siyuan/feature-<id>`。
 所有读写都走 `plugin.loadData` / `saveData` / `removeData`，插件不会直接调用 `fs` 或任何 Node API。
 
 ## 新增一个功能

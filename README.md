@@ -176,7 +176,7 @@ some-settings-siyuan/
 ```
 
 Where the data lives at runtime, in the workspace:
-`data/storage/petal/some-settings-siyuan/feature-<id>.json`. All access goes through
+`data/storage/petal/some-settings-siyuan/feature-<id>`. All access goes through
 `plugin.loadData` / `saveData` / `removeData`; the plugin never calls `fs` or any Node API.
 
 ## Adding a feature

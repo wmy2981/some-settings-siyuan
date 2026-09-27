@@ -107,7 +107,7 @@ scripts/                      开发脚本
 
 ## 4. 配置持久化
 
-* 每个功能一个文件：`data/storage/petal/some-settings-siyuan/feature-<id>.json`
+* 每个功能一个文件：`data/storage/petal/some-settings-siyuan/feature-<id>`
 * **只能用** `plugin.loadData` / `saveData` / `removeData`。
   **禁止 `fs`、`require("electron")` 或任何 Node API** —— 会破坏同步并可能损坏云数据。
 * 保存流程：面板改的是**草稿**，点「保存」才写盘，点「取消」丢弃，有未保存改动时先确认。
