@@ -26,23 +26,17 @@ const SHORT_KEYWORDS = new Set(["id"]);
 
 // 关键词黑名单：即使来自 feature 键也不参与匹配的片段。分三类：
 //   平台词：发行说明里到处都是，和具体功能无关
-//   泛用名词：doc / tab / ref / block / select / bar 在同名英文单词里到处都是，几乎不区分
 //   无区分度片段：note 命中的是每条链接里的 siyuan-note，log 命中的是 dialog / Changelogs / b3log，
 //     auto 和 height 命中的是发行说明头部徽章 HTML 里的 CSS
 // 拉黑后每个功能至少还剩一个关键词（例如 mobile-ref-panel-height 还剩 panel）
 const BLACKLIST = new Set([
+    "always",
+    "never",
+    "often",
     "support",
+    "allow",
     "server",
-    "note",
-    "log",
-    "auto",
-    "height",
-    "doc",
-    "tab",
-    "ref",
-    "block",
-    "select",
-    "bar",
+    "kernel",
     "mobile",
     "desktop",
     "windows",
@@ -52,7 +46,13 @@ const BLACKLIST = new Set([
     "android",
     "ios",
     "ipad",
-    "harmonyos",
+    "harmony",
+    "open",
+    "log",
+    "note",
+    "siyuan",
+    "auto",
+    "height",
 ]);
 
 const TOKEN = process.env.GH_TOKEN;
