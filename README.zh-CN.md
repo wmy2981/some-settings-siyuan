@@ -94,7 +94,7 @@
 | `mobile-tab-doc-icon`         | 移动端   | 移动端页签页默认文档图标用 SVG、emoji 或跟随思源设置                      |
 | `mobile-sync-button`          | 移动端   | 右上角总是显示「立即同步」，点击行为沿用思源原生同步引导                  |
 | `mobile-select-native`        | 移动端   | 下拉选择器用思源原生菜单，而不是 WebView 默认弹层                         |
-| `mobile-longpress-menu-label` | 移动端   | 给长按菜单里所有只有图标的按钮补上文字                                    |
+| `mobile-longpress-menu-label` | 移动端   | 给长按菜单里只有图标的按钮补上文字（「返回上一层」保持纯图标）            |
 | `mobile-block-icon-always`    | 移动端   | 操作某个块时它的块标保持显示，不再时而显示时而隐藏                        |
 | `hide-mobile-exit`            | 移动端   | 隐藏侧面板里只有图标的「退出应用」按钮                                    |
 

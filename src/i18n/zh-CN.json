@@ -89,7 +89,7 @@
   "feature.mobileSelectNative.name": "移动端下拉用思源原生样式",
   "feature.mobileSelectNative.desc": "移动端点开下拉选择器时不再用 WebView 自己的弹层，而是弹出思源原生的菜单；选中后照常补发 change。",
   "feature.mobileLongpressMenuLabel.name": "移动端长按菜单补文字",
-  "feature.mobileLongpressMenuLabel.desc": "给移动端长按选区菜单里所有只有图标的按钮补上文字，使用思源原生的菜单项样式。",
+  "feature.mobileLongpressMenuLabel.desc": "给移动端长按选区菜单里所有只有图标的按钮补上文字，使用思源原生的菜单项样式；「返回上一层」保持纯图标。",
   "feature.mobileBlockIconAlways.name": "移动端块标保持显示",
   "feature.mobileBlockIconAlways.desc": "移动端操作某个块时，块标不再时而显示时而隐藏：内核把它收起来的瞬间会原样搬回来，点它照样弹原生菜单。",
   "feature.inlineCodeCopy.name": "行内代码复制按钮",

@@ -22,6 +22,13 @@ const CONTAINER_SELECTOR = ".protyle-util--mobile";
 const MARK = "ss-menu-label";
 const MARK_ATTR = `data-${MARK}`;
 const RESCAN_INTERVAL_MS = 2000;
+/**
+ * 保持纯图标的动作。
+ *
+ * `back` 是「更多」展开那一行里的「返回上一层」，它和同一行的复制为纯文本等文字项
+ * 不在同一层语义上，补上文字反而把这一行撑得更高更乱，所以只留图标。
+ */
+const ICON_ONLY_ACTIONS = new Set(["back"]);
 
 const LABEL_CSS = `
 /* 补过文字的按钮改成"上图下字"的一列，总高与原生图标按钮一致（48px） */
@@ -58,6 +65,12 @@ export const mountLongpressMenuLabel = (host: FeatureHost): FeatureInstance => {
 
     const apply = (container: HTMLElement) => {
         container.querySelectorAll<HTMLButtonElement>(".keyboard__action[data-action]").forEach((button) => {
+            if (ICON_ONLY_ACTIONS.has(button.dataset.action ?? "")) {
+                // 之前版本补过的话要撤掉，否则这一行会一直留着文字
+                button.querySelector(`span[${MARK_ATTR}]`)?.remove();
+                button.removeAttribute(MARK_ATTR);
+                return;
+            }
             if (button.querySelector(`span[${MARK_ATTR}]`)) {
                 return;
             }

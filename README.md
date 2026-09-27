@@ -96,7 +96,7 @@ would be one that can never do anything.
 | `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                             |
 | `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                               |
 | `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                     |
-| `mobile-longpress-menu-label` | mobile   | Adds text to every icon-only button in the mobile long-press menu                                                 |
+| `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                  |
 | `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                             |
 | `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                          |
 

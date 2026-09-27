@@ -89,7 +89,7 @@
   "feature.mobileSelectNative.name": "Native SiYuan style for mobile dropdowns",
   "feature.mobileSelectNative.desc": "Opening a dropdown on mobile shows SiYuan's own menu instead of the WebView picker, and still fires change on selection.",
   "feature.mobileLongpressMenuLabel.name": "Labels in the mobile long-press menu",
-  "feature.mobileLongpressMenuLabel.desc": "Adds text to every icon-only button in the mobile long-press menu, using SiYuan's own menu item styling.",
+  "feature.mobileLongpressMenuLabel.desc": "Adds text to every icon-only button in the mobile long-press menu, using SiYuan's own menu item styling; the back button keeps its icon only.",
   "feature.mobileBlockIconAlways.name": "Keep the block icon visible on mobile",
   "feature.mobileBlockIconAlways.desc": "While a block is being operated on mobile its block icon no longer flickers: it is put back the moment the kernel clears it, and clicking it still opens the native menu.",
   "feature.inlineCodeCopy.name": "Copy button for inline code",
