@@ -144,5 +144,8 @@
   "clearConfig.action": "Clear",
   "clearConfig.confirmTitle": "Clear this plugin's configuration?",
   "clearConfig.confirmText": "This deletes the configuration file of each of the ${count} features and then reloads the frontend. It cannot be undone.",
-  "clearConfig.done": "Configuration cleared, reloading..."
+  "clearConfig.done": "Configuration cleared, reloading...",
+  "feature.pluginReminder.name": "About this plugin",
+  "feature.pluginReminder.desc": "What this plugin is, its current version, and where to report problems.",
+  "pluginReminder.notice": "This plugin is built and maintained by an individual. It is not an official SiYuan feature and is not part of the SiYuan project itself; every feature is off by default and can be enabled one by one.\nIt works by taking over SiYuan's own settings entry and parts of its interface behaviour, so it is experimental by nature: individual features may break after a major SiYuan update, and plugins that touch the same part of the interface can interfere with each other.\nCurrent version: v{version}. When something misbehaves, reload the plugin or turn the related feature off first; if the problem remains, please report it in the repository.\nGitHub repository: {repo}"
 }

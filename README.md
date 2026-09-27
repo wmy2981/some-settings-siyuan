@@ -107,6 +107,7 @@ would be one that can never do anything.
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | `clear-config`       | both     | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
+| `plugin-reminder`    | both     | A read-only notice: what the plugin is, when it can break, the current version and the GitHub repository |
 
 ## Settings panel
 
@@ -123,7 +124,9 @@ There is **no nested grouping at any level** —
 weights only: **only the feature name is bold**; its sub-items and descriptions are not. Every row is
 "label on the left, control on the right", using SiYuan's own classes (`b3-switch`, `b3-select`,
 `b3-text-field`, `b3-label`, `config-item`, `config-title`), with the built-in `16px 24px` row padding left
-untouched. Features whose switch _is_ a selector (`inline-code-copy`) keep
+untouched. The one exception is `plugin-reminder` in the Development category: a **read-only notice** that
+fills the whole row with text and carries no control, with the version and repository read from `plugin.json`
+instead of being written into the copy. Features whose switch _is_ a selector (`inline-code-copy`) keep
 that dropdown on the name row instead of giving it a row of its own.
 Features that only work on one frontend are **hidden from the panel on the other one**: mobile-only items
 never appear on desktop, and desktop-only items (`desktop-command-panel-slim`) never appear on mobile.

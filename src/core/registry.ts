@@ -32,6 +32,7 @@ import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSyncButton from "../features/mobile-sync-button";
 import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
+import pluginReminder from "../features/plugin-reminder";
 import type {
     FeatureCategory,
     FeatureDefinition,
@@ -65,6 +66,7 @@ export const FEATURES: FeatureDefinition[] = [
     codeSnippetHighlight,
     mobileConsoleLog,
     clearConfig,
+    pluginReminder,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

@@ -144,5 +144,8 @@
   "clearConfig.action": "清除",
   "clearConfig.confirmTitle": "清除本插件配置？",
   "clearConfig.confirmText": "将删除 ${count} 个功能各自的配置文件，然后重新载入前端。此操作不可撤销。",
-  "clearConfig.done": "已清除本插件的全部配置，正在重新载入…"
+  "clearConfig.done": "已清除本插件的全部配置，正在重新载入…",
+  "feature.pluginReminder.name": "关于本插件",
+  "feature.pluginReminder.desc": "本插件的性质、当前版本与问题反馈入口。",
+  "pluginReminder.notice": "本插件由个人开发维护，不是思源官方功能，也不属于「思源笔记」项目本身；所有功能默认关闭，按需逐项启用。\n它靠接管思源自身的设置入口与部分界面行为来工作，因此带有实验性质：思源大版本更新后个别功能可能失效，多个插件同时改动同一处界面时也可能互相影响。\n当前版本：v{version}。遇到异常时，先重载插件或关掉相关功能；仍然不对，欢迎到仓库反馈。\nGitHub 仓库：{repo}"
 }
