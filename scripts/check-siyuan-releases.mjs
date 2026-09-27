@@ -212,6 +212,16 @@ const matchesKeyword = (line, keywords) => {
     return keywords.some((keyword) => lower.includes(keyword));
 };
 
+// 条目里的上游链接会在对方仓库的时间线上留下跨仓库引用，统一改成对应列表的搜索页：
+// issue 走 issues?q=、pull 走 pulls?q=。搜索页不是详情页，不会产生引用；
+// 查询不带状态限定，已经关闭的 issue 也能搜到
+const rewriteUpstreamLinks = (line) =>
+    line.replace(
+        /https:\/\/github\.com\/siyuan-note\/siyuan\/(issues|pull)\/(\d+)/g,
+        (match, path, number) =>
+            `https://github.com/siyuan-note/siyuan/${path === "pull" ? "pulls" : "issues"}?q=${number}`,
+    );
+
 // 展示层：原始行本身已是 Markdown，列表行、缩进续行、标题、HTML 一律原样保留，
 // 只有纯文本段落补上列表符号，让条目逐条列出而不是挤成整段散文
 const asEntry = (line) => {
@@ -253,7 +263,7 @@ const renderBody = (release, lines) =>
         "This issue was created by an automated workflow to remind developers that a new SiYuan release may affect existing features in this repository. Please check compatibility and adapt as needed.",
         "---",
         "### 以下更新可能影响已有功能\n\nThe following updates may affect existing features:",
-        ...groupBlocks(lines.map(asEntry)),
+        ...groupBlocks(lines.map((line) => asEntry(rewriteUpstreamLinks(line)))),
         "---",
         `原始发行说明：${release.url}\n\nOriginal release notes: ${release.url}`,
     ].join("\n\n") + "\n";
