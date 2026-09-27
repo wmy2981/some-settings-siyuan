@@ -72,6 +72,9 @@
     },
     "heading-level-icon": {
       "state": 1
+    },
+    "deepseek-balance": {
+      "state": 1
     }
   }
 }

@@ -10,6 +10,7 @@ import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import codeSnippetHighlight from "../features/code-snippet-highlight";
 import dailyNoteDirect from "../features/daily-note-direct";
+import deepseekBalance from "../features/deepseek-balance";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import externalLinkConfirm from "../features/external-link-confirm";
@@ -51,6 +52,7 @@ export const FEATURES: FeatureDefinition[] = [
     externalLinkConfirm,
     kernelReconnectButton,
     kernelAutoReconnect,
+    deepseekBalance,
     mobileRefPanelHeight,
     mobileTabDocIcon,
     mobileSelectNative,

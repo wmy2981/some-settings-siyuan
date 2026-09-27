@@ -75,6 +75,7 @@
 | `external-link-confirm`   | 两端     | 跳转 http/https 链接前弹窗确认，弹窗里显示完整原始链接                                      |
 | `kernel-reconnect-button` | 两端     | 断连面板上加一个「立即重连」按钮（实验性）                                                  |
 | `kernel-auto-reconnect`   | 两端     | 断连时按设置的次数与间隔自己探测内核，探测到恢复就立刻重载前端（实验性，默认 2 次 / 500ms） |
+| `deepseek-balance`        | 两端     | 使用官网 api.deepseek.com 的 DeepSeek 模型时，在智能体面板顶栏显示账户余额                  |
 
 ### 界面
 
