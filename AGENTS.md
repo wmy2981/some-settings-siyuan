@@ -190,14 +190,15 @@ node scripts/render-preview.mjs   # assets/preview.html -> preview.png
 
 1. 本地提交完成，`plugin.json` 与 `package.json` 的 `version` **同步**提升
 2. `git push origin main`
-   **非用户要求禁止自行发布新版本**
+   **非用户要求禁止自行发布新版本，修改版本号**
 
 ---
 
-## 10. 提交与文档
+## 10. 提交，文档与测试
 
 * **Conventional Commits**，分点提交，一个小改动一个 commit。
 * 提交信息用英文，说清「改了什么」。
 * 用户可见的文案必须**中英双语**同时写进两份 i18n。
 * `README.md` / `README.zh-CN.md` 是集市展示页，改动用户可见行为时要同步更新。
 * **`dev-refs/` 是本地唯一权威开发参考资料，不得纳入版本管理，也不得在任何文档、注释、提交信息里引用或提及。**
+* 非用户明确要求，**禁止自行进行端到端测试或操作用户的思源工作空间**
