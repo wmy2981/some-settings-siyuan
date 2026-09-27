@@ -19,6 +19,8 @@
   "modalBlur.radius": "Blur radius",
   "feature.docTreeOpenedAccent.name": "Accent for the opened note",
   "feature.docTreeOpenedAccent.desc": "Draws a flush accent bar on the left edge of the currently opened note in the document tree, with a customisable colour.",
+  "feature.headingLevelIcon.name": "Heading level in the title icon",
+  "feature.headingLevelIcon.desc": "In the reference list and the search panel a heading block only shows a generic H icon that hides its level; this switches to SiYuan's own H1-H6 icons, with the level drawn in the bottom right corner.",
   "docTreeOpenedAccent.color": "Accent colour",
   "docTreeOpenedAccent.colorTip": "Leave empty to follow the SiYuan theme primary; any CSS colour such as #rrggbb, rgb() or var(--b3-theme-primary) works",
   "docTreeOpenedAccent.colorPlaceholder": "Follow SiYuan when empty",
