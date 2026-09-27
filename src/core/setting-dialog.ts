@@ -12,6 +12,10 @@
  *
  * 保存机制：控件改动先落在面板自己的草稿里，点「保存」才写文件并关闭；
  * 点「取消」丢弃草稿。这样设置一定能存下去，也符合原生对话框的语义。
+ *
+ * 生命周期同样只有显式入口：取消、保存、插件卸载（外加内核自己的 Esc）。
+ * **不监听窗口失焦，也不监听 `document` 可见性** —— 两者都不等于「用户离开了」，
+ * 详见 `docs/experience.md` 里的第 12 条。
  */
 import {
     Dialog,
@@ -116,21 +120,13 @@ const markLastRow = (rowsHtml: string): string => {
     return `${head}config-item--last-visible ${tail}`;
 };
 
-/** 「用户离开」判定的宽限期：打开面板后这段时间内的信号视为弹窗自身的抖动。 */
-const IGNORE_AWAY_MS = 600;
-
 /** 视口变化轮询间隔。 */
 const VIEWPORT_POLL_MS = 250;
-
-/** 思源确认弹窗的特征（dialog/index.ts 与 confirmDialog.ts 的实际实现）。 */
-const CONFIRM_SELECTOR = "[data-key='dialogConfirm']";
 
 export class SettingsPanel {
     private readonly options: SettingsPanelOptions;
     private dialog?: Dialog;
     private drafts = new Map<string, FeatureConfig>();
-    private openedAt = 0;
-    private leaveWatcherBound = false;
     private viewportTimer?: number;
 
     constructor(options: SettingsPanelOptions) {
@@ -168,7 +164,6 @@ export class SettingsPanel {
             return;
         }
         ensurePanelCss();
-        this.openedAt = Date.now();
         const features = this.visibleFeaturesAll();
         this.drafts = new Map(features.map((feature) => [feature.id, {...this.options.store.get(feature.id)}]));
 
@@ -211,7 +206,6 @@ export class SettingsPanel {
 
         this.render();
         this.bindActions();
-        this.bindLeaveWatcher();
 
         if (isReadonly()) {
             showMessage(this.t("panel.readonlyTip"), 5000);
@@ -291,38 +285,6 @@ export class SettingsPanel {
         }
         window.clearInterval(this.viewportTimer);
         this.viewportTimer = undefined;
-    }
-
-    /**
-     * 面板打开期间用户离开（切到别的应用、停靠到后台）时不留下失效弹窗。
-     *
-     * 判据是 document 的可见性变化，**不是** window 的失焦：失焦在两端都不等于「用户离开了」。
-     * 移动端软键盘收起或弹起、系统弹层、思源自己的菜单（展开前会 blur 掉输入框并收起键盘）
-     * 都会产生 blur；桌面端窗口失去焦点再聚焦同样常见 —— 去看一眼别的应用再回来接着改，
-     * 是再正常不过的操作，这中间把面板关掉纯属干扰。只有真的被切走（最小化、停靠到后台、
-     * 换页签）document 才会 hidden。
-     */
-    private bindLeaveWatcher(): void {
-        if (this.leaveWatcherBound) {
-            return;
-        }
-        this.leaveWatcherBound = true;
-        document.addEventListener("visibilitychange", () => {
-            if (
-                !this.dialog || document.visibilityState !== "hidden" ||
-                Date.now() - this.openedAt < IGNORE_AWAY_MS
-            ) {
-                return;
-            }
-            this.closeUnlessConfirming();
-        });
-    }
-
-    /** 思源自己的确认弹窗还开着（「放弃未保存的更改？」）时不动面板。 */
-    private closeUnlessConfirming(): void {
-        if (this.dialog && !document.querySelector(CONFIRM_SELECTOR)) {
-            this.close();
-        }
     }
 
     // ------------------------------------------------------------ 渲染
