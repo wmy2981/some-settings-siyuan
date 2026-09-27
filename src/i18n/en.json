@@ -114,6 +114,7 @@
   "deepseekBalance.interval": "Refresh interval",
   "deepseekBalance.intervalTip": "Time between two queries, 1 second minimum",
   "deepseekBalance.seconds": "s",
+  "deepseekBalance.label": "DeepSeek balance: ",
   "deepseekBalance.loading": "Fetching the DeepSeek balance...",
   "deepseekBalance.noProvider": "No enabled DeepSeek model on api.deepseek.com (enable one under Settings - AI)",
   "deepseekBalance.failed": "Could not fetch the DeepSeek balance",

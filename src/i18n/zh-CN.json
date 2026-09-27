@@ -114,6 +114,7 @@
   "deepseekBalance.interval": "查询周期",
   "deepseekBalance.intervalTip": "两次查询之间的间隔，最小 1 秒",
   "deepseekBalance.seconds": "秒",
+  "deepseekBalance.label": "DeepSeek 余额：",
   "deepseekBalance.loading": "正在查询 DeepSeek 余额…",
   "deepseekBalance.noProvider": "没有启用中的官网 DeepSeek 模型（需要在「设置 - 人工智能」里启用 api.deepseek.com 的模型）",
   "deepseekBalance.failed": "查询 DeepSeek 余额失败",

@@ -96,17 +96,19 @@ type RenderState =
 /**
  * 输入框外面那一行余额的样式。
  *
- * 全是布局属性：字号、行高、内外边距与缩略规则。颜色一律继承思源原生变量，
+ * 全是布局属性：对齐、字号、行高、内外边距与缩略规则。颜色一律继承思源原生变量，
  * 这样浅色 / 深色主题都自动跟随，也不需要和任何原生控件去比特异性。
  *
  * 负的上外边距是有意的：输入区自己带 `margin: 0 16px 12px`，直接跟在它后面会离边框
  * 12px 远、看着像独立的一段；把这一行往上收进那段下外边距里，就成了紧贴边框的一行
- * 说明。左右外边距与输入区的 16px 对齐，两者内容左边缘在同一条线上。
+ * 说明。左右外边距与输入区的 16px 对齐，于是 `text-align: center` 居中的正是输入框
+ * 本身（而不是整个面板）。
  */
 const BALANCE_CSS = `
 .ss-deepseek-balance {
     margin: -6px 16px 6px;
     overflow: hidden;
+    text-align: center;
     /* 与输入框里的权限文案、模型名持平，不抢视线 */
     color: var(--b3-theme-on-surface);
     font-size: 12px;
@@ -449,15 +451,21 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         refreshIfEmpty();
     };
 
-    /** 把当前状态写进节点。文案没变就不碰 DOM —— 这是防止观察器自激的最后一道闸。 */
+    /**
+     * 把当前状态写进节点。文案没变就不碰 DOM —— 这是防止观察器自激的最后一道闸。
+     *
+     * 「DeepSeek 余额：」这段前缀由 i18n 给出（含它自己的分隔符：中文用全角冒号、英文用
+     * 冒号加空格），所以这里直接拼接、不再自己插空格 —— 不然中文会多出一个半角空格。
+     */
     const render = () => {
         if (!node) {
             return;
         }
         const {text, title} = describe(lastState, t);
-        if (text !== lastText) {
-            node.textContent = text;
-            lastText = text;
+        const shown = `${t("deepseekBalance.label")}${text}`;
+        if (shown !== lastText) {
+            node.textContent = shown;
+            lastText = shown;
         }
         if (title === lastTitle) {
             return;

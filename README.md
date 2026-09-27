@@ -77,7 +77,7 @@ would be one that can never do anything.
 | `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                                          |
 | `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel (experimental)                                                   |
 | `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (experimental, 2 × 500ms by default) |
-| `deepseek-balance`        | both     | Shows the account balance below the agent panel composer while the official api.deepseek.com DeepSeek model is in use           |
+| `deepseek-balance`        | both     | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use   |
 
 ### Interface
 
