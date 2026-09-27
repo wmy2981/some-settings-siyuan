@@ -16,8 +16,8 @@
     "zh-CN": "一些设置"
   },
   "description": {
-    "default": "A batch of independently toggleable desktop and mobile enhancements: every setting item can be enabled, disabled, hidden and reset on its own",
-    "zh-CN": "一批可独立启停的桌面端与移动端增强功能：每个设置项都能单独启用、禁用、隐藏和重置"
+    "default": "A batch of independently toggleable desktop and mobile enhancements and optimized styles",
+    "zh-CN": "一批可独立启停的桌面端与移动端增强功能和优化后的样式"
   },
   "readme": {
     "default": "README.md",
@@ -32,7 +32,7 @@
   },
   "keywords": [
     "settings",
-    "设置",
+    "style",
     "custom",
     "ui",
     "enhancement"
