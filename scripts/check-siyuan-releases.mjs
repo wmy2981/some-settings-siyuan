@@ -24,6 +24,37 @@ const TITLE_PATTERN = /^Siyuan Updated to v(.+)$/;
 // feature 键按 - 切开后的短片段白名单：这些词长度不足 3 也保留为关键词
 const SHORT_KEYWORDS = new Set(["id"]);
 
+// 关键词黑名单：即使来自 feature 键也不参与匹配的片段。分三类：
+//   平台词：发行说明里到处都是，和具体功能无关
+//   泛用名词：doc / tab / ref / block / select / bar 在同名英文单词里到处都是，几乎不区分
+//   无区分度片段：note 命中的是每条链接里的 siyuan-note，log 命中的是 dialog / Changelogs / b3log，
+//     auto 和 height 命中的是发行说明头部徽章 HTML 里的 CSS
+// 拉黑后每个功能至少还剩一个关键词（例如 mobile-ref-panel-height 还剩 panel）
+const BLACKLIST = new Set([
+    "support",
+    "server",
+    "note",
+    "log",
+    "auto",
+    "height",
+    "doc",
+    "tab",
+    "ref",
+    "block",
+    "select",
+    "bar",
+    "mobile",
+    "desktop",
+    "windows",
+    "mac",
+    "macos",
+    "linux",
+    "android",
+    "ios",
+    "ipad",
+    "harmonyos",
+]);
+
 const TOKEN = process.env.GH_TOKEN;
 const REPOSITORY = process.env.GITHUB_REPOSITORY;
 const DRY_RUN = process.env.DRY_RUN === "1";
@@ -74,7 +105,7 @@ const buildKeywords = (features) => {
     for (const id of Object.keys(features)) {
         for (const part of id.split("-")) {
             const keyword = part.toLowerCase();
-            if (keyword === "" || (keyword.length < 3 && !SHORT_KEYWORDS.has(keyword))) {
+            if (keyword === "" || BLACKLIST.has(keyword) || (keyword.length < 3 && !SHORT_KEYWORDS.has(keyword))) {
                 continue;
             }
             keywords.add(keyword);
