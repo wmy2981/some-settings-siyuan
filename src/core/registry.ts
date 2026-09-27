@@ -6,6 +6,7 @@
  *
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
+import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import codeSnippetHighlight from "../features/code-snippet-highlight";
 import dailyNoteDirect from "../features/daily-note-direct";
@@ -57,6 +58,7 @@ export const FEATURES: FeatureDefinition[] = [
     desktopCommandPanelSlim,
     codeSnippetHighlight,
     mobileConsoleLog,
+    clearConfig,
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);

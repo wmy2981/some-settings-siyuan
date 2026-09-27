@@ -66,6 +66,9 @@
     },
     "mobile-console-log": {
       "state": 1
+    },
+    "clear-config": {
+      "state": 1
     }
   }
 }

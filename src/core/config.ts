@@ -298,19 +298,41 @@ export class ConfigStore {
         this.notify(id);
     }
 
-    /** 删除磁盘文件并回落默认值。 */
+    /**
+     * 删除磁盘文件并回落默认值。
+     *
+     * 删除失败会抛出：调用方需要知道「没清干净」，否则重新载入后那份配置又会被读回来，
+     * 看起来像清除根本没生效。与 saveMany 的写盘校验同一个原则——不静默通过。
+     */
     async reset(id: string): Promise<void> {
         const entry = this.entries.get(id);
         if (!entry) {
             return;
         }
-        try {
-            await this.plugin.removeData(storageNameOf(id));
-        } catch (error) {
-            console.warn(`[some-settings-siyuan] 删除 ${storageNameOf(id)} 失败`, error);
-        }
+        await this.plugin.removeData(storageNameOf(id));
         entry.config = defaultConfig(entry.definition.settings);
         this.notify(id);
+    }
+
+    /**
+     * 清除本插件写入的全部配置（开发分类的「清除本插件配置」动作行使用）。
+     *
+     * 逐个删除并回落默认值，随后各自通知订阅者，所以内存态与磁盘态在这一步就一致了；
+     * 有任何一个删不掉就把它们收集起来一次性抛出，让用户看见具体是哪几个文件。
+     */
+    async clearAll(): Promise<void> {
+        const failed: string[] = [];
+        for (const id of [...this.entries.keys()]) {
+            try {
+                await this.reset(id);
+            } catch (error) {
+                console.warn(`${PREFIX} 清除 ${storageNameOf(id)} 失败`, error);
+                failed.push(storageNameOf(id));
+            }
+        }
+        if (failed.length > 0) {
+            throw attachProblems(failed.map((name) => `${name}：删除失败`));
+        }
     }
 
     /** 导出全部功能的当前配置（供开发类功能使用）。 */

@@ -21,9 +21,13 @@ import {
 import type {Plugin} from "siyuan";
 import type {ConfigStore} from "./config";
 import type {ControlSnapshot} from "./control";
-import {reportError} from "./error";
+import {
+    guardAsync,
+    reportError,
+} from "./error";
 import {supportsCurrentFrontend} from "./frontend";
 import type {
+    FeatureActionContext,
     FeatureCategory,
     FeatureConfig,
     FeatureDefinition,
@@ -511,13 +515,21 @@ export class SettingsPanel {
                     console.warn(`[some-settings-siyuan] 动作行 "${encoded}" 找不到对应的 onClick，已忽略`);
                     return;
                 }
-                try {
-                    field.onClick();
-                } catch (error) {
-                    reportError(`${featureId}.${key}`, error);
-                }
+                guardAsync(`${featureId}.${key}`, () => Promise.resolve(field.onClick(this.actionContext())));
             });
         });
+    }
+
+    /**
+     * 动作行能拿到的平台能力。动作行不参与挂载，拿不到 FeatureHost，
+     * 所以它需要的东西只能由面板在这里现搭一个。
+     */
+    private actionContext(): FeatureActionContext {
+        return {
+            i18n: (key: string) => this.t(key),
+            featureIds: this.options.features.map((feature) => feature.id),
+            clearAllConfigs: () => this.options.store.clearAll(),
+        };
     }
 
     /**

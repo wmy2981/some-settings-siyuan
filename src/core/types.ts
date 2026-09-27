@@ -51,6 +51,26 @@ export interface SettingOption {
 }
 
 /**
+ * 动作行能拿到的平台能力。
+ *
+ * 动作行是「点击立刻执行、没有可持久化取值」的入口，它不参与挂载，
+ * 因此拿不到 FeatureHost。这里按需给出它真正要用的三件事，
+ * 一方面避免功能为了一个按钮去 import 注册表（那会形成 core ↔ feature 的循环依赖），
+ * 一方面也不必让功能长期挂载只为了保存一个引用。
+ */
+export interface FeatureActionContext {
+    /** 解析 i18n key，缺失时回落到 key 本身。 */
+    readonly i18n: (key: string) => string;
+    /** 全部已注册功能的 id，顺序与设置面板一致。 */
+    readonly featureIds: readonly string[];
+    /**
+     * 清除本插件写入的全部功能配置：逐个删除配置文件并回落默认值，随后通知各功能。
+     * 有任何一个文件删不掉就抛出（附 problems），不允许静默通过。
+     */
+    clearAllConfigs(): Promise<void>;
+}
+
+/**
  * 设置面板里的一行控件。
  *
  * 刻意没有分组型字段：面板是「分类标题 + 设置行」的一层结构，
@@ -111,7 +131,7 @@ export type SettingField =
         description?: string;
         /** 按钮文字，i18n key。 */
         label: string;
-        onClick: () => void;
+        onClick: (context: FeatureActionContext) => void | Promise<void>;
     };
 
 /** 功能被启用时要处理的所有 UI 注册入口。 */

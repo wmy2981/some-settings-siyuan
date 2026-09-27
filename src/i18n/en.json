@@ -124,5 +124,13 @@
   "mobileConsoleLog.clear": "Clear",
   "mobileConsoleLog.copied": "Log copied",
   "mobileConsoleLog.copyFailed": "Copy failed",
-  "mobileConsoleLog.empty": "No log entries yet"
+  "mobileConsoleLog.empty": "No log entries yet",
+  "feature.clearConfig.name": "Clear this plugin's configuration",
+  "feature.clearConfig.desc": "For development: wipes every configuration file this plugin wrote, putting all features back into their just-installed state.",
+  "clearConfig.title": "Clear all configuration",
+  "clearConfig.tip": "Deletes the configuration files of every feature and then reloads the frontend. This cannot be undone.",
+  "clearConfig.action": "Clear",
+  "clearConfig.confirmTitle": "Clear this plugin's configuration?",
+  "clearConfig.confirmText": "This deletes the configuration file of each of the ${count} features and then reloads the frontend. It cannot be undone.",
+  "clearConfig.done": "Configuration cleared, reloading..."
 }

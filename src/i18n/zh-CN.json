@@ -124,5 +124,13 @@
   "mobileConsoleLog.clear": "清空",
   "mobileConsoleLog.copied": "已复制全部日志",
   "mobileConsoleLog.copyFailed": "复制失败",
-  "mobileConsoleLog.empty": "还没有日志"
+  "mobileConsoleLog.empty": "还没有日志",
+  "feature.clearConfig.name": "清除本插件配置",
+  "feature.clearConfig.desc": "开发用：一键删掉本插件写进思源的每一个配置文件，让全部功能回到刚安装时的状态。",
+  "clearConfig.title": "清除全部配置",
+  "clearConfig.tip": "删除全部功能的配置文件，然后重新载入前端；此操作不可撤销。",
+  "clearConfig.action": "清除",
+  "clearConfig.confirmTitle": "清除本插件配置？",
+  "clearConfig.confirmText": "将删除 ${count} 个功能各自的配置文件，然后重新载入前端。此操作不可撤销。",
+  "clearConfig.done": "已清除本插件的全部配置，正在重新载入…"
 }

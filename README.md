@@ -103,6 +103,7 @@ would be one that can never do anything.
 | Feature              | Frontend | What it does                                                                                             |
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
+| `clear-config`       | both     | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
 
 ## Settings panel
 
