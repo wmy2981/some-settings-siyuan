@@ -85,6 +85,7 @@ would be one that can never do anything.
 | ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
 | `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
+| `doc-tree-title-markdown`     | both     | Renders inline Markdown in notebook and document titles of the document tree with SiYuan's own inline styles      |
 | `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level      |
 | `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                       |
 | `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
@@ -260,6 +261,9 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   pinned rows and the outline in place.
 * `code-snippet-highlight` depends on SiYuan's own highlight.js. If that never loads, the plugin tears the
   highlight layer down and leaves the editor as plain text rather than leaving an unreadable input.
+* `doc-tree-title-markdown` only touches the document tree. The syntax characters stay in the title and are
+  merely hidden, so every place that reads the title verbatim (drag hints, the unlock prompt of an encrypted
+  notebook) still gets the original text, and turning the feature off restores the plain title.
 * `mobile-select-native` is best-effort: on some kernel/platform combinations the system picker still opens,
   in which case the select behaves exactly as it does without the plugin.
 * **Copying on mobile goes through the native bridge the apps inject.** The Android and iOS WebViews do not
