@@ -96,16 +96,20 @@ export const selectControlHtml = (
 export const subtitleRowHtml = (
     title: string,
     description?: string,
-    control?: {key: string; html: string;},
+    control?: {key: string; html: string; toggles?: boolean;},
 ): string => {
     if (!control) {
         return `<div class="b3-label config-item ${PANEL_CLASS}__sub">${mainHtml(title, description)}</div>`;
     }
-    return `<div class="fn__flex b3-label config-item ${PANEL_CLASS}__sub" data-ss-row="${escapeHtml(control.key)}">
+    // 整行可点：右边是开关时用 label 包住整行，点功能名（或它的说明）就等于点开关。
+    // 这与 switchRowHtml 的做法一致，也就是内核设置页里「点条目即切换」的行为。
+    // 拿下拉当开关的功能不能用 label：点功能名会顺手把下拉拉开，那是另一回事。
+    const tag = control.toggles ? "label" : "div";
+    return `<${tag} class="fn__flex b3-label config-item ${PANEL_CLASS}__sub" data-ss-row="${escapeHtml(control.key)}">
     ${mainHtml(title, description)}
     <span class="fn__space"></span>
     ${control.html}
-</div>`;
+</${tag}>`;
 };
 
 /** 原生风格的开关行。 */

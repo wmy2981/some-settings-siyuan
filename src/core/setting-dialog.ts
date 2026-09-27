@@ -360,6 +360,7 @@ export class SettingsPanel {
                             Boolean(draft[toggle.key]),
                             readonly,
                         ),
+                        toggles: true,
                     } :
                     inlineSelect && {
                         key: bindKey(feature.id, inlineSelect.key),
