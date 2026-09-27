@@ -1,15 +1,21 @@
 /**
- * 「智能体面板顶栏显示 DeepSeek 余额」的实现。
+ * 「智能体面板显示 DeepSeek 余额」的实现。
  *
- * 展示位置是智能体面板顶栏的第一个子节点 `div.block__icons`：余额节点插在
- * `div.agent-chat__title` 之后，也就是标题右边、原生按钮左边。这里刻意不复用
- * `block__icon` 类 —— 面板带 `file-tree`，内核那条规则会把顶栏里的
- * `.block__icon` 默认设成 `display: none`，只在 hover 时才显示；余额需要常驻可见，
- * 所以走功能自己的类名与样式。
+ * 展示位置是输入框下面那一行 `.agent-chat__button-options` 的最左边（图片、权限
+ * 两个按钮之前）：余额是常驻状态，放在顶栏会和面板标题、按钮抢位置，放在输入区
+ * 底部则与「当前模型」挨着，更符合它属于哪套配置。这里刻意不复用 `block__icon`
+ * 之类的图标按钮类 —— 那套类在面板里受 `file-tree` 的 hover 规则约束，余额需要
+ * 常驻可见，所以走功能自己的类名与样式。
  *
  * 面板是懒创建的，也会被销毁重建，因此注入必须幂等、可重入、可清理：
  * 用 MutationObserver 盯着 body 找面板，找到后改成盯面板本身（面板里流式输出时
  * 每一帧都在改消息区，全量观察 body 太浪费），节点丢了就重新插一次。
+ * 面板「从不可见变为可见」（展开停靠栏）或节点刚被重新插上时，如果此刻手里没有
+ * 余额，就立刻补查一次，不必等下一个周期。
+ *
+ * 日志按「主题 + 内容变化」输出：这个功能每 30 秒跑一次，按次打日志既刷屏又看不出
+ * 变化，而它出问题时恰恰是「什么都不显示」，所以节点注入 / 移除、查询目标变化、
+ * 查询成功与失败都各留一条，且同一条不重复。绝不打印 API Key。
  *
  * 关于数据来源的两条硬约束：
  * 1. `window.siyuan.config` 在保存设置时会被整体替换，所以每次取值都重新读，
@@ -24,8 +30,8 @@ import type {
     FeatureInstance,
 } from "../../core/types";
 
-/** 顶栏里插入余额节点的挂载点：面板标题（右侧留白最多的位置）。 */
-const ANCHOR_SELECTOR = ".sy__agentChat .agent-chat__title";
+/** 插入余额节点的挂载点：输入框下面那一行按钮条。 */
+const INPUT_ROW_SELECTOR = ".sy__agentChat .agent-chat__button-options";
 /** 我们注入的余额节点标记：既用于幂等判断，也用于卸载时兜底清理。 */
 const NODE_ATTR = "data-ss-deepseek-balance";
 /** 智能体面板的模型选择器，它的 `data-model-id` 才是「此刻真正在用哪个模型」。 */
@@ -63,9 +69,11 @@ interface BalanceInfo {
 
 /**
  * 能查到余额的那套配置。`apiKey` / `origin` 是快照，不是 config 里的引用。
+ * `modelId` 只用于日志，方便判断「查的是不是我以为的那个模型」。
  */
 interface BalanceTarget {
     apiKey: string;
+    modelId: string;
     origin: string;
 }
 
@@ -85,7 +93,7 @@ type RenderState =
     | {kind: "value"; infos: BalanceInfo[]; available: boolean;};
 
 /**
- * 顶栏那一小段余额的样式。
+ * 输入区那一小段余额的样式。
  *
  * 全是布局属性：字号、行高、内外边距与缩略规则。颜色一律继承思源原生变量，
  * 这样浅色 / 深色主题都自动跟随，也不需要和任何原生控件去比特异性。
@@ -95,7 +103,7 @@ const BALANCE_CSS = `
     flex: 0 1 auto;
     max-width: 120px;
     overflow: hidden;
-    /* 图标按钮、下拉都带图标，字号比正文小；余额跟它们持平才不会显得突兀 */
+    /* 与同一行里的权限文案、模型名持平，不抢视线 */
     color: var(--b3-theme-on-surface);
     font-size: 12px;
     line-height: 16px;
@@ -241,7 +249,7 @@ const resolveTarget = (): BalanceTarget | undefined => {
             // 命中官网却没填 Key（或者不是官网）：继续看下一个候选，不弹错也不刷屏。
             continue;
         }
-        return {apiKey, origin};
+        return {apiKey, modelId, origin};
     }
     return undefined;
 };
@@ -284,14 +292,30 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     let controller: AbortController | undefined;
     let inFlight = false;
     let destroyed = false;
-    /** 已经为「当前这次连续失败」记过日志了没有。 */
-    let reportedFailure = false;
     let lastText: string | undefined;
     let lastTitle: string | undefined;
     let lastState: RenderState = {kind: "idle"};
+    /** 上一帧面板是否可见，用来识别「刚展开停靠栏」。 */
+    let panelWasVisible = false;
+    /** 每个日志主题上一次输出的内容，相同就不再重复输出。 */
+    const logTopics = new Map<string, string>();
 
     const t = (key: string): string => host.i18n(key);
     host.addStyle(BALANCE_CSS);
+
+    /**
+     * 按主题打日志：同一主题内容不变就不再输出。
+     *
+     * 这个功能是定时跑的，按次打日志会把控制台刷满；而它「不显示」的时候，
+     * 恰恰需要知道停在哪一步，所以只在状态真的变化时留一条。
+     */
+    const logOnChange = (topic: string, message: string): void => {
+        if (logTopics.get(topic) === message) {
+            return;
+        }
+        logTopics.set(topic, message);
+        host.log(message);
+    };
 
     /**
      * 盯住整个 body，专管「面板出现 / 消失 / 被换掉」。
@@ -309,10 +333,12 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     };
 
     /**
-     * 观察面板本身，而不是整个 body。
+     * 观察面板本身与它的祖先容器，而不是整个 body。
      *
      * 面板里流式输出时每一帧都在改消息区，全量观察 body 会让 apply 每帧跑一次；
      * 而面板内的 childList / class 变化足够回答「挂载点还在不在」。
+     * 祖先单独盯一层是因为**折叠 / 展开停靠栏改的是面板自己或它外面的容器**（`fn__none`），
+     * 只盯面板会漏掉「刚展开」这一下，而「展开时手里没余额就补查一次」正需要它。
      * 面板被整体搬走（换停靠位置）由 body 观察器兜底。
      */
     const observePanel = (panel: HTMLElement) => {
@@ -322,20 +348,46 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         observer?.disconnect();
         currentPanel = panel;
         observer = new MutationObserver(() => schedule());
-        observer.observe(panel, {childList: true, attributes: true, attributeFilter: ["class"]});
+        observer.observe(panel, {childList: true, attributes: true, attributeFilter: ["class", "style"]});
+        for (
+            let ancestor = panel.parentElement;
+            ancestor && ancestor !== document.body;
+            ancestor = ancestor.parentElement
+        ) {
+            observer.observe(ancestor, {attributes: true, attributeFilter: ["class", "style"]});
+        }
     };
 
     const clearNode = () => {
+        const existed = Boolean(node) || document.querySelector(`[${NODE_ATTR}]`) !== null;
         if (node) {
             guardSilent("deepseek-balance.remove", () => node?.remove());
             node = undefined;
         }
         // 兜底：面板被重建等异常路径下可能残留一个已经失去引用的节点
         document.querySelectorAll<HTMLElement>(`[${NODE_ATTR}]`).forEach((element) => element.remove());
+        if (existed) {
+            logOnChange("node", "Balance node removed (the mount point is gone)");
+        }
+    };
+
+    /** 节点可见与否：`getClientRects()` 为空说明它落在 `display: none` 的子树里。 */
+    const isVisible = (element: HTMLElement): boolean => element.getClientRects().length > 0;
+
+    /**
+     * 手里没有余额时立刻补查一次。
+     *
+     * 「打开面板却什么都不显示」是最容易让人以为功能坏了的情况，而下一个周期
+     * 可能还在几十秒之后。已经有余额就不打扰，正在查的由 tick 自己的 inFlight 挡住。
+     */
+    const refreshIfEmpty = () => {
+        if (lastState.kind !== "value") {
+            void tick();
+        }
     };
 
     /**
-     * 确保余额节点在顶栏里。
+     * 确保余额节点在输入区那一行里。
      *
      * 注入前先摘掉两个观察器：否则这次写入会再触发一次自己（典型表现是每帧一次空转）。
      * 两个断开都发生在同步块里，紧接着就按当前面板重新挂上。
@@ -346,11 +398,13 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         if (destroyed) {
             return;
         }
-        const anchor = document.querySelector<HTMLElement>(ANCHOR_SELECTOR);
+        const anchor = document.querySelector<HTMLElement>(INPUT_ROW_SELECTOR);
         if (!anchor) {
             // 面板还没出现，或者刚被移除：连已经注入的节点一起收回，不留孤儿。
             bodyObserver?.disconnect();
             clearNode();
+            panelWasVisible = false;
+            logOnChange("panel", "Agent panel is not in the DOM yet (or was removed); nothing is shown");
             observeBody();
             return;
         }
@@ -358,7 +412,13 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         if (!panel) {
             return;
         }
-        if (node?.isConnected && node.parentElement === anchor.parentElement && panel.contains(node)) {
+        const visible = isVisible(panel);
+        if (node?.isConnected && node.parentElement === anchor && panel.contains(node)) {
+            if (visible && !panelWasVisible) {
+                logOnChange("panel", "Agent panel became visible");
+                refreshIfEmpty();
+            }
+            panelWasVisible = visible;
             observePanel(panel);
             return;
         }
@@ -370,13 +430,17 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         node = document.createElement("span");
         node.className = "ss-deepseek-balance";
         node.setAttribute(NODE_ATTR, "true");
-        anchor.insertAdjacentElement("afterend", node);
+        anchor.insertAdjacentElement("afterbegin", node);
         // 新节点上没有任何已写入的文案，清掉去重缓存，保证这一帧一定渲染
         lastText = undefined;
         lastTitle = undefined;
         render();
         observePanel(panel);
         observeBody();
+        panelWasVisible = visible;
+        logOnChange("node", `Balance node injected below the composer (panel ${visible ? "visible" : "hidden"})`);
+        // 节点刚插上通常就是「面板刚打开 / 刚被重建」，此刻没有余额就立刻查一次
+        refreshIfEmpty();
     };
 
     /** 把当前状态写进节点。文案没变就不碰 DOM —— 这是防止观察器自激的最后一道闸。 */
@@ -463,7 +527,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     /**
      * 一次查询。
      *
-     * 失败只在顶栏那一段里降级显示，控制台用 host.log 记一次就够 —— 定时器每 30 秒
+     * 失败只在输入框下面那一段里降级显示，控制台按主题记一条就够 —— 定时器每 30 秒
      * 跑一次，一旦开始报错就会刷屏，所以绝不在这里 reportError / showMessage。
      */
     const tick = async () => {
@@ -472,12 +536,17 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         }
         const target = resolveTarget();
         if (!target) {
+            logOnChange(
+                "target",
+                "No enabled DeepSeek provider on api.deepseek.com (or it has no API key); skipping the query",
+            );
             if (lastState.kind !== "idle") {
                 lastState = {kind: "idle"};
                 render();
             }
             return;
         }
+        logOnChange("target", `Querying ${target.origin}${BALANCE_PATH} (model ${target.modelId})`);
         inFlight = true;
         if (lastState.kind !== "value") {
             lastState = {kind: "loading"};
@@ -490,13 +559,15 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
             }
             if (result.ok) {
                 lastState = {kind: "value", infos: result.infos, available: result.available};
-                reportedFailure = false;
+                const primary = pickBalance(result.infos).primary;
+                logOnChange(
+                    "fetch",
+                    primary ?
+                        `Balance: ${primary.currency} ${primary.total}` :
+                        "Balance query succeeded but the API returned no balance entries",
+                );
             } else {
-                // 失败会一直重试到修好为止，只在「刚变成失败」时记一条，别每 30 秒刷一次屏
-                if (!reportedFailure) {
-                    reportedFailure = true;
-                    host.log("查询 DeepSeek 余额失败：", result.error);
-                }
+                logOnChange("fetch", `Balance query failed: ${result.error}`);
                 lastState = {kind: "failed"};
             }
             render();
@@ -553,6 +624,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     apply();
     startTimer();
     runNow();
+    host.log(`Mounted; polling every ${intervalMsOf(host) / 1000}s`);
 
     return {
         destroy: () => {
@@ -560,6 +632,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
                 return;
             }
             destroyed = true;
+            host.log("Unmounted; polling and injection stopped");
             // 先停掉所有会再调进来的入口，再清资源，destroy 幂等
             window.removeEventListener("siyuan-ai-config-changed", onAiConfigChanged);
             window.removeEventListener("focus", onFocus);

@@ -110,7 +110,7 @@
   "feature.mobileConsoleLog.name": "控制台日志查看器",
   "feature.mobileConsoleLog.desc": "移动端没有开发者控制台：这个功能从插件加载起收集控制台输出，点下面的按钮即可在弹窗里查看完整日志。",
   "feature.deepseekBalance.name": "DeepSeek 余额显示",
-  "feature.deepseekBalance.desc": "使用官网 api.deepseek.com 的 DeepSeek 模型时，自动读取思源「设置 - 人工智能」里已配置的 API Key 定时查询余额，并显示在智能体面板顶栏。",
+  "feature.deepseekBalance.desc": "使用官网 api.deepseek.com 的 DeepSeek 模型时，自动读取思源「设置 - 人工智能」里已配置的 API Key 定时查询余额，并显示在智能体面板的输入框下方。",
   "deepseekBalance.interval": "查询周期",
   "deepseekBalance.intervalTip": "两次查询之间的间隔，最小 1 秒",
   "deepseekBalance.seconds": "秒",

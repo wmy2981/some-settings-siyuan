@@ -110,7 +110,7 @@
   "feature.mobileConsoleLog.name": "Console log viewer",
   "feature.mobileConsoleLog.desc": "Mobile has no developer console: this collects console output from the moment the plugin loads and shows the full log in a dialog from the button below.",
   "feature.deepseekBalance.name": "DeepSeek balance in the agent panel",
-  "feature.deepseekBalance.desc": "With the official api.deepseek.com DeepSeek model it reads the API key already configured under Settings - AI, polls the balance and shows it in the top bar of the agent panel.",
+  "feature.deepseekBalance.desc": "With the official api.deepseek.com DeepSeek model it reads the API key already configured under Settings - AI, polls the balance and shows it below the agent panel composer.",
   "deepseekBalance.interval": "Refresh interval",
   "deepseekBalance.intervalTip": "Time between two queries, 1 second minimum",
   "deepseekBalance.seconds": "s",
