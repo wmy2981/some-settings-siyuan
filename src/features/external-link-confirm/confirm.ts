@@ -13,6 +13,7 @@
  */
 import {Dialog} from "siyuan";
 import {copyText} from "../../core/clipboard";
+import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -114,7 +115,8 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
     const ask = (detail: OpenLinkDetail, href: string) => {
         dialog = new Dialog({
             title: host.i18n("externalLinkConfirm.title"),
-            width: "520px",
+            // 移动端按约定用 92vw：520px 在手机上会整块溢出，复制按钮那一行也跟着看不见
+            width: isMobile() ? "92vw" : "520px",
             content: `<div class="b3-dialog__content">
     <div class="ss-external-link__head">
         <div class="ss-external-link__prompt">${escapeHtml(host.i18n("externalLinkConfirm.prompt"))}</div>
