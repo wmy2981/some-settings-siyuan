@@ -59,13 +59,13 @@ export const mountDailyNoteDirect = (host: FeatureHost): FeatureInstance => {
             return;
         }
         if (!notebooksOf().some((notebook) => notebook.id === notebookId && !notebook.closed)) {
-            host.log(`配置的笔记本 ${notebookId} 不可用，交回思源自己的选择弹窗`);
+            host.log(`configured notebook ${notebookId} is unavailable; falling back to SiYuan's own picker`);
             return;
         }
         const select = dialog.querySelector<HTMLSelectElement>("select.b3-select");
         const confirm = dialog.querySelector<HTMLButtonElement>(".b3-dialog__action .b3-button--text");
         if (!select || !confirm) {
-            host.log("没有找到日记弹窗的选择框或确定按钮，已跳过");
+            host.log("no select or confirm button in the daily note dialog; skipping");
             return;
         }
         select.value = notebookId;

@@ -335,7 +335,7 @@ export const mountSnippetHighlight = (featureHost: FeatureHost): FeatureInstance
         state.timer = window.setTimeout(() => {
             if (!state.host.classList.contains(ACTIVE_CLASS)) {
                 detach(textarea);
-                featureHost.log("highlight.js 没有按时就绪，已还原代码片段编辑框");
+                featureHost.log("highlight.js was not ready in time; restored the code snippet editor");
             }
         }, HLJS_TIMEOUT_MS);
 

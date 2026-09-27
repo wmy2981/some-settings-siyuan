@@ -49,7 +49,7 @@ export const reconnectNow = async (host: FeatureHost): Promise<boolean> => {
     if (!alive) {
         return false;
     }
-    host.log("内核已恢复，重载前端以重建 WebSocket");
+    host.log("kernel is back; reloading the frontend to rebuild the WebSocket");
     window.location.reload();
     return true;
 };

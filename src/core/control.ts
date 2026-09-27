@@ -74,13 +74,18 @@ export const rawStates = (): Record<string, unknown> => {
 export const controlOf = (id: string): ResolvedControl => {
     const entry = rawFeatures[id];
     if (!entry) {
-        warnOnce(`missing:${id}`, `feature-control.json 缺少 "${id}"，按 0 处理（不加载配置、前端不显示）`);
+        warnOnce(
+            `missing:${id}`,
+            `feature-control.json is missing "${id}", treating it as 0 (no config load, not shown in the UI)`,
+        );
         return resolveState(ControlState.Disabled);
     }
     if (!isControlState(entry.state)) {
         warnOnce(
             `invalid:${id}`,
-            `feature-control.json 中 "${id}" 的 state=${JSON.stringify(entry.state)} 非法，按 0 处理；合法值为 0/1/2/3`,
+            `feature-control.json has an invalid state=${
+                JSON.stringify(entry.state)
+            } for "${id}", treating it as 0; valid values are 0/1/2/3`,
         );
         return resolveState(ControlState.Disabled);
     }
@@ -102,13 +107,13 @@ export const validateControl = (ids: string[]): void => {
     ids.forEach((id) => controlOf(id));
     Object.keys(rawFeatures).forEach((id) => {
         if (!ids.includes(id)) {
-            warnOnce(`unknown:${id}`, `feature-control.json 中的 "${id}" 没有对应的功能注册，该条被忽略`);
+            warnOnce(`unknown:${id}`, `feature-control.json entry "${id}" has no registered feature, ignoring it`);
         }
     });
     const messages = [...warnings.values()];
     warnings.clear();
     if (messages.length > 0) {
-        console.warn(`${PREFIX} feature-control.json 存在 ${messages.length} 个问题：`);
+        console.warn(`${PREFIX} feature-control.json has ${messages.length} problem(s):`);
         messages.forEach((warning) => console.warn(`${PREFIX} - ${warning}`));
     }
 };

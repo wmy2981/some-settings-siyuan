@@ -154,7 +154,7 @@ export const mountHeadingLevelIcon = (host: FeatureHost): FeatureInstance => {
             retryAfter = Date.now() + RETRY_COOLDOWN_MS;
             if (!reportedFailure) {
                 reportedFailure = true;
-                host.log("查询块类型失败，界面先保持原来的纯 H 图标", error);
+                host.log("Block subtype query failed; keeping the plain H icon for now", error);
             }
         }).finally(() => {
             fresh.forEach((id) => querying.delete(id));

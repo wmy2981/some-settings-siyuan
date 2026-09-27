@@ -60,7 +60,7 @@ const apply = (): void => {
             set: () => undefined,
         });
     } catch (error) {
-        console.warn("[some-settings-siyuan][code-block-lang-empty] 覆盖 local-codelang 失败", error);
+        console.warn("[some-settings-siyuan][code-block-lang-empty] failed to override local-codelang", error);
     }
 };
 
@@ -77,7 +77,7 @@ const restore = (): void => {
             delete storage[STORAGE_KEY];
         }
     } catch (error) {
-        console.warn("[some-settings-siyuan][code-block-lang-empty] 还原 local-codelang 失败", error);
+        console.warn("[some-settings-siyuan][code-block-lang-empty] failed to restore local-codelang", error);
     }
     savedDescriptor = undefined;
 };

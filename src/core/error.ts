@@ -55,6 +55,6 @@ export const guardSilent = (scope: string, action: () => void): void => {
     try {
         action();
     } catch (error) {
-        console.error(`${PREFIX} [${scope}] 清理失败`, error);
+        console.error(`${PREFIX} [${scope}] cleanup failed`, error);
     }
 };

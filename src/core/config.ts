@@ -22,7 +22,7 @@ const PREFIX = "[some-settings-siyuan]";
 
 /** 给错误挂上可读的问题清单，供面板一次性提示。 */
 export const attachProblems = (problems: string[]): Error & {problems: string[];} => {
-    const error = new Error(problems.join("；")) as Error & {problems: string[];};
+    const error = new Error(problems.join("; ")) as Error & {problems: string[];};
     error.problems = problems;
     return error;
 };
@@ -33,13 +33,13 @@ export const attachProblems = (problems: string[]): Error & {problems: string[];
  */
 export const describeMismatch = (written: FeatureConfig, readBack: unknown): string => {
     if (typeof readBack !== "object" || readBack === null || Array.isArray(readBack)) {
-        return `读回的不是对象（${JSON.stringify(readBack)}）`;
+        return `read back is not an object (${JSON.stringify(readBack)})`;
     }
     const actual = readBack as Record<string, unknown>;
     const diffs = Object.keys(written).filter((key) => actual[key] !== written[key]).map((key) =>
-        `${key}: 写入 ${JSON.stringify(written[key])} / 读回 ${JSON.stringify(actual[key])}`
+        `${key}: wrote ${JSON.stringify(written[key])} / read back ${JSON.stringify(actual[key])}`
     );
-    return diffs.join("；");
+    return diffs.join("; ");
 };
 
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
@@ -81,7 +81,11 @@ export const normalizeConfig = (
                     if (typeof value === "boolean") {
                         result[field.key] = value;
                     } else {
-                        warn?.(`"${field.key}" 应为 boolean，收到 ${JSON.stringify(value)}，已回落默认值`);
+                        warn?.(
+                            `"${field.key}" should be boolean, got ${
+                                JSON.stringify(value)
+                            }, falling back to the default`,
+                        );
                         result[field.key] = field.default;
                     }
                     break;
@@ -89,7 +93,11 @@ export const normalizeConfig = (
                     if (typeof value === "string") {
                         result[field.key] = value;
                     } else {
-                        warn?.(`"${field.key}" 应为 string，收到 ${JSON.stringify(value)}，已回落默认值`);
+                        warn?.(
+                            `"${field.key}" should be string, got ${
+                                JSON.stringify(value)
+                            }, falling back to the default`,
+                        );
                         result[field.key] = field.default;
                     }
                     break;
@@ -97,7 +105,11 @@ export const normalizeConfig = (
                     if (typeof value === "number" && Number.isFinite(value)) {
                         result[field.key] = clampNumber(value, field);
                     } else {
-                        warn?.(`"${field.key}" 应为 number，收到 ${JSON.stringify(value)}，已回落默认值`);
+                        warn?.(
+                            `"${field.key}" should be number, got ${
+                                JSON.stringify(value)
+                            }, falling back to the default`,
+                        );
                         result[field.key] = field.default;
                     }
                     break;
@@ -111,9 +123,9 @@ export const normalizeConfig = (
                         result[field.key] = value;
                     } else {
                         warn?.(
-                            `"${field.key}" 应为 ${
+                            `"${field.key}" should be one of ${
                                 (field.options || []).map((option) => option.value).join("/")
-                            } 之一，收到 ${JSON.stringify(value)}，已回落默认值`,
+                            }, got ${JSON.stringify(value)}, falling back to the default`,
                         );
                         result[field.key] = field.default;
                     }
@@ -168,7 +180,7 @@ export class ConfigStore {
         try {
             stored = await this.plugin.loadData(storageNameOf(id));
         } catch (error) {
-            console.warn(`[some-settings-siyuan] 读取 ${storageNameOf(id)} 失败，使用默认值`, error);
+            console.warn(`[some-settings-siyuan] failed to read ${storageNameOf(id)}, using the default`, error);
         }
         // 文件不存在时宿主 resolve 空串
         if (typeof stored === "string") {
@@ -177,7 +189,7 @@ export class ConfigStore {
         const warnings: string[] = [];
         entry.config = normalizeConfig(entry.definition.settings, stored, (message) => warnings.push(message));
         if (warnings.length > 0) {
-            console.warn(`[some-settings-siyuan] ${storageNameOf(id)} 存在 ${warnings.length} 个字段问题：`);
+            console.warn(`[some-settings-siyuan] ${storageNameOf(id)} has ${warnings.length} field problem(s):`);
             warnings.forEach((warning) => console.warn(`[some-settings-siyuan] - ${warning}`));
         }
     }
@@ -232,7 +244,7 @@ export class ConfigStore {
         Object.keys(drafts).forEach((id) => {
             const entry = this.entries.get(id);
             if (!entry) {
-                problems.push(`${id}: 该功能没有注册到配置存储`);
+                problems.push(`${id}: no config store entry for this feature`);
                 return;
             }
             const warnings: string[] = [];
@@ -251,17 +263,20 @@ export class ConfigStore {
                 continue;
             }
             const storageName = storageNameOf(id);
-            console.log(`${PREFIX} 写入 ${storageName}`, config);
+            console.log(`${PREFIX} writing ${storageName}`, config);
             await this.plugin.saveData(storageName, config);
             entry.config = config;
 
             const readBack = await this.readBack(storageName);
             const detail = describeMismatch(config, readBack);
             if (detail) {
-                console.error(`${PREFIX} ${storageName} 写入后读回不一致：${detail}`, {written: config, readBack});
+                console.error(`${PREFIX} ${storageName} read back mismatch after write: ${detail}`, {
+                    written: config,
+                    readBack,
+                });
                 mismatched.push(`${storageName}：${detail}`);
             } else {
-                console.log(`${PREFIX} ${storageName} 写入并读回一致`);
+                console.log(`${PREFIX} ${storageName} written and read back consistently`);
             }
         }
         if (mismatched.length > 0) {
@@ -276,7 +291,7 @@ export class ConfigStore {
             const stored = await this.plugin.loadData(storageName);
             return typeof stored === "string" && stored === "" ? null : stored;
         } catch (error) {
-            console.warn(`${PREFIX} 读回 ${storageName} 失败`, error);
+            console.warn(`${PREFIX} failed to read back ${storageName}`, error);
             return null;
         }
     }
@@ -326,12 +341,12 @@ export class ConfigStore {
             try {
                 await this.reset(id);
             } catch (error) {
-                console.warn(`${PREFIX} 清除 ${storageNameOf(id)} 失败`, error);
+                console.warn(`${PREFIX} failed to clear ${storageNameOf(id)}`, error);
                 failed.push(storageNameOf(id));
             }
         }
         if (failed.length > 0) {
-            throw attachProblems(failed.map((name) => `${name}：删除失败`));
+            throw attachProblems(failed.map((name) => `${name}: removal failed`));
         }
     }
 
