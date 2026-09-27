@@ -84,6 +84,7 @@ would be one that can never do anything.
 | ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
 | `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
 | `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
+| `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level      |
 | `inline-code-copy`            | both     | Copy button for inline code: off, on hover (recommended), or always                                               |
 | `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
 | `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                    |
@@ -197,7 +198,9 @@ Where the data lives at runtime, in the workspace:
    * a `select` can use `optionsProvider` instead of a static `options` list to compute its candidates each
      time the panel opens (notebooks, plugin lists and other runtime-only data); no whitelist is applied then
    * `button` fires an action and has no persisted value at all (for example "open the console log").
-     It stays out of the draft and is disabled in read-only / publish mode
+     It stays out of the draft and is disabled in read-only / publish mode. Its `onClick` receives a
+     `FeatureActionContext` (i18n, the list of feature ids, clearing the plugin's configuration), because
+     an action row is never mounted and therefore has no `FeatureHost`
      There is still no group kind — the panel is one flat level, and a group would put the hierarchy straight back.
 9. A feature that is **off is not mounted**, so its implementation must not rely on `addTopBar` / `addDock` /
    `addTab` / `addCommand`, which have to be registered synchronously during onload. If one ever needs them,
