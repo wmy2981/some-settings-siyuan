@@ -64,6 +64,22 @@ const TITLE_CSS = `
     background-color: var(--b3-protyle-inline-mark-background);
     color: var(--b3-protyle-inline-mark-color);
 }
+
+[${MARK_ATTR}="sup"],
+[${MARK_ATTR}="sub"] {
+    position: relative;
+    font-size: 75%;
+    line-height: 0;
+    vertical-align: baseline;
+}
+
+[${MARK_ATTR}="sup"] {
+    top: -.5em;
+}
+
+[${MARK_ATTR}="sub"] {
+    bottom: -.25em;
+}
 `;
 
 export const mountDocTreeTitleMarkdown = (host: FeatureHost): FeatureInstance => {
