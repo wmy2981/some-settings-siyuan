@@ -190,5 +190,9 @@
   "feature.bookmarkLastPosition.name": "Jump to the last position when a bookmark opens a note",
   "feature.bookmarkLastPosition.desc": "SiYuan restores the last reading position when a note is opened from the document tree but not from a bookmark, which lands at the start of the note. With this on, clicking a bookmark on a whole document opens it through the same path as the document tree; bookmarks on a block are left alone.",
   "feature.recordingWindow.name": "A floating window instead of the recording notice",
-  "feature.recordingWindow.desc": "Replaces the notice SiYuan shows while recording with a small floating window that stays out of the way, shows the elapsed time and stops the recording from there. Recording itself stays SiYuan's own pipeline (permission, MP3 encoding, upload and inserting the audio block), and SiYuan's recorder has no pause, so there is none here either."
+  "feature.recordingWindow.desc": "Replaces the notice SiYuan shows while recording with a small floating window that stays out of the way, shows the elapsed time and stops the recording from there. Recording itself stays SiYuan's own pipeline (permission, MP3 encoding, upload and inserting the audio block), and SiYuan's recorder has no pause, so there is none here either.",
+  "feature.exitConfirm.name": "Ask before quitting",
+  "feature.exitConfirm.desc": "Shows a confirmation before SiYuan quits: the Quit item in the main menu, the tray menu's quit, and closing the window when SiYuan is set to quit on close. Closing the window while it is set to minimise to the tray does not quit and does not ask.",
+  "exitConfirm.title": "Quit SiYuan",
+  "exitConfirm.text": "Quit SiYuan now?"
 }

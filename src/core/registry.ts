@@ -17,6 +17,7 @@ import deepseekBalance from "../features/deepseek-balance";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import docTreeTitleMarkdown from "../features/doc-tree-title-markdown";
+import exitConfirm from "../features/exit-confirm";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import headingLevelIcon from "../features/heading-level-icon";
@@ -51,6 +52,7 @@ export const FEATURES: FeatureDefinition[] = [
     assetInfoMenu,
     bookmarkLastPosition,
     recordingWindow,
+    exitConfirm,
     panelNoAutofocus,
     modalBlur,
     docTreeOpenedAccent,

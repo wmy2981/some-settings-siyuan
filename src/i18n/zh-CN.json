@@ -190,5 +190,9 @@
   "feature.bookmarkLastPosition.name": "书签打开笔记时跳到上次位置",
   "feature.bookmarkLastPosition.desc": "思源从文档树打开笔记会恢复上次读到的位置，从书签打开却不会，总是停在开头。开启后，整篇文档的书签会按文档树那条路打开；加在块上的书签不受影响。",
   "feature.recordingWindow.name": "用悬浮窗口取代录音提示",
-  "feature.recordingWindow.desc": "把思源录音期间那条提示换成一个小浮窗：不遮挡正文，显示已录时长，也能直接在这里结束录音。录音本身仍走思源自己的链路（权限、MP3 编码、上传并插入音频块）；思源的录音器没有暂停语义，所以这里也不提供暂停。"
+  "feature.recordingWindow.desc": "把思源录音期间那条提示换成一个小浮窗：不遮挡正文，显示已录时长，也能直接在这里结束录音。录音本身仍走思源自己的链路（权限、MP3 编码、上传并插入音频块）；思源的录音器没有暂停语义，所以这里也不提供暂停。",
+  "feature.exitConfirm.name": "退出应用前弹窗确认",
+  "feature.exitConfirm.desc": "退出思源前先问一句：包括主菜单的「退出应用」、桌面托盘右键的退出，以及思源设置为「关闭窗口即退出」时的关窗。设置为「最小化到托盘」时关窗本来就不退出，不会弹窗。",
+  "exitConfirm.title": "退出思源",
+  "exitConfirm.text": "确定要退出思源吗？"
 }

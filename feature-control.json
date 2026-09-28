@@ -43,6 +43,9 @@
     "recording-window": {
       "state": 1
     },
+    "exit-confirm": {
+      "state": 1
+    },
     "daily-note-direct": {
       "state": 1
     },
