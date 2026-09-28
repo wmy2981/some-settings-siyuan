@@ -26,9 +26,10 @@ const SHORT_KEYWORDS = new Set(["id"]);
 
 // 关键词黑名单：即使来自 feature 键也不参与匹配的片段。分三类：
 //   平台词：发行说明里到处都是，和具体功能无关
-//   无区分度片段：note 命中的是每条链接里的 siyuan-note，log 命中的是 dialog / Changelogs / b3log，
-//     auto 和 height 命中的是发行说明头部徽章 HTML 里的 CSS
-// 拉黑后每个功能至少还剩一个关键词（例如 mobile-ref-panel-height 还剩 panel）
+//   无区分度片段：note 命中的是每条链接里的 siyuan-note，log 命中的是 dialog / Changelogs / b3log
+//   曾经只靠发行说明头部徽章 HTML 命中的 auto 与 height：标签现在会被剥掉（见 visibleText），
+//     但这两个词本身也太泛，继续拉黑
+// 拉黑后每个功能至少还剩一个关键词（例如 mobile-ref-panel-height 还剩 panel 与 ref）
 const BLACKLIST = new Set([
     "always",
     "never",
@@ -207,8 +208,17 @@ const diffLines = (body, previousBody) => {
         .filter((line) => line.trim() !== "" && !previous.has(line.trim()));
 };
 
-const matchesKeyword = (line, keywords) => {
-    const lower = line.toLowerCase();
+// 发行说明头部是一串纯标记行（徽章：<a href="…"><img src="…" style="height: 30px;margin: 3px auto;"/></a>）。
+// 标签属性里就写着 href / auto / height 这些词，直接拿整行匹配会让 ref 之类的关键词误命中，
+// 原样进 issue 正文也只是噪声。所以关键词与正文都以「剥掉标签后的可见文本」为准：
+// 剥完没有文字的整行直接丢掉，标签里夹着文字的（例如 <kbd>Ctrl</kbd>）保留文字继续匹配。
+const visibleText = (line) =>
+    line.replace(/<[^>]*>/g, "")
+        .replace(/&[a-zA-Z#0-9]+;/g, " ")
+        .trim();
+
+const matchesKeyword = (text, keywords) => {
+    const lower = text.toLowerCase();
     return keywords.some((keyword) => lower.includes(keyword));
 };
 
@@ -315,9 +325,11 @@ const main = async () => {
 
     for (const release of pending) {
         const index = releases.indexOf(release);
-        const lines = diffLines(release.body, releases[index - 1]?.body ?? "").filter((line) =>
-            matchesKeyword(line, keywords)
-        );
+        const lines = diffLines(release.body, releases[index - 1]?.body ?? "").filter((line) => {
+            // 纯标记行剥完就没有文字了，既不参与匹配也不进正文
+            const text = visibleText(line);
+            return text !== "" && matchesKeyword(text, keywords);
+        });
         if (lines.length === 0) {
             console.log(`${release.tag}: no matching line, skip`);
             continue;
