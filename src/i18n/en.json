@@ -164,5 +164,13 @@
   "configTransfer.invalidJson": "That is not valid JSON; nothing was imported",
   "configTransfer.invalidShape": "That JSON is not a plugin configuration: it must map feature ids to configuration objects",
   "configTransfer.imported": "Imported {count} feature configuration(s), ignored {skipped} unrecognised entry/entries",
-  "common.close": "Close"
+  "common.close": "Close",
+  "feature.refCrumbsGuide.name": "Guide to the Ref Crumbs plugin",
+  "feature.refCrumbsGuide.desc": "Points to another plugin by the same author, and opens its settings panel or its marketplace page from here.",
+  "refCrumbsGuide.notice": "Ref Crumbs is another plugin by the same author: it appends the heading chain (h2-h6) of every result in the block reference search list, so you can tell which section a reference actually lives in.\nThis row only points you there. It changes nothing in your notes, and whether to install it is entirely up to you.",
+  "refCrumbsGuide.actionTitle": "Ref Crumbs",
+  "refCrumbsGuide.actionTip": "Opens its settings panel when the plugin is enabled here, otherwise its page in the marketplace.",
+  "refCrumbsGuide.openAction": "Open the settings",
+  "refCrumbsGuide.installAction": "Go to the marketplace page",
+  "refCrumbsGuide.bazaarUnavailable": "The marketplace is turned off on this device, so its page cannot be opened"
 }

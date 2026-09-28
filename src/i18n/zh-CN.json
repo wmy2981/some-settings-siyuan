@@ -164,5 +164,13 @@
   "configTransfer.invalidJson": "这不是合法的 JSON，没有导入任何内容",
   "configTransfer.invalidShape": "这段 JSON 不是本插件的配置：它应当是一个「功能 id → 配置对象」的映射",
   "configTransfer.imported": "已导入 {count} 个功能的配置，忽略 {skipped} 个无法识别的条目",
-  "common.close": "关闭"
+  "common.close": "关闭",
+  "feature.refCrumbsGuide.name": "「引用面包屑」插件引导",
+  "feature.refCrumbsGuide.desc": "指向同作者的另一个插件，并可直接打开它的设置面板或集市页面。",
+  "refCrumbsGuide.notice": "「引用面包屑」（Ref Crumbs）是同作者的另一个插件：给块引用搜索列表里的每条结果补上它所在的标题链（h2–h6），一眼看出这条引用到底在文档的哪一节。\n本行只做指路，不会改动你的笔记，装不装完全由你决定。",
+  "refCrumbsGuide.actionTitle": "引用面包屑",
+  "refCrumbsGuide.actionTip": "该插件在本机已启用时打开它的设置面板，否则打开它在集市里的页面。",
+  "refCrumbsGuide.openAction": "打开设置",
+  "refCrumbsGuide.installAction": "去集市页面",
+  "refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面"
 }

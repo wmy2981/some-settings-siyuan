@@ -149,8 +149,12 @@ export type SettingField =
         key: string;
         title: string;
         description?: string;
-        /** 按钮文字，i18n key。 */
-        label: string;
+        /**
+         * 按钮文字。字符串是 i18n key；给函数时每次打开面板求值，
+         * **返回值直接当文案用**（函数内部自己取 i18n），用于文案要跟着运行期状态变的入口
+         * —— 例如「目标插件装了没装」决定按钮是「打开设置」还是「去集市安装」。
+         */
+        label: string | ((context: FeatureActionContext) => string);
         onClick: (context: FeatureActionContext) => void | Promise<void>;
     };
 

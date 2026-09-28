@@ -87,6 +87,9 @@
     },
     "plugin-reminder": {
       "state": 1
+    },
+    "ref-crumbs-guide": {
+      "state": 1
     }
   }
 }

@@ -427,7 +427,8 @@ export class SettingsPanel {
                 return buttonRowHtml(
                     bindKey(feature.id, field.key),
                     this.t(field.title),
-                    this.t(field.label),
+                    // 函数型 label 自己取 i18n，返回值就是文案；字符串型仍是 i18n key
+                    typeof field.label === "function" ? field.label(this.actionContext()) : this.t(field.label),
                     {
                         description: field.description ? this.t(field.description) : "",
                         // 动作行在只读/发布模式下不提供，避免点了没有反应

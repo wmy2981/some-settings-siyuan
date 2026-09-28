@@ -35,6 +35,7 @@ import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
 import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
+import refCrumbsGuide from "../features/ref-crumbs-guide";
 import type {
     FeatureCategory,
     FeatureDefinition,
@@ -53,6 +54,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileBarAnimation,
     mobileSyncButton,
     hideMobileExit,
+    refCrumbsGuide,
     dailyNoteDirect,
     firstDocIcon,
     externalLinkConfirm,
