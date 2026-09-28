@@ -2,18 +2,32 @@
   <!-- 浅色满版底色（思源 daylight 主题的 surface），无圆角 -->
   <rect width="160" height="160" fill="#F1F2F5"/>
 
-  <!-- 三条轨道：未生效部分用浅灰，够淡但仍有边界 -->
+  <defs>
+    <!-- 柔和光晕：只垫在已生效的那几段下面，元素本身保持锐利 -->
+    <filter id="ssIconGlow" x="-50%" y="-120%" width="200%" height="340%">
+      <feGaussianBlur stdDeviation="7"/>
+    </filter>
+  </defs>
+
+  <!-- 光晕：主色那几段模糊后垫底 -->
+  <g fill="#3575F0" opacity="0.32" filter="url(#ssIconGlow)">
+    <rect x="30" y="40" width="60" height="8" rx="4"/>
+    <rect x="30" y="76" width="84" height="8" rx="4"/>
+    <rect x="30" y="112" width="46" height="8" rx="4"/>
+  </g>
+
+  <!-- 三条轨道：未生效部分用浅灰，两端圆角 -->
   <g fill="#C8CCD6">
-    <rect x="30" y="40" width="96" height="8"/>
-    <rect x="30" y="76" width="96" height="8"/>
-    <rect x="30" y="112" width="96" height="8"/>
+    <rect x="30" y="40" width="96" height="8" rx="4"/>
+    <rect x="30" y="76" width="96" height="8" rx="4"/>
+    <rect x="30" y="112" width="96" height="8" rx="4"/>
   </g>
 
   <!-- 已生效的部分用思源主色，三条长度不同 -->
   <g fill="#3575F0">
-    <rect x="30" y="40" width="60" height="8"/>
-    <rect x="30" y="76" width="84" height="8"/>
-    <rect x="30" y="112" width="46" height="8"/>
+    <rect x="30" y="40" width="60" height="8" rx="4"/>
+    <rect x="30" y="76" width="84" height="8" rx="4"/>
+    <rect x="30" y="112" width="46" height="8" rx="4"/>
   </g>
 
   <!-- 三个把手：浅色描边，与底色一致 -->
