@@ -81,30 +81,30 @@ would be one that can never do anything.
 | `asset-info-menu`         | both     | File size, image dimensions, type and modified time for a workspace asset, in the Plugin submenu of an image and of audio/video/iframe blocks |
 | `bookmark-last-position`  | both     | Opens a whole-document bookmark through the same path as the document tree, restoring the last reading position instead of landing at the top |
 | `recording-window`        | both     | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause)      |
-| `exit-confirm`            | both     | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)            |
+| `exit-confirm`            | both     | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)              |
 
 ### Interface
 
-| Feature                       | Frontend | What it does                                                                                                                                            |
-| ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                                                             |
-| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                                                         |
-| `doc-tree-title-markdown`     | both     | Renders inline Markdown in notebook and document titles of the document tree with SiYuan's own inline styles                                            |
-| `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level                                            |
-| `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                                                             |
-| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                                                       |
-| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                                                          |
-| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                                                       |
-| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole                                       |
-| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                                                                 |
-| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                                                                     |
-| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                                                           |
-| `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                                                        |
-| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                                                                   |
-| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                                                                |
-| `panel-no-autofocus`          | both     | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog        |
-| `tab-title-markdown`          | both     | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both)     |
-| `ref-crumbs-guide`            | both     | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                         |
+| Feature                       | Frontend | What it does                                                                                                                                        |
+| ----------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                                                         |
+| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                                                     |
+| `doc-tree-title-markdown`     | both     | Renders inline Markdown in notebook and document titles of the document tree with SiYuan's own inline styles                                        |
+| `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level                                        |
+| `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                                                         |
+| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                                                   |
+| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                                                      |
+| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                                                   |
+| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole                                   |
+| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                                                             |
+| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                                                                 |
+| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                                                       |
+| `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                                                    |
+| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                                                               |
+| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                                                            |
+| `panel-no-autofocus`          | both     | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
+| `tab-title-markdown`          | both     | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
+| `ref-crumbs-guide`            | both     | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
 
 ### Development
 
@@ -112,7 +112,7 @@ would be one that can never do anything.
 | -------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
 | `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | `clear-config`       | both     | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
-| `plugin-reminder`    | both     | A read-only notice: what the plugin is, when it can break, the current version and the GitHub repository |
+| `plugin-reminder`    | both     | A read-only notice: what the plugin is, the current version and the GitHub repository                    |
 | `config-transfer`    | both     | Exports every feature configuration as one JSON document, and writes such a document back by feature id  |
 
 ## Settings panel
@@ -314,6 +314,10 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * `asset-info-menu` can only add rows inside the **Plugin** submenu: SiYuan's `emitOpenMenu` nests everything
   a plugin adds there. It hooks the image menu, the inline link menu and the block icon menu; only workspace
   assets (`assets/…`) get rows — external URLs and `data:` URIs have no file size or modified time.
+* `plugin-reminder` shows the repository as `owner/repo` while the link still points at the full URL from
+  `plugin.json`. Clicking it emits the same `open-link` plugin event the kernel emits, so this plugin's own
+  link confirmation intercepts it like any other external link; only when no plugin cancels the jump does it
+  fall back to `window.open`.
 * `ref-crumbs-guide` opens the other plugin's settings through its own `openSetting()` (the same call the
   marketplace card uses) and otherwise falls back to `siyuan://bazaar/plugins/ref-crumbs-siyuan/readme`.
   SiYuan has no documented API for a marketplace page, and with the marketplace disabled on mobile the button

@@ -74,6 +74,24 @@ export interface SettingsPanelOptions {
 
 const isReadonly = (): boolean => Boolean(window.siyuan?.config?.readonly || window.siyuan?.isPublish);
 
+/**
+ * 打开说明块里的外链。
+ *
+ * 思源把「跳转前可否决」做成了插件事件：内核的 `openLink` 会 `emit("open-link", …)`，
+ * 任一插件 `preventDefault()` 就取消本次跳转 —— 本插件的「外链跳转前确认」正是这样拦下来的。
+ * 说明块里的链接是插件自己渲染的 `<a>`，走不到内核那条路，所以这里按同样的顺序补问一次；
+ * 没人拦下时才用思源重写过的 `window.open`（桌面端交给系统浏览器，移动端交给原生桥）。
+ */
+const openExternalLink = (href: string, event: MouseEvent): void => {
+    const detail = {href, originalHref: href, event};
+    for (const plugin of window.siyuan?.ws?.app?.plugins ?? []) {
+        if (plugin.eventBus?.emit("open-link", detail) === false) {
+            return;
+        }
+    }
+    window.open(href, "_blank");
+};
+
 /** 窄屏阈值，与内核折行 .config-item 的断点一致。 */
 const NARROW_WIDTH = 750;
 /** 窄屏时视口两侧各留的空白。 */
@@ -421,7 +439,7 @@ export class SettingsPanel {
                 // 只读说明块：没有取值，只把 i18n 文案里的 {version} / {repo} 之类的占位符填上
                 return noteRowHtml(
                     bindKey(feature.id, field.key),
-                    noteBodyHtml(this.t(field.text), field.values),
+                    noteBodyHtml(this.t(field.text), field.values, field.labels),
                 );
             case "button":
                 return buttonRowHtml(
@@ -495,11 +513,10 @@ export class SettingsPanel {
             });
         });
         // 说明块里的链接：不让 <a> 走默认跳转 —— 移动端 WebView 可能把整个前端导航走。
-        // 走思源重写过的 window.open，桌面端交给系统浏览器、移动端交给原生桥。
         scope.querySelectorAll<HTMLAnchorElement>(`.${PANEL_CLASS}__note a[href]`).forEach((anchor) => {
             anchor.addEventListener("click", (event) => {
                 event.preventDefault();
-                window.open(anchor.href, "_blank");
+                openExternalLink(anchor.href, event);
             });
         });
         // 动作行：点击立刻执行，不进草稿，因此不受「取消 / 保存」影响

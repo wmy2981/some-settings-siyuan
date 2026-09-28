@@ -133,12 +133,14 @@ export type SettingField =
          * 只用于面向用户的说明（插件性质、版本号、仓库地址这类），不是设置项。
          *
          * `text` 是 i18n key；值按 `\n` 分段，其中的 `{name}` 占位符由 `values` 逐项替换，
-         * 替换值本身是 http(s) 链接时渲染成可点的链接。
+         * 替换值本身是 http(s) 链接时渲染成可点的链接，链接文字默认就是地址本身，
+         * `labels` 里给了同名的短写时用它。
          */
         kind: "note";
         key: string;
         text: string;
         values?: Record<string, string>;
+        labels?: Record<string, string>;
     }
     | {
         /**
