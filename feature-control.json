@@ -76,6 +76,9 @@
     "clear-config": {
       "state": 1
     },
+    "config-transfer": {
+      "state": 1
+    },
     "heading-level-icon": {
       "state": 1
     },

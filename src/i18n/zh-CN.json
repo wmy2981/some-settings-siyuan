@@ -149,5 +149,20 @@
   "feature.pluginReminder.desc": "本插件的性质、当前版本与问题反馈入口。",
   "pluginReminder.notice": "本插件由个人开发维护，不是思源官方功能，也不属于「思源笔记」项目本身；所有功能默认关闭，按需逐项启用。\n它靠接管思源自身的设置入口与部分界面行为来工作，因此带有实验性质：思源大版本更新后个别功能可能失效，多个插件同时改动同一处界面时也可能互相影响。\n当前版本：v{version}。遇到异常时，先重载插件或关掉相关功能；仍然不对，欢迎到仓库反馈。\nGitHub 仓库：{repo}",
   "feature.panelNoAutofocus.name": "打开设置面板时不自动聚焦第一个控件",
-  "feature.panelNoAutofocus.desc": "思源会把弹窗焦点放到第一个可聚焦控件上，于是本面板一打开，第一行开关就带着焦点，移动端还会顶起软键盘。开启后焦点留在面板本身，直到你自己操作面板。"
+  "feature.panelNoAutofocus.desc": "思源会把弹窗焦点放到第一个可聚焦控件上，于是本面板一打开，第一行开关就带着焦点，移动端还会顶起软键盘。开启后焦点留在面板本身，直到你自己操作面板。",
+  "feature.configTransfer.name": "插件配置导入导出",
+  "feature.configTransfer.desc": "把本插件全部功能的配置打成一段 JSON，也能从这样一段 JSON 按功能 id 写回来。",
+  "configTransfer.exportTitle": "导出配置",
+  "configTransfer.exportTip": "把每个功能的当前配置打成一段只读 JSON 打开，可直接复制。",
+  "configTransfer.exportAction": "导出",
+  "configTransfer.copy": "复制",
+  "configTransfer.copied": "已复制配置 JSON",
+  "configTransfer.copyFailed": "写不进剪贴板，请手动选中文本复制",
+  "configTransfer.importTitle": "导入配置",
+  "configTransfer.importTip": "粘贴一段本插件导出的 JSON。只会写入其中出现的功能 id，取值校验与点「保存」完全一致；导入后会重新载入前端。",
+  "configTransfer.importAction": "导入",
+  "configTransfer.invalidJson": "这不是合法的 JSON，没有导入任何内容",
+  "configTransfer.invalidShape": "这段 JSON 不是本插件的配置：它应当是一个「功能 id → 配置对象」的映射",
+  "configTransfer.imported": "已导入 {count} 个功能的配置，忽略 {skipped} 个无法识别的条目",
+  "common.close": "关闭"
 }

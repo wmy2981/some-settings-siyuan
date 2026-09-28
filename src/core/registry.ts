@@ -9,6 +9,7 @@
 import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import codeSnippetHighlight from "../features/code-snippet-highlight";
+import configTransfer from "../features/config-transfer";
 import dailyNoteDirect from "../features/daily-note-direct";
 import deepseekBalance from "../features/deepseek-balance";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
@@ -67,6 +68,7 @@ export const FEATURES: FeatureDefinition[] = [
     desktopCommandPanelSlim,
     codeSnippetHighlight,
     mobileConsoleLog,
+    configTransfer,
     clearConfig,
     pluginReminder,
 ];

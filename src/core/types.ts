@@ -68,6 +68,13 @@ export interface FeatureActionContext {
      * 有任何一个文件删不掉就抛出（附 problems），不允许静默通过。
      */
     clearAllConfigs(): Promise<void>;
+    /** 导出全部功能的当前配置，键是功能 id。 */
+    exportConfigs(): Record<string, FeatureConfig>;
+    /**
+     * 按 id 写入一批配置（导入）。只认已注册的功能 id，未知 id 原样返回给调用方汇报；
+     * 校验与写盘走和面板「保存」同一条路，失败时抛出（附 problems）。
+     */
+    importConfigs(config: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}>;
 }
 
 /**
