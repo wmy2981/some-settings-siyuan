@@ -303,8 +303,8 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   SiYuan rewrites a tab title on every rename (`Tab.updateTitle` assigns `innerHTML`), which simply makes the
   plugin render it again.
 * `asset-info-menu` can only add rows inside the **Plugin** submenu: SiYuan's `emitOpenMenu` nests everything
-  a plugin adds there. Only workspace assets (`assets/…`) get rows — external URLs and `data:` URIs have no
-  file size or modified time.
+  a plugin adds there. It hooks the image menu, the inline link menu and the block icon menu; only workspace
+  assets (`assets/…`) get rows — external URLs and `data:` URIs have no file size or modified time.
 * `ref-crumbs-guide` opens the other plugin's settings through its own `openSetting()` (the same call the
   marketplace card uses) and otherwise falls back to `siyuan://bazaar/plugins/ref-crumbs-siyuan/readme`.
   SiYuan has no documented API for a marketplace page, and with the marketplace disabled on mobile the button

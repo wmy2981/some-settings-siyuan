@@ -1,10 +1,13 @@
 /**
  * 资源文件元数据菜单的实现。
  *
- * 思源把「扩展右键菜单」这件事收敛成插件事件：图片的右键/长按走 `open-menu-image`，
- * 音频 / 视频 / iframe 这类资源块的块标菜单走 `click-blockicon`。两者给的 `menu` 都是
- * 一个空的 `subMenu`，插件往里加项后，内核会把它挂成菜单里的「插件」子菜单 ——
- * 这是官方唯一允许的挂载位置，所以信息行就在那里，而不是直接铺进原生菜单。
+ * 思源把「扩展右键菜单」这件事收敛成插件事件，指向一个工作区资源的地方有三处：
+ * - 图片自己的右键 / 长按菜单：`open-menu-image`
+ * - 指向资源的行内链接：`open-menu-link`（点击或右键那个链接时弹出的菜单）
+ * - 块标菜单：`click-blockicon`，资源块（音频 / 视频 / iframe）与引用了资源的块都在这里
+ *
+ * 三者给的 `menu` 都是一个空的 `subMenu`，插件往里加项后内核会把它挂成菜单里的
+ * 「插件」子菜单 —— 这是官方唯一允许的挂载位置，所以信息行就在那里。
  *
  * 菜单项必须**同步**加进去（事件是同一次同步调用里发完的），所以行先带着占位文字建好，
  * 大小与修改时间等内核返回后再由我们自己写进那一行；拿不到就整行收起来，
@@ -23,10 +26,10 @@ import {escapeHtml} from "../../core/ui";
 
 /** 工作区资源的路径前缀。 */
 const ASSET_PREFIX = "assets/";
-/** 块菜单里值得补信息的资源块类型；图片走它自己的图片菜单。 */
-const ASSET_BLOCK_TYPES = new Set(["NodeAudio", "NodeVideo", "NodeIFrame"]);
-/** 资源块里承载 `src` 的元素。 */
+/** 承载资源地址的元素：图片（加密笔记本里地址在 `data-src` 上）、音视频、iframe、行内链接。 */
+const IMAGE_SELECTOR = "img";
 const MEDIA_SELECTOR = "video[src], audio[src], iframe[src]";
+const LINK_SELECTOR = "[data-type='a'][data-href]";
 
 interface Row {
     /** i18n key，写文案时才解析，跟着界面语言走。 */
@@ -36,6 +39,13 @@ interface Row {
     /** 是否已经有结论。没有结论时显示「读取中」而不是空。 */
     settled: boolean;
     element?: HTMLElement;
+}
+
+/** 元素自己或它的后代里，第一个引用的工作区资源。 */
+interface AssetSource {
+    src: string;
+    /** 图片元素，能直接量出尺寸时给出。 */
+    image?: HTMLImageElement;
 }
 
 const isWorkspaceAsset = (src: string): boolean => src.startsWith(ASSET_PREFIX);
@@ -69,21 +79,43 @@ const extensionOf = (src: string): string | undefined => {
     return extension ? extension.toUpperCase() : undefined;
 };
 
-const imageOf = (element: HTMLElement | undefined): HTMLImageElement | undefined => {
-    if (!element) {
-        return undefined;
-    }
-    if (element instanceof HTMLImageElement) {
-        return element;
-    }
-    return element.querySelector<HTMLImageElement>("img") ?? undefined;
+/** 元素自己或后代里第一个命中选择器的元素。 */
+const firstMatch = (element: Element, selector: string): HTMLElement | undefined => {
+    const found = element.matches(selector) ? element : element.querySelector(selector);
+    return found instanceof HTMLElement ? found : undefined;
 };
 
 /** 图片的真实地址：`data-src` 与 `src` 同值，前者在加密笔记本里还带着 `?box=`。 */
-const sourceOf = (image: HTMLImageElement): string => image.getAttribute("data-src") ?? image.getAttribute("src") ?? "";
+const sourceOf = (image: Element): string => image.getAttribute("data-src") ?? image.getAttribute("src") ?? "";
 
-const appendRows = (host: FeatureHost, menu: subMenu, src: string, image?: HTMLImageElement): void => {
+/** 元素自己或后代里第一个工作区资源；没有就返回 undefined。 */
+const assetIn = (element: Element | undefined): AssetSource | undefined => {
+    if (!element) {
+        return undefined;
+    }
+    const image = firstMatch(element, IMAGE_SELECTOR);
+    if (image instanceof HTMLImageElement) {
+        const src = sourceOf(image);
+        if (isWorkspaceAsset(src)) {
+            return {src, image};
+        }
+    }
+    for (const selector of [MEDIA_SELECTOR, LINK_SELECTOR]) {
+        const holder = firstMatch(element, selector);
+        if (!holder) {
+            continue;
+        }
+        const src = holder.getAttribute(holder.matches(LINK_SELECTOR) ? "data-href" : "src") ?? "";
+        if (isWorkspaceAsset(src)) {
+            return {src};
+        }
+    }
+    return undefined;
+};
+
+const appendRows = (host: FeatureHost, menu: subMenu, source: AssetSource): void => {
     const rows: Row[] = [];
+    const {src, image} = source;
 
     const add = (key: string, value?: string): Row => {
         const row: Row = {key, value, settled: typeof value === "string"};
@@ -138,27 +170,24 @@ const appendRows = (host: FeatureHost, menu: subMenu, src: string, image?: HTMLI
 
 export const mountAssetInfoMenu = (host: FeatureHost): FeatureInstance => {
     host.addEventBus("open-menu-image", (event) => {
-        const image = imageOf(event.detail?.element);
-        if (!image) {
-            return;
+        const source = assetIn(event.detail?.element);
+        if (source) {
+            appendRows(host, event.detail.menu, source);
         }
-        const src = sourceOf(image);
-        if (!isWorkspaceAsset(src)) {
-            return;
+    });
+
+    host.addEventBus("open-menu-link", (event) => {
+        const source = assetIn(event.detail?.element);
+        if (source) {
+            appendRows(host, event.detail.menu, source);
         }
-        appendRows(host, event.detail.menu, src, image);
     });
 
     host.addEventBus("click-blockicon", (event) => {
-        const blockElement = event.detail?.blockElements?.[0];
-        if (!blockElement || !ASSET_BLOCK_TYPES.has(blockElement.getAttribute("data-type") ?? "")) {
-            return;
+        const source = assetIn(event.detail?.blockElements?.[0]);
+        if (source) {
+            appendRows(host, event.detail.menu, source);
         }
-        const src = blockElement.querySelector<HTMLElement>(MEDIA_SELECTOR)?.getAttribute("src") ?? "";
-        if (!isWorkspaceAsset(src)) {
-            return;
-        }
-        appendRows(host, event.detail.menu, src);
     });
 
     return {};

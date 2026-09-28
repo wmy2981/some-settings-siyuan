@@ -171,7 +171,7 @@
   "tabTitleMarkdown.scopeMobile": "移动端",
   "tabTitleMarkdown.scopeBoth": "桌面端 + 移动端",
   "feature.assetInfoMenu.name": "资源文件菜单显示文件大小与元数据",
-  "feature.assetInfoMenu.desc": "在图片与音频、视频、iframe 块的右键菜单里，为工作区资源显示文件大小、图片尺寸、类型与修改时间。",
+  "feature.assetInfoMenu.desc": "在图片、音频、视频、iframe 块，以及指向工作区资源的行内链接的菜单里，显示文件大小、图片尺寸、类型与修改时间。",
   "assetInfo.loading": "读取中…",
   "assetInfo.size": "大小",
   "assetInfo.dimensions": "尺寸",

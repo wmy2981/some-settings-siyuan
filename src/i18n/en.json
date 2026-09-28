@@ -171,7 +171,7 @@
   "tabTitleMarkdown.scopeMobile": "Mobile",
   "tabTitleMarkdown.scopeBoth": "Desktop and mobile",
   "feature.assetInfoMenu.name": "File size and metadata in the asset menu",
-  "feature.assetInfoMenu.desc": "Shows the file size, image dimensions, type and modified time of a workspace asset in the right-click menu of images, audio, video and iframe blocks.",
+  "feature.assetInfoMenu.desc": "Shows the file size, image dimensions, type and modified time of a workspace asset in the menu of images, audio, video and iframe blocks and of inline links pointing at an asset.",
   "assetInfo.loading": "reading...",
   "assetInfo.size": "Size",
   "assetInfo.dimensions": "Dimensions",

@@ -286,7 +286,8 @@ npm run build        # check + 生产构建 + package.zip
   `document.title`、拖拽载荷、页签下拉列表的文字都从它取。思源每次重命名都会重写页签标题
   （`Tab.updateTitle` 直接写 `innerHTML`），那只是让插件重新渲染一次。
 * `asset-info-menu` 只能把信息行放进**「插件」子菜单**：思源的 `emitOpenMenu` 会把插件加的所有项
-  都收在那里。只有工作区资源（`assets/…`）会有信息行，外链与 `data:` URI 没有文件大小与修改时间可言。
+  都收在那里。它挂的是图片菜单、行内链接菜单与块标菜单三处；只有工作区资源（`assets/…`）会有信息行，
+  外链与 `data:` URI 没有文件大小与修改时间可言。
 * `ref-crumbs-guide` 通过目标插件自己的 `openSetting()` 打开它的设置（与集市卡片上那个按钮同一条调用），
   没装时退回 `siyuan://bazaar/plugins/ref-crumbs-siyuan/readme` —— 集市详情页没有官方插件 API，
   移动端关掉集市时只会提示一句。
