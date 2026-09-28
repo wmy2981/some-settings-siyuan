@@ -129,26 +129,47 @@ const formatElapsed = (milliseconds: number): string => {
     return hours > 0 ? `${hours}:${minutes}:${seconds}` : `${minutes}:${seconds}`;
 };
 
-/** 元素当前占的高度；不存在或正被隐藏时算 0。 */
-const heightOf = (id: string): number => {
+/** 元素此刻真的在屏幕底部占着位置时，返回它顶沿的位置（相对布局视口）。 */
+const topOf = (id: string): number | undefined => {
     const element = document.getElementById(id);
-    return element && !element.classList.contains("fn__none") ?
-        element.getBoundingClientRect().height :
-        0;
+    if (!element || element.classList.contains("fn__none")) {
+        return undefined;
+    }
+    // 移动端底栏是「位移 + 透明度 + visibility」隐藏的，元素还在文档里、还量得出高度
+    const style = window.getComputedStyle(element);
+    if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") {
+        return undefined;
+    }
+    const rect = element.getBoundingClientRect();
+    if (rect.height <= 0 || rect.bottom <= 0 || rect.top >= window.innerHeight) {
+        return undefined;
+    }
+    return rect.top;
 };
 
 /**
  * 浮窗下沿要抬多高。
  *
  * 移动端屏幕底部会被两样东西占用：键盘工具栏（键盘弹起时出现，展开面板时还会变高）
- * 与底部操作条。两者都不常驻、高度也不是常量，所以每次摆位都现量一遍。
- * 移动端浏览器里键盘只遮住视觉视口、布局视口不变，那一段也要加上；
- * 原生 App 里 WebView 会被键盘顶小，这一段自然是 0。
+ * 与底部操作条。两者都不常驻、高度也不是常量，所以每次摆位都现量它们的**顶沿**：
+ * 底部操作条是浮在视口底边之上的圆角条（底边还留着安全区与状态提示的间距），
+ * 只量高度再假设它贴着屏幕底边，浮窗就会压住它小半个身子。
+ *
+ * 移动端浏览器里键盘只遮住视觉视口、布局视口不变，那一段也要算上；
+ * 原生 App 里 WebView 会被键盘顶小，这一段自然是 0。两者取大者，
+ * 避免同一次键盘弹起被算两遍。
  */
 const bottomOffset = (): number => {
     const viewport = window.visualViewport;
     const covered = viewport ? Math.max(0, window.innerHeight - (viewport.offsetTop + viewport.height)) : 0;
-    return covered + Math.max(heightOf(KEYBOARD_TOOLBAR_ID), heightOf(MOBILE_BOTTOM_BAR_ID)) + GAP;
+    let top = window.innerHeight;
+    for (const id of [KEYBOARD_TOOLBAR_ID, MOBILE_BOTTOM_BAR_ID]) {
+        const elementTop = topOf(id);
+        if (typeof elementTop === "number") {
+            top = Math.min(top, elementTop);
+        }
+    }
+    return Math.max(covered, window.innerHeight - top) + GAP;
 };
 
 export const mountRecordingWindow = (host: FeatureHost): FeatureInstance => {
