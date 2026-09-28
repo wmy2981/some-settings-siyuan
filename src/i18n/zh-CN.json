@@ -186,5 +186,7 @@
   "assetInfo.size": "大小",
   "assetInfo.dimensions": "尺寸",
   "assetInfo.type": "类型",
-  "assetInfo.modified": "修改时间"
+  "assetInfo.modified": "修改时间",
+  "feature.bookmarkLastPosition.name": "书签打开笔记时跳到上次位置",
+  "feature.bookmarkLastPosition.desc": "思源从文档树打开笔记会恢复上次读到的位置，从书签打开却不会，总是停在开头。开启后，整篇文档的书签会按文档树那条路打开；加在块上的书签不受影响。"
 }

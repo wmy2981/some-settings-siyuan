@@ -7,6 +7,7 @@
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
 import assetInfoMenu from "../features/asset-info-menu";
+import bookmarkLastPosition from "../features/bookmark-last-position";
 import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import codeSnippetHighlight from "../features/code-snippet-highlight";
@@ -47,6 +48,7 @@ import {FEATURE_CATEGORIES} from "./types";
 export const FEATURES: FeatureDefinition[] = [
     codeBlockLangEmpty,
     assetInfoMenu,
+    bookmarkLastPosition,
     panelNoAutofocus,
     modalBlur,
     docTreeOpenedAccent,
