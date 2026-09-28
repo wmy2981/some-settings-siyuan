@@ -69,37 +69,44 @@ would be one that can never do anything.
 
 ### Functionality
 
-| Feature                   | Frontend | What it does                                                                                                                    |
-| ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `code-block-lang-empty`   | both     | New code blocks always start with an empty language instead of reusing the last one picked                                      |
-| `daily-note-direct`       | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code                       |
-| `first-doc-icon`          | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                                          |
-| `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                                          |
-| `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel (experimental)                                                   |
-| `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (experimental, 2 × 500ms by default) |
-| `deepseek-balance`        | both     | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use   |
+| Feature                   | Frontend | What it does                                                                                                                                  |
+| ------------------------- | -------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `code-block-lang-empty`   | both     | New code blocks always start with an empty language instead of reusing the last one picked                                                    |
+| `daily-note-direct`       | both     | Creates the daily note in a chosen notebook without asking; creation still runs through SiYuan's own code                                     |
+| `first-doc-icon`          | both     | Uses a configured emoji the first time a document gets an icon instead of a random one                                                        |
+| `external-link-confirm`   | both     | Asks before opening an http/https link and shows the full original URL                                                                        |
+| `kernel-reconnect-button` | both     | Adds a _Reconnect now_ button to the kernel-disconnected panel (experimental)                                                                 |
+| `kernel-auto-reconnect`   | both     | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (experimental, 2 × 500ms by default)               |
+| `deepseek-balance`        | both     | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use                 |
+| `asset-info-menu`         | both     | File size, image dimensions, type and modified time for a workspace asset, in the Plugin submenu of an image and of audio/video/iframe blocks |
+| `bookmark-last-position`  | both     | Opens a whole-document bookmark through the same path as the document tree, restoring the last reading position instead of landing at the top |
+| `recording-window`        | both     | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause)      |
+| `exit-confirm`            | both     | Asks before SiYuan quits: the main menu's Quit, the tray menu's quit, and closing the window when SiYuan is set to quit on close              |
 
 ### Interface
 
-| Feature                       | Frontend | What it does                                                                                                      |
-| ----------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
-| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                       |
-| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                   |
-| `doc-tree-title-markdown`     | both     | Renders inline Markdown in notebook and document titles of the document tree with SiYuan's own inline styles      |
-| `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level      |
-| `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                       |
-| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                 |
-| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                    |
-| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                       |
-| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                 |
-| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole |
-| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                           |
-| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                             |
-| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                               |
-| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                     |
-| `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                  |
-| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                             |
-| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                          |
+| Feature                       | Frontend | What it does                                                                                                                                            |
+| ----------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `modal-blur`                  | both     | Backdrop blur behind dialogs, so the editor underneath softens while the dialog stays sharp                                                             |
+| `doc-tree-opened-accent`      | both     | Flush accent bar on the left edge of the opened note in the document tree, with a custom colour                                                         |
+| `doc-tree-title-markdown`     | both     | Renders inline Markdown in notebook and document titles of the document tree with SiYuan's own inline styles                                            |
+| `heading-level-icon`          | both     | Uses SiYuan's own H1-H6 icons in the reference list and the search panel, so a heading block shows its level                                            |
+| `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                                                             |
+| `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                                                       |
+| `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                                                          |
+| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                                                             |
+| `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                                                       |
+| `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole                                       |
+| `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                                                                 |
+| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                                                                   |
+| `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                                                                     |
+| `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                                                           |
+| `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                                                        |
+| `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                                                                   |
+| `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                                                                |
+| `panel-no-autofocus`          | both     | Keeps the settings panel from focusing its first control when it opens, so the first switch does not come up focused and the mobile keyboard stays down |
+| `tab-title-markdown`          | both     | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both)     |
+| `ref-crumbs-guide`            | both     | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                         |
 
 ### Development
 
@@ -108,6 +115,7 @@ would be one that can never do anything.
 | `mobile-console-log` | mobile   | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | `clear-config`       | both     | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
 | `plugin-reminder`    | both     | A read-only notice: what the plugin is, when it can break, the current version and the GitHub repository |
+| `config-transfer`    | both     | Exports every feature configuration as one JSON document, and writes such a document back by feature id  |
 
 ## Settings panel
 
@@ -245,7 +253,7 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   changing `feature-control.json` never requires a source edit or a conditional import. The trade-off is
   bundle size versus the ability to disable something by editing one data file.
 * **A feature that is off is not mounted**, so it cannot use `addTopBar` / `addDock` / `addTab` /
-  `addCommand`, which must be registered synchronously during onload. None of the 22 features need them;
+  `addCommand`, which must be registered synchronously during onload. None of the 35 features need them;
   one that does would have to mount unconditionally and gate itself on the switch.
 * `mobile-console-log` only starts collecting console output once its switch is on, so by design the logs
   from plugin startup, and from before you flipped the switch, are not recorded. Turn it on and reproduce
@@ -283,6 +291,31 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   rendered), so the plugin switches it for the `<span>` SiYuan itself uses for emoji icons.
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
+* `exit-confirm` guards the one `POST /api/system/exit` the renderer sends — where the menu quit, the tray
+  quit and close-to-quit all end up. Two paths stay unguarded because no plugin API reaches them: quitting
+  while connected to a **remote kernel** (that path never sends the request) and the host's fallback of
+  sending `siyuan-quit` directly when the request itself fails.
+* `recording-window` only replaces the UI. Permission handling, MP3 encoding, upload and inserting the audio
+  block all stay SiYuan's own code, and SiYuan's recorder has no pause, so the window offers stop only. It is
+  driven by the never-expiring recording notice: the feature recognises it, hides it (keeping it in the DOM
+  because its button is the only handle on `stopRecord`) and closes the window when the kernel drops it.
+* `bookmark-last-position` only takes over whole-document bookmarks (`NodeDocument`) opened with a plain left
+  click; modified clicks keep SiYuan's own behaviour (new tab, split, keep cursor), and bookmarks on a block
+  are untouched. A document that is already open in a tab still follows SiYuan's own `switchEditor` path,
+  which does not reposition for the document tree either.
+* `tab-title-markdown` keeps the syntax characters in the DOM and only hides them, so `textContent` — which
+  `document.title`, the drag payload and the tab dropdown are built from — is still the original title.
+  SiYuan rewrites a tab title on every rename (`Tab.updateTitle` assigns `innerHTML`), which simply makes the
+  plugin render it again.
+* `asset-info-menu` can only add rows inside the **Plugin** submenu: SiYuan's `emitOpenMenu` nests everything
+  a plugin adds there. Only workspace assets (`assets/…`) get rows — external URLs and `data:` URIs have no
+  file size or modified time.
+* `ref-crumbs-guide` opens the other plugin's settings through its own `openSetting()` (the same call the
+  marketplace card uses) and otherwise falls back to `siyuan://bazaar/plugins/ref-crumbs-siyuan/readme`.
+  SiYuan has no documented API for a marketplace page, and with the marketplace disabled on mobile the button
+  only reports that.
+* `config-transfer` reloads the frontend after a successful import: the settings panel is still open and its
+  drafts hold the values from before the import, so pressing **Save** afterwards would write them back over it.
 
 ## License
 
