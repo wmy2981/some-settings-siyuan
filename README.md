@@ -59,8 +59,8 @@ Those are deliberately two different things:
 So a fresh install has **every feature off** and you turn them on one by one under
 **Settings → Marketplace → Downloaded → (this plugin) → Settings**. Switching one off unmounts it
 completely — styles, listeners and injected nodes are all released — with no plugin reload.
-One feature is the exception because its own requirement is a selector that already includes an
-"off" option: `inline-code-copy`.
+Three features are the exception because their own requirement is a selector that already includes an
+"off" option: `inline-code-copy`, `tab-title-markdown` and `exit-confirm`.
 
 A feature with `state: 2` has no switch to click, so it counts as allowed to run; otherwise that state
 would be one that can never do anything.
@@ -81,7 +81,7 @@ would be one that can never do anything.
 | `asset-info-menu`         | both     | File size, image dimensions, type and modified time for a workspace asset, in the Plugin submenu of an image and of audio/video/iframe blocks |
 | `bookmark-last-position`  | both     | Opens a whole-document bookmark through the same path as the document tree, restoring the last reading position instead of landing at the top |
 | `recording-window`        | both     | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause)      |
-| `exit-confirm`            | both     | Asks before SiYuan quits (the main menu's Quit and close-to-quit); quitting from the desktop tray menu does not ask                         |
+| `exit-confirm`            | both     | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)            |
 
 ### Interface
 
@@ -132,8 +132,8 @@ weights only: **only the feature name is bold**; its sub-items and descriptions 
 `b3-text-field`, `b3-label`, `config-item`, `config-title`), with the built-in `16px 24px` row padding left
 untouched. The one exception is `plugin-reminder` in the Development category: a **read-only notice** that
 fills the whole row with text and carries no control, with the version and repository read from `plugin.json`
-instead of being written into the copy. Features whose switch _is_ a selector (`inline-code-copy`) keep
-that dropdown on the name row instead of giving it a row of its own.
+instead of being written into the copy. Features whose switch _is_ a selector (`inline-code-copy`,
+`tab-title-markdown`, `exit-confirm`) keep that dropdown on the name row instead of giving it a row of its own.
 Features that only work on one frontend are **hidden from the panel on the other one**: mobile-only items
 never appear on desktop, and desktop-only items (`desktop-command-panel-slim`) never appear on mobile.
 

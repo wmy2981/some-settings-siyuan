@@ -184,5 +184,10 @@
   "feature.exitConfirm.name": "退出应用前弹窗确认",
   "feature.exitConfirm.desc": "退出应用前弹窗确认（主菜单的「退出应用」与设置为「关闭窗口即退出」时的关窗）；从桌面托盘菜单退出时不询问。",
   "exitConfirm.title": "退出思源",
-  "exitConfirm.text": "确定要退出思源吗？"
+  "exitConfirm.text": "确定要退出思源吗？",
+  "exitConfirm.scope": "适用端",
+  "exitConfirm.scopeDisabled": "禁用",
+  "exitConfirm.scopeDesktop": "桌面端",
+  "exitConfirm.scopeMobile": "移动端",
+  "exitConfirm.scopeBoth": "桌面端 + 移动端"
 }

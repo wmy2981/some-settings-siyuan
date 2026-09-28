@@ -184,5 +184,10 @@
   "feature.exitConfirm.name": "Ask before quitting",
   "feature.exitConfirm.desc": "Asks before SiYuan quits: the Quit item in the main menu and closing the window when SiYuan is set to quit on close; quitting from the desktop tray menu does not ask.",
   "exitConfirm.title": "Quit SiYuan",
-  "exitConfirm.text": "Quit SiYuan now?"
+  "exitConfirm.text": "Quit SiYuan now?",
+  "exitConfirm.scope": "Applies to",
+  "exitConfirm.scopeDisabled": "Disabled",
+  "exitConfirm.scopeDesktop": "Desktop",
+  "exitConfirm.scopeMobile": "Mobile",
+  "exitConfirm.scopeBoth": "Desktop and mobile"
 }
