@@ -179,5 +179,12 @@
   "tabTitleMarkdown.scopeDisabled": "Disabled",
   "tabTitleMarkdown.scopeDesktop": "Desktop",
   "tabTitleMarkdown.scopeMobile": "Mobile",
-  "tabTitleMarkdown.scopeBoth": "Desktop and mobile"
+  "tabTitleMarkdown.scopeBoth": "Desktop and mobile",
+  "feature.assetInfoMenu.name": "File size and metadata in the asset menu",
+  "feature.assetInfoMenu.desc": "Adds read-only rows (size, image dimensions, type, modified time) for a workspace asset to the right-click menu of an image and to the long-press menu on mobile, plus the menu of audio, video and iframe blocks. SiYuan only lets plugins extend a menu through its Plugin submenu, so that is where they appear.",
+  "assetInfo.loading": "reading...",
+  "assetInfo.size": "Size",
+  "assetInfo.dimensions": "Dimensions",
+  "assetInfo.type": "Type",
+  "assetInfo.modified": "Modified"
 }

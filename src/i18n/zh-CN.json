@@ -179,5 +179,12 @@
   "tabTitleMarkdown.scopeDisabled": "禁用",
   "tabTitleMarkdown.scopeDesktop": "桌面端",
   "tabTitleMarkdown.scopeMobile": "移动端",
-  "tabTitleMarkdown.scopeBoth": "桌面端 + 移动端"
+  "tabTitleMarkdown.scopeBoth": "桌面端 + 移动端",
+  "feature.assetInfoMenu.name": "资源文件菜单显示文件大小与元数据",
+  "feature.assetInfoMenu.desc": "在图片的右键菜单（移动端为长按菜单）以及音频、视频、iframe 块的菜单里，为工作区资源补上只读信息行：文件大小、图片尺寸、类型与修改时间。思源只允许插件把菜单项挂在「插件」子菜单里，所以它们在那里。",
+  "assetInfo.loading": "读取中…",
+  "assetInfo.size": "大小",
+  "assetInfo.dimensions": "尺寸",
+  "assetInfo.type": "类型",
+  "assetInfo.modified": "修改时间"
 }
