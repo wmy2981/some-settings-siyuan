@@ -212,6 +212,15 @@ export const INLINE_MARKDOWN_CSS = `
     display: none;
 }
 
+/* 行级代码挂的是思源自己的 .fn__code，但那个类自带 \`white-space: pre-wrap\` 与
+   \`word-break: break-word\`：宿主的 \`white-space: nowrap\` 管不到它们，这一小段于是
+   成了整行里唯一的换行点 —— 文档树标题与页签标题都会因此折成多行，页签还被撑高。
+   两条都还原成继承宿主：换行行为由宿主决定，配色与留白仍然来自 .fn__code。 */
+[${MARK_ATTR}="code"] {
+    white-space: inherit;
+    word-break: inherit;
+}
+
 [${MARK_ATTR}="strong"] {
     font-weight: bold;
     color: var(--b3-protyle-inline-strong-color);
