@@ -36,6 +36,7 @@ import modalBlur from "../features/modal-blur";
 import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
+import tabTitleMarkdown from "../features/tab-title-markdown";
 import type {
     FeatureCategory,
     FeatureDefinition,
@@ -48,6 +49,7 @@ export const FEATURES: FeatureDefinition[] = [
     modalBlur,
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
+    tabTitleMarkdown,
     headingLevelIcon,
     mobileSidebarBlur,
     mobileDockBlur,

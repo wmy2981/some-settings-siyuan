@@ -172,5 +172,12 @@
   "refCrumbsGuide.actionTip": "Opens its settings panel when the plugin is enabled here, otherwise its page in the marketplace.",
   "refCrumbsGuide.openAction": "Open the settings",
   "refCrumbsGuide.installAction": "Go to the marketplace page",
-  "refCrumbsGuide.bazaarUnavailable": "The marketplace is turned off on this device, so its page cannot be opened"
+  "refCrumbsGuide.bazaarUnavailable": "The marketplace is turned off on this device, so its page cannot be opened",
+  "feature.tabTitleMarkdown.name": "Inline Markdown in tab titles",
+  "feature.tabTitleMarkdown.desc": "Renders the same inline syntax as in document tree titles inside tab titles: the desktop tab bar together with its dropdown list, and the mobile tab overview. Styled with SiYuan's own inline theme.",
+  "tabTitleMarkdown.scope": "Applies to",
+  "tabTitleMarkdown.scopeDisabled": "Disabled",
+  "tabTitleMarkdown.scopeDesktop": "Desktop",
+  "tabTitleMarkdown.scopeMobile": "Mobile",
+  "tabTitleMarkdown.scopeBoth": "Desktop and mobile"
 }

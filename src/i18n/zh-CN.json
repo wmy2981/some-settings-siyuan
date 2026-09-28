@@ -172,5 +172,12 @@
   "refCrumbsGuide.actionTip": "该插件在本机已启用时打开它的设置面板，否则打开它在集市里的页面。",
   "refCrumbsGuide.openAction": "打开设置",
   "refCrumbsGuide.installAction": "去集市页面",
-  "refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面"
+  "refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面",
+  "feature.tabTitleMarkdown.name": "页签标题渲染行级 Markdown",
+  "feature.tabTitleMarkdown.desc": "页签标题支持与文档树标题同一套行级语法：桌面端页签条连同它的下拉列表，以及移动端页签概览；样式沿用思源自己的行级主题。",
+  "tabTitleMarkdown.scope": "适用端",
+  "tabTitleMarkdown.scopeDisabled": "禁用",
+  "tabTitleMarkdown.scopeDesktop": "桌面端",
+  "tabTitleMarkdown.scopeMobile": "移动端",
+  "tabTitleMarkdown.scopeBoth": "桌面端 + 移动端"
 }
