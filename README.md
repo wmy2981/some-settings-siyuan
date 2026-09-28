@@ -102,7 +102,7 @@ would be one that can never do anything.
 | `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                                                        |
 | `mobile-block-icon-always`    | mobile   | Keeps the operated block's icon visible instead of letting it flicker                                                                                   |
 | `hide-mobile-exit`            | mobile   | Hides the icon-only Quit button in the mobile side panel                                                                                                |
-| `panel-no-autofocus`          | both     | Keeps the settings panel from focusing its first control when it opens, so the first switch does not come up focused and the mobile keyboard stays down |
+| `panel-no-autofocus`          | both     | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog        |
 | `tab-title-markdown`          | both     | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both)     |
 | `ref-crumbs-guide`            | both     | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                         |
 
@@ -304,6 +304,11 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   `document.title`, the drag payload and the tab dropdown are built from — is still the original title.
   SiYuan rewrites a tab title on every rename (`Tab.updateTitle` assigns `innerHTML`), which simply makes the
   plugin render it again.
+* `panel-no-autofocus` covers this plugin's own panel and SiYuan's own settings dialog, where the desktop
+  build focuses the settings search box as soon as it opens. Until you click or press Tab inside that dialog
+  the focus stays on the dialog itself, so the very first keystroke goes nowhere — that is what the switch is
+  for; clicking or tabbing restores the usual behaviour. Mobile is unaffected: SiYuan already blurs the search
+  box there.
 * `asset-info-menu` can only add rows inside the **Plugin** submenu: SiYuan's `emitOpenMenu` nests everything
   a plugin adds there. It hooks the image menu, the inline link menu and the block icon menu; only workspace
   assets (`assets/…`) get rows — external URLs and `data:` URIs have no file size or modified time.
