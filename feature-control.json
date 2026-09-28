@@ -1,6 +1,9 @@
 {
   "version": 1,
   "features": {
+    "panel-no-autofocus": {
+      "state": 1
+    },
     "modal-blur": {
       "state": 1
     },

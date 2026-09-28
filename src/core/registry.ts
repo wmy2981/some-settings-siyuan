@@ -32,6 +32,7 @@ import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSyncButton from "../features/mobile-sync-button";
 import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
+import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
 import type {
     FeatureCategory,
@@ -41,6 +42,7 @@ import {FEATURE_CATEGORIES} from "./types";
 
 export const FEATURES: FeatureDefinition[] = [
     codeBlockLangEmpty,
+    panelNoAutofocus,
     modalBlur,
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
