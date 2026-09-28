@@ -92,11 +92,9 @@
 | `inline-code-copy`            | 两端     | 行内代码复制按钮：禁用 / 悬浮（推荐）/ 总是，凡是渲染出行内代码的地方都支持                          |
 | `code-snippet-highlight`      | 两端     | 代码片段编辑框按 CSS / JS 上色，复用思源的 highlight.js 与当前高亮主题                               |
 | `desktop-command-panel-slim`  | 桌面端   | 命令面板宽度缩到思源原生宽度的指定百分比（默认 50%）                                                 |
-| `mobile-sidebar-blur`         | 移动端   | 移动端侧面板高斯模糊                                                                                 |
 | `mobile-dock-blur`            | 移动端   | 移动端悬浮 dock 栏高斯模糊                                                                           |
 | `mobile-bar-animation`        | 移动端   | 顶栏 / 面包屑 / 悬浮 dock 栏滚动显隐的平滑过渡，dock 栏只做整体显示或隐藏                            |
 | `mobile-ref-panel-height`     | 移动端   | 移动端候选浮层（含引用搜索）按视口比例增高，不会超出可视区底部                                       |
-| `mobile-tab-doc-icon`         | 移动端   | 移动端页签页默认文档图标用 SVG、emoji 或跟随思源设置                                                 |
 | `mobile-sync-button`          | 移动端   | 右上角总是显示「立即同步」，点击行为沿用思源原生同步引导                                             |
 | `mobile-select-native`        | 移动端   | 下拉选择器用思源原生菜单，而不是 WebView 默认弹层                                                    |
 | `mobile-longpress-menu-label` | 移动端   | 给长按菜单里只有图标的按钮补上文字（「返回上一层」保持纯图标）                                       |
@@ -244,7 +242,7 @@ npm run build        # check + 生产构建 + package.zip
 * 关闭功能**不会**把它的代码从产物里移除。门控只在运行时生效，这样改
   `feature-control.json` 永远不需要改源码或条件导入；代价是包体大小换「改一个数据文件即可禁用」。
 * **功能关着的时候不挂载**，因此它不能使用 `addTopBar` / `addDock` / `addTab` / `addCommand`
-  这类必须在 onload 同步注册的 API。当前 35 个功能都没用到；将来要用的话，
+  这类必须在 onload 同步注册的 API。当前 33 个功能都没用到；将来要用的话，
   那个功能的 `mount` 得写成无条件执行、内部自己按开关收放。
 * `mobile-console-log` 只在开关打开之后才开始收集控制台输出 —— 默认关闭意味着
   插件加载阶段（以及打开开关之前）的日志不会被记录下来。要抓启动期的问题，
@@ -272,9 +270,6 @@ npm run build        # check + 生产构建 + package.zip
 * `inline-code-copy` 的「悬浮显示」在移动端按**光标位置**判定：移动端没有 hover，
   所以手指点在（或选到）某段行内代码、光标落进去时按钮就出现（按钮尺寸与桌面端一致）。
   点按钮不会抢走编辑区焦点，键盘与光标都留在原处。
-* `mobile-tab-doc-icon` 在没有图标时换掉的是**整个**图标元素：思源在这种情况下渲染的
-  `<svg class="mobile-tabs__item-icon">` 里放不了 emoji（SVG 不渲染裸文本），
-  所以插件换成思源自己给 emoji 图标用的 `<span>`，样式与内核完全一致。
 * 功能被禁用后再重新启用插件命令需要重载插件：宿主 API 没有单条命令的移除接口，
   命令只随插件一起释放。
 * `exit-confirm` 守的是渲染进程发出的那一次 `POST /api/system/exit` —— 菜单退出、托盘退出、

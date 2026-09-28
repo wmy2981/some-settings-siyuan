@@ -94,11 +94,9 @@ would be one that can never do anything.
 | `inline-code-copy`            | both     | Copy button for inline code wherever it is rendered: off, on hover (recommended), or always                                                             |
 | `code-snippet-highlight`      | both     | Colours the snippet editor using SiYuan's own highlight.js and current code theme                                                                       |
 | `desktop-command-panel-slim`  | desktop  | Shrinks the command panel to a share of SiYuan's native width (50% by default)                                                                          |
-| `mobile-sidebar-blur`         | mobile   | Backdrop blur behind the mobile side panels                                                                                                             |
 | `mobile-dock-blur`            | mobile   | Backdrop blur behind the floating mobile dock bar                                                                                                       |
 | `mobile-bar-animation`        | mobile   | Smooth transition for the top bar, breadcrumb and dock bar show/hide; the dock bar only shows or hides as a whole                                       |
 | `mobile-ref-panel-height`     | mobile   | Taller mobile candidate panel (including reference search), never past the visible area                                                                 |
-| `mobile-tab-doc-icon`         | mobile   | SVG, emoji, or SiYuan's own setting for the default document icon in the tab overview                                                                   |
 | `mobile-sync-button`          | mobile   | Keeps Sync visible in the top-right corner; the click stays SiYuan's own sync guide                                                                     |
 | `mobile-select-native`        | mobile   | Dropdowns use SiYuan's own menu instead of the WebView picker                                                                                           |
 | `mobile-longpress-menu-label` | mobile   | Adds text to the icon-only buttons in the mobile long-press menu (the back button stays an icon)                                                        |
@@ -253,7 +251,7 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   changing `feature-control.json` never requires a source edit or a conditional import. The trade-off is
   bundle size versus the ability to disable something by editing one data file.
 * **A feature that is off is not mounted**, so it cannot use `addTopBar` / `addDock` / `addTab` /
-  `addCommand`, which must be registered synchronously during onload. None of the 35 features need them;
+  `addCommand`, which must be registered synchronously during onload. None of the 33 features need them;
   one that does would have to mount unconditionally and gate itself on the switch.
 * `mobile-console-log` only starts collecting console output once its switch is on, so by design the logs
   from plugin startup, and from before you flipped the switch, are not recorded. Turn it on and reproduce
@@ -286,9 +284,6 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   the button appears as soon as the caret (or a selection) lands inside an inline code span, at the same size
   as on the desktop. Clicking it does not steal focus from the editor — the keyboard and the caret stay
   where they were.
-* `mobile-tab-doc-icon` replaces the **whole** icon element when a tab has no icon: SiYuan renders
-  `<svg class="mobile-tabs__item-icon">` in that case and an SVG cannot hold an emoji (raw text nodes are not
-  rendered), so the plugin switches it for the `<span>` SiYuan itself uses for emoji icons.
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
 * `exit-confirm` guards the one `POST /api/system/exit` the renderer sends — where the menu quit, the tray

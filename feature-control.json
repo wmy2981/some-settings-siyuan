@@ -16,9 +16,6 @@
     "tab-title-markdown": {
       "state": 1
     },
-    "mobile-sidebar-blur": {
-      "state": 0
-    },
     "mobile-dock-blur": {
       "state": 1
     },
@@ -63,9 +60,6 @@
     },
     "mobile-ref-panel-height": {
       "state": 1
-    },
-    "mobile-tab-doc-icon": {
-      "state": 0
     },
     "mobile-select-native": {
       "state": 1

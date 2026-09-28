@@ -32,9 +32,7 @@ import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
-import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSyncButton from "../features/mobile-sync-button";
-import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
 import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
@@ -59,7 +57,6 @@ export const FEATURES: FeatureDefinition[] = [
     docTreeTitleMarkdown,
     tabTitleMarkdown,
     headingLevelIcon,
-    mobileSidebarBlur,
     mobileDockBlur,
     mobileBarAnimation,
     mobileSyncButton,
@@ -72,7 +69,6 @@ export const FEATURES: FeatureDefinition[] = [
     kernelAutoReconnect,
     deepseekBalance,
     mobileRefPanelHeight,
-    mobileTabDocIcon,
     mobileSelectNative,
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,
