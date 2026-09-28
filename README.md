@@ -295,7 +295,9 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * `recording-window` only replaces the UI. Permission handling, MP3 encoding, upload and inserting the audio
   block all stay SiYuan's own code, and SiYuan's recorder has no pause, so the window offers stop only. It is
   driven by the never-expiring recording notice: the feature recognises it, hides it (keeping it in the DOM
-  because its button is the only handle on `stopRecord`) and closes the window when the kernel drops it.
+  because its button is the only handle on `stopRecord`) and closes the window when the kernel drops it. On
+  mobile it re-measures the bottom bar and the keyboard toolbar every second and takes the top layer back when
+  the keyboard appears, so it always stays above them.
 * `bookmark-last-position` only takes over whole-document bookmarks (`NodeDocument`) opened with a plain left
   click; modified clicks keep SiYuan's own behaviour (new tab, split, keep cursor), and bookmarks on a block
   are untouched. A document that is already open in a tab still follows SiYuan's own `switchEditor` path,
