@@ -1,6 +1,9 @@
 {
   "version": 1,
   "features": {
+    "panel-no-autofocus": {
+      "state": 0
+    },
     "modal-blur": {
       "state": 1
     },
@@ -10,8 +13,8 @@
     "doc-tree-title-markdown": {
       "state": 1
     },
-    "mobile-sidebar-blur": {
-      "state": 0
+    "tab-title-markdown": {
+      "state": 1
     },
     "mobile-dock-blur": {
       "state": 1
@@ -26,6 +29,18 @@
       "state": 1
     },
     "code-block-lang-empty": {
+      "state": 1
+    },
+    "asset-info-menu": {
+      "state": 1
+    },
+    "bookmark-last-position": {
+      "state": 1
+    },
+    "recording-window": {
+      "state": 1
+    },
+    "exit-confirm": {
       "state": 1
     },
     "daily-note-direct": {
@@ -45,9 +60,6 @@
     },
     "mobile-ref-panel-height": {
       "state": 1
-    },
-    "mobile-tab-doc-icon": {
-      "state": 0
     },
     "mobile-select-native": {
       "state": 1
@@ -73,6 +85,9 @@
     "clear-config": {
       "state": 1
     },
+    "config-transfer": {
+      "state": 1
+    },
     "heading-level-icon": {
       "state": 1
     },
@@ -80,6 +95,9 @@
       "state": 1
     },
     "plugin-reminder": {
+      "state": 1
+    },
+    "ref-crumbs-guide": {
       "state": 1
     }
   }

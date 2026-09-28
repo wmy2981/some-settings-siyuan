@@ -1,14 +1,18 @@
 /**
- * 文档树标题的行级 Markdown 渲染。
+ * 行级 Markdown 渲染器（机制层）。
+ *
+ * 思源自己只在正文里渲染行级语法，标题、列表项这类「只放一行文字」的地方一律是纯文本。
+ * 本插件有不止一个功能要把这种文字按行级 Markdown 渲染出来（文档树标题、页签标题），
+ * 所以渲染规则收在这里，功能之间不互相 import。
  *
  * 只认这几种语法：加粗、斜体、粗斜体、删除线、高亮、上标、下标，外加行级代码。
  * 反斜杠转义的下一个字符按字面输出，并且不再参与配对。
  *
  * 输出的 DOM 有两处讲究：
  *
- * - 定界符本身**留在 DOM 里**，只是一个被 CSS 隐藏的 `<span>`。于是标题的
- *   `.textContent` 永远等于原文 —— 思源有不少地方直接读它（拖拽提示、加密笔记本
- *   的解锁提示等），功能关掉时也能原样还原，不需要另外记一份原文。
+ * - 定界符本身**留在 DOM 里**，只是一个被 CSS 隐藏的 `<span>`。于是宿主元素的
+ *   `.textContent` 永远等于原文 —— 思源有不少地方直接读它（拖拽提示、`document.title`、
+ *   页签下拉列表的文字等），功能关掉时也能原样还原，不需要另外记一份原文。
  * - 强调沿用思源自己的行级标记写法（`span[data-type~="strong"]` 等），行级代码
  *   用它自己的 `.fn__code`；与大纲树里渲染块内容的方式一致，色值全部取主题变量。
  */
@@ -16,7 +20,7 @@
 /** 我们生成的每个元素都带这个属性：既当样式钩子，也当「这块内容归我们渲染」的标记。 */
 export const MARK_ATTR = "data-ss-md";
 
-/** 标题里一个语法字符都没有时，整条渲染流程都可以跳过。 */
+/** 文字里一个语法字符都没有时，整条渲染流程都可以跳过。 */
 export const MARKDOWN_CHARS = /[*_~^=`\\]/;
 
 /** 定界符 → 长度 → 由外到内的样式；没列出的长度按字面输出（例如四个星号）。 */
@@ -103,7 +107,7 @@ const wrap = (kinds: string[], content: Node[]): HTMLElement => {
 };
 
 /**
- * 把标题原文渲染成节点。定界符也作为隐藏节点放进结果里，所以结果的 textContent
+ * 把原文渲染成节点。定界符也作为隐藏节点放进结果里，所以结果的 textContent
  * 与入参完全一致。
  */
 export const renderInlineMarkdown = (source: string): Node[] => {
@@ -196,3 +200,60 @@ export const renderInlineMarkdown = (source: string): Node[] => {
     append();
     return nodes;
 };
+
+/**
+ * 与上面的 DOM 配套的样式。
+ *
+ * 与大纲树里渲染块内容的写法对齐，色值全部取思源自己的行级主题变量。
+ * 行级代码不用管：它挂的是思源自己的 `.fn__code`。
+ */
+export const INLINE_MARKDOWN_CSS = `
+[${MARK_ATTR}="marker"] {
+    display: none;
+}
+
+/* 行级代码挂的是思源自己的 .fn__code，但那个类自带 \`white-space: pre-wrap\` 与
+   \`word-break: break-word\`：宿主的 \`white-space: nowrap\` 管不到它们，这一小段于是
+   成了整行里唯一的换行点 —— 文档树标题与页签标题都会因此折成多行，页签还被撑高。
+   两条都还原成继承宿主：换行行为由宿主决定，配色与留白仍然来自 .fn__code。 */
+[${MARK_ATTR}="code"] {
+    white-space: inherit;
+    word-break: inherit;
+}
+
+[${MARK_ATTR}="strong"] {
+    font-weight: bold;
+    color: var(--b3-protyle-inline-strong-color);
+}
+
+[${MARK_ATTR}="em"] {
+    font-style: italic;
+    color: var(--b3-protyle-inline-em-color);
+}
+
+[${MARK_ATTR}="s"] {
+    text-decoration: line-through;
+    color: var(--b3-protyle-inline-s-color);
+}
+
+[${MARK_ATTR}="mark"] {
+    background-color: var(--b3-protyle-inline-mark-background);
+    color: var(--b3-protyle-inline-mark-color);
+}
+
+[${MARK_ATTR}="sup"],
+[${MARK_ATTR}="sub"] {
+    position: relative;
+    font-size: 75%;
+    line-height: 0;
+    vertical-align: baseline;
+}
+
+[${MARK_ATTR}="sup"] {
+    top: -.5em;
+}
+
+[${MARK_ATTR}="sub"] {
+    bottom: -.25em;
+}
+`;

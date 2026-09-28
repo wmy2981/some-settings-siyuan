@@ -331,12 +331,14 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
      * 面板是懒创建的，也可能被用户从停靠栏上移除后重建、或被整体搬到别的位置，
      * 这些变化都发生在面板之外 —— 只看面板本身永远等不到它们。
      * 回调按帧合并，且每帧只做一次选择器查询，代价可控。
+     *
+     * **每次都要重新 observe**：注入前会先把它 disconnect 掉（免得自己的写入再触发一次自己），
+     * 而观察器对象本身还留着。只判断「对象在不在」就会变成「只建不挂」，
+     * 于是这个兜底在第一次注入之后就彻底失效：面板一旦被重建，余额行再也回不来，
+     * 表现正是「有时候显示、有时候不显示」。
      */
     const observeBody = () => {
-        if (bodyObserver) {
-            return;
-        }
-        bodyObserver = new MutationObserver(() => schedule());
+        bodyObserver = bodyObserver ?? new MutationObserver(() => schedule());
         bodyObserver.observe(document.body, {childList: true, subtree: true});
     };
 
@@ -614,6 +616,8 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
     const startTimer = () => {
         window.clearInterval(timer);
         timer = window.setInterval(() => {
+            // 兜底：观察器万一漏掉一次（面板被整体换掉的那一帧），下一轮把它补回来
+            apply();
             // 页面不可见时不做无意义的后台请求；回到前台会由 focus 事件补一次。
             if (!document.hidden) {
                 void tick();

@@ -360,6 +360,32 @@ export class ConfigStore {
         return result;
     }
 
+    /**
+     * 按 id 写入一批配置（导入用）。
+     *
+     * 只认已注册的功能 id，值必须是一个对象；两者之外的 id 一律原样返回给调用方，
+     * 由它决定怎么告诉用户 —— 这里绝不猜测意图去"尽力写入"。
+     * 真正落盘交给 saveMany：与面板点「保存」走同一条归一化 + 写后读回校验的路，
+     * 所以导入的非法值不会绕过校验，也不会被静默写进磁盘。
+     */
+    async importMany(input: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}> {
+        const applied: string[] = [];
+        const skipped: string[] = [];
+        const drafts: Record<string, FeatureConfig> = {};
+        Object.keys(input).forEach((id) => {
+            if (this.entries.has(id) && isPlainObject(input[id])) {
+                drafts[id] = input[id] as FeatureConfig;
+                applied.push(id);
+                return;
+            }
+            skipped.push(id);
+        });
+        if (applied.length > 0) {
+            await this.saveMany(drafts);
+        }
+        return {applied, skipped};
+    }
+
     /** 插件卸载时收尾：清掉订阅者，不再需要延迟写盘（保存已改为显式提交）。 */
     dispose(): void {
         this.listeners.clear();

@@ -206,9 +206,13 @@ export const buttonRowHtml = (
  *
  * 文案先整体转义再替换，替换值本身是 http(s) 链接时渲染成可点的链接，其余一律是纯文本：
  * 说明块的文字来自 i18n 与功能声明，不允许直接注入 HTML。
- * 段落用内核的 `b3-label__text` 渲染，与设置项下面那行说明同一档字号与颜色。
+ * 链接文字默认就是地址本身；`labels` 里给了同名的短写时用短写，地址仍然是完整的那个。
  */
-export const noteBodyHtml = (text: string, values: Record<string, string> = {}): string =>
+export const noteBodyHtml = (
+    text: string,
+    values: Record<string, string> = {},
+    labels: Record<string, string> = {},
+): string =>
     escapeHtml(text).replace(/\{(\w+)\}/g, (placeholder: string, name: string) => {
         const value = values[name];
         if (typeof value !== "string") {
@@ -216,7 +220,7 @@ export const noteBodyHtml = (text: string, values: Record<string, string> = {}):
         }
         const safe = escapeHtml(value);
         return /^https?:\/\//i.test(value) ?
-            `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>` :
+            `<a href="${safe}" target="_blank" rel="noopener noreferrer">${escapeHtml(labels[name] ?? value)}</a>` :
             safe;
     }).split("\n")
         .filter((line) => line.trim() !== "")

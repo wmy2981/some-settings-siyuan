@@ -68,6 +68,13 @@ export interface FeatureActionContext {
      * 有任何一个文件删不掉就抛出（附 problems），不允许静默通过。
      */
     clearAllConfigs(): Promise<void>;
+    /** 导出全部功能的当前配置，键是功能 id。 */
+    exportConfigs(): Record<string, FeatureConfig>;
+    /**
+     * 按 id 写入一批配置（导入）。只认已注册的功能 id，未知 id 原样返回给调用方汇报；
+     * 校验与写盘走和面板「保存」同一条路，失败时抛出（附 problems）。
+     */
+    importConfigs(config: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}>;
 }
 
 /**
@@ -126,12 +133,14 @@ export type SettingField =
          * 只用于面向用户的说明（插件性质、版本号、仓库地址这类），不是设置项。
          *
          * `text` 是 i18n key；值按 `\n` 分段，其中的 `{name}` 占位符由 `values` 逐项替换，
-         * 替换值本身是 http(s) 链接时渲染成可点的链接。
+         * 替换值本身是 http(s) 链接时渲染成可点的链接，链接文字默认就是地址本身，
+         * `labels` 里给了同名的短写时用它。
          */
         kind: "note";
         key: string;
         text: string;
         values?: Record<string, string>;
+        labels?: Record<string, string>;
     }
     | {
         /**
@@ -142,8 +151,12 @@ export type SettingField =
         key: string;
         title: string;
         description?: string;
-        /** 按钮文字，i18n key。 */
-        label: string;
+        /**
+         * 按钮文字。字符串是 i18n key；给函数时每次打开面板求值，
+         * **返回值直接当文案用**（函数内部自己取 i18n），用于文案要跟着运行期状态变的入口
+         * —— 例如「目标插件装了没装」决定按钮是「打开设置」还是「去集市安装」。
+         */
+        label: string | ((context: FeatureActionContext) => string);
         onClick: (context: FeatureActionContext) => void | Promise<void>;
     };
 

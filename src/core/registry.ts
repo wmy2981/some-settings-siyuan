@@ -6,14 +6,18 @@
  *
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
+import assetInfoMenu from "../features/asset-info-menu";
+import bookmarkLastPosition from "../features/bookmark-last-position";
 import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
 import codeSnippetHighlight from "../features/code-snippet-highlight";
+import configTransfer from "../features/config-transfer";
 import dailyNoteDirect from "../features/daily-note-direct";
 import deepseekBalance from "../features/deepseek-balance";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import docTreeTitleMarkdown from "../features/doc-tree-title-markdown";
+import exitConfirm from "../features/exit-confirm";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import headingLevelIcon from "../features/heading-level-icon";
@@ -28,11 +32,13 @@ import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
-import mobileSidebarBlur from "../features/mobile-sidebar-blur";
 import mobileSyncButton from "../features/mobile-sync-button";
-import mobileTabDocIcon from "../features/mobile-tab-doc-icon";
 import modalBlur from "../features/modal-blur";
+import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
+import recordingWindow from "../features/recording-window";
+import refCrumbsGuide from "../features/ref-crumbs-guide";
+import tabTitleMarkdown from "../features/tab-title-markdown";
 import type {
     FeatureCategory,
     FeatureDefinition,
@@ -41,15 +47,21 @@ import {FEATURE_CATEGORIES} from "./types";
 
 export const FEATURES: FeatureDefinition[] = [
     codeBlockLangEmpty,
+    assetInfoMenu,
+    bookmarkLastPosition,
+    recordingWindow,
+    exitConfirm,
+    panelNoAutofocus,
     modalBlur,
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
+    tabTitleMarkdown,
     headingLevelIcon,
-    mobileSidebarBlur,
     mobileDockBlur,
     mobileBarAnimation,
     mobileSyncButton,
     hideMobileExit,
+    refCrumbsGuide,
     dailyNoteDirect,
     firstDocIcon,
     externalLinkConfirm,
@@ -57,7 +69,6 @@ export const FEATURES: FeatureDefinition[] = [
     kernelAutoReconnect,
     deepseekBalance,
     mobileRefPanelHeight,
-    mobileTabDocIcon,
     mobileSelectNative,
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,
@@ -65,6 +76,7 @@ export const FEATURES: FeatureDefinition[] = [
     desktopCommandPanelSlim,
     codeSnippetHighlight,
     mobileConsoleLog,
+    configTransfer,
     clearConfig,
     pluginReminder,
 ];

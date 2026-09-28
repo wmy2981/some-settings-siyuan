@@ -8,15 +8,16 @@
  * 扫描是「有突变才做」的：监听整页的突变，但先判断这次突变是否落在文档树里，
  * 正文输入产生的海量突变在第一次判断时就被挡掉。
  */
+import {
+    INLINE_MARKDOWN_CSS,
+    MARK_ATTR,
+    MARKDOWN_CHARS,
+    renderInlineMarkdown,
+} from "../../core/inline-markdown";
 import type {
     FeatureHost,
     FeatureInstance,
 } from "../../core/types";
-import {
-    MARK_ATTR,
-    MARKDOWN_CHARS,
-    renderInlineMarkdown,
-} from "./markdown";
 
 /** 文档树面板：桌面端是 `.sy__file`，移动端是侧面板里的 `[data-type="sidebar-file"]`。 */
 const TREES = [".sy__file", '[data-type="sidebar-file"]'];
@@ -36,54 +37,8 @@ const TITLE_SELECTOR = inEachTree(".b3-list-item__text");
 const RENDERED_SELECTOR = inEachTree(`.b3-list-item__text [${MARK_ATTR}]`);
 const OBSERVE_OPTIONS: MutationObserverInit = {childList: true, subtree: true, characterData: true};
 
-/**
- * 与大纲树里渲染块内容的写法对齐，色值全部取思源自己的行级主题变量。
- * 行级代码不用管：它挂的是思源自己的 `.fn__code`。
- */
-const TITLE_CSS = `
-[${MARK_ATTR}="marker"] {
-    display: none;
-}
-
-[${MARK_ATTR}="strong"] {
-    font-weight: bold;
-    color: var(--b3-protyle-inline-strong-color);
-}
-
-[${MARK_ATTR}="em"] {
-    font-style: italic;
-    color: var(--b3-protyle-inline-em-color);
-}
-
-[${MARK_ATTR}="s"] {
-    text-decoration: line-through;
-    color: var(--b3-protyle-inline-s-color);
-}
-
-[${MARK_ATTR}="mark"] {
-    background-color: var(--b3-protyle-inline-mark-background);
-    color: var(--b3-protyle-inline-mark-color);
-}
-
-[${MARK_ATTR}="sup"],
-[${MARK_ATTR}="sub"] {
-    position: relative;
-    font-size: 75%;
-    line-height: 0;
-    vertical-align: baseline;
-}
-
-[${MARK_ATTR}="sup"] {
-    top: -.5em;
-}
-
-[${MARK_ATTR}="sub"] {
-    bottom: -.25em;
-}
-`;
-
 export const mountDocTreeTitleMarkdown = (host: FeatureHost): FeatureInstance => {
-    host.addStyle(TITLE_CSS);
+    host.addStyle(INLINE_MARKDOWN_CSS);
 
     let frame = 0;
     /** 每个标题按哪一份原文渲染过。重命名会让原文变化，那时才重建节点。 */
