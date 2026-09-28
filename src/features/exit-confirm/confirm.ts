@@ -14,12 +14,19 @@
  * - `setCurrentWorkspace === false` 的不问（那是"切换工作空间 / 需要重启"这类
  *   应用内动作，它们有自己的确认流程，弹一句"确定退出思源吗"只会让人困惑）。
  *
+ * 托盘退出不打扰用户：思源把上面三条路汇到同一个请求上，请求体一字不差，
+ * 插件没有别的办法区分它们；还留在渲染进程里的唯一差别是窗口状态 ——
+ * 从托盘退出时窗口要么已经收进托盘（`visibilityState` 不是 visible），
+ * 要么至少不在前台（点托盘菜单会让窗口失焦），而在应用里点退出时窗口一定在前台。
+ * 所以桌面上只对前台的窗口发问。移动端没有托盘，这个判据不适用，照常发问。
+ *
  * 覆盖不到的两条路（都在思源内部，官方 API 碰不到）：
  * - 连接远程内核时（`ownsKernel` 为假）退出根本不发这个请求；
  * - 请求本身失败时宿主的兜底是直接 `ipcRenderer.send("siyuan-quit")`；
  * 另外系统关机走主进程，也不经过这里。
  */
 import {confirm} from "siyuan";
+import {isMobile} from "../../core/frontend";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -57,6 +64,9 @@ const isQuitRequest = (input: RequestInfo | URL, init?: RequestInit): boolean =>
 /** 「用户取消」在这次请求上的表达：宿主把它当作主动取消，静默结束。 */
 const cancelled = (): DOMException => new DOMException("exit cancelled by the user", "AbortError");
 
+/** 这次退出是不是用户在本窗口里发起的；不是就不问（见文件头）。 */
+const fromWindow = (): boolean => isMobile() || (document.visibilityState === "visible" && document.hasFocus());
+
 export const mountExitConfirm = (host: FeatureHost): FeatureInstance => {
     const original = window.fetch;
     /** 已经有一个确认框在等答复。 */
@@ -74,7 +84,7 @@ export const mountExitConfirm = (host: FeatureHost): FeatureInstance => {
         });
 
     const patched = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        if (!isQuitRequest(input, init)) {
+        if (!isQuitRequest(input, init) || !fromWindow()) {
             return original.call(window, input, init);
         }
         if (asking) {

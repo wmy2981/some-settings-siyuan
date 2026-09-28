@@ -182,7 +182,7 @@
   "feature.recordingWindow.name": "用悬浮窗口取代录音提示",
   "feature.recordingWindow.desc": "录音期间用浮窗取代思源的提示，显示已录时长，可直接结束录音。",
   "feature.exitConfirm.name": "退出应用前弹窗确认",
-  "feature.exitConfirm.desc": "退出思源前先问一句：包括主菜单的「退出应用」、桌面托盘右键的退出，以及思源设置为「关闭窗口即退出」时的关窗。设置为「最小化到托盘」时关窗本来就不退出，不会弹窗。",
+  "feature.exitConfirm.desc": "退出应用前弹窗确认（主菜单的「退出应用」与设置为「关闭窗口即退出」时的关窗）；从桌面托盘菜单退出时不询问。",
   "exitConfirm.title": "退出思源",
   "exitConfirm.text": "确定要退出思源吗？"
 }

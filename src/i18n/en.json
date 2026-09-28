@@ -182,7 +182,7 @@
   "feature.recordingWindow.name": "A floating window instead of the recording notice",
   "feature.recordingWindow.desc": "Replaces the notice SiYuan shows while recording with a floating window that shows the elapsed time and stops the recording from there.",
   "feature.exitConfirm.name": "Ask before quitting",
-  "feature.exitConfirm.desc": "Shows a confirmation before SiYuan quits: the Quit item in the main menu, the tray menu's quit, and closing the window when SiYuan is set to quit on close. Closing the window while it is set to minimise to the tray does not quit and does not ask.",
+  "feature.exitConfirm.desc": "Asks before SiYuan quits: the Quit item in the main menu and closing the window when SiYuan is set to quit on close; quitting from the desktop tray menu does not ask.",
   "exitConfirm.title": "Quit SiYuan",
   "exitConfirm.text": "Quit SiYuan now?"
 }

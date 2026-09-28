@@ -81,7 +81,7 @@ would be one that can never do anything.
 | `asset-info-menu`         | both     | File size, image dimensions, type and modified time for a workspace asset, in the Plugin submenu of an image and of audio/video/iframe blocks |
 | `bookmark-last-position`  | both     | Opens a whole-document bookmark through the same path as the document tree, restoring the last reading position instead of landing at the top |
 | `recording-window`        | both     | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause)      |
-| `exit-confirm`            | both     | Asks before SiYuan quits: the main menu's Quit, the tray menu's quit, and closing the window when SiYuan is set to quit on close              |
+| `exit-confirm`            | both     | Asks before SiYuan quits (the main menu's Quit and close-to-quit); quitting from the desktop tray menu does not ask                         |
 
 ### Interface
 
@@ -287,9 +287,11 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
 * Re-registering a plugin command after a feature is disabled requires reloading the plugin: the host API
   has no per-command removal, so commands are released together with the plugin.
 * `exit-confirm` guards the one `POST /api/system/exit` the renderer sends — where the menu quit, the tray
-  quit and close-to-quit all end up. Two paths stay unguarded because no plugin API reaches them: quitting
-  while connected to a **remote kernel** (that path never sends the request) and the host's fallback of
-  sending `siyuan-quit` directly when the request itself fails.
+  quit and close-to-quit all end up, with byte-identical bodies. The only signal left in the renderer is the
+  window state, so it asks only while the window is in the foreground and lets a tray quit through. Two paths
+  stay unguarded because no plugin API reaches them: quitting while connected to a **remote kernel** (that
+  path never sends the request) and the host's fallback of sending `siyuan-quit` directly when the request
+  itself fails.
 * `recording-window` only replaces the UI. Permission handling, MP3 encoding, upload and inserting the audio
   block all stay SiYuan's own code, and SiYuan's recorder has no pause, so the window offers stop only. It is
   driven by the never-expiring recording notice: the feature recognises it, hides it (keeping it in the DOM
