@@ -306,6 +306,10 @@ with a flat structure (`index.js`, `index.css`, `plugin.json`, `i18n/`, `icon.pn
   `document.title`, the drag payload and the tab dropdown are built from — is still the original title.
   SiYuan rewrites a tab title on every rename (`Tab.updateTitle` assigns `innerHTML`), which simply makes the
   plugin render it again.
+* `deepseek-balance` mounts its line right below the agent composer and follows the panel: SiYuan builds the
+  agent dock lazily and can replace the whole panel (dock moved, layout switched, mobile panel reopened), so
+  the node is re-inserted whenever the body changes and once per polling cycle. The row is hidden only while
+  the current model is not an enabled DeepSeek model on `api.deepseek.com`.
 * `panel-no-autofocus` covers this plugin's own panel and SiYuan's own settings dialog, where the desktop
   build focuses the settings search box as soon as it opens. Until you click or press Tab inside that dialog
   the focus stays on the dialog itself, so the very first keystroke goes nowhere — that is what the switch is
