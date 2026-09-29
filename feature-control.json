@@ -97,6 +97,9 @@
     "deepseek-balance": {
       "state": 1
     },
+    "oss-usage": {
+      "state": 1
+    },
     "plugin-reminder": {
       "state": 1
     },

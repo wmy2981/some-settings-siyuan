@@ -31,6 +31,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Reconnect button on the disconnect panel (experimental) | both       | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                                           |
 | Automatic reconnect after a disconnect (experimental)   | both       | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default)                        |
 | DeepSeek balance in the agent panel                     | both       | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use            |
+| Aliyun OSS bucket usage                                 | both       | Adds a usage button to the S3 storage settings that reads the bucket's storage size and object count with the credentials saved there    |
 | File size and metadata in the asset menu                | both       | File size, image dimensions, type and modified time for a workspace asset, in the menu of an image or of an audio/video/iframe block     |
 | Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                |
 | A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause) |
@@ -79,6 +80,11 @@ plugin reload, and a feature that only works on one frontend never appears in th
   is written as you go, so a reload never loses a document.
 * The console log viewer only starts collecting once its switch is on, so the logs from plugin startup and from before
   you flipped the switch are not recorded. Turn it on and reproduce the problem.
+* The Aliyun OSS bucket usage query is sent straight from the frontend: the desktop app is not subject to the
+  same-origin policy, while mobile and browsers need a **CORS rule** on the bucket (allowing SiYuan's origin plus the
+  `x-oss-date` and `Authorization` headers) or the query simply fails. Aliyun updates these statistics with a delay of
+  an hour or more, and only the bucket owner can read them. The button follows the **saved** S3 settings, so a new
+  endpoint shows up after that field is saved (when it loses focus).
 * The inline-code copy button's "on hover" mode follows the **caret** on mobile (there is no hover with a finger): the
   button appears as soon as the caret or a selection lands inside an inline code span. Clicking it does not steal
   focus from the editor — the keyboard and the caret stay where they were.

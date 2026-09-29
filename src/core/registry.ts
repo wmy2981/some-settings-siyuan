@@ -35,6 +35,7 @@ import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
 import mobileSyncButton from "../features/mobile-sync-button";
 import modalBlur from "../features/modal-blur";
+import ossUsage from "../features/oss-usage";
 import panelNoAutofocus from "../features/panel-no-autofocus";
 import pluginReminder from "../features/plugin-reminder";
 import recordingWindow from "../features/recording-window";
@@ -69,6 +70,7 @@ export const FEATURES: FeatureDefinition[] = [
     kernelReconnectButton,
     kernelAutoReconnect,
     deepseekBalance,
+    ossUsage,
     mobileRefPanelHeight,
     mobileSelectNative,
     mobileLongpressMenuLabel,
