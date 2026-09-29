@@ -222,6 +222,12 @@ const matchesKeyword = (text, keywords) => {
     return keywords.some((keyword) => lower.includes(keyword));
 };
 
+// 一条"改动"在发行说明里就是一条带 Markdown 链接的条目，链接指向它对应的 issue / PR。
+// 概述段落、章节标题、头部徽章 HTML、下载链接都不带这种链接，标题里的关键词（比如
+// "Improve … performance"）只是泛泛而谈，进 issue 正文只会把真正的条目淹掉，所以先按
+// 链接筛一遍再谈关键词。
+const MARKDOWN_LINK = /\[[^\]]+\]\([^)]+\)/;
+
 // 条目里的上游链接会在对方仓库的时间线上留下跨仓库引用，统一改成对应列表的搜索页：
 // issue 走 issues?q=、pull 走 pulls?q=。搜索页不是详情页，不会产生引用；
 // 查询不带状态限定，已经关闭的 issue 也能搜到
@@ -326,6 +332,10 @@ const main = async () => {
     for (const release of pending) {
         const index = releases.indexOf(release);
         const lines = diffLines(release.body, releases[index - 1]?.body ?? "").filter((line) => {
+            // 没有 Markdown 链接的行一律排除：概述、章节标题、徽章 HTML、下载链接都不是"改动"
+            if (!MARKDOWN_LINK.test(line)) {
+                return false;
+            }
             // 纯标记行剥完就没有文字了，既不参与匹配也不进正文
             const text = visibleText(line);
             return text !== "" && matchesKeyword(text, keywords);
