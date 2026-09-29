@@ -35,8 +35,17 @@ const FORMAT_VERSION = 1;
  * 只属于本功能的样式；这几条又必须生效（否则 JSON 会挤在一个几行高的框里），
  * 所以直接写在元素上。
  */
-const AREA_STYLE = "box-sizing:border-box;width:100%;min-height:12rem;max-height:45vh;margin-top:8px;" +
+const AREA_STYLE = "box-sizing:border-box;width:100%;min-height:12rem;max-height:45vh;margin:8px 0 0;" +
     "font-family:var(--b3-font-family-code);font-size:12px;line-height:18px;overflow:auto";
+
+/**
+ * 只读的展示框用 `<pre>` 而不是 `<textarea>`。
+ *
+ * 移动端「点一下软键盘就顶上来」的判据是**能不能编辑**，只读的表单控件一样被当成
+ * 输入控件：键盘一起来就把弹窗下半截连同按钮一起盖住，而这段 JSON 只需要看和选。
+ * `<pre>` 不是表单控件，点它不聚焦、也就不会弹键盘；`pre-wrap` 与文本选中都照旧。
+ */
+const VIEW_STYLE = `${AREA_STYLE};white-space:pre-wrap;overflow-wrap:anywhere;user-select:text`;
 
 interface DialogSpec {
     title: string;
@@ -53,14 +62,16 @@ interface DialogSpec {
 }
 
 const openDialog = (context: FeatureActionContext, spec: DialogSpec): void => {
+    // 只有要输入的那个框才是表单控件；只读的那个用 <pre>（见 VIEW_STYLE 的说明）
+    const box = spec.editable ?
+        `<textarea class="b3-text-field fn__block" style="${AREA_STYLE}" spellcheck="false"></textarea>` :
+        `<pre class="b3-text-field fn__block" style="${VIEW_STYLE}"></pre>`;
     const dialog = new Dialog({
         title: spec.title,
         width: isMobile() ? "92vw" : "640px",
         content: `<div class="b3-dialog__content">
     <div class="b3-label__text">${escapeHtml(spec.tip)}</div>
-    <textarea class="b3-text-field fn__block" style="${AREA_STYLE}" spellcheck="false"${
-            spec.editable ? "" : " readonly"
-        }></textarea>
+    ${box}
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" type="button" data-ss-close>${
@@ -69,15 +80,19 @@ const openDialog = (context: FeatureActionContext, spec: DialogSpec): void => {
     <button class="b3-button b3-button--text" type="button" data-ss-run>${escapeHtml(spec.actionLabel)}</button>
 </div>`,
     });
-    const area = dialog.element.querySelector<HTMLTextAreaElement>("textarea");
-    if (area) {
-        area.value = spec.json;
+    const field = dialog.element.querySelector<HTMLElement>(spec.editable ? "textarea" : "pre");
+    if (field instanceof HTMLTextAreaElement) {
+        field.value = spec.json;
+    } else if (field) {
+        field.textContent = spec.json;
     }
+    /** 框里此刻的文字：可编辑的取 `value`，只读的取 `textContent`。 */
+    const textOf = (): string => field instanceof HTMLTextAreaElement ? field.value : field?.textContent ?? "";
     dialog.element.querySelector<HTMLButtonElement>("[data-ss-close]")?.addEventListener("click", () => {
         dialog.destroy();
     });
     dialog.element.querySelector<HTMLButtonElement>("[data-ss-run]")?.addEventListener("click", () => {
-        void spec.run(area?.value ?? "").then((done) => {
+        void spec.run(textOf()).then((done) => {
             if (done) {
                 dialog.destroy();
             }
