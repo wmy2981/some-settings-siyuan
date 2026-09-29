@@ -15,6 +15,7 @@ import configTransfer from "../features/config-transfer";
 import dailyNoteDirect from "../features/daily-note-direct";
 import deepseekBalance from "../features/deepseek-balance";
 import desktopCommandPanelSlim from "../features/desktop-command-panel-slim";
+import devtoolsHotkey from "../features/devtools-hotkey";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import docTreeTitleMarkdown from "../features/doc-tree-title-markdown";
 import exitConfirm from "../features/exit-confirm";
@@ -75,6 +76,7 @@ export const FEATURES: FeatureDefinition[] = [
     inlineCodeCopy,
     desktopCommandPanelSlim,
     codeSnippetHighlight,
+    devtoolsHotkey,
     mobileConsoleLog,
     configTransfer,
     clearConfig,

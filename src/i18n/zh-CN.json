@@ -99,6 +99,8 @@
   "commandPanelSlim.widthTip": "占思源原生宽度（80vw）的百分比，50% 即 40vw",
   "feature.codeSnippetHighlight.name": "代码片段编辑区高亮",
   "feature.codeSnippetHighlight.desc": "设置里的代码片段编辑框按 CSS / JS 语法上色，跟随当前高亮主题。",
+  "feature.devtoolsHotkey.name": "桌面端 F12 开关开发者工具",
+  "feature.devtoolsHotkey.desc": "桌面端按 F12 打开或关闭开发者工具，与思源状态栏右键菜单里的入口等效。",
   "feature.mobileConsoleLog.name": "控制台日志查看器",
   "feature.mobileConsoleLog.desc": "从插件加载起收集控制台输出，可在弹窗里查看完整日志。",
   "feature.deepseekBalance.name": "DeepSeek 余额显示",

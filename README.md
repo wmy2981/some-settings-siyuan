@@ -63,6 +63,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 
 | Setting                                       | Applies to | What it does                                                                                             |
 | --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
+| F12 toggles the developer tools               | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu   |
 | Console log viewer                            | mobile     | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | Clear this plugin's configuration             | both       | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
 | About this plugin                             | both       | A read-only notice: what the plugin is, the current version and the GitHub repository                    |

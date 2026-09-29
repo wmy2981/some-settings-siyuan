@@ -99,6 +99,8 @@
   "commandPanelSlim.widthTip": "Share of SiYuan's native width (80vw); 50% equals 40vw",
   "feature.codeSnippetHighlight.name": "Syntax highlighting for snippets",
   "feature.codeSnippetHighlight.desc": "Colours the snippet editor under Settings using CSS/JS syntax, following the selected code theme.",
+  "feature.devtoolsHotkey.name": "F12 toggles the developer tools on desktop",
+  "feature.devtoolsHotkey.desc": "Presses F12 on desktop to open or close the developer tools, the same entry as the one in the status bar context menu.",
   "feature.mobileConsoleLog.name": "Console log viewer",
   "feature.mobileConsoleLog.desc": "Collects console output from the moment the plugin loads and shows the full log in a dialog.",
   "feature.deepseekBalance.name": "DeepSeek balance in the agent panel",
