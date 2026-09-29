@@ -1,8 +1,18 @@
-* **单列纵向列表，只有一层**：分类是**小节标题**，不是独立页签；
-  小节标题之下直接是设置行，**任何形式的嵌套分组都不允许**。
+* **页签结构，每页只有一层**：三个分类（功能 / 界面 / 开发）就是三个页签，没有内容的不出现；
+  页签内容直接是设置行，**任何形式的嵌套分组都不允许**。
   `SettingField` 因此也没有 `group` 型 —— 从类型上就写不出层级。
+* 页签的两套外观都照抄内核，且只借**样式类**，不借内核会认的结构类：
+  * 桌面端：弹窗左侧一列（`.some-settings-panel__side` + `b3-list-item`），形制照抄内核设置的
+    `.config__panel > .config__side`；窗口窄到 750px 以下时侧栏收成一列图标（内核同款做法）
+  * 移动端：弹窗顶部一条（`.layout-tab-bar` + `item item--full`），照抄内核代码片段弹窗
+  * ⚠️ **不要用 `.config__tab-container`**：内核打开自己的设置弹窗时会
+    `dialogs.find(item => item.element.querySelector(".config__tab-container"))?.destroy()`，
+    借了这个类，用户再开一次思源设置就可能连带把本插件的面板（连未保存的草稿）销毁掉。
+    同理 `.config__side` / `.config__tab-wrap` 也都不用，只在自己的类名里复刻它们的形制。
+* 每一页自己滚动（`.some-settings-panel__view`），弹窗内容区因此不留内边距、也不滚动
+  （由 `setting-dialog.ts` 的 `applyPanelWidth()` 写成行内样式）：否则页签栏会被一起滚走。
 * 每个功能的名称与说明渲染成一行（`.some-settings-panel__sub`），它就是一行
-  `b3-label config-item`，位置在分类标题之后、该功能的参数行之前。
+  `b3-label config-item`，位置在该页第一行、该功能的参数行之前。
   **功能自己那个默认关闭的开关就放在这一行**，不再单独占一行；功能还有参数时，
   参数行排在它下面。
   拿 selector 当开关的功能（声明了 `isEnabled`）同理：那个 select 也放这一行，
@@ -46,12 +56,12 @@
 * **间距与分割线全部交给内核**
 * 面板每次打开都会**重写**自己那份 `<style>` 的内容（见 §8 第 6 条），
   所以改 `PANEL_CSS` 后重载插件就能生效，不必整页刷新。
-* 一个分类的行是跨功能拼出来的，`:last-child` 看不见真正意义上的最后一行，
+* 一页的行是跨功能拼出来的，`:last-child` 看不见真正意义上的最后一行，
   所以由 `setting-dialog.ts` 的 `markLastRow()` 给最后一行加 `config-item--last-visible`，
   去掉它多余的下分割线。
-* 窄屏（≤750px，与内核同一断点）由 `PANEL_CSS` 的媒体查询处理：内边距收窄；
-  折行本身由内核的 `.config-item` 规则完成，插件不再自己折。它靠 `.some-settings-dialog`
-  类挂作用域，只在弹窗存在期间生效。
+* 窄屏（≤750px，与内核同一断点）由 `PANEL_CSS` 的媒体查询处理：页签内容与行内边距收窄，
+  桌面端的侧栏收成一列图标；折行本身由内核的 `.config-item` 规则完成，插件不再自己折。
+  它靠 `.some-settings-dialog` 类挂作用域，只在弹窗存在期间生效。
 * **单位标签必须 `white-space: nowrap`**，否则窄屏下会被压成一列一个字。
   数字行的 `unit` 与其它文案一样按 **i18n key** 解析：`"px"` / `"ms"` / `"%"` / `"vh"`
   查不到就原样返回，而 `"kernelAutoReconnect.times"` 这种才会翻成「次」/ "times"。

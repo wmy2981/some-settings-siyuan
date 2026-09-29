@@ -1,13 +1,15 @@
 /**
  * 插件设置面板。
  *
- * 结构与参考插件的面板同构：`.b3-dialog__content > .config > (分类标题 + .config-items)*`，
- * 滚动交给内核的 `.b3-dialog__content`，插件不额外套滚动容器。
+ * 结构与参考插件的面板同构：`.b3-dialog__content > .config > (页签 + .config-items)*`，
+ * 滚动交给每一页自己的 `.some-settings-panel__view`，插件不额外套滚动容器。
  *
- * - 单栏纵向列表，三个分类（功能 / 界面 / 开发）是小节标题，与设置行平级
- * - 每个分类里第一行是功能名与说明，随后就是设置行，**没有任何嵌套分组**
+ * - 三个分类（功能 / 界面 / 开发）各是一个页签，没有内容的不出现
+ * - 桌面端是弹窗左侧的一列页签（照抄内核设置的 `.config__side`），
+ *   移动端是弹窗顶部的一条页签栏（照抄内核代码片段弹窗的 `.layout-tab-bar`）
+ * - 每一页里第一行是功能名与说明，随后就是设置行，**没有任何嵌套分组**
  * - 每一行都是「左侧文案 + 右侧控件」，控件用思源的 b3-* 类
- * - 行与行之间保留内核 `.b3-label` 自带的分割线，只有整个分类的最后一行去掉
+ * - 行与行之间保留内核 `.b3-label` 自带的分割线，只有整页的最后一行去掉
  * - 底部动作区只有「取消 / 保存」，不额外加任何按钮
  *
  * 保存机制：控件改动先落在面板自己的草稿里，点「保存」才写文件并关闭；
@@ -39,7 +41,6 @@ import type {
 } from "./types";
 import {
     buttonRowHtml,
-    categoryHtml,
     ensurePanelCss,
     escapeHtml,
     isMobileFrontend,
@@ -47,11 +48,17 @@ import {
     noteRowHtml,
     numberRowHtml,
     PANEL_CLASS,
+    type PanelTab,
     selectControlHtml,
     selectRowHtml,
     subtitleRowHtml,
     switchControlHtml,
     switchRowHtml,
+    tabBarHtml,
+    tabItemHtml,
+    tabPaneHtml,
+    tabSideHtml,
+    tabViewsHtml,
     textRowHtml,
 } from "./ui";
 
@@ -63,6 +70,20 @@ const CATEGORY_LABELS: Record<FeatureCategory, string> = {
     function: "category.function",
     ui: "category.ui",
     dev: "category.dev",
+};
+
+/** 页签条目上表示「当前选中」的类名：桌面端与移动端各一个。 */
+const TAB_FOCUS_CLASSES = ["b3-list-item--focus", "item--focus"];
+
+/**
+ * 页签图标（思源内置 symbol 名）。
+ *
+ * 分类与图标的对应只在这里维护：功能是插件带来的增强，界面是外观，开发是调试类。
+ */
+const CATEGORY_ICONS: Record<FeatureCategory, string> = {
+    function: "iconSparkles",
+    ui: "iconTheme",
+    dev: "iconBug",
 };
 
 export interface SettingsPanelOptions {
@@ -98,8 +119,10 @@ const NARROW_WIDTH = 750;
 const NARROW_GUTTER = 24;
 /** 面板的最小可用宽度，比这更窄排版就没意义了。 */
 const MIN_PANEL_WIDTH = 280;
-/** 宽屏下的面板宽度上限。 */
+/** 宽屏下的面板宽度上限。桌面端是「侧栏 + 内容」两栏，侧栏那 220px 直接吃掉行宽，
+ *  所以上限比单栏的移动端放宽一档（内核自己的设置弹窗也是这样，上限 900px）。 */
 const MAX_PANEL_WIDTH = 768;
+const MAX_DESKTOP_PANEL_WIDTH = 900;
 
 /** 取布局视口宽度。移动端的 vw 与 innerWidth 在个别内核上会不一致，用 clientWidth 更稳。 */
 const viewportWidth = (): number => document.documentElement.clientWidth || window.innerWidth || 0;
@@ -126,7 +149,7 @@ const parseBindKey = (value: string): [string, string] => {
 /**
  * 给一段行 HTML 里最后一行打上「不可见最后一行」标记。
  *
- * 一个分类是一张 .config-items 卡片，但它的行要跨功能拼出来，
+ * 一个页签是一张 `.config-items` 卡片，但它的行要跨功能拼出来，
  * CSS 的 :last-child 只能看见 DOM 里的最后一个元素，所以由这里显式标记。
  * 认的是最后一份带 `config-item` 这个整词的 class 属性：说明块这类行内部还有自己的元素与
  * class（段落是 `b3-label__text`），照着最后一个 class 属性下手会标记到段落的头上。
@@ -179,7 +202,7 @@ export class SettingsPanel {
     }
 
     /**
-     * 当前分类下要显示设置界面的功能。
+     * 当前分类（页签）下要显示设置界面的功能。
      * 与建草稿走的是同一个判定，避免出现「渲染了但没草稿」的错位。
      */
     private visibleFeatures(category: FeatureCategory): FeatureDefinition[] {
@@ -194,14 +217,17 @@ export class SettingsPanel {
         }
         ensurePanelCss();
         const features = this.visibleFeaturesAll();
+        const mobile = isMobileFrontend();
         this.drafts = new Map(features.map((feature) => [feature.id, {...this.options.store.get(feature.id)}]));
 
         this.dialog = new Dialog({
             title: this.options.plugin.displayName || this.options.plugin.name,
             // 注意：宿主的 Dialog 不会自动生成动作区，取消/保存必须由 content 自带，
             // 否则弹窗里根本没有保存按钮。
+            // 面板根节点在这里就带上布局类：页签的两种外观（桌面端左侧列表 / 移动端顶部页签栏）
+            // 由它决定，render() 只管往里填内容。
             content: `<div class="b3-dialog__content">
-    <div class="config ${PANEL_CLASS}"></div>
+    <div class="config ${PANEL_CLASS} ${PANEL_CLASS}--tabs${mobile ? ` ${PANEL_CLASS}--mobile` : ""}"></div>
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" data-ss-cancel type="button">${
@@ -211,7 +237,7 @@ export class SettingsPanel {
                 escapeHtml(this.t("dialog.save", window.siyuan.languages.save))
             }</button>
 </div>`,
-            width: isMobileFrontend() ? "92vw" : "768px",
+            width: mobile ? "92vw" : "768px",
             height: "80vh",
             destroyCallback: () => {
                 this.dialog = undefined;
@@ -259,8 +285,9 @@ export class SettingsPanel {
         }
         const viewport = viewportWidth();
         const narrow = viewport <= NARROW_WIDTH;
+        const maxWidth = isMobileFrontend() ? MAX_PANEL_WIDTH : MAX_DESKTOP_PANEL_WIDTH;
         const width = Math.max(
-            Math.min(narrow ? viewport - NARROW_GUTTER : viewport - 48, MAX_PANEL_WIDTH),
+            Math.min(narrow ? viewport - NARROW_GUTTER : viewport - 48, maxWidth),
             MIN_PANEL_WIDTH,
         );
         container.style.width = `${width}px`;
@@ -270,13 +297,16 @@ export class SettingsPanel {
         // 内边距同样不能交给媒体查询：它挂在 .some-settings-dialog 作用下，
         // 类一旦没挂上就整段落空（实测真机就是这样，padding 一直是内核的 16px 24px）。
         // 这两处都由 JS 直接写行内样式，和宽度走同一条已被证实生效的路径。
-        // 窄屏取 8px：内核的 16px 24px 在手机上会吃掉近一半屏宽。
+        //
+        // 内容区取 0 内边距、不滚动：页签结构自己撑满这块地方，
+        // 滚动交给每一页（`.some-settings-panel__view`），页签栏才不会被一起滚走。
         const content = container.querySelector<HTMLElement>(".b3-dialog__content");
         const action = container.querySelector<HTMLElement>(".b3-dialog__action");
         if (content) {
-            content.style.padding = narrow ? "8px 8px 0" : "16px 24px";
-            content.style.overflow = "auto";
+            content.style.padding = "0";
+            content.style.overflow = "hidden";
         }
+        // 动作区窄屏取 8px：内核的 16px 24px 在手机上会吃掉近一半屏宽。
         if (action) {
             action.style.padding = narrow ? "7px 8px" : "7px 24px";
         }
@@ -333,13 +363,15 @@ export class SettingsPanel {
             return;
         }
         const readonly = isReadonly();
-        const sections: string[] = [];
+        const mobile = isMobileFrontend();
+        const tabs: PanelTab[] = [];
+        const panes: string[] = [];
         CATEGORY_ORDER.forEach((category) => {
             const features = this.visibleFeatures(category);
             if (features.length === 0) {
                 return;
             }
-            // 一个分类是一张连续的行列表：功能名与它下面的设置行全部平铺在一起，
+            // 一页是一张连续的行列表：功能名与它下面的设置行全部平铺在一起，
             // 因此「哪一行是最后一行」要跨功能判定，不能交给 :last-child。
             const rows: string[] = [];
             features.forEach((feature) => {
@@ -388,17 +420,64 @@ export class SettingsPanel {
                     .filter((field) => field !== toggle && field !== inlineSelect)
                     .forEach((field) => rows.push(this.fieldHtml(feature, field, draft, readonly)));
             });
-            sections.push(
-                categoryHtml(
-                    this.t(CATEGORY_LABELS[category], category),
-                    markLastRow(rows.join("")),
-                ),
-            );
+            // 页签只在这里出现一次：顺序、文案与图标都由这一处决定，默认打开第一个有内容的页签
+            tabs.push({
+                id: category,
+                label: this.t(CATEGORY_LABELS[category], category),
+                icon: CATEGORY_ICONS[category],
+            });
+            panes.push(tabPaneHtml(category, markLastRow(rows.join("")), tabs.length === 1));
         });
-        panel.innerHTML = sections.length > 0 ?
-            sections.join("") :
-            `<div class="ss-panel__empty">${escapeHtml(this.t("panel.none"))}</div>`;
+        if (tabs.length === 0) {
+            panel.innerHTML = `<div class="${PANEL_CLASS}__empty">${escapeHtml(this.t("panel.none"))}</div>`;
+            this.bindControls(panel);
+            return;
+        }
+        const items = tabs.map((tab, index) => tabItemHtml(tab, index === 0, mobile)).join("");
+        panel.innerHTML = (mobile ? tabBarHtml(items) : tabSideHtml(items)) + tabViewsHtml(panes.join(""));
         this.bindControls(panel);
+        this.bindTabs(panel);
+    }
+
+    /**
+     * 页签的交互：点条目切换，键盘上与内核设置页一致 —— 回车与空格都算。
+     * 条目自带 `tabindex="0"`，所以 Tab 键能在页签之间移动。
+     */
+    private bindTabs(scope: HTMLElement): void {
+        scope.querySelectorAll<HTMLElement>("[data-ss-tab]").forEach((item) => {
+            const id = item.dataset.ssTab as string;
+            item.addEventListener("click", () => this.activateTab(id));
+            item.addEventListener("keydown", (event) => {
+                if (event.isComposing || (event.key !== "Enter" && event.key !== " ")) {
+                    return;
+                }
+                event.preventDefault();
+                event.stopPropagation();
+                this.activateTab(id);
+            });
+        });
+    }
+
+    /**
+     * 切到某个页签。
+     *
+     * 桌面端与移动端用的是两套标记，选中类也各有一个（`b3-list-item--focus` /
+     * `item--focus`），这里同时切换两者：另一套类名在当前结构里没有任何样式，无害，
+     * 换来的是这一段不必知道面板此刻是哪种布局。
+     */
+    private activateTab(id: string): void {
+        const root = this.dialog?.element;
+        if (!root) {
+            return;
+        }
+        root.querySelectorAll<HTMLElement>("[data-ss-tab]").forEach((item) => {
+            const active = item.dataset.ssTab === id;
+            TAB_FOCUS_CLASSES.forEach((name) => item.classList.toggle(name, active));
+            item.setAttribute("aria-selected", String(active));
+        });
+        root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
+            pane.classList.toggle("fn__none", pane.dataset.ssTabPanel !== id);
+        });
     }
 
     /**

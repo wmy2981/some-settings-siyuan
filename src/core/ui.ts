@@ -6,19 +6,26 @@
  * 目标是让插件设置面板与「设置」里的原生面板逐像素一致：
  * 左侧文案（标题 + 灰色小字说明）在左，控件靠右固定宽度。
  *
- * 结构是扁平的两层，与内核设置页同构：
+ * 面板按页签组织，三种分类各占一个页签，页签本身两套外观：
  *
- *   .config
- *     .config-group                    一个分类
- *       .config-title                  「功能 / 界面 / 开发」
- *       .config-items
- *         .b3-label.config-item        功能名小节标题
- *         .b3-label.config-item        设置行
- *         ...                          行与行之间保留内核自带的分割线
+ *   .some-settings-panel--tabs                    桌面端：左右分栏
+ *     .some-settings-panel__side       页签列表（.b3-list-item，照抄内核设置左侧）
+ *     .some-settings-panel__views      页签内容
+ *       .some-settings-panel__view    一个分类
+ *         .config-items
+ *           .b3-label.config-item     功能名小节标题
+ *           .b3-label.config-item     设置行
+ *           ...                       行与行之间保留内核自带的分割线
  *
- * 没有嵌套分组：任何一层多余的分组容器都会让面板重新长出层级。
+ *   .some-settings-panel--tabs.some-settings-panel--mobile   移动端：上下分栏
+ *     .layout-tab-bar                 顶部页签（照抄内核代码片段弹窗）
+ *     .some-settings-panel__views     同上
+ *
+ * 页签内部仍然是扁平的一层：行直接排在 `.config-items` 里，
+ * 任何一层多余的分组容器都会让面板重新长出层级。
  */
 import {getFrontend} from "siyuan";
+import type {FeatureCategory} from "./types";
 
 /** 面板内的作用域类名，用于在插件自己的 CSS 里限定样式，不污染全局。 */
 export const PANEL_CLASS = "some-settings-panel";
@@ -42,15 +49,55 @@ export const mainHtml = (title: string, description?: string): string =>
     }</div>`;
 
 /**
- * 一个分类：小节标题 + 该分类的设置行。
+ * 一个页签。
  *
- * 标题与 `.config-items` 是**平级**的兄弟节点，都直接挂在 `.config` 之下——
- * 不再像内核设置页那样包一层 `.config-group`：那层在弹窗里会额外贡献
- * `margin: 24px 16px 16px`，是窄屏上「分类标题到第一行」空隙过大的来源。
+ * 页签的内容就是功能分类，所以 id 直接用 `FeatureCategory`，一个分类只会有一个页签。
+ * 图标用思源内置 symbol 的名字（如 `iconBug`），内核会把当前图标主题的 symbol 内联进页面。
  */
-export const categoryHtml = (title: string, bodyHtml: string): string =>
-    `<div class="config-title">${escapeHtml(title)}</div>
-<div class="config-items">${bodyHtml}</div>`;
+export interface PanelTab {
+    id: FeatureCategory;
+    label: string;
+    icon: string;
+}
+
+/** 页签列表（桌面端：弹窗左侧的一列，照抄内核设置的 `.config__side`）。 */
+export const tabSideHtml = (itemsHtml: string): string =>
+    `<div class="${PANEL_CLASS}__side b3-list b3-list--background">
+    <ul class="${PANEL_CLASS}__tabs" role="tablist" tabindex="-1">${itemsHtml}</ul>
+</div>`;
+
+/**
+ * 页签栏（移动端：弹窗顶部一条，照抄内核代码片段弹窗的 `.layout-tab-bar`）。
+ *
+ * 左右两侧各一个 `fn__flex-1` 把文字夹在中间，这是内核那份标记的写法，
+ * 少一个就会让文字贴边。
+ */
+export const tabBarHtml = (itemsHtml: string): string =>
+    `<div class="layout-tab-bar fn__flex fn__flex-shrink">${itemsHtml}</div>`;
+
+export const tabItemHtml = (tab: PanelTab, active: boolean, mobile: boolean): string => {
+    if (mobile) {
+        return `<div class="${PANEL_CLASS}__tab item item--full${active ? " item--focus" : ""}"
+    data-ss-tab="${tab.id}" role="tab" tabindex="0"${active ? ' aria-selected="true"' : ""}>
+    <span class="fn__flex-1"></span><span class="item__text">${
+            escapeHtml(tab.label)
+        }</span><span class="fn__flex-1"></span>
+</div>`;
+    }
+    return `<li class="b3-list-item ${PANEL_CLASS}__tab${active ? " b3-list-item--focus" : ""}"
+    data-ss-tab="${tab.id}" role="tab" tabindex="0"${active ? ' aria-selected="true"' : ""}>
+    <svg class="b3-list-item__graphic"><use xlink:href="#${tab.icon}"></use></svg>
+    <span class="b3-list-item__text">${escapeHtml(tab.label)}</span>
+</li>`;
+};
+
+/** 页签内容区：每一页都铺满它，只有当前页可见（其余带 `fn__none`）。 */
+export const tabPaneHtml = (id: string, bodyHtml: string, active: boolean): string =>
+    `<div class="${PANEL_CLASS}__view${active ? "" : " fn__none"}" data-ss-tab-panel="${id}" role="tabpanel">
+    <div class="config-items">${bodyHtml}</div>
+</div>`;
+
+export const tabViewsHtml = (panesHtml: string): string => `<div class="${PANEL_CLASS}__views">${panesHtml}</div>`;
 
 /** 开关控件本体（不含行容器）：功能自己那一行与参数行共用同一份标记。 */
 export const switchControlHtml = (
@@ -240,26 +287,75 @@ export const noteRowHtml = (key: string, bodyHtml: string): string =>
  * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
  *
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
- * - 分类标题与 .config-items 平级（同参考插件），不再多包一层 .config-group
  * - 去掉 .config-items 的灰底大圆角，面板不再有"卡片"这件多余的东西
  * - 文案只有两种角色：设置项名（标题，统一加粗）与说明（统一不加粗、更淡）
- * - 窄屏（≤750px，与内核同一断点）把行内边距压到 8px 10px、内容区压到 8px：
+ * - 页签只有两套外观：桌面端照抄内核设置的左侧页签列表，
+ *   移动端照抄内核代码片段弹窗的顶部页签栏（`.layout-tab-bar` 的样式由内核提供，
+ *   这里只补圆角等弹窗内的差异）
+ * - 窄屏（≤750px，与内核同一断点）把行内边距压到 8px 10px、页签内容压到 8px：
  *   内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，这是"边距特别大"的主因
  * 桌面端的行内边距与行间分割线完全交给内核 .b3-label，不做任何覆盖。
  */
 export const PANEL_CSS = `
 .${PANEL_CLASS} {
-    display: block;
+    display: flex;
+    height: 100%;
 }
-/* 分类标题：与 .config-items 平级，和设置行共用同一条左对齐线 */
-.${PANEL_CLASS} > .config-title {
-    margin: 0 0 8px;
-    padding: 0 12px;
+/* 移动端：顶部页签栏 + 内容，上下分栏 */
+.${PANEL_CLASS}--mobile {
+    flex-direction: column;
 }
-.${PANEL_CLASS} > .config-title ~ .config-title {
-    margin-top: 14px;
+.${PANEL_CLASS}--mobile > .layout-tab-bar {
+    flex-shrink: 0;
+    border-radius: var(--b3-border-radius-b) var(--b3-border-radius-b) 0 0;
 }
-/* 设置行直接排在弹窗内容区里，不要卡片底色与大圆角 */
+/* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
+   .config__panel > .config__side（这里按「功能 / 界面 / 开发」三个短标签收窄到 220px）。 */
+.${PANEL_CLASS}__side {
+    flex: 0 0 auto;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: 12px;
+    box-sizing: border-box;
+    border-right: 1px solid var(--b3-border-color);
+    user-select: none;
+}
+.${PANEL_CLASS}__tabs {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.${PANEL_CLASS}__side .b3-list-item {
+    line-height: 32px;
+    margin: 8px;
+}
+.${PANEL_CLASS}__side .b3-list-item__graphic {
+    padding: 0 6px 0 4px;
+}
+/* 页签内容：每一页都铺满内容区，只有当前页留在文档流里（其余是 fn__none），
+   滚动各自独立 —— 弹窗自己的 .b3-dialog__content 不再滚动。 */
+.${PANEL_CLASS}__views {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.${PANEL_CLASS}__view {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 24px;
+}
+/* 设置行不要卡片底色与大圆角 */
 .${PANEL_CLASS} .config-items {
     background-color: transparent;
     border-radius: 0;
@@ -279,8 +375,14 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .config-item--last-visible {
     border-bottom: 0;
 }
-/* 只读说明块：段落沿用内核「说明」那一档（.b3-label__text 的字号与颜色），
-   这里只调段落间距、补窄屏下长链接的换行与链接色。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__empty {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 18px 12px;
+    text-align: center;
+    color: var(--b3-theme-on-surface);
+    opacity: .7;
+}
 .${PANEL_CLASS} .${PANEL_CLASS}__note .b3-label__text {
     margin-top: 0;
 }
@@ -290,12 +392,6 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .${PANEL_CLASS}__note a {
     color: var(--b3-theme-primary);
     word-break: break-all;
-}
-.${PANEL_CLASS} .ss-panel__empty {
-    padding: 18px 12px;
-    text-align: center;
-    color: var(--b3-theme-on-surface);
-    opacity: .7;
 }
 
 /* 弹窗容器宽度 -----------------------------------------------------------
@@ -349,11 +445,25 @@ export const PANEL_CSS = `
    选择器比内核的 .config__tab-container .b3-label 多一级，
    不论样式表加载顺序如何都稳定生效。作用域用容器上的 some-settings-dialog 类限定。 */
 @media (max-width: 750px) {
-    .some-settings-dialog .b3-dialog__content {
-        padding: 8px 8px 0;
-    }
     .some-settings-dialog .b3-dialog__action {
         padding: 7px 8px;
+    }
+    /* 页签内容自己也收到 8px：弹窗内容区已经不再留内边距（见 applyPanelWidth） */
+    .b3-dialog__body .${PANEL_CLASS}__view {
+        padding: 8px;
+    }
+    /* 桌面端把窗口缩到 750px 以下时，侧栏收成一列只有图标的页签（内核设置页同款做法），
+       否则 220px 的侧栏会把内容区挤没。 */
+    .b3-dialog__body .${PANEL_CLASS}__side {
+        width: auto;
+        padding: 12px 4px;
+    }
+    .b3-dialog__body .${PANEL_CLASS}__side .b3-list-item {
+        width: 24px;
+        margin: 8px auto;
+    }
+    .b3-dialog__body .${PANEL_CLASS}__side .b3-list-item__text {
+        display: none;
     }
     .b3-dialog__body .${PANEL_CLASS} .b3-label.config-item,
     .b3-dialog__body .${PANEL_CLASS} .config-item {
@@ -403,12 +513,6 @@ export const PANEL_CSS = `
     .b3-dialog__body .${PANEL_CLASS} .config-item__number > .b3-text-field {
         width: auto;
         margin-top: 0;
-    }
-    .${PANEL_CLASS} > .config-title {
-        padding: 0 10px;
-    }
-    .${PANEL_CLASS} > .config-title ~ .config-title {
-        margin-top: 12px;
     }
 }
 `;

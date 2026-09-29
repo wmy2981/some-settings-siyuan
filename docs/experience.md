@@ -95,6 +95,19 @@
     原生弹层属于「点击」的默认行为 —— 在 `touchend` 里取消一次就够（`pointerdown` /
     `mousedown` 上取消不影响触摸滚动，可以留着挡鼠标那条路径）。
 
+14. **内核会用 `.config__tab-container` 认「哪个弹窗是设置弹窗」，这个类名借不得。**
+    打开思源自己的设置时，内核先做一件事（`app/src/config/index.ts` 的 `openSettingDialog`）：
+
+    ```js
+    window.siyuan.dialogs.find((item) => item.element.querySelector(".config__tab-container"))?.destroy();
+    ```
+
+    只要插件面板里出现了这个类，它就会被 `find` 命中，于是用户**再打开一次思源设置**就可能
+    连带把插件面板关掉 —— 面板里的草稿一起消失，而用户什么都没做错。
+    仿原生外观时只借**纯样式类**（`b3-list-item`、`layout-tab-bar`、`item`、
+    `.config-items`、`.b3-label`），结构类（`.config__panel` / `.config__side` /
+    `.config__tab-wrap` / `.config__tab-container`）一律用自己的类名复刻形制。
+
 ---
 
 ## 各功能的实现取舍
