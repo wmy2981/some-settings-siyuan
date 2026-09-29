@@ -80,11 +80,11 @@ plugin reload, and a feature that only works on one frontend never appears in th
   is written as you go, so a reload never loses a document.
 * The console log viewer only starts collecting once its switch is on, so the logs from plugin startup and from before
   you flipped the switch are not recorded. Turn it on and reproduce the problem.
-* The Aliyun OSS bucket usage query is sent straight from the frontend: the desktop app is not subject to the
-  same-origin policy, while mobile and browsers need a **CORS rule** on the bucket (allowing SiYuan's origin plus the
-  `x-oss-date` and `Authorization` headers) or the query simply fails. Aliyun updates these statistics with a delay of
-  an hour or more, and only the bucket owner can read them. The button follows the **saved** S3 settings, so a new
-  endpoint shows up after that field is saved (when it loses focus).
+* The Aliyun OSS bucket usage query is sent by the **kernel** on the plugin's behalf (the frontend never talks to
+  OSS directly), so the desktop and mobile behave alike and the bucket needs no **CORS rule**; with a remote kernel
+  the request leaves that machine. Aliyun updates these statistics with a delay of an hour or more, and only the
+  bucket owner can read them. The button follows the **saved** S3 settings, so a new endpoint shows up after that
+  field is saved (when it loses focus).
 * The inline-code copy button's "on hover" mode follows the **caret** on mobile (there is no hover with a finger): the
   button appears as soon as the caret or a selection lands inside an inline code span. Clicking it does not steal
   focus from the editor — the keyboard and the caret stay where they were.
