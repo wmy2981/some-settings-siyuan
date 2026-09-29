@@ -4,7 +4,10 @@
 * 页签的两套外观都照抄内核，且只借**样式类**，不借内核会认的结构类：
   * 桌面端：弹窗左侧一列（`.some-settings-panel__side` + `b3-list-item`），形制照抄内核设置的
     `.config__panel > .config__side`；窗口窄到 750px 以下时侧栏收成一列图标（内核同款做法）
-  * 移动端：弹窗顶部一条（`.layout-tab-bar` + `item item--full`），照抄内核代码片段弹窗
+  * 移动端：弹窗顶部一条（`.layout-tab-bar` + `item item--full`），照抄内核代码片段弹窗；
+    底色取 `transparent`、**不加圆角**：内核给页签栏的底色是 `--b3-theme-background`，
+    而弹窗容器是 `--b3-theme-surface`，深浅主题下都不一样，页签栏会变成标题下面一条色带；
+    面板的页签栏上面还有标题栏，不在容器圆角上，那圈圆角只会把容器底色从两个角露出来
   * ⚠️ **不要用 `.config__tab-container`**：内核打开自己的设置弹窗时会
     `dialogs.find(item => item.element.querySelector(".config__tab-container"))?.destroy()`，
     借了这个类，用户再开一次思源设置就可能连带把本插件的面板（连未保存的草稿）销毁掉。

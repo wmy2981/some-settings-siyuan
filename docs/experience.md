@@ -108,6 +108,16 @@
     `.config-items`、`.b3-label`），结构类（`.config__panel` / `.config__side` /
     `.config__tab-wrap` / `.config__tab-container`）一律用自己的类名复刻形制。
 
+15. **页签栏的底色要跟着弹窗容器走，不能留着内核给 `.layout-tab-bar` 的那一份。**
+    内核的 `.layout-tab-bar` 自带 `background-color: var(--b3-theme-background)`，
+    而弹窗容器 `.b3-dialog__container` 的底色是 `--b3-theme-surface` —— 深色主题下是
+    `#1e1e1e` 与 `#2c2c2c`、浅色主题下是 `#fff` 与 `#f6f6f6`，两两都不同。
+    于是页签栏在标题下面变成一条明显的色带；如果还自己给它加一圈上圆角，容器的底色就会从
+    两个角上露出来，看起来就是「圆角没贴合」。
+    内核代码片段弹窗没有这个问题，只是因为它的页签栏正好在弹窗最顶端、圆角与容器重合。
+    本面板的页签栏上面还有标题栏，所以**底色取 `transparent`**（露出来的就是容器自己的底色，
+    深浅主题都一致），**圆角一律不要**。
+
 ---
 
 ## 各功能的实现取舍

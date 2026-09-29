@@ -291,7 +291,7 @@ export const noteRowHtml = (key: string, bodyHtml: string): string =>
  * - 文案只有两种角色：设置项名（标题，统一加粗）与说明（统一不加粗、更淡）
  * - 页签只有两套外观：桌面端照抄内核设置的左侧页签列表，
  *   移动端照抄内核代码片段弹窗的顶部页签栏（`.layout-tab-bar` 的样式由内核提供，
- *   这里只补圆角等弹窗内的差异）
+ *   这里只把它的底色让给弹窗容器，并去掉自己那圈圆角）
  * - 窄屏（≤750px，与内核同一断点）把行内边距压到 8px 10px、页签内容压到 8px：
  *   内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，这是"边距特别大"的主因
  * 桌面端的行内边距与行间分割线完全交给内核 .b3-label，不做任何覆盖。
@@ -305,9 +305,15 @@ export const PANEL_CSS = `
 .${PANEL_CLASS}--mobile {
     flex-direction: column;
 }
+/* 页签栏的底色必须是「窗口底色」，不能是内核给 .layout-tab-bar 的 --b3-theme-background：
+   弹窗容器的底色是 --b3-theme-surface，深色主题下 1e1e1e 与 2c2c2c、浅色主题下 fff 与 f6f6f6
+   都不一样，页签栏会变成标题下面一条明显的色带。做成透明，露出来的就是容器自己的底色，
+   深浅两种主题、以及主题改动容器底色时都自动一致。
+   同理不要圆角：内核代码片段弹窗的页签栏在弹窗最顶端，圆角与容器重合才需要它；
+   本面板上面还有标题栏，那圈圆角只会把容器底色从两个角上露出来。 */
 .${PANEL_CLASS}--mobile > .layout-tab-bar {
     flex-shrink: 0;
-    border-radius: var(--b3-border-radius-b) var(--b3-border-radius-b) 0 0;
+    background-color: transparent;
 }
 /* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
    .config__panel > .config__side（这里按「功能 / 界面 / 开发」三个短标签收窄到 220px）。 */
