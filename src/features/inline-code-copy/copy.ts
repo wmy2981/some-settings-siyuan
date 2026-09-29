@@ -92,8 +92,17 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     host.addStyle(COPY_CSS);
 
     const buttons = new Map<HTMLElement, HTMLButtonElement>();
+    const mobile = isMobile();
     let hovered: HTMLElement | undefined;
     let frame = 0;
+
+    /** 复制某段行内代码的文本。 */
+    const run = (span: HTMLElement) => {
+        const text = (span.textContent ?? "").replace(/\n$/, "");
+        void copyText(text).then((ok) => {
+            host.showMessage(ok ? host.i18n("inlineCodeCopy.copied") : host.i18n("inlineCodeCopy.failed"));
+        });
+    };
 
     const createButton = (span: HTMLElement): HTMLButtonElement => {
         const button = document.createElement("button");
@@ -102,13 +111,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         button.title = host.i18n("inlineCodeCopy.label");
         button.setAttribute("aria-label", host.i18n("inlineCodeCopy.label"));
         button.innerHTML = '<svg><use xlink:href="#iconCopy"></use></svg>';
-        const run = () => {
-            const text = (span.textContent ?? "").replace(/\n$/, "");
-            void copyText(text).then((ok) => {
-                host.showMessage(ok ? host.i18n("inlineCodeCopy.copied") : host.i18n("inlineCodeCopy.failed"));
-            });
-        };
-        // 点按钮不能让编辑区失去焦点：移动端那样会收起键盘、丢掉光标，
+        // 点按钮不能让编辑区失去焦点：那样会收起键盘、丢掉光标，
         // 「悬浮显示」依赖的那个光标一丢，按钮自己就跟着消失了。
         button.addEventListener("mousedown", (event) => event.preventDefault());
         // 复制挂在按下而不是 click 上：表格单元格的富编辑器把「单元格之外的 pointerdown」
@@ -116,19 +119,20 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         // 连同它的布局盒一起消失，按钮随即被 update() 按"宿主已断开"收掉，而这一切都发生在
         // mouseup 之前，于是 click 永远不会派发到按钮上，表现成「表格里的按钮点不动」。
         // 按下即复制就不受宿主后面怎么重排影响。
+        // 移动端这一下在更外层就被拦走了（见 `onButtonPointerDown`），到不了这里。
         button.addEventListener("pointerdown", (event) => {
             if (event.button !== 0) {
                 return;
             }
             event.preventDefault();
             event.stopPropagation();
-            run();
+            run(span);
         });
         // 键盘（Enter / 空格）与无障碍工具派发的是 `detail` 为 0 的 click，没有对应的
         // pointerdown，鼠标那一次则已经在 pointerdown 里做过了，不能重复。
         button.addEventListener("click", (event) => {
             if (event.detail === 0) {
-                run();
+                run(span);
             }
         });
         document.body.append(button);
@@ -254,6 +258,42 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         code.contains(node) || Boolean(buttons.get(code)?.contains(node));
 
     /**
+     * 移动端：按钮上这一下按下，不能让宿主看见。
+     *
+     * 按钮挂在 `document.body` 上，单元格富编辑器把「编辑器之外的 pointerdown」当成收尾信号
+     * （`finish()`，document 捕获阶段），收到就 `cell.innerHTML = ...` 重建整个单元格：
+     * 承载光标的那个 lite 编辑器子树连同浏览器的选区一起消失，而按钮的 `preventDefault()`
+     * 又不让焦点落到别处 —— 这份"选区 + 焦点"一没就回不来了。之后手指落在**空单元格**上时，
+     * 浏览器自己的落点已被内核取消（`td:empty` 那条 `preventDefault()`），移动端那条
+     * 「先恢复选区、再 focus 顶起键盘」的路又需要一份非空选区，于是空单元格再也点不进去。
+     *
+     * 在 **window 捕获阶段** `stopPropagation()`：它比宿主的 document 捕获更外层，
+     * 宿主那条收尾监听器根本收不到这次事件，编辑器不收尾、单元格不重建、光标与键盘都还在。
+     * 之后用户去点别的单元格，走的就是思源原生的「编辑 A 单元格时点 B 单元格」流程。
+     *
+     * 用 window 而不是 document：同一节点同一阶段按注册顺序执行，而本功能可能是用户在
+     * 设置面板里现场打开的，注册顺位不保证在宿主之前。
+     */
+    const onButtonPointerDown = (event: Event) => {
+        if ((event as PointerEvent).button !== 0) {
+            return;
+        }
+        const target = event.target;
+        if (!(target instanceof Element) || !target.closest(`.${BUTTON_CLASS}`)) {
+            return;
+        }
+        const code = codeOfTarget(target);
+        if (!code) {
+            return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        run(code);
+        // 这一次不会再到 document 上，顺手把「按下后重排」这件事自己做了
+        schedule();
+    };
+
+    /**
      * 按钮浮在行内代码的右上角，指针从代码滑过去时会先擦过两者之间那一小段空隙，
      * 那一瞬间它在页面上是"什么都不属于"的，不能算离开。
      */
@@ -318,8 +358,11 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
-    if (isMobile()) {
+    if (mobile) {
+        // 移动端没有 hover，「悬浮显示」看的是光标落在哪一段行内代码上
         document.addEventListener("selectionchange", onSelectionChange);
+        // 按下复制按钮那一下必须拦在宿主之前，见 onButtonPointerDown
+        window.addEventListener("pointerdown", onButtonPointerDown, true);
     }
     window.addEventListener("scroll", schedule, {capture: true, passive: true});
     window.addEventListener("resize", schedule);
@@ -348,6 +391,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
             document.removeEventListener("pointerover", onPointerOver, true);
             document.removeEventListener("pointerout", onPointerOut, true);
             document.removeEventListener("selectionchange", onSelectionChange);
+            window.removeEventListener("pointerdown", onButtonPointerDown, true);
             document.removeEventListener("pointerdown", schedule, true);
             window.removeEventListener("scroll", schedule, {capture: true});
             window.removeEventListener("resize", schedule);
