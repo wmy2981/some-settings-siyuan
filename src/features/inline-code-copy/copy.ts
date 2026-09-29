@@ -102,16 +102,34 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         button.title = host.i18n("inlineCodeCopy.label");
         button.setAttribute("aria-label", host.i18n("inlineCodeCopy.label"));
         button.innerHTML = '<svg><use xlink:href="#iconCopy"></use></svg>';
-        // 点按钮不能让编辑区失去焦点：移动端那样会收起键盘、丢掉光标，
-        // 「悬浮显示」依赖的那个光标一丢，按钮自己就跟着消失了。
-        button.addEventListener("mousedown", (event) => event.preventDefault());
-        button.addEventListener("click", (event) => {
-            event.preventDefault();
-            event.stopPropagation();
+        const run = () => {
             const text = (span.textContent ?? "").replace(/\n$/, "");
             void copyText(text).then((ok) => {
                 host.showMessage(ok ? host.i18n("inlineCodeCopy.copied") : host.i18n("inlineCodeCopy.failed"));
             });
+        };
+        // 点按钮不能让编辑区失去焦点：移动端那样会收起键盘、丢掉光标，
+        // 「悬浮显示」依赖的那个光标一丢，按钮自己就跟着消失了。
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+        // 复制挂在按下而不是 click 上：表格单元格的富编辑器把「单元格之外的 pointerdown」
+        // 当成收尾信号（`finish()`，在 document 捕获阶段），收到就重建整个单元格 —— 行内代码
+        // 连同它的布局盒一起消失，按钮随即被 update() 按"宿主已断开"收掉，而这一切都发生在
+        // mouseup 之前，于是 click 永远不会派发到按钮上，表现成「表格里的按钮点不动」。
+        // 按下即复制就不受宿主后面怎么重排影响。
+        button.addEventListener("pointerdown", (event) => {
+            if (event.button !== 0) {
+                return;
+            }
+            event.preventDefault();
+            event.stopPropagation();
+            run();
+        });
+        // 键盘（Enter / 空格）与无障碍工具派发的是 `detail` 为 0 的 click，没有对应的
+        // pointerdown，鼠标那一次则已经在 pointerdown 里做过了，不能重复。
+        button.addEventListener("click", (event) => {
+            if (event.detail === 0) {
+                run();
+            }
         });
         document.body.append(button);
         buttons.set(span, button);
