@@ -99,14 +99,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 .editor__title { font-size: 22px; font-weight: 600; line-height: 32px; }
 .editor__meta { margin-top: 6px; color: var(--b3-theme-on-surface); font-size: 13px; }
 .editor__p { margin-top: 16px; }
-.editor__code {
-    padding: 1px 4px;
-    border-radius: var(--b3-border-radius-s, 3px);
-    color: var(--b3-protyle-inline-code-color, #d23f31);
-    background-color: var(--b3-protyle-inline-code-background, rgba(135, 131, 120, .15));
-    font-family: var(--b3-font-family-code);
-    font-size: 13px;
-}
 .status {
     display: flex;
     align-items: center;
@@ -251,7 +243,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 }
 
 /* ------------------------------------------------------------ 说明条
-   浮在遮罩之上，讲清这个插件最核心的那件事：每个功能一个四态开关。 */
+   浮在遮罩之上，用一句话说清这个插件最核心的那件事：所有功能默认关闭，按需逐项启用。 */
 .caption {
     position: absolute;
     right: 24px;
@@ -271,14 +263,6 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 }
 .caption__name { color: var(--b3-theme-on-background); font-size: 13px; font-weight: 600; }
 .caption__spacer { flex: 1; }
-.caption__state { display: flex; align-items: center; gap: 6px; }
-.caption__state b {
-    color: var(--b3-theme-primary);
-    font-family: var(--b3-font-family-code);
-    font-size: 12px;
-    font-weight: 600;
-}
-.caption__file { font-family: var(--b3-font-family-code); font-size: 11px; color: var(--b3-theme-on-surface-light); }
 </style>
 </head>
 <body>
@@ -305,9 +289,8 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
     <div class="editor">
         <div class="editor__title">一些设置</div>
         <div class="editor__meta">一批可独立启停的桌面端与移动端增强功能</div>
-        <div class="editor__p">每个功能都有自己的文件夹、自己的 JSON 配置，可以单独启用、禁用、隐藏、重置，不需要改一行源码。</div>
-        <div class="editor__p">所有功能默认关闭，按需逐项启用；面板里的第一行是功能自己的开关，保存后立刻挂载或完整卸载，不用重载插件。</div>
-        <div class="editor__p">配置入口只有 <span class="editor__code">feature-control.json</span> 一处。</div>
+        <div class="editor__p">每个功能都有自己的开关，可以单独启用、单独关闭，互不影响。</div>
+        <div class="editor__p">所有功能默认关闭，按需逐项启用；保存后立刻生效，不用重载插件。</div>
     </div>
 </div>
 <div class="status">
@@ -393,11 +376,7 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
 <div class="caption">
     <span class="caption__name">Some Settings · 一些设置</span>
     <span class="caption__spacer"></span>
-    <span class="caption__state"><b>0</b> 不加载不显示</span>
-    <span class="caption__state"><b>1</b> 加载并显示</span>
-    <span class="caption__state"><b>2</b> 加载但不显示</span>
-    <span class="caption__state"><b>3</b> 不加载但显示</span>
-    <span class="caption__file">feature-control.json</span>
+    <span>每个功能一个开关，所有功能默认关闭</span>
 </div>
 </body>
 </html>
