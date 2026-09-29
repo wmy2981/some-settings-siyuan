@@ -132,7 +132,7 @@
   "ossUsage.deepColdArchive": "Deep cold archive",
   "ossUsage.statTime": "Statistics time",
   "ossUsage.failed": "Query failed",
-  "ossUsage.corsHint": "The request never got out: the network, the address, or a cross-origin block. Mobile and browsers need a CORS rule on the bucket; the desktop app does not.",
+  "ossUsage.networkHint": "The kernel sends this request for the plugin, but it never got out: check the network connection and the endpoint.",
   "ossUsage.missingConfig": "The S3 settings are incomplete; fill in and save these fields first: {fields}",
   "mobileConsoleLog.capacity": "Retained entries",
   "mobileConsoleLog.capacityTip": "The oldest entries are dropped once this is exceeded",

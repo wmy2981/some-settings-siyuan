@@ -11,18 +11,24 @@
  *
  *   待签字符串 = 方法 \n Content-MD5 \n Content-Type \n Date \n 规范化 x-oss-* 头 \n 规范化资源
  *
- * 两处必须按 SDK 的写法来，不能凭直觉改：
- * 1. **浏览器不允许设置 `Date` 请求头**（fetch 的 forbidden header），所以时间用
- *    `x-oss-date` 传：待签字符串的 Date 那一格填它的值，同时它本身作为一个 x-oss-* 头
- *    再出现一次（官方 SDK 的 buildCanonicalString 就是这个顺序）；
+ * 三处必须按 SDK 的写法来，不能凭直觉改：
+ * 1. **时间用 `x-oss-date` 传**（官方浏览器 SDK 的做法）：待签字符串的 Date 那一格填它的值，
+ *    同时它本身作为一个 x-oss-* 头再出现一次（SDK 的 buildCanonicalString 就是这个顺序）；
  * 2. 规范化资源是 `/<bucket>/?stat`，虚拟主机风格与 path 风格**都是这一个**
- *    （子资源按字典序排列，无值时不带 `=`）。
+ *    （子资源按字典序排列，无值时不带 `=`）；
+ * 3. 待签字符串里的 Content-Type 必须与请求上真正带的那个一模一样：请求经内核转发，而内核
+ *    **一定会**替我们写一个 Content-Type，所以这里把值显式传给它（见 FORWARD_CONTENT_TYPE），
+ *    不能留空。
  *
- * 请求由渲染进程直接发出（与 DeepSeek 余额那条路一样），因此受同源策略约束：
- * 桌面客户端关掉了 web security，直连不会被拦；移动端 / 浏览器 / 连接远程内核时需要在桶上
- * 配 CORS 规则，否则跨域预检就被拒。那一种失败在这里明确提示，不装作"没有数据"。
+ * 请求交给内核的 `/api/network/forwardProxy` 发出，渲染进程不直连 OSS：移动端 WebView 里直连
+ * 是跨域请求，桶上没有 CORS 规则时预检就被拒（用户只看到 `Failed to fetch`）；由内核发出则
+ * 桌面端与移动端走同一条路，也顺带复用内核自己的网络设置。请求没送出去时明确提示，不装作
+ * 「没有数据」。
  */
-import {Dialog} from "siyuan";
+import {
+    Dialog,
+    fetchSyncPost,
+} from "siyuan";
 import {guardSilent} from "../../core/error";
 import {isMobile} from "../../core/frontend";
 import type {
@@ -38,6 +44,13 @@ const BUTTON_ATTR = "data-ss-oss-usage";
 const CLASS = "ss-oss-usage";
 /** 只认阿里云 OSS 的域名后缀。 */
 const ALIYUN_SUFFIX = "aliyuncs.com";
+/** 内核的转发接口：请求由内核发出，绕开浏览器的同源策略。 */
+const FORWARD_PROXY_API = "/api/network/forwardProxy";
+/**
+ * 转发时内核一定会带上 Content-Type（不传就是 `application/json`），它是 V1 待签字符串的一格，
+ * 所以这里显式指定，且必须与签名用的那个值相同。
+ */
+const FORWARD_CONTENT_TYPE = "application/json";
 /** 内核给 S3 配的超时字段范围（秒），这里照着夹一次。 */
 const MIN_TIMEOUT_SECONDS = 7;
 const MAX_TIMEOUT_SECONDS = 300;
@@ -125,7 +138,7 @@ interface StatResult {
     stat?: BucketStat;
     /** 失败原因。 */
     message?: string;
-    /** 请求没能发出去（网络不通或跨域被拦），而不是服务端明确报错。 */
+    /** 请求没能送出去（内核也发不出去，或前端根本没问到内核），而不是服务端明确报错。 */
     network?: boolean;
 }
 
@@ -220,9 +233,9 @@ const statUrlOf = (target: OssTarget): string =>
         `${target.protocol}//${target.host}/${target.bucket}/?stat` :
         `${target.protocol}//${target.bucket}.${target.host}/?stat`;
 
-/** V1 签名的待签字符串；顺序与官方 SDK 一致，见文件头第 1、2 条。 */
+/** V1 签名的待签字符串；顺序与官方 SDK 一致，见文件头第 1、2、3 条。 */
 const stringToSignOf = (date: string, bucket: string): string =>
-    ["GET", "", "", date, `x-oss-date:${date}`, `/${bucket}/?stat`].join("\n");
+    ["GET", "", FORWARD_CONTENT_TYPE, date, `x-oss-date:${date}`, `/${bucket}/?stat`].join("\n");
 
 const base64Of = (buffer: ArrayBuffer): string => {
     let binary = "";
@@ -320,23 +333,40 @@ const fetchStat = async (target: OssTarget, signal: AbortSignal): Promise<StatRe
     if (!signature) {
         return {message: "Web Crypto is unavailable"};
     }
-    let response: Response;
+    let status: number;
+    let body: string;
     try {
-        response = await fetch(statUrlOf(target), {
-            method: "GET",
-            headers: {
-                "x-oss-date": date,
-                Authorization: `OSS ${target.accessKey}:${signature}`,
+        // 交给内核发：渲染进程直连在移动端会被跨域预检拦下
+        const forwarded = await fetchSyncPost(
+            FORWARD_PROXY_API,
+            {
+                url: statUrlOf(target),
+                method: "GET",
+                // 内核的 timeout 是毫秒，而思源的 S3 配置里存的是秒
+                timeout: target.timeoutSeconds * 1000,
+                contentType: FORWARD_CONTENT_TYPE,
+                // 每项一对键值：内核按数组逐对设置请求头
+                headers: [
+                    {"x-oss-date": date},
+                    {Authorization: `OSS ${target.accessKey}:${signature}`},
+                ],
             },
+            undefined,
+            false,
             signal,
-        });
+        );
+        if (forwarded.code !== 0) {
+            // 内核自己报的错：地址非法、内核发不出去、响应体过大…请求都算没送出去
+            return {message: forwarded.msg || `forwardProxy code ${forwarded.code}`, network: true};
+        }
+        status = forwarded.data.status;
+        body = forwarded.data.body;
     } catch (error) {
-        // 请求没能发出去：网络不通、跨域被拦、地址不对都落在这里（fetch 一律抛 TypeError）
+        // 前端根本没问到内核（内核重启、连远程内核时掉线），或者这次请求被取消
         return {message: error instanceof Error ? error.message : String(error), network: true};
     }
-    const body = await response.text();
-    if (!response.ok) {
-        return {message: errorMessageOf(body) || `HTTP ${response.status}`};
+    if (status < 200 || status >= 300) {
+        return {message: errorMessageOf(body) || `HTTP ${status}`};
     }
     try {
         return {stat: parseStat(body)};
@@ -446,9 +476,9 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
     };
 
     const renderFailure = (body: HTMLElement, result: StatResult) => {
-        // 请求没能发出去时多给一句：这种情况多半是跨域被拦，而不是凭据不对
+        // 请求没能送到 OSS 时多给一句：这种情况多半是网络不通或地址不对，而不是凭据不对
         const tip = result.network ?
-            `<div class="${CLASS}__tip">${escapeHtml(t("ossUsage.corsHint"))}</div>` :
+            `<div class="${CLASS}__tip">${escapeHtml(t("ossUsage.networkHint"))}</div>` :
             "";
         body.innerHTML = `<div class="${CLASS}__row">` +
             `<span class="${CLASS}__key">${escapeHtml(t("ossUsage.failed"))}</span>` +
