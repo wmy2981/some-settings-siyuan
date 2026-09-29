@@ -422,10 +422,11 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         });
     };
 
+    /** 桶 · Endpoint 这一行：只在弹窗内容里渲染一次，body 里不要再放（否则会重复一行）。 */
     const headHtml = (target: OssTarget): string =>
         `<div class="${CLASS}__head">${escapeHtml(`${target.bucket} · ${target.host}`)}</div>`;
 
-    const renderStat = (body: HTMLElement, target: OssTarget, stat: BucketStat) => {
+    const renderStat = (body: HTMLElement, stat: BucketStat) => {
         const rows: string[] = [];
         const row = (key: string, value: string) =>
             rows.push(
@@ -441,15 +442,15 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         if (stat.lastModifiedTime > 0) {
             row(t("ossUsage.statTime"), new Date(stat.lastModifiedTime * 1000).toLocaleString());
         }
-        body.innerHTML = `${headHtml(target)}${rows.join("")}`;
+        body.innerHTML = rows.join("");
     };
 
-    const renderFailure = (body: HTMLElement, target: OssTarget, result: StatResult) => {
+    const renderFailure = (body: HTMLElement, result: StatResult) => {
         // 请求没能发出去时多给一句：这种情况多半是跨域被拦，而不是凭据不对
         const tip = result.network ?
             `<div class="${CLASS}__tip">${escapeHtml(t("ossUsage.corsHint"))}</div>` :
             "";
-        body.innerHTML = `${headHtml(target)}<div class="${CLASS}__row">` +
+        body.innerHTML = `<div class="${CLASS}__row">` +
             `<span class="${CLASS}__key">${escapeHtml(t("ossUsage.failed"))}</span>` +
             `<span class="${CLASS}__error">${escapeHtml(result.message ?? "")}</span></div>${tip}`;
         host.log(`GetBucketStat failed: ${result.message ?? "unknown"}`);
@@ -507,9 +508,9 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
                 return;
             }
             if (result.stat) {
-                renderStat(body, target, result.stat);
+                renderStat(body, result.stat);
             } else {
-                renderFailure(body, target, result);
+                renderFailure(body, result);
             }
         });
     };
