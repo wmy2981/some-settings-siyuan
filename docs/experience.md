@@ -111,6 +111,10 @@
   的复制按钮在移动端走 `JSAndroid.writeClipboard` / `webkit.messageHandlers.setClipboard`，
   桌面端与浏览器才用 Clipboard API，最后都留了 `execCommand("copy")` 兜底。
 * **功能被禁用后再启用插件命令需要重载插件**：宿主 API 没有单条命令的移除接口，命令只随插件一起释放。
+* **`inline-code-copy` 的按钮在按下时就复制**，不等 `click`：表格单元格的富编辑器把「单元格之外的
+  `pointerdown`」当成收尾信号，收到就重建整个单元格，行内代码连同它的布局盒一起消失，按钮随即被
+  按「宿主已断开」收掉 —— 这一串都发生在 `mouseup` 之前，`click` 永远不会派发到按钮上。
+  键盘与无障碍工具派发的是 `detail` 为 0 的 `click`，那条路仍旧走 `click`。
 * **`exit-confirm` 守的是渲染进程发出的那一次 `POST /api/system/exit`** —— 菜单退出、托盘退出、
   关窗即退出最后都落到它上面，三者请求体一字不差；渲染进程里唯一还能区分托盘退出的判据是窗口状态，
   所以只在前台窗口发问。两条路仍然拦不住，因为没有任何插件 API 能够到它们：连接**远程内核**时退出不发这个请求；
@@ -122,8 +126,10 @@
 * **`bookmark-last-position` 管不到已打开的那条路**：文档已经在某个页签打开时仍走思源自己的 `switchEditor`，
   那条路对文档树也一样不重新定位。
 * **`tab-title-markdown` 把语法字符留在 DOM 里只是隐藏**，所以 `textContent` 依旧是原标题 ——
-  `document.title`、拖拽载荷、页签下拉列表的文字都从它取。思源每次重命名都会重写页签标题
-  （`Tab.updateTitle` 直接写 `innerHTML`），那只是让插件重新渲染一次。
+  `document.title`、拖拽载荷、页签下拉列表的文字都从它取。思源会在**原文没变**的时候重写页签标题：
+  打开文档时 `Title.render` 拿文档树里那份标题再调一次 `Tab.updateTitle`，而它直接写 `innerHTML`。
+  所以「这份原文已经渲染过」的去重不能只看 `textContent`，还要确认节点里仍带着我们的标记，
+  否则那次重写会被当成「已经渲染过」，页签从此停在纯文本上（只在打开的一瞬间看得到渲染结果）。
 * **`deepseek-balance` 的余额行跟着面板走**：思源的智能体面板是懒创建的，也可能被整体换掉
   （移动停靠位置、切换布局、移动端每次重新打开），所以只要 body 有变化、以及每个轮询周期，都会重新插一次。
   只有当前模型不是「已启用的官网 api.deepseek.com DeepSeek 模型」时整行才收起。
