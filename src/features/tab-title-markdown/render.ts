@@ -67,10 +67,16 @@ export const mountTabTitleMarkdown = (host: FeatureHost): FeatureInstance => {
         renderedSelector = targets.map((target) => `${target} [${MARK_ATTR}]`).join(", ");
     };
 
+    /** 这个文字层里还有没有我们的节点：宿主重写过 innerHTML 之后一个都不剩。 */
+    const hasMarkup = (element: HTMLElement): boolean => element.querySelector(`[${MARK_ATTR}]`) !== null;
+
     const sync = (element: HTMLElement) => {
         // 定界符留在 DOM 里，所以 textContent 始终是原文，不需要另存一份
         const source = element.textContent ?? "";
-        if (!MARKDOWN_CHARS.test(source) || rendered.get(element) === source) {
+        // 原文没变不等于 DOM 没被重写过：打开文档时内核会用**同一份**标题再写一次
+        // `Tab.updateTitle`（见 Title.render），那一次把我们的节点整片冲掉，而 textContent
+        // 依旧是原文。只比原文就会把这次重写当成"已经渲染过"，页签从此停在纯文本上。
+        if (!MARKDOWN_CHARS.test(source) || (rendered.get(element) === source && hasMarkup(element))) {
             return;
         }
         rendered.set(element, source);
