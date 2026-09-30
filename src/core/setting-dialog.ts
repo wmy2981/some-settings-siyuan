@@ -31,7 +31,6 @@ import {
     guardAsync,
     reportError,
 } from "./error";
-import {supportsCurrentFrontend} from "./frontend";
 import type {
     FeatureActionContext,
     FeatureCategory,
@@ -348,11 +347,12 @@ export class SettingsPanel {
 
     // ------------------------------------------------------------ 渲染
 
-    /** 面板里会出现的全部功能：showUi 为真，且适用于当前前端。 */
+    /**
+     * 面板里会出现的全部功能：只看 showUi。
+     * 前端与宿主版本的判定已经由 activeFeatures() 统一做过，这里不重复判定。
+     */
     private visibleFeaturesAll(): FeatureDefinition[] {
-        return this.options.features.filter((feature) =>
-            this.options.controlOf(feature.id).showUi && supportsCurrentFrontend(feature)
-        );
+        return this.options.features.filter((feature) => this.options.controlOf(feature.id).showUi);
     }
 
     private render(): void {

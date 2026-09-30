@@ -25,10 +25,9 @@ import {
     guardSilent,
     reportError,
 } from "./error";
-import {supportsCurrentFrontend} from "./frontend";
 import {
+    activeFeatures,
     ALL_FEATURE_IDS,
-    FEATURES,
 } from "./registry";
 import {SettingsPanel} from "./setting-dialog";
 import {
@@ -72,7 +71,7 @@ export class FeatureManager {
         this.panel = new SettingsPanel({
             plugin,
             store: this.store,
-            features: FEATURES,
+            features: activeFeatures(),
             controlOf: (id) => controlSnapshot(id),
         });
     }
@@ -83,7 +82,7 @@ export class FeatureManager {
      */
     async load(): Promise<void> {
         validateControl(ALL_FEATURE_IDS);
-        for (const definition of FEATURES) {
+        for (const definition of activeFeatures()) {
             const control = controlOf(definition.id);
             // showUi 为真但 mountEnabled 为假（state 3）时也要有配置，才能显示和保存设置
             const loadEnabled = control.loadEnabled;
@@ -93,9 +92,9 @@ export class FeatureManager {
                 reportError(`${definition.id}.config`, error);
                 continue;
             }
-            // 只对一个前端有意义的功能（例如只有移动端存在的入口）在另一端既不挂载、
-            // 也不在面板里出现；判定与设置面板共用 core/frontend.ts，不会出现两边打架。
-            if (!control.mountEnabled || !supportsCurrentFrontend(definition)) {
+            // 本宿主上不生效的功能（前端对不上、或已被思源原生实现取代）根本不在
+            // activeFeatures() 里：既不会读配置、也不会出现在面板里，这里只需再看不看开关。
+            if (!control.mountEnabled) {
                 continue;
             }
             // 面板里能看到开关的功能才受开关约束。state 2 没有开关可点，

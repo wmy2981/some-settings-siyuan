@@ -87,6 +87,10 @@ scripts/                      开发脚本
 那个 selector 的「禁用」选项映射成「不运行」。`state: 2` 的功能面板里没有开关可点，
 按「已允许运行」处理。
 
+* 上游自己实现了某个能力之后，功能必须能自行退场：在 `defineFeature` 里声明
+  `deprecatedSince: "<思源版本>"`，从该版本起（含）插件不再加载它的配置、面板里不显示、也不挂载。
+  判定只此一处：`core/registry.ts` 的 `activeFeatures()`。
+
 **推论（很重要）**：功能关着的时候**根本不会被挂载**，所以实现里不能用
 `addTopBar` / `addDock` / `addTab` / `addCommand` 这类必须在 onload 同步注册的 API。
 真需要的话，把 `mount` 写成无条件执行、内部自己按开关收放。

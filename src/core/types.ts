@@ -216,6 +216,14 @@ export interface FeatureDefinition {
     description?: string;
     /** 不写表示桌面端与移动端都适用。 */
     frontends?: FeatureFrontend[];
+    /**
+     * 从该思源版本起，上游的原生实现已经取代本功能：插件不再加载它的配置、
+     * 不再在设置面板里显示它、也不再挂载。写法与思源版本号一致（如 "3.8.7-alpha.2"），
+     * 按 semver 比较，预发布版本小于同号正式版。
+     *
+     * 只用于「上游自己做了」的功能退役，不要拿它当普通的兼容性开关。
+     */
+    deprecatedSince?: string;
     settings: SettingField[];
     /**
      * 该功能此刻是否应当运行。

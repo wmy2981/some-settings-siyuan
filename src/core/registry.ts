@@ -41,11 +41,13 @@ import pluginReminder from "../features/plugin-reminder";
 import recordingWindow from "../features/recording-window";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
 import tabTitleMarkdown from "../features/tab-title-markdown";
+import {supportsCurrentFrontend} from "./frontend";
 import type {
     FeatureCategory,
     FeatureDefinition,
 } from "./types";
 import {FEATURE_CATEGORIES} from "./types";
+import {supportsCurrentHost} from "./version";
 
 export const FEATURES: FeatureDefinition[] = [
     codeBlockLangEmpty,
@@ -86,6 +88,15 @@ export const FEATURES: FeatureDefinition[] = [
 ];
 
 export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
+
+/**
+ * 本宿主上仍然生效的功能：适用于当前前端，且宿主还没有原生实现它。
+ *
+ * 配置装载与设置面板都只认这份清单 —— 判定必须只有一处，
+ * 否则会出现「面板里显示了、但功能没挂载」这种两边不一致的状态。
+ */
+export const activeFeatures = (): FeatureDefinition[] =>
+    FEATURES.filter((feature) => supportsCurrentFrontend(feature) && supportsCurrentHost(feature));
 
 export const featureById = (id: string): FeatureDefinition | undefined => FEATURES.find((feature) => feature.id === id);
 
