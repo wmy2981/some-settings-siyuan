@@ -18,6 +18,9 @@ export default defineFeature({
     name: "feature.mobileSelectNative.name",
     description: "feature.mobileSelectNative.desc",
     frontends: ["mobile"],
+    // 思源 v3.8.7-alpha.2 起自己统一了移动端下拉选择器，这份补丁就此退役：
+    // 从该版本起插件不再加载它的配置，设置面板里也不再出现这一项。
+    deprecatedSince: "3.8.7-alpha.2",
     settings: [
         {
             kind: "switch",

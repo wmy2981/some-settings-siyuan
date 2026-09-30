@@ -98,8 +98,10 @@ plugin reload, and a feature that only works on one frontend never appears in th
   fails, cannot be reached by any plugin API.
 * The recording window only replaces the UI. Permission handling, MP3 encoding, upload and inserting the audio block
   all stay SiYuan's own code, and SiYuan's recorder has no pause, so the window offers stop only.
-* Native-style mobile dropdowns are best-effort: on some kernel/platform combinations the system picker still opens,
-  in which case the select behaves exactly as it does without the plugin.
+* Native-style mobile dropdowns are built into SiYuan since **v3.8.7-alpha.2**: from that version on the plugin no
+  longer loads this feature's configuration and no longer shows its row in the settings panel. On older versions it is
+  best-effort: on some kernel/platform combinations the system picker still opens, in which case the select behaves
+  exactly as it does without the plugin.
 * Asset rows land directly in the context menu, next to SiYuan's own _Modified_ / _Created_ rows and after a
   separator, rather than inside the **Plugin** submenu. Only workspace assets (`assets/…`) have a file size and a
   modified time — external URLs and `data:` URIs do not.
