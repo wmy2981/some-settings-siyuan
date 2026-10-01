@@ -622,7 +622,6 @@ export class SettingsPanel {
     private actionContext(): FeatureActionContext {
         return {
             i18n: (key: string) => this.t(key),
-            featureIds: this.options.features.map((feature) => feature.id),
             clearAllConfigs: () => this.options.store.clearAll(),
             exportConfigs: () => this.options.store.exportAll(),
             importConfigs: (config: Record<string, unknown>) => this.options.store.importMany(config),

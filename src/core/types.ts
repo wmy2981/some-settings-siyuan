@@ -61,18 +61,17 @@ export interface SettingOption {
 export interface FeatureActionContext {
     /** 解析 i18n key，缺失时回落到 key 本身。 */
     readonly i18n: (key: string) => string;
-    /** 全部已注册功能的 id，顺序与设置面板一致。 */
-    readonly featureIds: readonly string[];
     /**
-     * 清除本插件写入的全部功能配置：逐个删除配置文件并回落默认值，随后通知各功能。
-     * 有任何一个文件删不掉就抛出（附 problems），不允许静默通过。
+     * 清除本插件存储目录（`data/storage/petal/<插件名>/`）下的全部配置文件：
+     * 逐个删除、回落默认值并通知各功能。目标是目录里的文件，与四态、当前前端是否适用、
+     * 功能是否已退役都无关。有任何一个文件删不掉就抛出（附 problems），不允许静默通过。
      */
     clearAllConfigs(): Promise<void>;
-    /** 导出全部功能的当前配置，键是功能 id。 */
-    exportConfigs(): Record<string, FeatureConfig>;
+    /** 导出存储目录下全部配置文件的当前内容，键是功能 id。 */
+    exportConfigs(): Promise<Record<string, FeatureConfig>>;
     /**
-     * 按 id 写入一批配置（导入）。只认已注册的功能 id，未知 id 原样返回给调用方汇报；
-     * 校验与写盘走和面板「保存」同一条路，失败时抛出（附 problems）。
+     * 把一批配置写回各自的配置文件（导入）。认识的 id 按它的 schema 归一化，不认识的 id
+     * 原样写回；值与 id 不合规的条目原样返回给调用方汇报。校验或写盘失败时抛出（附 problems）。
      */
     importConfigs(config: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}>;
 }

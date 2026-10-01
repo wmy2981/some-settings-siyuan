@@ -1,22 +1,50 @@
 /**
  * 每个功能的配置持久化。
  *
- * 存储路径由宿主决定：/data/storage/petal/<插件名>/<storageName>.json。
+ * 存储路径由宿主决定：/data/storage/petal/<插件名>/<storageName>。
  * 一个功能一个文件，这样「重置某个功能」不会影响其他功能，
  * 也符合四态里「是否加载已有配置」的粒度。
  *
  * 所有读写都走 plugin.loadData / saveData / removeData，
  * 绝不直接调用 fs 或 Node API（官方开发规范要求）。
+ *
+ * 导出 / 导入 / 清除这三个动作按**目录里的文件**来，不按代码里注册的功能来：
+ * 四态、前端适配、是否已退役只决定功能加不加载，退役的、甚至已经从插件里删掉的
+ * 功能留下的配置文件同样是本插件的配置（见 core/storage.ts）。
  */
 import type {Plugin} from "siyuan";
+import {featureById} from "./registry";
+import {
+    listStoredFiles,
+    readStoredFile,
+    removeStoredFile,
+    writeStoredFile,
+} from "./storage";
 import type {
     FeatureConfig,
     FeatureDefinition,
     SettingField,
 } from "./types";
 
+/** 配置文件名前缀：一个功能一个文件。 */
+const FILE_PREFIX = "feature-";
+
 /** 一个功能对应一个存储文件名。只用小写字母、数字与连字符，天然安全。 */
-export const storageNameOf = (id: string): string => `feature-${id}`;
+export const storageNameOf = (id: string): string => `${FILE_PREFIX}${id}`;
+
+/** 功能 id 的合法字符集，与功能文件夹名的规则一致。 */
+const ID_PATTERN = /^[a-z0-9-]+$/;
+
+/**
+ * 目录里的文件名 → 功能 id；不是本插件的配置文件时返回 undefined。
+ *
+ * 宿主写盘时不加扩展名，`.json` 只是容忍历史上或别处留下的写法。
+ */
+const idOfStoredFile = (fileName: string): string | undefined => {
+    const base = fileName.endsWith(".json") ? fileName.slice(0, -".json".length) : fileName;
+    const id = base.startsWith(FILE_PREFIX) ? base.slice(FILE_PREFIX.length) : "";
+    return ID_PATTERN.test(id) ? id : undefined;
+};
 
 const PREFIX = "[some-settings-siyuan]";
 
@@ -29,16 +57,16 @@ export const attachProblems = (problems: string[]): Error & {problems: string[];
 
 /**
  * 比较写入值与读回值，返回差异描述；一致时返回空串。
- * 只比较写入时真正用到的键，避免宿主额外字段造成误报。
+ * 只比较写入时真正用到的键，避免宿主额外字段造成误报；
+ * 值按 JSON 比较 —— 导入不认识的配置时值可能带嵌套对象，`!==` 会把它们全判成不一致。
  */
 export const describeMismatch = (written: FeatureConfig, readBack: unknown): string => {
     if (typeof readBack !== "object" || readBack === null || Array.isArray(readBack)) {
         return `read back is not an object (${JSON.stringify(readBack)})`;
     }
     const actual = readBack as Record<string, unknown>;
-    const diffs = Object.keys(written).filter((key) => actual[key] !== written[key]).map((key) =>
-        `${key}: wrote ${JSON.stringify(written[key])} / read back ${JSON.stringify(actual[key])}`
-    );
+    const diffs = Object.keys(written).filter((key) => JSON.stringify(actual[key]) !== JSON.stringify(written[key]))
+        .map((key) => `${key}: wrote ${JSON.stringify(written[key])} / read back ${JSON.stringify(actual[key])}`);
     return diffs.join("; ");
 };
 
@@ -230,14 +258,75 @@ export class ConfigStore {
     }
 
     /**
+     * 目录里此刻有哪些配置文件。
+     *
+     * 这是导出 / 导入 / 清除的共同入口：目标集合由磁盘决定，不受四态、前端适配与
+     * 是否退役影响。名字不合规的文件（不是本插件的配置）只告警，绝不按猜测去动它。
+     * 列不出目录时抛出，绝不退化成「一个配置都没有」。
+     */
+    private async storedFiles(): Promise<{id: string; storageName: string;}[]> {
+        const files: {id: string; storageName: string;}[] = [];
+        for (const storageName of await listStoredFiles(this.plugin)) {
+            const id = idOfStoredFile(storageName);
+            if (typeof id === "undefined") {
+                console.warn(`${PREFIX} ${storageName} is not a feature configuration file, leaving it alone`);
+                continue;
+            }
+            files.push({id, storageName});
+        }
+        return files;
+    }
+
+    /**
+     * 找某个 id 的功能声明：先在已注册的功能里找，再退回整个注册表。
+     *
+     * 注册表里有、本宿主没注册的功能（前端不适用、已被思源原生实现取代）同样有 schema，
+     * 导入时按它归一化，才不至于因为「这台机器不加载这个功能」就绕过校验。
+     */
+    private definitionOfAny(id: string): FeatureDefinition | undefined {
+        return this.entries.get(id)?.definition || featureById(id);
+    }
+
+    /**
+     * 逐个写文件并读回校验。
+     *
+     * 写完立刻读回的理由：宿主 saveData 的 Promise 在文件真的落盘前就可能 resolve，
+     * code 非 0 时也照样兑现（宿主的消息处理只拦负数 code），光看「没报错」不足以说明存住了。
+     * 读回不一致就抛出，让面板保持打开、把真实原因暴露出来，
+     * 而不是等用户下次打开时发现又变回默认值。
+     */
+    private async writeFiles(files: {storageName: string; value: FeatureConfig;}[]): Promise<void> {
+        const failed: string[] = [];
+        for (const {storageName, value} of files) {
+            console.log(`${PREFIX} writing ${storageName}`, value);
+            const status = await writeStoredFile(this.plugin, storageName, value);
+            if (!status.ok) {
+                console.error(`${PREFIX} ${storageName} was rejected by the kernel: ${status.detail}`);
+                failed.push(`${storageName}: ${status.detail}`);
+                continue;
+            }
+            const readBack = await readStoredFile(this.plugin, storageName);
+            const detail = describeMismatch(value, readBack);
+            if (detail) {
+                console.error(`${PREFIX} ${storageName} read back mismatch after write: ${detail}`, {
+                    written: value,
+                    readBack,
+                });
+                failed.push(`${storageName}：${detail}`);
+            } else {
+                console.log(`${PREFIX} ${storageName} written and read back consistently`);
+            }
+        }
+        if (failed.length > 0) {
+            throw attachProblems(failed);
+        }
+    }
+
+    /**
      * 批量保存（设置面板点「保存」时调用）。
      *
      * 先按每个功能的 schema 归一化并把问题收齐，一旦有问题就整体不写，
      * 让用户能一次性看到全部问题；校验通过才逐个落盘，最后统一通知订阅者。
-     *
-     * 每个文件写完后立刻读回校验：宿主 saveData 的 Promise 在文件真的落盘前就可能
-     * resolve，光看「没报错」不足以说明存住了。读回不一致就抛出，让面板保持打开、
-     * 把真实原因暴露出来，而不是等用户下次打开时发现又变回默认值。
      */
     async saveMany(drafts: Record<string, FeatureConfig>): Promise<void> {
         const prepared: {id: string; config: FeatureConfig;}[] = [];
@@ -257,44 +346,14 @@ export class ConfigStore {
             throw attachProblems(problems);
         }
 
-        const mismatched: string[] = [];
-        for (const {id, config} of prepared) {
+        prepared.forEach(({id, config}) => {
             const entry = this.entries.get(id);
-            if (!entry) {
-                continue;
+            if (entry) {
+                entry.config = config;
             }
-            const storageName = storageNameOf(id);
-            console.log(`${PREFIX} writing ${storageName}`, config);
-            await this.plugin.saveData(storageName, config);
-            entry.config = config;
-
-            const readBack = await this.readBack(storageName);
-            const detail = describeMismatch(config, readBack);
-            if (detail) {
-                console.error(`${PREFIX} ${storageName} read back mismatch after write: ${detail}`, {
-                    written: config,
-                    readBack,
-                });
-                mismatched.push(`${storageName}：${detail}`);
-            } else {
-                console.log(`${PREFIX} ${storageName} written and read back consistently`);
-            }
-        }
-        if (mismatched.length > 0) {
-            throw attachProblems(mismatched);
-        }
+        });
+        await this.writeFiles(prepared.map(({id, config}) => ({storageName: storageNameOf(id), value: config})));
         prepared.forEach(({id}) => this.notify(id));
-    }
-
-    /** 读回磁盘上的文件内容；文件不存在时宿主 resolve 空串，这里归一成 null。 */
-    private async readBack(storageName: string): Promise<unknown> {
-        try {
-            const stored = await this.plugin.loadData(storageName);
-            return typeof stored === "string" && stored === "" ? null : stored;
-        } catch (error) {
-            console.warn(`${PREFIX} failed to read back ${storageName}`, error);
-            return null;
-        }
     }
 
     /** 合并 patch 后落盘，并通知订阅者。写失败时抛出，由调用方回滚 UI。 */
@@ -315,74 +374,109 @@ export class ConfigStore {
     }
 
     /**
-     * 删除磁盘文件并回落默认值。
+     * 清除存储目录下的全部配置文件（开发分类的「清除本插件配置」动作行使用）。
      *
-     * 删除失败会抛出：调用方需要知道「没清干净」，否则重新载入后那份配置又会被读回来，
-     * 看起来像清除根本没生效。与 saveMany 的写盘校验同一个原则——不静默通过。
-     */
-    async reset(id: string): Promise<void> {
-        const entry = this.entries.get(id);
-        if (!entry) {
-            return;
-        }
-        await this.plugin.removeData(storageNameOf(id));
-        entry.config = defaultConfig(entry.definition.settings);
-        this.notify(id);
-    }
-
-    /**
-     * 清除本插件写入的全部配置（开发分类的「清除本插件配置」动作行使用）。
+     * 清的是目录里的文件，不是代码里注册的功能：四态、前端适配、是否退役都只决定功能
+     * 加不加载，退役的、甚至已经从插件里删掉的功能留下的配置文件同样要清掉，
+     * 否则它们会一直躺在工作区里，谁也看不见、谁也删不掉。
      *
-     * 逐个删除并回落默认值，随后各自通知订阅者，所以内存态与磁盘态在这一步就一致了；
-     * 有任何一个删不掉就把它们收集起来一次性抛出，让用户看见具体是哪几个文件。
+     * 删成功的文件对应把内存态回落默认值并通知订阅者，所以磁盘与内存在这一步就一致了；
+     * 有任何一个删不掉就把它们收集起来一次性抛出，让用户看见具体是哪个文件。
      */
     async clearAll(): Promise<void> {
         const failed: string[] = [];
-        for (const id of [...this.entries.keys()]) {
-            try {
-                await this.reset(id);
-            } catch (error) {
-                console.warn(`${PREFIX} failed to clear ${storageNameOf(id)}`, error);
-                failed.push(storageNameOf(id));
+        const cleared: string[] = [];
+        for (const {id, storageName} of await this.storedFiles()) {
+            const status = await removeStoredFile(this.plugin, storageName);
+            if (status.ok) {
+                cleared.push(id);
+                continue;
             }
+            console.warn(`${PREFIX} failed to clear ${storageName}: ${status.detail}`);
+            failed.push(`${storageName}: ${status.detail}`);
         }
+        cleared.forEach((id) => {
+            const entry = this.entries.get(id);
+            if (!entry) {
+                return;
+            }
+            entry.config = defaultConfig(entry.definition.settings);
+            this.notify(id);
+        });
         if (failed.length > 0) {
-            throw attachProblems(failed.map((name) => `${name}: removal failed`));
+            throw attachProblems(failed);
         }
     }
 
-    /** 导出全部功能的当前配置（供开发类功能使用）。 */
-    exportAll(): Record<string, FeatureConfig> {
+    /**
+     * 导出存储目录下的全部配置，键是功能 id（供开发类功能使用）。
+     *
+     * 读的是文件本身，不是内存里那份配置：四态 0 / 3 的功能不读盘（内存里是默认值），
+     * 当前客户端不加载的功能也根本没有内存态 —— 文件才是「配置到底是什么」的唯一依据。
+     */
+    async exportAll(): Promise<Record<string, FeatureConfig>> {
         const result: Record<string, FeatureConfig> = {};
-        this.entries.forEach((entry, id) => {
-            result[id] = {...entry.config};
-        });
+        for (const {id, storageName} of await this.storedFiles()) {
+            const stored = await readStoredFile(this.plugin, storageName);
+            if (!isPlainObject(stored)) {
+                console.warn(`${PREFIX} ${storageName} does not hold an object, skipping it in the export`);
+                continue;
+            }
+            result[id] = stored;
+        }
         return result;
     }
 
     /**
-     * 按 id 写入一批配置（导入用）。
+     * 把一批配置写回各自的配置文件（导入用）。
      *
-     * 只认已注册的功能 id，值必须是一个对象；两者之外的 id 一律原样返回给调用方，
-     * 由它决定怎么告诉用户 —— 这里绝不猜测意图去"尽力写入"。
-     * 真正落盘交给 saveMany：与面板点「保存」走同一条归一化 + 写后读回校验的路，
-     * 所以导入的非法值不会绕过校验，也不会被静默写进磁盘。
+     * 认识的 id（已注册的、以及注册表里有但本宿主不加载的）按 schema 归一化后写入，
+     * 与面板点「保存」同一条路，非法值会被报出来而不是静默落盘；
+     * 不认识的 id —— 已经被删掉的功能留下的、或者别的插件版本才有的功能 ——
+     * 原样写回它自己的文件，否则一次「导出 → 清除 → 导入」就会把这些配置丢掉。
+     * id 不合规（可能借此把文件写到目录外）或值不是对象的条目一律不写，交回调用方汇报。
      */
     async importMany(input: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}> {
         const applied: string[] = [];
         const skipped: string[] = [];
-        const drafts: Record<string, FeatureConfig> = {};
+        const known: {id: string; value: FeatureConfig;}[] = [];
+        const foreign: {id: string; value: FeatureConfig;}[] = [];
         Object.keys(input).forEach((id) => {
-            if (this.entries.has(id) && isPlainObject(input[id])) {
-                drafts[id] = input[id] as FeatureConfig;
-                applied.push(id);
+            if (!ID_PATTERN.test(id) || !isPlainObject(input[id])) {
+                skipped.push(id);
                 return;
             }
-            skipped.push(id);
+            (this.definitionOfAny(id) ? known : foreign).push({id, value: input[id] as FeatureConfig});
+            applied.push(id);
         });
-        if (applied.length > 0) {
-            await this.saveMany(drafts);
+
+        // 认识的 id 先整体归一化：有问题就整体不写，让用户一次性看到全部问题
+        const prepared: {id: string; value: FeatureConfig;}[] = [];
+        const problems: string[] = [];
+        known.forEach(({id, value}) => {
+            const definition = this.definitionOfAny(id);
+            if (!definition) {
+                return;
+            }
+            const warnings: string[] = [];
+            const config = normalizeConfig(definition.settings, value, (message) => warnings.push(message));
+            warnings.forEach((warning) => problems.push(`${id}: ${warning}`));
+            prepared.push({id, value: config});
+        });
+        if (problems.length > 0) {
+            throw attachProblems(problems);
         }
+
+        const files = [...prepared, ...foreign].map(({id, value}) => ({storageName: storageNameOf(id), value}));
+        await this.writeFiles(files);
+        // 内存态跟着磁盘走，导入的配置立刻生效，不必等页面重载
+        prepared.forEach(({id, value}) => {
+            const entry = this.entries.get(id);
+            if (entry) {
+                entry.config = value;
+            }
+            this.notify(id);
+        });
         return {applied, skipped};
     }
 
