@@ -3,8 +3,9 @@
  *
  * 两个动作行都只负责开一个窗口：导出把当前配置铺成一段只读 JSON，导入把粘贴进来的
  * JSON 写回去。读写本身由 core 完成（ConfigStore.exportAll / importMany），
- * 因此导入的归一化、白名单与写后读回校验和面板点「保存」完全同一条路，
- * 非法值不会绕过校验被静默写进磁盘。
+ * 两者的目标都是存储目录 `data/storage/petal/<插件名>/` 下的**全部配置文件**，
+ * 与四态、当前前端是否适用、功能是否已退役都无关 —— 因此导入的归一化、白名单与写后
+ * 读回校验和面板点「保存」是同一条路，非法值不会绕过校验被静默写进磁盘。
  *
  * 导入成功后必须重新载入前端，理由和「清除本插件配置」一样：设置面板此刻还开着，
  * 它手里那份草稿是导入之前的值，用户只要再点一次「保存」就会把旧值原样写回来；
@@ -100,12 +101,12 @@ const openDialog = (context: FeatureActionContext, spec: DialogSpec): void => {
     });
 };
 
-export const exportConfigs = (context: FeatureActionContext): void => {
+export const exportConfigs = async (context: FeatureActionContext): Promise<void> => {
     const json = JSON.stringify(
         {
             plugin: MARK,
             version: FORMAT_VERSION,
-            features: context.exportConfigs(),
+            features: await context.exportConfigs(),
         },
         null,
         2,
