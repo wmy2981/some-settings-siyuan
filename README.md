@@ -66,9 +66,9 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
 | F12 toggles the developer tools               | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu   |
 | Console log viewer                            | mobile     | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
-| Clear this plugin's configuration             | both       | Wipes every configuration file the plugin wrote and reloads the frontend, back to a just-installed state |
+| Clear this plugin's configuration             | both       | Wipes every configuration file in the plugin's storage directory and reloads the frontend                |
 | About this plugin                             | both       | A read-only notice: what the plugin is, the current version and the GitHub repository                    |
-| Import and export this plugin's configuration | both       | Exports every setting as one JSON document, and writes such a document back (only the items it contains) |
+| Import and export this plugin's configuration | both       | Exports every configuration file in the storage directory as one JSON document, and writes it back       |
 
 ## Notes
 
@@ -113,6 +113,11 @@ plugin reload, and a feature that only works on one frontend never appears in th
 * Syntax highlighting for snippets depends on SiYuan's own highlight.js. If that never loads, the plugin tears the
   highlight layer down and leaves the editor as plain text rather than leaving an unreadable input.
 * The repository link in _About this plugin_ goes through the link confirmation like any other external link.
+* _Import and export this plugin's configuration_ and _Clear this plugin's configuration_ work on **every configuration
+  file** in the plugin's storage directory (`data/storage/petal/some-settings-siyuan`), no matter what the four states
+  in `feature-control.json` say, whether the current client applies the feature, or whether the feature has been
+  retired: files left behind by features this client does not load, by retired features, or by features already removed
+  from the plugin are exported, imported and cleared all the same.
 * Importing a configuration reloads the frontend: the panel still holds the drafts from before the import, so **do not
   click Save afterwards**, or those older values are written back.
 * The Ref Crumbs guide opens that plugin's marketplace page when it is not installed; with the marketplace disabled on
