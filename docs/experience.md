@@ -185,3 +185,16 @@
   没装时退回 `siyuan://bazaar/plugins/ref-crumbs-siyuan/readme` —— 集市详情页没有官方插件 API。
 * **`config-transfer` 导入成功后必须重新载入前端**：设置面板此刻还开着，它手里的草稿是导入之前的值，
   用户再点一次「保存」就会把旧值写回去。
+* **配置的导出 / 导入 / 清除 / 卸载要按存储目录里的文件来，不能按注册表里的功能来**：四态、前端适配、
+  `deprecatedSince` 都只管功能加不加载，退役的、甚至已经从插件里删掉的功能留下的配置文件
+  仍躺在 `data/storage/petal/<插件名>/` 下（本插件历史上删掉的功能就留下过这种文件），
+  只看注册表就会漏掉它们，而且 `0` / `3` 的功能不读盘、导出会拿到内存里的默认值而不是文件内容。
+  「列出目录里有哪些文件」没有插件 API，只能走内核 `/api/file/readDir`（配置文件名为 `feature-<id>`，宿主不加扩展名）。
+* **卸载时 petal 存储要插件自己清**：内核的 `UninstallPackage()` 只删插件包目录 `data/plugins/<插件名>`
+  与集市元信息，`data/storage/petal/<插件名>/` 它不碰，而这些文件还参与同步 —— 漏掉的配置文件会一直
+  跟着同步走。另外拆除钩子有 **5 秒**预算（`onunload` 与 `uninstall` 共用同一个 deadline，默认 `teardownTimeout` = 5000ms），
+  所以卸载里只做「列一次目录 + 逐个删」，删不掉只记日志，不做重活、不再等第二次机会。
+* **内核回负数 code 时 `fetchPost` 的回调不会触发**：宿主的 `processMessage` 见到 `code < 0` 就提示并返回 false，
+  成功回调与失败回调都不走，于是 `loadData` / `saveData` / `removeData` 的 Promise 会永远悬着
+  —— 这也是写盘必须读回校验的原因之一。列目录因此用 `fetchSyncPost`（任何 code 都会兑现），
+  并把 `process` 传 `false`，免得内核的报错被宿主再弹成一条没人能处理的错误。

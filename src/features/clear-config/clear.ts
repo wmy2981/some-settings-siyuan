@@ -1,8 +1,11 @@
 /**
  * 「清除本插件配置」动作行的实现。
  *
- * 清除本身由 core 完成（ConfigStore.clearAll：逐个删除配置文件、回落默认值、通知各功能），
- * 这里只负责问一句、调一次，然后重新载入前端。
+ * 清除本身由 core 完成（ConfigStore.clearAll：列出存储目录下的每一个配置文件、
+ * 逐个删除、回落默认值、通知各功能），这里只负责问一句、调一次，然后重新载入前端。
+ *
+ * 清的是目录里的文件，不是代码里注册的功能：当前客户端不加载的功能、已经退役的、
+ * 甚至已经从插件里删掉的功能留下的配置文件同样会被清掉，这与四态无关。
  *
  * 为什么必须重新载入：设置面板此刻还开着，它手里那份草稿是清除之前的值；
  * 用户只要再点一次「保存」，刚删掉的文件就会被原样写回来。重新载入是能同时
@@ -19,10 +22,9 @@ import type {FeatureActionContext} from "../../core/types";
 const RELOAD_DELAY_MS = 600;
 
 export const clearAllConfigs = (context: FeatureActionContext): void => {
-    const count = context.featureIds.length;
     confirm(
         context.i18n("clearConfig.confirmTitle"),
-        context.i18n("clearConfig.confirmText").replace("${count}", String(count)),
+        context.i18n("clearConfig.confirmText"),
         () => {
             context.clearAllConfigs().then(() => {
                 showMessage(context.i18n("clearConfig.done"), 3000);

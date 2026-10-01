@@ -18,9 +18,14 @@ import {storageNameOf} from "./core/config";
 import {
     guardAsync,
     logInfo,
+    logWarn,
     reportError,
 } from "./core/error";
 import {ALL_FEATURE_IDS} from "./core/registry";
+import {
+    listStoredFiles,
+    removeStoredFile,
+} from "./core/storage";
 // 集市要求包根目录必须有 index.css；各功能自己的样式走 host.addStyle() 运行时注入
 import "./index.scss";
 
@@ -51,13 +56,34 @@ export default class SomeSettingsPlugin extends Plugin {
         logInfo(`${this.i18n.byePlugin}`);
     }
 
+    /**
+     * 卸载：删掉本插件存储目录下的全部配置文件。
+     *
+     * 目标按**目录里的文件**来，不按注册表里的功能来 —— 四态、前端适配、是否退役都只决定
+     * 功能加不加载，退役的、甚至已经从插件里删掉的功能留下的配置文件同样是本插件的垃圾，
+     * 宿主又只删 `data/plugins/<插件名>` 而不碰 petal 存储，不清掉它们就会一直躺在工作区里
+     * 并跟着同步走。列目录失败时退回注册表清单：卸载里宁可少删几个，也不能一个都不删。
+     */
     async uninstall(): Promise<void> {
-        for (const id of ALL_FEATURE_IDS) {
-            await guardAsync(`uninstall.${id}`, async () => {
-                await this.removeData(storageNameOf(id));
+        for (const storageName of await this.storageNamesToRemove()) {
+            await guardAsync(`uninstall.${storageName}`, async () => {
+                const status = await removeStoredFile(this, storageName);
+                if (!status.ok) {
+                    logWarn(`uninstall could not remove ${storageName}: ${status.detail}`);
+                }
             }, false);
         }
         showMessage(`[${this.name}] ${this.i18n.byePlugin}`, 4000);
+    }
+
+    /** 卸载时要删的文件名：目录里的全部文件，列不出目录时退回注册表里的功能名单。 */
+    private async storageNamesToRemove(): Promise<string[]> {
+        try {
+            return await listStoredFiles(this);
+        } catch (error) {
+            logWarn("uninstall could not list the plugin storage directory, falling back to the registry", error);
+            return ALL_FEATURE_IDS.map(storageNameOf);
+        }
     }
 
     /**
