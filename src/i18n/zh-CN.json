@@ -42,6 +42,8 @@
   "feature.mobileSyncButton.desc": "移动端右上角常显「立即同步」按钮。",
   "feature.hideMobileExit.name": "隐藏移动端退出应用按钮",
   "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标的「退出应用」按钮。",
+  "feature.hideAgentWelcomeExamples.name": "隐藏智能体新会话的推荐操作",
+  "feature.hideAgentWelcomeExamples.desc": "隐藏智能体面板新会话里的那几条示例推荐，避免误点直接发起对话、白白消耗 token。",
   "feature.codeBlockLangEmpty.name": "代码块语言不记忆",
   "feature.codeBlockLangEmpty.desc": "新建代码块时语言总是为空，不再沿用上一次选过的语言。",
   "feature.dailyNoteDirect.name": "日记直接创建",
