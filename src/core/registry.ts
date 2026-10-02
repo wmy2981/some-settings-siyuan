@@ -22,6 +22,7 @@ import exitConfirm from "../features/exit-confirm";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import headingLevelIcon from "../features/heading-level-icon";
+import hideAgentWelcomeExamples from "../features/hide-agent-welcome-examples";
 import hideMobileExit from "../features/hide-mobile-exit";
 import inlineCodeCopy from "../features/inline-code-copy";
 import kernelAutoReconnect from "../features/kernel-auto-reconnect";
@@ -65,6 +66,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileBarAnimation,
     mobileSyncButton,
     hideMobileExit,
+    hideAgentWelcomeExamples,
     refCrumbsGuide,
     dailyNoteDirect,
     firstDocIcon,

@@ -42,6 +42,8 @@
   "feature.mobileSyncButton.desc": "Keeps the Sync button visible in the mobile top-right corner.",
   "feature.hideMobileExit.name": "Hide the mobile Quit button",
   "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel.",
+  "feature.hideAgentWelcomeExamples.name": "Hide the agent's suggested prompts",
+  "feature.hideAgentWelcomeExamples.desc": "Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens.",
   "feature.codeBlockLangEmpty.name": "Never remember the code language",
   "feature.codeBlockLangEmpty.desc": "New code blocks always start with an empty language instead of reusing the language picked last time.",
   "feature.dailyNoteDirect.name": "Create the daily note directly",
