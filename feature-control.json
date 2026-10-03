@@ -34,6 +34,9 @@
     "agent-thinking-sticky-header": {
       "state": 1
     },
+    "agent-tool-call-detail": {
+      "state": 1
+    },
     "code-block-lang-empty": {
       "state": 1
     },

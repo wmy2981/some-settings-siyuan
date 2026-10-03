@@ -58,6 +58,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Hide the mobile Quit button                                | mobile     | Hides the icon-only Quit button in the mobile side panel                                                                                            |
 | Hide the agent's suggested prompts                         | both       | Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens              |
 | Pin the agent thinking header                              | both       | Pins the "Thought for N s" header of an expanded thinking card to the top of the panel, so a long thought can be collapsed at any time              |
+| Details for the agent's tool calls                         | both       | Adds the arguments a tool call ran with after its name in a thinking card, with the full arguments and result on hover                              |
 | Do not focus the first control when a settings panel opens | both       | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
@@ -128,6 +129,15 @@ plugin reload, and a feature that only works on one frontend never appears in th
   the header leaves with it instead of hovering over later messages. Its background comes from the panel itself, so
   themes, dark mode and translucent backgrounds carry over. The AI panel inside the editor lays out differently (its
   thinking body scrolls on its own and the card never does), so nothing changes there.
+* _Details for the agent's tool calls_ reads the **agent session archive**: SiYuan offers plugins no way to read
+  agent sessions, so the plugin only listens to the two archive responses the panel itself requests (loading a
+  session, writing one back). It sends no request of its own and changes neither the request nor the response.
+  Details therefore arrive with the archive — they show up once the turn has been written back, and until then the
+  tool row is SiYuan's own. A call the archive cannot match (for example a tool deleted once in the same turn) is
+  left without details rather than shown with the wrong arguments.
+* The summary keeps to a single argument — the action plus whichever field identifies the target (`query`, `id`,
+  `path` and so on), because the argument names differ from tool to tool. The full arguments and the head of the
+  result are in the hover tooltip, and the result is truncated to its opening part.
 
 ## License
 

@@ -7,6 +7,7 @@
  * 功能之间不得互相 import；跨功能协作只能经由 src/core/。
  */
 import agentThinkingStickyHeader from "../features/agent-thinking-sticky-header";
+import agentToolCallDetail from "../features/agent-tool-call-detail";
 import assetInfoMenu from "../features/asset-info-menu";
 import bookmarkLastPosition from "../features/bookmark-last-position";
 import clearConfig from "../features/clear-config";
@@ -69,6 +70,7 @@ export const FEATURES: FeatureDefinition[] = [
     hideMobileExit,
     hideAgentWelcomeExamples,
     agentThinkingStickyHeader,
+    agentToolCallDetail,
     refCrumbsGuide,
     dailyNoteDirect,
     firstDocIcon,
