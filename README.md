@@ -37,6 +37,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                |
 | A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause) |
 | Ask before quitting                                     | both       | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)         |
+| F12 toggles the developer tools                         | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu                                   |
 
 ### Interface
 
@@ -68,7 +69,6 @@ plugin reload, and a feature that only works on one frontend never appears in th
 
 | Setting                                       | Applies to | What it does                                                                                             |
 | --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| F12 toggles the developer tools               | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu   |
 | Console log viewer                            | mobile     | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | Clear this plugin's configuration             | both       | Wipes every configuration file in the plugin's storage directory and reloads the frontend                |
 | About this plugin                             | both       | A read-only notice: what the plugin is, the current version and the GitHub repository                    |
