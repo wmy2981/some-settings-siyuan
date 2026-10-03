@@ -5,7 +5,7 @@
   "byePlugin": "一些设置已卸载",
   "category.function": "功能",
   "category.ui": "界面",
-  "category.dev": "开发",
+  "category.about": "关于",
   "panel.none": "当前没有可见的设置项，请检查仓库根目录的 feature-control.json。",
   "panel.readonlyTip": "当前处于只读或发布模式，设置无法保存。",
   "dialog.cancel": "取消",

@@ -5,7 +5,7 @@
   "byePlugin": "Some Settings unloaded",
   "category.function": "Functionality",
   "category.ui": "Interface",
-  "category.dev": "Development",
+  "category.about": "About",
   "panel.none": "No setting item is visible right now. Check feature-control.json at the repository root.",
   "panel.readonlyTip": "SiYuan is in read-only or publish mode, so settings cannot be saved.",
   "dialog.cancel": "Cancel",

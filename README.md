@@ -65,7 +65,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
 
-### Development
+### About
 
 | Setting                                       | Applies to | What it does                                                                                             |
 | --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |

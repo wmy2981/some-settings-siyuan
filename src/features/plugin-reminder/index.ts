@@ -1,5 +1,5 @@
 /**
- * 开发：关于本插件的说明块。
+ * 关于：本插件的说明块。
  *
  * 只有一块只读文字：讲清这个插件是什么、为什么可能不稳、当前版本，以及去哪儿反馈。
  * 没有任何可执行的东西，所以显式声明「永不挂载」，而不是加一个点了也没用的开关
@@ -18,7 +18,7 @@ const shortRepo = (url: string): string =>
 
 export default defineFeature({
     id: "plugin-reminder",
-    category: "dev",
+    category: "about",
     name: "feature.pluginReminder.name",
     description: "feature.pluginReminder.desc",
     isEnabled: () => false,

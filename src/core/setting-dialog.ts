@@ -4,7 +4,7 @@
  * 结构与参考插件的面板同构：`.b3-dialog__content > .config > (页签 + .config-items)*`，
  * 滚动交给每一页自己的 `.some-settings-panel__view`，插件不额外套滚动容器。
  *
- * - 三个分类（功能 / 界面 / 开发）各是一个页签，没有内容的不出现
+ * - 三个分类（功能 / 界面 / 关于）各是一个页签，没有内容的不出现
  * - 桌面端是弹窗左侧的一列页签（照抄内核设置的 `.config__side`），
  *   移动端是弹窗顶部的一条页签栏（照抄内核代码片段弹窗的 `.layout-tab-bar`）
  * - 每一页里第一行是功能名与说明，随后就是设置行，**没有任何嵌套分组**
@@ -63,12 +63,12 @@ import {
 
 export type { ControlSnapshot } from "./control";
 
-const CATEGORY_ORDER: FeatureCategory[] = ["function", "ui", "dev"];
+const CATEGORY_ORDER: FeatureCategory[] = ["function", "ui", "about"];
 
 const CATEGORY_LABELS: Record<FeatureCategory, string> = {
     function: "category.function",
     ui: "category.ui",
-    dev: "category.dev",
+    about: "category.about",
 };
 
 /** 页签条目上表示「当前选中」的类名：桌面端与移动端各一个。 */
@@ -77,12 +77,12 @@ const TAB_FOCUS_CLASSES = ["b3-list-item--focus", "item--focus"];
 /**
  * 页签图标（思源内置 symbol 名）。
  *
- * 分类与图标的对应只在这里维护：功能是插件带来的增强，界面是外观，开发是调试类。
+ * 分类与图标的对应只在这里维护：功能是插件带来的增强，界面是外观，关于是插件自身的信息与维护手段。
  */
 const CATEGORY_ICONS: Record<FeatureCategory, string> = {
     function: "iconSparkles",
     ui: "iconTheme",
-    dev: "iconBug",
+    about: "iconInfo",
 };
 
 export interface SettingsPanelOptions {

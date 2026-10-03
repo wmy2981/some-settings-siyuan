@@ -1,5 +1,5 @@
 /**
- * 开发：移动端的控制台日志查看器。
+ * 关于：移动端的控制台日志查看器。
  *
  * 只在移动端出现——手机上没有开发者控制台，出了问题只能靠猜。
  * 这个功能从插件加载起就把 `console` 的输出收进一个环形缓冲，
@@ -16,7 +16,7 @@ import {
 
 export default defineFeature({
     id: "mobile-console-log",
-    category: "dev",
+    category: "about",
     name: "feature.mobileConsoleLog.name",
     description: "feature.mobileConsoleLog.desc",
     frontends: ["mobile"],

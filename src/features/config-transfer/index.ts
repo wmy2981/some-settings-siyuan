@@ -1,5 +1,5 @@
 /**
- * 开发：本插件全部配置的导入导出。
+ * 关于：本插件全部配置的导入导出。
  *
  * 两行动作按钮：导出把存储目录下每一个配置文件的当前内容打成一个 JSON 文档，
  * 导入把一段 JSON 写回各自的配置文件。读写都走 `ConfigStore`，
@@ -16,7 +16,7 @@ import {
 
 export default defineFeature({
     id: "config-transfer",
-    category: "dev",
+    category: "about",
     name: "feature.configTransfer.name",
     description: "feature.configTransfer.desc",
     isEnabled: () => false,
