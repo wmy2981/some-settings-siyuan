@@ -33,19 +33,45 @@ const LINE_SELECTOR = ".agent-chat__thinking-tools-line";
 const CHIP_SELECTOR = ".agent-chat__thinking-tool";
 
 /**
- * 摘要紧跟在胶囊后面，两者之间只留 2px，而工具行本身的间距是 8px ——
- * 用负外边距把这一对粘成一个整体，读者一眼能看出摘要属于哪个工具。
- * 宽度上限 + 省略号保证再长的参数也只占一行，不会把窄面板撑出横向滚动条。
+ * 工具行的排版：工具名与摘要分列两栏，**一次调用一行**。
+ *
+ * 思源原本把这一行排成一条会折行的 flex：工具名与摘要交替出现、间距一样，十几次调用
+ * 就糊成一片（`block get … block et_kramdown …` 读不出边界）。这里改成两列网格：
+ * 工具名固定左列、摘要固定右列，网格的自动放置会把「名字 + 它的摘要」这一对排进同一行，
+ * 于是每次调用独占一行、工具名还纵向对齐；没有摘要的调用（无参数或对不上存档）也各占一行。
+ *
+ * 只改这一行的排版，不动节点结构：宿主自己的运行态是按 `textContent` 找胶囊的，
+ * 一旦把胶囊挪进插件创建的容器，宿主之后往这一行追加新胶囊时就会与已有结构错位。
+ * 摘要用正文色（思考正文就是这个色）、工具名保持宿主的浅色，两者一眼能分出「名字 / 参数」。
+ *
+ * 选择器都从 `.agent-chat__thinking-body` 起：这些节点只长在思考正文里，
+ * 顺带把优先级抬到宿主那条 `.agent-chat__thinking-tools-line` 规则之上，不依赖样式注入的先后。
  */
-const CSS = `/* 思考卡片里工具调用的参数摘要 */
-.${DETAIL_CLASS} {
-    margin-left: -6px;
-    max-width: 22em;
+const CSS = `/* 思考卡片里的工具调用：一次调用一行 */
+.agent-chat__thinking-body > .agent-chat__thinking-tools-line {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: baseline;
+    gap: 3px 8px;
+}
+
+/* 「Tool calls:」标签独占一行 */
+.agent-chat__thinking-body > .agent-chat__thinking-tools-line > .agent-chat__thinking-summary {
+    grid-column: 1 / -1;
+}
+
+/* 工具名固定左列 */
+.agent-chat__thinking-body > .agent-chat__thinking-tools-line > .agent-chat__thinking-tool {
+    grid-column: 1;
+}
+
+/* 摘要固定右列：与它的工具名同处一行，再长的参数也只占这一行、超出部分省略 */
+.agent-chat__thinking-body > .agent-chat__thinking-tools-line > .${DETAIL_CLASS} {
+    grid-column: 2;
     min-width: 0;
     overflow: hidden;
     font-size: 12px;
-    color: var(--b3-theme-on-surface-light);
-    opacity: .85;
+    color: var(--b3-theme-on-surface);
     white-space: nowrap;
     text-overflow: ellipsis;
 }

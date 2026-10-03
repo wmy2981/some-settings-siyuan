@@ -59,7 +59,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Hide the mobile Quit button                                | mobile     | Hides the icon-only Quit button in the mobile side panel                                                                                            |
 | Hide the agent's suggested prompts                         | both       | Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens              |
 | Pin the agent thinking header                              | both       | Pins the "Thought for N s" header of an expanded thinking card to the top of the panel, so a long thought can be collapsed at any time              |
-| Details for the agent's tool calls                         | both       | Adds the arguments a tool call ran with after its name in a thinking card, with the full arguments and result on hover                              |
+| Details for the agent's tool calls                         | both       | Lists the agent's tool calls one per row in a thinking card, each with the arguments it ran with, and the full arguments and result on hover        |
 | Do not focus the first control when a settings panel opens | both       | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
@@ -139,6 +139,9 @@ plugin reload, and a feature that only works on one frontend never appears in th
 * The summary keeps to a single argument — the action plus whichever field identifies the target (`query`, `id`,
   `path` and so on), because the argument names differ from tool to tool. The full arguments and the head of the
   result are in the hover tooltip, and the result is truncated to its opening part.
+* Tool calls in a thinking card get **one row each**: the tool name lines up in a left column and its arguments sit
+  in a right column, and a call with no arguments or no match in the archive still takes a row of its own. A dozen
+  calls no longer run together; an over-long argument is elided at the end of its row, with the full text on hover.
 * _Send the agent message with Enter_ turns Enter in the composer into send and moves the line break to Ctrl+Enter /
   Shift+Enter (Cmd+Enter on macOS). It deliberately **shadows the default Agent Send shortcut** (Settings - Keymap -
   General, ⌘↩ by default), which is the point of the feature; the keymap setting itself is untouched, so a different
