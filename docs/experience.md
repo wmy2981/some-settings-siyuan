@@ -198,3 +198,11 @@
   成功回调与失败回调都不走，于是 `loadData` / `saveData` / `removeData` 的 Promise 会永远悬着
   —— 这也是写盘必须读回校验的原因之一。列目录因此用 `fetchSyncPost`（任何 code 都会兑现），
   并把 `process` 传 `false`，免得内核的报错被宿主再弹成一条没人能处理的错误。
+* **`bazaar-release-notes` 的发行版地址是一条「镜像优先」的链**：`api.github.com` 在国内常常不通，
+  所以列表地址按国内可达性排序（`gh-proxy.com`、`ghproxy.vip`、`cdn.gh-proxy.com`），GitHub 原始地址兜底，
+  逐个试到第一个返回合法 JSON 的。镜像站都是社区公益服务，随时可能挂掉或限流，**判据只能是「响应能不能
+  解析成数组」**，不能只看状态码（限流回 403、错误页回 200 都见过）。请求一律交给内核的
+  `/api/network/forwardProxy`：前端直连在浏览器端与移动端 WebView 里会被跨域拦掉。换镜像时改的是出网的
+  那一跳，接口本身还是 GitHub 官方那个。发行说明用全局 `Lute` 渲染、`window.DOMPurify` 消毒 —— 两个都是
+  思源自己在前端启动时注入的全局对象（`siyuan` 包里只声明了 `Lute`，`DOMPurify` 得自己补声明），
+  任一不可用时退回纯文本，绝不把未处理的 HTML 塞进 DOM。

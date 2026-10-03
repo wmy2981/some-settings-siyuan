@@ -220,5 +220,16 @@
   "exitConfirm.scopeDisabled": "禁用",
   "exitConfirm.scopeDesktop": "桌面端",
   "exitConfirm.scopeMobile": "移动端",
-  "exitConfirm.scopeBoth": "桌面端 + 移动端"
+  "exitConfirm.scopeBoth": "桌面端 + 移动端",
+  "feature.bazaarReleaseNotes.name": "集市插件版本发行说明",
+  "feature.bazaarReleaseNotes.desc": "把集市详情页「在线集市」里的版本号变成可点的链接，点开看这个版本的发行说明（思源原生渲染），顶部还能切换历史版本。",
+  "bazaarReleaseNotes.tip": "查看 {version} 的发行说明",
+  "bazaarReleaseNotes.title": "发行说明 · {name}",
+  "bazaarReleaseNotes.versionLabel": "版本",
+  "bazaarReleaseNotes.latest": "最新",
+  "bazaarReleaseNotes.loading": "正在获取发行说明…",
+  "bazaarReleaseNotes.empty": "这个版本没有写发行说明",
+  "bazaarReleaseNotes.noReleases": "这个仓库没有创建 GitHub Release，读不到发行说明",
+  "bazaarReleaseNotes.failed": "拉取发行说明失败：{reason}",
+  "bazaarReleaseNotes.unknownError": "原因不明"
 }

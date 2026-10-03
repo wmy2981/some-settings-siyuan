@@ -10,6 +10,7 @@ import agentEnterToSend from "../features/agent-enter-to-send";
 import agentThinkingStickyHeader from "../features/agent-thinking-sticky-header";
 import agentToolCallDetail from "../features/agent-tool-call-detail";
 import assetInfoMenu from "../features/asset-info-menu";
+import bazaarReleaseNotes from "../features/bazaar-release-notes";
 import bookmarkLastPosition from "../features/bookmark-last-position";
 import clearConfig from "../features/clear-config";
 import codeBlockLangEmpty from "../features/code-block-lang-empty";
@@ -74,6 +75,7 @@ export const FEATURES: FeatureDefinition[] = [
     agentThinkingStickyHeader,
     agentToolCallDetail,
     refCrumbsGuide,
+    bazaarReleaseNotes,
     dailyNoteDirect,
     firstDocIcon,
     externalLinkConfirm,

@@ -64,6 +64,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Do not focus the first control when a settings panel opens | both       | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
+| Release notes of marketplace plugin versions               | both       | The version number in the "Online marketplace" section of a package page opens the release notes of that version, with a version selector on top    |
 
 ### About
 
@@ -151,6 +152,13 @@ plugin reload, and a feature that only works on one frontend never appears in th
   running, without a model, with an empty composer or during an upload, Enter sends nothing — exactly like the
   button. The composer that edits an existing message is unaffected (Enter still breaks the line there, and its own
   shortcut still submits), and while the @ reference or slash-skill menu is open Enter still picks the candidate.
+* The release list and the release notes behind **Release notes of marketplace plugin versions** are fetched by the
+  **kernel** (the frontend never talks to GitHub itself), trying mirrors reachable from mainland China first and
+  falling back to the GitHub API. Those mirrors are community services that can go down or rate-limit at any time;
+  when every one of them fails the dialog says where it stopped. One repository is fetched once per plugin load, so
+  switching versions afterwards sends no request. The notes are rendered with SiYuan's own Markdown engine (the same
+  one behind the marketplace README) and sanitised before they reach the DOM. The link only appears for packages
+  whose repository is on GitHub, which the marketplace requires anyway.
 
 ## License
 

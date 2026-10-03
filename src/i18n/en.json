@@ -220,5 +220,16 @@
   "exitConfirm.scopeDisabled": "Disabled",
   "exitConfirm.scopeDesktop": "Desktop",
   "exitConfirm.scopeMobile": "Mobile",
-  "exitConfirm.scopeBoth": "Desktop and mobile"
+  "exitConfirm.scopeBoth": "Desktop and mobile",
+  "feature.bazaarReleaseNotes.name": "Release notes of marketplace plugin versions",
+  "feature.bazaarReleaseNotes.desc": "Turns the version number in the \"Online marketplace\" section of a marketplace package page into a link that opens the release notes of that version, rendered by SiYuan itself, with a version selector at the top.",
+  "bazaarReleaseNotes.tip": "View the release notes of {version}",
+  "bazaarReleaseNotes.title": "Release notes · {name}",
+  "bazaarReleaseNotes.versionLabel": "Version",
+  "bazaarReleaseNotes.latest": "Latest",
+  "bazaarReleaseNotes.loading": "Loading the release notes...",
+  "bazaarReleaseNotes.empty": "This version has no release notes",
+  "bazaarReleaseNotes.noReleases": "This repository has no GitHub release, so there are no release notes to read",
+  "bazaarReleaseNotes.failed": "Failed to load the release notes: {reason}",
+  "bazaarReleaseNotes.unknownError": "reason unknown"
 }
