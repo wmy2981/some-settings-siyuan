@@ -44,6 +44,8 @@
   "feature.hideMobileExit.desc": "隐藏移动端侧面板里那个只有图标的「退出应用」按钮。",
   "feature.hideAgentWelcomeExamples.name": "隐藏智能体新会话的推荐操作",
   "feature.hideAgentWelcomeExamples.desc": "隐藏智能体面板新会话里的那几条示例推荐，避免误点直接发起对话、白白消耗 token。",
+  "feature.agentEnterToSend.name": "智能体回车发送",
+  "feature.agentEnterToSend.desc": "智能体输入框里按 Enter 直接发送；换行改用 Ctrl+Enter 或 Shift+Enter（macOS 上是 Cmd+Enter）。",
   "feature.agentThinkingStickyHeader.name": "智能体思考标题固定在顶部",
   "feature.agentThinkingStickyHeader.desc": "思考卡片展开后把「已思考 N 秒」标题固定在面板顶部，长思考滚动时也能随时点它折叠。",
   "feature.agentToolCallDetail.name": "智能体工具调用显示细节",

@@ -44,6 +44,8 @@
   "feature.hideMobileExit.desc": "Hides the icon-only Quit button in the mobile side panel.",
   "feature.hideAgentWelcomeExamples.name": "Hide the agent's suggested prompts",
   "feature.hideAgentWelcomeExamples.desc": "Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens.",
+  "feature.agentEnterToSend.name": "Send the agent message with Enter",
+  "feature.agentEnterToSend.desc": "Sends the agent message with Enter; use Ctrl+Enter or Shift+Enter to insert a line break (Cmd+Enter on macOS).",
   "feature.agentThinkingStickyHeader.name": "Pin the agent thinking header",
   "feature.agentThinkingStickyHeader.desc": "Pins the \"Thought for N s\" header of an expanded thinking card to the top of the panel, so a long thought can be collapsed at any time.",
   "feature.agentToolCallDetail.name": "Details for the agent's tool calls",

@@ -31,6 +31,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Reconnect button on the disconnect panel (experimental) | both       | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                                           |
 | Automatic reconnect after a disconnect (experimental)   | both       | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default)                        |
 | DeepSeek balance in the agent panel                     | both       | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use            |
+| Send the agent message with Enter                       | both       | Sends with Enter in the agent panel composer and moves the line break to Ctrl+Enter or Shift+Enter (Cmd+Enter on macOS)                  |
 | Aliyun OSS bucket usage                                 | both       | Adds a usage button to the S3 storage settings that reads the bucket's storage size and object count with the credentials saved there    |
 | File size and metadata in the asset menu                | both       | File size, image dimensions, type and modified time for a workspace asset, in the menu of an image or of an audio/video/iframe block     |
 | Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                |
@@ -138,6 +139,13 @@ plugin reload, and a feature that only works on one frontend never appears in th
 * The summary keeps to a single argument — the action plus whichever field identifies the target (`query`, `id`,
   `path` and so on), because the argument names differ from tool to tool. The full arguments and the head of the
   result are in the hover tooltip, and the result is truncated to its opening part.
+* _Send the agent message with Enter_ turns Enter in the composer into send and moves the line break to Ctrl+Enter /
+  Shift+Enter (Cmd+Enter on macOS). It deliberately **shadows the default Agent Send shortcut** (Settings - Keymap -
+  General, ⌘↩ by default), which is the point of the feature; the keymap setting itself is untouched, so a different
+  combination keeps working once you rebind it. Sending goes through the panel's own send button, so while a turn is
+  running, without a model, with an empty composer or during an upload, Enter sends nothing — exactly like the
+  button. The composer that edits an existing message is unaffected (Enter still breaks the line there, and its own
+  shortcut still submits), and while the @ reference or slash-skill menu is open Enter still picks the candidate.
 
 ## License
 
