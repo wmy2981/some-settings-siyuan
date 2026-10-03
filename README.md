@@ -57,6 +57,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Keep the block icon visible on mobile                      | mobile     | Keeps the operated block's icon visible instead of letting it flicker                                                                               |
 | Hide the mobile Quit button                                | mobile     | Hides the icon-only Quit button in the mobile side panel                                                                                            |
 | Hide the agent's suggested prompts                         | both       | Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens              |
+| Pin the agent thinking header                              | both       | Pins the "Thought for N s" header of an expanded thinking card to the top of the panel, so a long thought can be collapsed at any time              |
 | Do not focus the first control when a settings panel opens | both       | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
@@ -123,6 +124,10 @@ plugin reload, and a feature that only works on one frontend never appears in th
   click Save afterwards**, or those older values are written back.
 * The Ref Crumbs guide opens that plugin's marketplace page when it is not installed; with the marketplace disabled on
   the device it only reports that.
+* Pin the agent thinking header sticks the header to the top of **its own card**: once you scroll past the whole card
+  the header leaves with it instead of hovering over later messages. Its background comes from the panel itself, so
+  themes, dark mode and translucent backgrounds carry over. The AI panel inside the editor lays out differently (its
+  thinking body scrolls on its own and the card never does), so nothing changes there.
 
 ## License
 
