@@ -316,7 +316,7 @@ export const PANEL_CSS = `
     background-color: transparent;
 }
 /* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
-   .config__panel > .config__side（这里按「功能 / 界面 / 开发」三个短标签收窄到 220px）。 */
+   .config__panel > .config__side（这里按「功能 / 界面 / 关于」三个短标签收窄到 220px）。 */
 .${PANEL_CLASS}__side {
     flex: 0 0 auto;
     width: 220px;

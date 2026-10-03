@@ -31,11 +31,13 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Reconnect button on the disconnect panel (experimental) | both       | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                                           |
 | Automatic reconnect after a disconnect (experimental)   | both       | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default)                        |
 | DeepSeek balance in the agent panel                     | both       | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use            |
+| Send the agent message with Enter                       | both       | Sends with Enter in the agent panel composer and moves the line break to Ctrl+Enter or Shift+Enter (Cmd+Enter on macOS)                  |
 | Aliyun OSS bucket usage                                 | both       | Adds a usage button to the S3 storage settings that reads the bucket's storage size and object count with the credentials saved there    |
 | File size and metadata in the asset menu                | both       | File size, image dimensions, type and modified time for a workspace asset, in the menu of an image or of an audio/video/iframe block     |
 | Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                |
 | A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause) |
 | Ask before quitting                                     | both       | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)         |
+| F12 toggles the developer tools                         | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu                                   |
 
 ### Interface
 
@@ -57,15 +59,16 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | Keep the block icon visible on mobile                      | mobile     | Keeps the operated block's icon visible instead of letting it flicker                                                                               |
 | Hide the mobile Quit button                                | mobile     | Hides the icon-only Quit button in the mobile side panel                                                                                            |
 | Hide the agent's suggested prompts                         | both       | Hides the example prompts on the agent panel's new-session screen, so an accidental click cannot start a conversation and spend tokens              |
+| Pin the agent thinking header                              | both       | Pins the "Thought for N s" header of an expanded thinking card to the top of the panel, so a long thought can be collapsed at any time              |
+| Details for the agent's tool calls                         | both       | Lists the agent's tool calls one per row in a thinking card, each with the arguments it ran with, and the full arguments and result on hover        |
 | Do not focus the first control when a settings panel opens | both       | Keeps a settings panel from focusing its first control when it opens: this plugin's panel and SiYuan's own settings dialog                          |
 | Inline Markdown in tab titles                              | both       | Renders inline Markdown in tab titles: the desktop tab bar with its dropdown list, and the mobile tab overview (disabled / desktop / mobile / both) |
 | Guide to the Ref Crumbs plugin                             | both       | A pointer to Ref Crumbs, another plugin by the same author, with a button that opens its settings panel or its marketplace page                     |
 
-### Development
+### About
 
 | Setting                                       | Applies to | What it does                                                                                             |
 | --------------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| F12 toggles the developer tools               | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu   |
 | Console log viewer                            | mobile     | Collects console output from the moment the plugin loads and shows the full log, with copy-all and clear |
 | Clear this plugin's configuration             | both       | Wipes every configuration file in the plugin's storage directory and reloads the frontend                |
 | About this plugin                             | both       | A read-only notice: what the plugin is, the current version and the GitHub repository                    |
@@ -123,6 +126,31 @@ plugin reload, and a feature that only works on one frontend never appears in th
   click Save afterwards**, or those older values are written back.
 * The Ref Crumbs guide opens that plugin's marketplace page when it is not installed; with the marketplace disabled on
   the device it only reports that.
+* Pin the agent thinking header sticks the header to the top of **its own card**: once you scroll past the whole card
+  the header leaves with it instead of hovering over later messages. While pinned it sits flush against the panel top
+  (the messages area's own top padding is compensated for) and its background comes from the panel itself, so themes,
+  dark mode and translucent backgrounds carry over — but that compensation is tied to SiYuan's messages padding, so a
+  theme that rewrites it can leave a thin seam. The AI panel inside the editor lays out differently (its thinking body
+  scrolls on its own and the card never does), so nothing changes there.
+* _Details for the agent's tool calls_ reads the **agent session archive**: SiYuan offers plugins no way to read
+  agent sessions, so the plugin only listens to the two archive responses the panel itself requests (loading a
+  session, writing one back). It sends no request of its own and changes neither the request nor the response.
+  Details therefore arrive with the archive — they show up once the turn has been written back, and until then the
+  tool row is SiYuan's own. A call the archive cannot match (for example a tool deleted once in the same turn) is
+  left without details rather than shown with the wrong arguments.
+* The summary keeps to a single argument — the action plus whichever field identifies the target (`query`, `id`,
+  `path` and so on), because the argument names differ from tool to tool. The full arguments and the head of the
+  result are in the hover tooltip, and the result is truncated to its opening part.
+* Tool calls in a thinking card get **one row each**: the tool name lines up in a left column and its arguments sit
+  in a right column, and a call with no arguments or no match in the archive still takes a row of its own. A dozen
+  calls no longer run together; an over-long argument is elided at the end of its row, with the full text on hover.
+* _Send the agent message with Enter_ turns Enter in the composer into send and moves the line break to Ctrl+Enter /
+  Shift+Enter (Cmd+Enter on macOS). It deliberately **shadows the default Agent Send shortcut** (Settings - Keymap -
+  General, ⌘↩ by default), which is the point of the feature; the keymap setting itself is untouched, so a different
+  combination keeps working once you rebind it. Sending goes through the panel's own send button, so while a turn is
+  running, without a model, with an empty composer or during an upload, Enter sends nothing — exactly like the
+  button. The composer that edits an existing message is unaffected (Enter still breaks the line there, and its own
+  shortcut still submits), and while the @ reference or slash-skill menu is open Enter still picks the candidate.
 
 ## License
 

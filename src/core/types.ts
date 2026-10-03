@@ -14,9 +14,9 @@ import type {
 } from "siyuan";
 
 /** 设置项分类，对应设置面板里的三个小节标题（不是页签）。 */
-export type FeatureCategory = "function" | "ui" | "dev";
+export type FeatureCategory = "function" | "ui" | "about";
 
-export const FEATURE_CATEGORIES: FeatureCategory[] = ["function", "ui", "dev"];
+export const FEATURE_CATEGORIES: FeatureCategory[] = ["function", "ui", "about"];
 
 /**
  * 功能适用的前端。
