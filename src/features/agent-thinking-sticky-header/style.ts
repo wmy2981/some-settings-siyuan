@@ -13,11 +13,14 @@
  *
  * 代价是这一个值与思源 `.agent-chat__messages` 的 `padding-top` 绑在一起：思源改了它，
  * 这里要跟着改（改大留一条缝、改小会把标题顶部裁掉一点）。主题若改写了那个内边距同理。
+ *
+ * 折叠后把视图重新对准卡片那件事写不了 CSS，单独放在 `scroll.ts` 里，由这里一起装上。
  */
 import type {
     FeatureHost,
     FeatureInstance,
 } from "../../core/types";
+import {anchorThinkingCard} from "./scroll";
 
 /** 与思源 `.agent-chat__messages` 的 `padding-top` 一致；见文件头。 */
 const MESSAGES_PADDING_TOP = 12;
@@ -33,5 +36,10 @@ const CSS = `/* 智能体思考卡片的标题固定在面板顶部 */
 
 export const mountAgentThinkingStickyHeader = (host: FeatureHost): FeatureInstance => {
     host.addStyle(CSS);
-    return {};
+    const stopAnchoring = anchorThinkingCard();
+    return {
+        destroy: () => {
+            stopAnchoring();
+        },
+    };
 };

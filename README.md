@@ -131,7 +131,11 @@ plugin reload, and a feature that only works on one frontend never appears in th
   (the messages area's own top padding is compensated for) and its background comes from the panel itself, so themes,
   dark mode and translucent backgrounds carry over — but that compensation is tied to SiYuan's messages padding, so a
   theme that rewrites it can leave a thin seam. The AI panel inside the editor lays out differently (its thinking body
-  scrolls on its own and the card never does), so nothing changes there.
+  scrolls on its own and the card never does), so nothing changes there. Because the header is what you click while
+  reading, collapsing a card that was scrolled past its top puts the view back on that card: its header sits at the
+  panel top again and the agent's output below it appears right under the header instead of being pushed out of
+  sight. Expanding never scrolls — the card grows downwards, so the header stays where it was — and a card that is
+  still in view is left alone too.
 * _Details for the agent's tool calls_ reads **only responses the panel has already received**: SiYuan offers
   plugins no way to read agent sessions, so the plugin listens on two fronts — the event stream of the turn that is
   running (which carries the arguments of every call) and the two archive responses the panel requests itself
