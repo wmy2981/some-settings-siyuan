@@ -132,17 +132,18 @@ plugin reload, and a feature that only works on one frontend never appears in th
   dark mode and translucent backgrounds carry over — but that compensation is tied to SiYuan's messages padding, so a
   theme that rewrites it can leave a thin seam. The AI panel inside the editor lays out differently (its thinking body
   scrolls on its own and the card never does), so nothing changes there.
-* _Details for the agent's tool calls_ reads the **agent session archive**: SiYuan offers plugins no way to read
-  agent sessions, so the plugin only listens to the two archive responses the panel itself requests (loading a
-  session, writing one back). It sends no request of its own and changes neither the request nor the response.
-  Details therefore arrive with the archive — they show up once the turn has been written back, and until then the
-  tool row is SiYuan's own. A call the archive cannot match (for example a tool deleted once in the same turn) is
-  left without details rather than shown with the wrong arguments.
+* _Details for the agent's tool calls_ reads **only responses the panel has already received**: SiYuan offers
+  plugins no way to read agent sessions, so the plugin listens on two fronts — the event stream of the turn that is
+  running (which carries the arguments of every call) and the two archive responses the panel requests itself
+  (loading a session, writing one back, which add the results and the authoritative data for the turn). It sends no
+  request of its own and changes neither the request nor the response. Arguments therefore show up as soon as a call
+  starts executing and its result as soon as it comes back. A call neither source can match (for example a tool
+  deleted once in the same turn) is left without details rather than shown with the wrong arguments.
 * The summary keeps to a single argument — the action plus whichever field identifies the target (`query`, `id`,
   `path` and so on), because the argument names differ from tool to tool. The full arguments and the head of the
   result are in the hover tooltip, and the result is truncated to its opening part.
 * Tool calls in a thinking card get **one row each**: the tool name lines up in a left column and its arguments sit
-  in a right column, and a call with no arguments or no match in the archive still takes a row of its own. A dozen
+  in a right column, and a call with no arguments or no match in either source still takes a row of its own. A dozen
   calls no longer run together; an over-long argument is elided at the end of its row, with the full text on hover.
 * _Send the agent message with Enter_ turns Enter in the composer into send and moves the line break to Ctrl+Enter /
   Shift+Enter (Cmd+Enter on macOS). It deliberately **shadows the default Agent Send shortcut** (Settings - Keymap -

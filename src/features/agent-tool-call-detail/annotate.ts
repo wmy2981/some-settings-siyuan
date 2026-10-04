@@ -12,7 +12,12 @@
  * 工具行可能被宿主反复重建（重载会话、新一步追加），所以对账做成幂等的：
  * 每次重扫都从数据重新算一遍，写之前先比对 DOM 现状，没有变化就不碰。
  * 已经写过、这次算不出来的胶囊（例如工具被删掉了一次）会被清干净，不留残影。
+ *
+ * 数据有两个来源，对账时逐个卡片挑：**存档优先**（权威、带结果，见 `session.ts`），
+ * 存档里还没有的（这一轮正在跑）用**实时流**（`live.ts`）顶上 —— 参数在工具一开始执行就有了，
+ * 不必等这一轮写回。实时数据只认它绑定的那张卡片，切走了就不再用。
  */
+import type {LiveSteps} from "./live";
 import type {IndexedStep} from "./session";
 import {
     describeToolCall,
@@ -29,6 +34,8 @@ import type {
 const DETAIL_CLASS = "ss-agent-tool-detail";
 /** 思考卡片（`data-message-id` 是思考条目的 id，靠它去会话存档里找工具调用）。 */
 const CARD_SELECTOR = ".agent-chat__msg--thinking[data-message-id]";
+/** 已经结束的思考卡片；正在流式的那张没有这个类。 */
+const DONE_CLASS = "agent-chat__msg--thinking-done";
 const LINE_SELECTOR = ".agent-chat__thinking-tools-line";
 const CHIP_SELECTOR = ".agent-chat__thinking-tool";
 
@@ -256,6 +263,7 @@ const clearChip = (chip: HTMLElement) => writeChip(chip, "", "");
 
 export const createAnnotator = (options: {
     stepsOf: (entryID: string) => IndexedStep[] | undefined;
+    live: LiveSteps;
     labels: ToolCallLabels;
 }): Annotator => {
     let frame = 0;
@@ -263,8 +271,9 @@ export const createAnnotator = (options: {
     /**
      * 调用对象 → 展示文本。
      *
-     * 对账在流式期间每帧都会跑一遍，而同一份存档只在写回时才换成新对象，
+     * 对账在流式期间每帧都会跑一遍，而同一份数据只在写回存档、或实时流补上结果时才换成新对象，
      * 所以按对象缓存一次就够：不缓存的话每帧都要把每个调用的参数重新 JSON 序列化。
+     * （实时流补结果时特意换了一个新对象而不是就地改字段，正是为了让这里不会读到旧文本。）
      */
     const views = new WeakMap<ToolCallData, ToolCallView>();
     const describe: Describer = (call) => {
@@ -284,6 +293,17 @@ export const createAnnotator = (options: {
     const unobserve = () => observer?.disconnect();
 
     /**
+     * 某张卡片该用哪一份数据。
+     *
+     * 存档优先：它是权威的，结果也在里面。存档里还没有这个条目（这一轮正在跑、还没写回）
+     * 就退回实时流，参数在工具一开始执行时就有了。
+     */
+    const stepsFor = (entryID: string): IndexedStep[] | undefined => {
+        const archive = options.stepsOf(entryID);
+        return archive && archive.length > 0 ? archive : options.live.stepsOf(entryID);
+    };
+
+    /**
      * 对账一遍当前界面上的所有思考卡片。
      *
      * 写入期间先断开观察器（本仓库的既有约定）：我们插入的摘要节点本身就是子节点变动，
@@ -295,11 +315,16 @@ export const createAnnotator = (options: {
         if (cards.length === 0) {
             return;
         }
+        // 正在流式的那张（最后一张还没结束的卡片）：实时数据只认它
+        const streaming = cards.filter((card) => !card.classList.contains(DONE_CLASS)).pop();
+        if (streaming?.dataset.messageId) {
+            options.live.bind(streaming.dataset.messageId);
+        }
         unobserve();
         try {
             cards.forEach((card) => {
-                const steps = card.dataset.messageId ? options.stepsOf(card.dataset.messageId) : undefined;
-                // 拿不到存档的卡片保持原样：思源自己的工具名还在，不该因为我们读不到数据就变样
+                const steps = card.dataset.messageId ? stepsFor(card.dataset.messageId) : undefined;
+                // 拿不到数据的卡片保持原样：思源自己的工具名还在，不该因为我们读不到数据就变样
                 if (steps && steps.length > 0) {
                     annotateCard(card, steps, describe);
                 }
