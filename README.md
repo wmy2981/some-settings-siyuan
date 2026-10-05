@@ -91,7 +91,9 @@ plugin reload, and a feature that only works on one frontend never appears in th
   field is saved (when it loses focus).
 * The inline-code copy button's "on hover" mode follows the **caret** on mobile (there is no hover with a finger): the
   button appears as soon as the caret or a selection lands inside an inline code span. Clicking it does not steal
-  focus from the editor — the keyboard and the caret stay where they were.
+  focus from the editor — the keyboard and the caret stay where they were. It copies the **visible text**, just like a
+  manual selection: the zero-width markers SiYuan keeps inside inline code are stripped and non-breaking spaces become
+  plain ones, so the result can go straight into a field that validates its content (an activation key, for example).
 * Inline Markdown in tab and document tree titles only **hides** the syntax characters in the DOM; the title text
   itself is unchanged, so everything that reads it verbatim (drag hints, `document.title`, the unlock prompt of an
   encrypted notebook) still gets the original. Turning the feature off restores the plain title.
