@@ -88,6 +88,25 @@ const modeOf = (host: FeatureHost): Mode => {
     return raw === "hover" || raw === "always" ? raw : "off";
 };
 
+/**
+ * 行内代码的**可见文本**。
+ *
+ * 不能直接取 `textContent`：思源会在语义行内元素（code / kbd / tag）内部放一个不可见的
+ * 内部标记，编辑器里渲染出来是
+ * `\u200b<span data-type="code">\u2060值</span>\u200b` —— 前后那两个零宽空格是兄弟文本节点，
+ * 但**内部那个 `\u2060` 就在 `textContent` 里**（旧文档里它是 `\u200b`）。它只是排版用的，
+ * 不属于内容：手动选中复制走内核自己的通路，会剥掉内部标记、把 NBSP 换成空格、再删掉零宽空格；
+ * 而按钮照 `textContent` 复制，就会把零宽字符一起塞进剪贴板 —— 粘进「填写密钥」这类严格输入框
+ * 直接报错。这里照内核那三步做一遍，末尾的换行也一并去掉（内核的代码块复制按钮同样如此）。
+ * 零宽连字符（`\u200d`）要留给 emoji，不能删。
+ */
+const codeTextOf = (span: HTMLElement) =>
+    (span.textContent ?? "")
+        .replace(/^[\u200b\u2060\ufeff]+/, "")
+        .replace(/\u00a0/g, " ")
+        .replace(/\u200b/g, "")
+        .replace(/\n$/, "");
+
 export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
     host.addStyle(COPY_CSS);
 
@@ -98,7 +117,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
 
     /** 复制某段行内代码的文本。 */
     const run = (span: HTMLElement) => {
-        const text = (span.textContent ?? "").replace(/\n$/, "");
+        const text = codeTextOf(span);
         void copyText(text).then((ok) => {
             host.showMessage(ok ? host.i18n("inlineCodeCopy.copied") : host.i18n("inlineCodeCopy.failed"));
         });
