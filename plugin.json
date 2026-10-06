@@ -11,6 +11,7 @@
     "all"
   ],
   "disabledInPublish": true,
+  "settingsWindow": true,
   "displayName": {
     "default": "Some Settings",
     "zh-CN": "一些设置"
