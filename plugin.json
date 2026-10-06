@@ -2,7 +2,7 @@
   "name": "some-settings-siyuan",
   "author": "wmy2981",
   "url": "https://github.com/wmy2981/some-settings-siyuan",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "minAppVersion": "3.8.6-alpha.4",
   "backends": [
     "all"
@@ -11,6 +11,7 @@
     "all"
   ],
   "disabledInPublish": true,
+  "settingsWindow": true,
   "displayName": {
     "default": "Some Settings",
     "zh-CN": "一些设置"
