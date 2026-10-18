@@ -94,6 +94,8 @@ scripts/                      开发脚本
 **推论（很重要）**：功能关着的时候**根本不会被挂载**，所以实现里不能用
 `addTopBar` / `addDock` / `addTab` / `addCommand` 这类必须在 onload 同步注册的 API。
 真需要的话，把 `mount` 写成无条件执行、内部自己按开关收放。
+`addProtyleSlash`（斜杠命令）是例外：宿主**每次打开斜杠菜单时才读取** `plugin.protyleSlash`，
+所以在 mount 里动态增删是安全的，见 §5。
 
 **新增一个功能 = 7 步**（顺序不能省）：
 
@@ -131,6 +133,7 @@ onConfigChange(listener)    订阅本功能配置变化（面板保存后触发�
 addStyle(css)               注入/更新本功能的一段 CSS，返回撤销函数
 addTopBar / addStatusBar    顶栏 / 状态栏条目（必须在 onload 阶段同步调用）
 addCommand                 插件命令
+addProtyleSlash            斜杠命令（宿主每次打开菜单才读取数组，可在 mount 后动态增删）
 addDock / addTab            停靠栏 / 页签
 addIcons                    注册内联 SVG symbol
 addEventBus(type, listener) 事件总线，卸载时自动 off

@@ -22,22 +22,24 @@ plugin reload, and a feature that only works on one frontend never appears in th
 
 ### Functionality
 
-| Setting                                                 | Applies to | What it does                                                                                                                             |
-| ------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Never remember the code language                        | both       | New code blocks always start with an empty language instead of reusing the last one picked                                               |
-| Create the daily note directly                          | both       | Creates the daily note in the chosen notebook without asking; creation still runs through SiYuan's own code                              |
-| Fixed first document icon                               | both       | Uses a configured emoji the first time a document gets an icon instead of a random one                                                   |
-| Confirm before opening a web link                       | both       | Asks before opening an http/https link and shows the full original URL                                                                   |
-| Reconnect button on the disconnect panel (experimental) | both       | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                                           |
-| Automatic reconnect after a disconnect (experimental)   | both       | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default)                        |
-| DeepSeek balance in the agent panel                     | both       | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use            |
-| Send the agent message with Enter                       | both       | Sends with Enter in the agent panel composer and moves the line break to Ctrl+Enter or Shift+Enter (Cmd+Enter on macOS)                  |
-| Aliyun OSS bucket usage                                 | both       | Adds a usage button to the S3 storage settings that reads the bucket's storage size and object count with the credentials saved there    |
-| File size and metadata in the asset menu                | both       | File size, image dimensions, type and modified time for a workspace asset, in the menu of an image or of an audio/video/iframe block     |
-| Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                |
-| A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause) |
-| Ask before quitting                                     | both       | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)         |
-| F12 toggles the developer tools                         | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu                                   |
+| Setting                                                 | Applies to | What it does                                                                                                                               |
+| ------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Never remember the code language                        | both       | New code blocks always start with an empty language instead of reusing the last one picked                                                 |
+| Create the daily note directly                          | both       | Creates the daily note in the chosen notebook without asking; creation still runs through SiYuan's own code                                |
+| Fixed first document icon                               | both       | Uses a configured emoji the first time a document gets an icon instead of a random one                                                     |
+| Confirm before opening a web link                       | both       | Asks before opening an http/https link and shows the full original URL                                                                     |
+| Reconnect button on the disconnect panel (experimental) | both       | Adds a _Reconnect now_ button to the kernel-disconnected panel                                                                             |
+| Automatic reconnect after a disconnect (experimental)   | both       | Probes the kernel on its own schedule while disconnected and reloads as soon as it answers (2 × 500ms by default)                          |
+| DeepSeek balance in the agent panel                     | both       | Shows the account balance centred below the agent panel composer while the official api.deepseek.com DeepSeek model is in use              |
+| Send the agent message with Enter                       | both       | Sends with Enter in the agent panel composer and moves the line break to Ctrl+Enter or Shift+Enter (Cmd+Enter on macOS)                    |
+| Aliyun OSS bucket usage                                 | both       | Adds a usage button to the S3 storage settings that reads the bucket's storage size and object count with the credentials saved there      |
+| File size and metadata in the asset menu                | both       | File size, image dimensions, type and modified time for a workspace asset, in the menu of an image or of an audio/video/iframe block       |
+| Jump to the last position when a bookmark opens a note  | both       | Opens a whole-document bookmark through the document tree's own path, restoring the last reading position                                  |
+| A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause)   |
+| Ask before quitting                                     | both       | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)           |
+| F12 toggles the developer tools                         | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu                                     |
+| Custom marketplace icons                                | both       | Replaces the icon of an installed marketplace package; saving one turns the feature on                                                     |
+| Create a file in assets from the slash menu             | both       | Creates an empty file with any extension under assets/ from a slash command, appends a note ID to the name and inserts a link at the caret |
 
 ### Interface
 
@@ -111,6 +113,9 @@ plugin reload, and a feature that only works on one frontend never appears in th
 * Asset rows land directly in the context menu, next to SiYuan's own _Modified_ / _Created_ rows and after a
   separator, rather than inside the **Plugin** submenu. Only workspace assets (`assets/…`) have a file size and a
   modified time — external URLs and `data:` URIs do not.
+* The slash command uses SiYuan's own upload path: the name matches a manual import (`name-noteID.ext`) and the empty
+  file lands in the current notebook's `assets/` directory; for encrypted notebooks the kernel encrypts it and the
+  plugin never writes to disk directly. The entry can also be hidden in SiYuan's slash-menu settings.
 * Do-not-focus-the-first-control keeps the focus on the dialog itself until you click a control (or its label, or a
   button) or press a key, so the very first keystroke goes nowhere and the mobile keyboard stays down — that is what
   the switch is for, not a bug. Clicking only the title bar or a sidebar category does not count as interacting.
@@ -126,6 +131,10 @@ plugin reload, and a feature that only works on one frontend never appears in th
   from the plugin are exported, imported and cleared all the same.
 * Importing a configuration reloads the frontend: the panel still holds the drafts from before the import, so **do not
   click Save afterwards**, or those older values are written back.
+* Custom marketplace icons live under `icons/` in the plugin storage directory (named `author__package.ext`). They only
+  change this client's display and sync with SiYuan; saving an icon turns the feature on, and _Clear this plugin's
+  configuration_ removes configuration files but not these images, so use _Restore default_ in the icon manager to undo
+  one.
 * The Ref Crumbs guide opens that plugin's marketplace page when it is not installed; with the marketplace disabled on
   the device it only reports that.
 * Pin the agent thinking header sticks the header to the top of **its own card**: once you scroll past the whole card

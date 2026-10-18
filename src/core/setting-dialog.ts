@@ -29,6 +29,7 @@ import type {ConfigStore} from "./config";
 import type {ControlSnapshot} from "./control";
 import {
     guardAsync,
+    guardSilent,
     reportError,
 } from "./error";
 import type {
@@ -179,6 +180,8 @@ export class SettingsPanel {
     private dialog?: Dialog;
     private drafts = new Map<string, FeatureConfig>();
     private viewportTimer?: number;
+    /** 动作行注册的「插件卸载时」清理回调。 */
+    private readonly unloadListeners = new Set<() => void>();
 
     constructor(options: SettingsPanelOptions) {
         this.options = options;
@@ -269,6 +272,17 @@ export class SettingsPanel {
     /** 插件被禁用/重载/卸载时收掉面板；幂等。 */
     close(): void {
         this.dialog?.destroy();
+    }
+
+    /**
+     * 插件卸载：收掉面板，并执行动作行注册的清理回调（它们打开的窗口不在挂载实例里）。
+     * 与 `close()` 分开：用户点「取消 / 保存」只收面板，动作行开的窗口仍然留着。
+     */
+    dispose(): void {
+        this.close();
+        const listeners = [...this.unloadListeners];
+        this.unloadListeners.clear();
+        listeners.forEach((listener) => guardSilent("panel.unload", listener));
     }
 
     /**
@@ -525,7 +539,9 @@ export class SettingsPanel {
                     bindKey(feature.id, field.key),
                     this.t(field.title),
                     // 函数型 label 自己取 i18n，返回值就是文案；字符串型仍是 i18n key
-                    typeof field.label === "function" ? field.label(this.actionContext()) : this.t(field.label),
+                    typeof field.label === "function" ?
+                        field.label(this.actionContext(feature.id)) :
+                        this.t(field.label),
                     {
                         description: field.description ? this.t(field.description) : "",
                         // 动作行在只读/发布模式下不提供，避免点了没有反应
@@ -610,7 +626,7 @@ export class SettingsPanel {
                     console.warn(`[some-settings-siyuan] action row "${encoded}" has no matching onClick, ignoring it`);
                     return;
                 }
-                guardAsync(`${featureId}.${key}`, () => Promise.resolve(field.onClick(this.actionContext())));
+                guardAsync(`${featureId}.${key}`, () => Promise.resolve(field.onClick(this.actionContext(featureId))));
             });
         });
     }
@@ -619,9 +635,31 @@ export class SettingsPanel {
      * 动作行能拿到的平台能力。动作行不参与挂载，拿不到 FeatureHost，
      * 所以它需要的东西只能由面板在这里现搭一个。
      */
-    private actionContext(): FeatureActionContext {
+    private actionContext(featureId: string): FeatureActionContext {
         return {
             i18n: (key: string) => this.t(key),
+            featureId,
+            pluginName: this.options.plugin.name,
+            onUnload: (listener: () => void) => {
+                this.unloadListeners.add(listener);
+                return () => this.unloadListeners.delete(listener);
+            },
+            configOf: (id: string) => ({...this.options.store.get(id)}),
+            updateConfig: async (id: string, patch: FeatureConfig) => {
+                // 先写进草稿：动作行绕过了「保存」，但面板随后点保存时不能把这次改动覆盖掉
+                const draft = this.drafts.get(id);
+                if (draft) {
+                    Object.assign(draft, patch);
+                }
+                await this.options.store.patch(id, patch);
+                // 开关状态变了就把面板上的控件一起改掉，不让界面和磁盘各说各话
+                const control = this.dialog?.element.querySelector<HTMLInputElement>(
+                    `[data-ss-switch="${bindKey(id, "enabled")}"]`,
+                );
+                if (control) {
+                    control.checked = this.options.store.get(id).enabled === true;
+                }
+            },
             clearAllConfigs: () => this.options.store.clearAll(),
             exportConfigs: () => this.options.store.exportAll(),
             importConfigs: (config: Record<string, unknown>) => this.options.store.importMany(config),

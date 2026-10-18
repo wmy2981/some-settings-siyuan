@@ -104,3 +104,21 @@ export const removeStoredFile = async (plugin: Plugin, storageName: string): Pro
         return {ok: false, detail: String(error)};
     }
 };
+
+/**
+ * 删除插件自己的整个存储目录（含子目录）。
+ *
+ * 功能可能在存储根目录下再建子目录（例如自定义图标），逐个删配置文件清不掉它们；
+ * 卸载时用这一条收尾，目录本来就不在也算成功。
+ */
+export const removeStorageDir = async (plugin: Plugin): Promise<StorageStatus> => {
+    try {
+        const status = statusOf(
+            await fetchSyncPost("/api/file/removeFile", {path: storageDirOf(plugin)}, undefined, false),
+        );
+        return status.code === 404 ? {...status, ok: true} : status;
+    } catch (error) {
+        console.warn(`${PREFIX} failed to remove ${storageDirOf(plugin)}`, error);
+        return {ok: false, detail: String(error)};
+    }
+};

@@ -6,6 +6,7 @@
  */
 import type {
     Plugin,
+    Protyle,
     subMenu,
     TEventBus,
     IEventBusMap,
@@ -54,13 +55,36 @@ export interface SettingOption {
  * 动作行能拿到的平台能力。
  *
  * 动作行是「点击立刻执行、没有可持久化取值」的入口，它不参与挂载，
- * 因此拿不到 FeatureHost。这里按需给出它真正要用的三件事，
+ * 因此拿不到 FeatureHost。这里按需给出它真正要用的东西，
  * 一方面避免功能为了一个按钮去 import 注册表（那会形成 core ↔ feature 的循环依赖），
  * 一方面也不必让功能长期挂载只为了保存一个引用。
  */
 export interface FeatureActionContext {
     /** 解析 i18n key，缺失时回落到 key 本身。 */
     readonly i18n: (key: string) => string;
+    /** 这个动作行所属的功能 id。动作行拿到它才能改动自己的配置。 */
+    readonly featureId: string;
+    /**
+     * 插件名。动作行不参与挂载，拿不到 FeatureHost；需要在插件自己的存储目录下
+     * 读写额外文件（例如自定义图标）时，用它拼出 `data/storage/petal/<插件名>/…`。
+     */
+    readonly pluginName: string;
+    /**
+     * 注册「插件卸载 / 重载时」的清理回调，返回取消注册的函数。
+     *
+     * 动作行打开的窗口不属于任何挂载实例，插件卸载时不会自动消失；
+     * 打开窗口的动作行必须用它把窗口收掉。
+     */
+    onUnload(listener: () => void): () => void;
+    /** 读某个功能此刻的配置快照（只读副本，改了不落盘）。 */
+    configOf(featureId: string): FeatureConfig;
+    /**
+     * 立即合并并落盘某个功能的配置，同时通知订阅者（开关变动会立刻挂载或卸载功能）。
+     *
+     * 动作行自己的改动不走面板草稿，但会同步写进面板里这个功能的草稿：
+     * 否则用户随后点「保存」时，手里的旧草稿会把这次改动覆盖回去。
+     */
+    updateConfig(featureId: string, patch: FeatureConfig): Promise<void>;
     /**
      * 清除本插件存储目录（`data/storage/petal/<插件名>/`）下的全部配置文件：
      * 逐个删除、回落默认值并通知各功能。目标是目录里的文件，与四态、当前前端是否适用、
@@ -185,6 +209,20 @@ export interface FeatureHost {
         contextMenu?: (menu: subMenu) => void;
     }): HTMLElement | undefined;
     addCommand(options: ICommand): void;
+    /**
+     * 注册一条斜杠命令（在编辑器里输入 `/` 时出现在候选里）。
+     *
+     * 与 addTopBar / addCommand 不同，宿主的 `protyleSlash` 是**每次打开斜杠菜单时才读取**的
+     * 数组，所以它可以在功能挂载后动态增删，不会错过 onload 那段同步注册窗口。
+     * 必须在 mount 里同步调用；条目随功能卸载自动移除。
+     */
+    addProtyleSlash(options: {
+        id: string;
+        filter: string[];
+        html: string;
+        showInLite?: boolean;
+        callback: (protyle: Protyle, nodeElement: HTMLElement) => void;
+    }): void;
     /** 注册内联 SVG symbol，供顶栏/菜单图标引用。 */
     addIcons(svg: string): void;
     addStatusBar(options: {element: HTMLElement; position?: "right" | "left";}): HTMLElement | undefined;

@@ -46,6 +46,9 @@
     "asset-info-menu": {
       "state": 1
     },
+    "assets-new-file": {
+      "state": 1
+    },
     "bookmark-last-position": {
       "state": 1
     },
@@ -104,6 +107,9 @@
       "state": 1
     },
     "heading-level-icon": {
+      "state": 1
+    },
+    "bazaar-custom-icon": {
       "state": 1
     },
     "deepseek-balance": {
