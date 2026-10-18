@@ -412,10 +412,65 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         return rows.filter((row) => row.querySelector("button")).pop() ?? rows.pop();
     };
 
+    /**
+     * 按钮该落在哪一行。
+     *
+     * 3.8.7-alpha.9 起 S3 配置改在独立弹窗里（`.config-sync-dialog`），设置页只剩一行「配置」入口；
+     * 弹窗里只有 S3 有「测试连接」按钮，用它认出 S3 弹窗，把按钮放进同一行动作区。
+     * 旧版本仍是内联表单，按原来的 `.b3-label--inner` 找；两者都没有时退回设置页的配置行，
+     * 让用户至少还能从那里打开使用数据。
+     */
+    const actionOf = (): HTMLElement | undefined => {
+        // 只有 S3 才有桶用量可查；WebDAV / 本地目录即使还留着旧的 S3 Endpoint 也不该出现按钮
+        if (window.siyuan?.config?.sync?.provider !== 2) {
+            return undefined;
+        }
+        const dialogAction = document
+            .querySelector<HTMLElement>('.config-sync-dialog [data-action="test"]')
+            ?.closest<HTMLElement>(".b3-dialog__action");
+        if (dialogAction) {
+            return dialogAction;
+        }
+        const form = formOf();
+        if (form?.querySelector("#endpoint")) {
+            return actionRowOf(form);
+        }
+        return document.querySelector<HTMLElement>("#syncProviderConfigRow .fn__size200") ?? undefined;
+    };
+
     const removeButton = () => {
         guardSilent("oss-usage.remove", () => button?.remove());
         button = undefined;
         document.querySelectorAll<HTMLElement>(`[${BUTTON_ATTR}]`).forEach((element) => element.remove());
+    };
+
+    /**
+     * 把按钮接到动作区里，并补上与相邻控件一致的间距。
+     *
+     * 设置页的配置行是一列竖排按钮，每两个之间有一个 `.fn__hr`；弹窗底部是横排，
+     * 用 `.fn__space` 分隔。旧版内联表单自己有 `gap`，直接追加即可。
+     */
+    const appendButton = (action: HTMLElement, element: HTMLButtonElement) => {
+        if (action.classList.contains("b3-dialog__action")) {
+            const space = document.createElement("div");
+            space.className = "fn__space";
+            space.setAttribute(BUTTON_ATTR, "true");
+            const flexible = action.querySelector<HTMLElement>(".fn__flex-1");
+            if (flexible) {
+                flexible.before(space, element);
+            } else {
+                action.append(space, element);
+            }
+            return;
+        }
+        if (action.classList.contains("fn__size200")) {
+            const hr = document.createElement("div");
+            hr.className = "fn__hr";
+            hr.setAttribute(BUTTON_ATTR, "true");
+            action.append(hr, element);
+            return;
+        }
+        action.append(element);
     };
 
     /** 幂等地把按钮放进动作区；条件不满足时收掉它。 */
@@ -423,9 +478,8 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         if (destroyed) {
             return;
         }
-        const form = formOf();
-        const action = form ? actionRowOf(form) : undefined;
-        if (!form || !action || !isAliyunTarget()) {
+        const action = actionOf();
+        if (!action || !isAliyunTarget()) {
             removeButton();
             return;
         }
@@ -439,7 +493,7 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         button.setAttribute(BUTTON_ATTR, "true");
         button.innerHTML = `<svg><use xlink:href="#iconCloud"></use></svg>${escapeHtml(t("ossUsage.button"))}`;
         button.addEventListener("click", () => openUsage());
-        action.append(button);
+        appendButton(action, button);
     };
 
     const schedule = () => {
