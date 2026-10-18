@@ -61,8 +61,52 @@ const isQuitRequest = (input: RequestInfo | URL, init?: RequestInit): boolean =>
     }
 };
 
-/** 「用户取消」在这次请求上的表达：宿主把它当作主动取消，静默结束。 */
+/** 「用户取消」在这次请求上的表达：旧宿主把它当作主动取消；新宿主会弹失败窗，由 `dismissExitFailure` 收掉。 */
 const cancelled = (): DOMException => new DOMException("exit cancelled by the user", "AbortError");
+
+/**
+ * 取消之后收掉宿主新加的「退出等待失败」弹窗。
+ *
+ * 3.8.7-beta.4 起，宿主的退出请求改走 `requestSystemExit()`：它不再像原来的 `fetchPost`
+ * 那样把 `AbortError` 当成静默取消，而是统一 catch 后弹一个「退出等待失败 / 重试」的窗口。
+ * 我们仍然用 `AbortError` 表示取消，所以得在它出现时替用户点掉「关闭」，
+ * 否则用户刚点完取消就会看到一个莫名其妙的失败提示。只关掉取消后 1 秒内出现的第一个
+ * 同文案窗口：真正的退出失败发生在用户确认之后，正常不会落进这段窗口。
+ */
+const dismissExitFailure = (): void => {
+    const text = window.siyuan?.languages?.exitWaitFailed;
+    if (typeof text !== "string" || !text) {
+        return;
+    }
+    let observer: MutationObserver | undefined;
+    let timer = 0;
+    const stop = () => {
+        observer?.disconnect();
+        observer = undefined;
+        window.clearTimeout(timer);
+        timer = 0;
+    };
+    const scan = () => {
+        const dialogs = document.querySelectorAll<HTMLElement>(".b3-dialog");
+        for (const dialog of dialogs) {
+            const content = dialog.querySelector<HTMLElement>('.b3-dialog__content[role="alert"]');
+            if (content?.textContent?.trim() !== text) {
+                continue;
+            }
+            const close = dialog.querySelector<HTMLButtonElement>(".b3-dialog__action button");
+            if (!close) {
+                continue;
+            }
+            close.click();
+            stop();
+            return;
+        }
+    };
+    observer = new MutationObserver(scan);
+    observer.observe(document.body, {childList: true, subtree: true});
+    timer = window.setTimeout(stop, 1000);
+    scan();
+};
 
 /** 这次退出是不是用户在本窗口里发起的；不是就不问（见文件头）。 */
 const fromWindow = (): boolean => isMobile() || (document.visibilityState === "visible" && document.hasFocus());
@@ -95,6 +139,7 @@ export const mountExitConfirm = (host: FeatureHost): FeatureInstance => {
         return ask().then((confirmed) => {
             asking = false;
             if (!confirmed) {
+                dismissExitFailure();
                 return Promise.reject(cancelled());
             }
             return original.call(window, input, init);
