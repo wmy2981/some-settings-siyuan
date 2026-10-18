@@ -10,6 +10,7 @@ import agentEnterToSend from "../features/agent-enter-to-send";
 import agentThinkingStickyHeader from "../features/agent-thinking-sticky-header";
 import agentToolCallDetail from "../features/agent-tool-call-detail";
 import assetInfoMenu from "../features/asset-info-menu";
+import assetsNewFile from "../features/assets-new-file";
 import bazaarCustomIcon from "../features/bazaar-custom-icon";
 import bookmarkLastPosition from "../features/bookmark-last-position";
 import clearConfig from "../features/clear-config";
@@ -57,6 +58,7 @@ import {supportsCurrentHost} from "./version";
 export const FEATURES: FeatureDefinition[] = [
     codeBlockLangEmpty,
     assetInfoMenu,
+    assetsNewFile,
     bookmarkLastPosition,
     recordingWindow,
     exitConfirm,

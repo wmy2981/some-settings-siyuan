@@ -212,6 +212,24 @@ export class FeatureManager {
                 // 宿主没有提供单条命令的移除 API：命令随插件卸载一起释放，
                 // 因此这里不做 teardown，避免误删其他功能注册的命令。
             },
+            addProtyleSlash: (options) => {
+                // 斜杠菜单每次都重新读这个数组，所以可以随功能挂载 / 卸载增删。
+                // 这里保留条目对象本身：同一个功能重复注册同一个 id 时各自移除自己的那份。
+                const entry = {
+                    filter: options.filter,
+                    html: options.html,
+                    id: options.id,
+                    showInLite: options.showInLite,
+                    callback: options.callback,
+                };
+                plugin.protyleSlash.push(entry);
+                addTeardown(() => {
+                    const index = plugin.protyleSlash.indexOf(entry);
+                    if (index >= 0) {
+                        plugin.protyleSlash.splice(index, 1);
+                    }
+                });
+            },
             addIcons: (svg: string) => {
                 plugin.addIcons(svg);
             },

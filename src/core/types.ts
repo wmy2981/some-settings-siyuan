@@ -6,6 +6,7 @@
  */
 import type {
     Plugin,
+    Protyle,
     subMenu,
     TEventBus,
     IEventBusMap,
@@ -208,6 +209,20 @@ export interface FeatureHost {
         contextMenu?: (menu: subMenu) => void;
     }): HTMLElement | undefined;
     addCommand(options: ICommand): void;
+    /**
+     * 注册一条斜杠命令（在编辑器里输入 `/` 时出现在候选里）。
+     *
+     * 与 addTopBar / addCommand 不同，宿主的 `protyleSlash` 是**每次打开斜杠菜单时才读取**的
+     * 数组，所以它可以在功能挂载后动态增删，不会错过 onload 那段同步注册窗口。
+     * 必须在 mount 里同步调用；条目随功能卸载自动移除。
+     */
+    addProtyleSlash(options: {
+        id: string;
+        filter: string[];
+        html: string;
+        showInLite?: boolean;
+        callback: (protyle: Protyle, nodeElement: HTMLElement) => void;
+    }): void;
     /** 注册内联 SVG symbol，供顶栏/菜单图标引用。 */
     addIcons(svg: string): void;
     addStatusBar(options: {element: HTMLElement; position?: "right" | "left";}): HTMLElement | undefined;
