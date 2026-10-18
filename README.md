@@ -38,6 +38,7 @@ plugin reload, and a feature that only works on one frontend never appears in th
 | A floating window instead of the recording notice       | both       | Replaces the recording notice with a small floating window showing the elapsed time, with a stop button (SiYuan's recorder has no pause) |
 | Ask before quitting                                     | both       | Asks before SiYuan quits (the main menu's Quit and close-to-quit); a tray quit does not ask (disabled / desktop / mobile / both)         |
 | F12 toggles the developer tools                         | desktop    | Opens or closes the developer tools with F12, the same entry as the one in the status bar context menu                                   |
+| Custom marketplace icons                                | both       | Replaces the icon of an installed marketplace package; saving one turns the feature on                                                   |
 
 ### Interface
 
@@ -126,6 +127,10 @@ plugin reload, and a feature that only works on one frontend never appears in th
   from the plugin are exported, imported and cleared all the same.
 * Importing a configuration reloads the frontend: the panel still holds the drafts from before the import, so **do not
   click Save afterwards**, or those older values are written back.
+* Custom marketplace icons live under `icons/` in the plugin storage directory (named `author__package.ext`). They only
+  change this client's display and sync with SiYuan; saving an icon turns the feature on, and _Clear this plugin's
+  configuration_ removes configuration files but not these images, so use _Restore default_ in the icon manager to undo
+  one.
 * The Ref Crumbs guide opens that plugin's marketplace page when it is not installed; with the marketplace disabled on
   the device it only reports that.
 * Pin the agent thinking header sticks the header to the top of **its own card**: once you scroll past the whole card

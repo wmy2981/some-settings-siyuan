@@ -260,7 +260,7 @@ export class FeatureManager {
             return;
         }
         this.disposed = true;
-        guardSilent("panel.close", () => this.panel.close());
+        guardSilent("panel.close", () => this.panel.dispose());
         [...this.mounted.keys()].forEach((id) => this.unmount(id));
         guardSilent("config.dispose", () => this.store.dispose());
     }

@@ -24,6 +24,7 @@ import {
 import {ALL_FEATURE_IDS} from "./core/registry";
 import {
     listStoredFiles,
+    removeStorageDir,
     removeStoredFile,
 } from "./core/storage";
 // 集市要求包根目录必须有 index.css；各功能自己的样式走 host.addStyle() 运行时注入
@@ -73,6 +74,14 @@ export default class SomeSettingsPlugin extends Plugin {
                 }
             }, false);
         }
+        // 存储目录下可能还有功能自己建的子目录（例如自定义图标），逐个删文件清不掉它们；
+        // 最后直接删整个目录收尾。整个卸载只有 5 秒预算，这一条也只发一次请求。
+        await guardAsync("uninstall.storage", async () => {
+            const status = await removeStorageDir(this);
+            if (!status.ok) {
+                logWarn(`uninstall could not remove the plugin storage directory: ${status.detail}`);
+            }
+        }, false);
         showMessage(`[${this.name}] ${this.i18n.byePlugin}`, 4000);
     }
 
