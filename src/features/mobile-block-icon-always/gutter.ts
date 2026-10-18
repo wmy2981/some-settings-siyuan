@@ -33,8 +33,16 @@ export const mountMobileBlockIconAlways = (host: FeatureHost): FeatureInstance =
     /** 当前正在操作的块；手指点到别处就清空。 */
     let operatedBlockId = "";
 
-    const blockIdOf = (gutter: HTMLElement): string =>
-        gutter.querySelector<HTMLElement>("button[data-node-id]")?.dataset.nodeId ?? "";
+    /**
+     * 当前块标对应的块。
+     *
+     * 完整块标模式下，一个 gutter 里会同时画出当前块及其所有容器层级（外层在前、当前块在后），
+     * 所以取最后一个才是"正在操作的那个块"；精简模式通常只有一个。
+     */
+    const blockIdOf = (gutter: HTMLElement): string => {
+        const buttons = gutter.querySelectorAll<HTMLElement>("button[data-node-id]");
+        return buttons[buttons.length - 1]?.dataset.nodeId ?? "";
+    };
 
     const blockExists = (blockId: string): boolean => {
         if (!blockId) {
