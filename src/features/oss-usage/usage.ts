@@ -1,10 +1,12 @@
 /**
  * 功能：在思源的 S3 存储配置页给阿里云 OSS 的桶加一个「使用数据」入口。
  *
- * 位置与可见性：按钮插在 S3 表单自己的动作区里（与「清空云端存储数据」「导入 / 导出」
- * 同一行），只有**已保存的** Endpoint 落在阿里云域名下时才出现 —— 查询用的也是这份已保存的
- * 凭据，两边同源才不会出现「按钮在、查的是另一套配置」。内核的这份表单在切换服务商、
- * 导入配置、设置搜索时都会被整体重写，所以按钮靠一个 MutationObserver 重新插回去（幂等）。
+ * 位置与可见性：按钮插在设置页「同步」分组里那行同步服务配置的操作列里，与「配置 / 导入 / 导出」
+ * 同一列、同宽、用同一种分隔；**不插进 S3 配置弹窗** —— 那个弹窗里只有针对这份草稿的「清除 /
+ * 测试连接 / 取消 / 保存」，查桶用量不属于那里。只有**已保存的** Endpoint 落在阿里云域名下时才出现
+ * —— 查询用的也是这份已保存的凭据，两边同源才不会出现「按钮在、查的是另一套配置」。
+ * 内核在切换服务商、导入配置、设置搜索时都会把这一行整体重写，所以按钮靠一个
+ * MutationObserver 重新插回去（幂等）。
  *
  * 数据来源是阿里云 OSS 的 GetBucketStat（`GET /?stat`）：返回桶的存储量、对象数、
  * 未完成分片数与各存储类型的明细。签名照抄官方浏览器 SDK（ali-oss）的 V1 方案：
@@ -140,6 +142,17 @@ interface StatResult {
     message?: string;
     /** 请求没能送出去（内核也发不出去，或前端根本没问到内核），而不是服务端明确报错。 */
     network?: boolean;
+}
+
+/**
+ * 按钮该落在的动作区，以及在那儿跟相邻按钮对齐要用的类名。
+ */
+interface ActionTarget {
+    container: HTMLElement;
+    /** 宽度类：设置页的操作列里相邻按钮是 `fn__block`，旧版内联表单里是 `fn__size200`。 */
+    buttonClass: string;
+    /** 插进操作列时补的分隔行；旧版内联表单自带 `gap`，不需要。 */
+    separatorClass?: string;
 }
 
 const readS3Config = (): Record<string, unknown> | undefined => {
@@ -413,29 +426,30 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
     };
 
     /**
-     * 按钮该落在哪一行。
+     * 按钮该落在哪个动作区。
      *
-     * 3.8.7-alpha.9 起 S3 配置改在独立弹窗里（`.config-sync-dialog`），设置页只剩一行「配置」入口；
-     * 弹窗里只有 S3 有「测试连接」按钮，用它认出 S3 弹窗，把按钮放进同一行动作区。
-     * 旧版本仍是内联表单，按原来的 `.b3-label--inner` 找；两者都没有时退回设置页的配置行，
-     * 让用户至少还能从那里打开使用数据。
+     * 3.8.7-alpha.9 起 S3 配置改在独立弹窗里，设置页的同步服务配置变成一个操作列
+     * （`.fn__size200` 里竖排「配置 / 导入 / 导出」），按钮就落在这里 —— 弹窗里不放：
+     * 那一排只管这份草稿的清除 / 测试连接 / 取消 / 保存，查桶用量不属于它。
+     * 旧版本仍是内联表单，动作区是表单最后那一行。
      */
-    const actionOf = (): HTMLElement | undefined => {
+    const actionOf = (): ActionTarget | undefined => {
         // 只有 S3 才有桶用量可查；WebDAV / 本地目录即使还留着旧的 S3 Endpoint 也不该出现按钮
         if (window.siyuan?.config?.sync?.provider !== 2) {
             return undefined;
         }
-        const dialogAction = document
-            .querySelector<HTMLElement>('.config-sync-dialog [data-action="test"]')
-            ?.closest<HTMLElement>(".b3-dialog__action");
-        if (dialogAction) {
-            return dialogAction;
+        const column = document.querySelector<HTMLElement>("#syncProviderConfigRow .fn__size200");
+        if (column) {
+            return {container: column, buttonClass: "fn__block", separatorClass: "fn__hr"};
         }
         const form = formOf();
         if (form?.querySelector("#endpoint")) {
-            return actionRowOf(form);
+            const action = actionRowOf(form);
+            if (action) {
+                return {container: action, buttonClass: "fn__size200"};
+            }
         }
-        return document.querySelector<HTMLElement>("#syncProviderConfigRow .fn__size200") ?? undefined;
+        return undefined;
     };
 
     const removeButton = () => {
@@ -447,30 +461,17 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
     /**
      * 把按钮接到动作区里，并补上与相邻控件一致的间距。
      *
-     * 设置页的配置行是一列竖排按钮，每两个之间有一个 `.fn__hr`；弹窗底部是横排，
-     * 用 `.fn__space` 分隔。旧版内联表单自己有 `gap`，直接追加即可。
+     * 设置页的操作列里每两个按钮之间有一个 `.fn__hr`；旧版内联表单自己有 `gap`，直接追加即可。
      */
-    const appendButton = (action: HTMLElement, element: HTMLButtonElement) => {
-        if (action.classList.contains("b3-dialog__action")) {
-            const space = document.createElement("div");
-            space.className = "fn__space";
-            space.setAttribute(BUTTON_ATTR, "true");
-            const flexible = action.querySelector<HTMLElement>(".fn__flex-1");
-            if (flexible) {
-                flexible.before(space, element);
-            } else {
-                action.append(space, element);
-            }
+    const appendButton = (target: ActionTarget, element: HTMLButtonElement) => {
+        if (!target.separatorClass) {
+            target.container.append(element);
             return;
         }
-        if (action.classList.contains("fn__size200")) {
-            const hr = document.createElement("div");
-            hr.className = "fn__hr";
-            hr.setAttribute(BUTTON_ATTR, "true");
-            action.append(hr, element);
-            return;
-        }
-        action.append(element);
+        const separator = document.createElement("div");
+        separator.className = target.separatorClass;
+        separator.setAttribute(BUTTON_ATTR, "true");
+        target.container.append(separator, element);
     };
 
     /** 幂等地把按钮放进动作区；条件不满足时收掉它。 */
@@ -478,22 +479,22 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         if (destroyed) {
             return;
         }
-        const action = actionOf();
-        if (!action || !isAliyunTarget()) {
+        const target = actionOf();
+        if (!target || !isAliyunTarget()) {
             removeButton();
             return;
         }
-        if (button?.isConnected && button.parentElement === action) {
+        if (button?.isConnected && button.parentElement === target.container) {
             return;
         }
         removeButton();
         button = document.createElement("button");
         button.type = "button";
-        button.className = "b3-button b3-button--outline fn__size200";
+        button.className = `b3-button b3-button--outline ${target.buttonClass}`;
         button.setAttribute(BUTTON_ATTR, "true");
         button.innerHTML = `<svg><use xlink:href="#iconCloud"></use></svg>${escapeHtml(t("ossUsage.button"))}`;
         button.addEventListener("click", () => openUsage());
-        appendButton(action, button);
+        appendButton(target, button);
     };
 
     const schedule = () => {
