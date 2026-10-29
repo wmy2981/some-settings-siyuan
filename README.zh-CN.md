@@ -149,6 +149,10 @@
   编辑已有消息的输入框不受影响（那里的回车仍是换行，提交仍用原来的快捷键）；
   @ 引用与斜杠技能的候选菜单展开时，Enter 仍然是选中候选项。
 
+## 集市趋势图表
+
+![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
+
 ## 许可证
 
 [MIT](./LICENSE)

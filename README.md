@@ -168,6 +168,10 @@ plugin reload, and a feature that only works on one frontend never appears in th
   button. The composer that edits an existing message is unaffected (Enter still breaks the line there, and its own
   shortcut still submits), and while the @ reference or slash-skill menu is open Enter still picks the candidate.
 
+## Bazaar Stats Graph
+
+![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
+
 ## License
 
 [MIT](./LICENSE)
