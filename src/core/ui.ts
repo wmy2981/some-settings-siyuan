@@ -441,7 +441,7 @@ export const noteRowHtml = (key: string, bodyHtml: string, actionsHtml = ""): st
  *
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
  * - 去掉 .config-items 的灰底大圆角，面板不再有"卡片"这件多余的东西
- * - 文案只有两种角色：设置项名（标题，统一加粗）与说明（统一不加粗、更淡）
+ * - 文案只有两种角色：设置项名（标题，一律常规字重）与说明（更小、更淡）
  * - 页签只有两套外观：桌面端照抄内核设置的左侧页签列表，
  *   移动端照抄内核代码片段弹窗的顶部页签栏（`.layout-tab-bar` 的样式由内核提供，
  *   这里把底色换成弹窗容器的底色让页签栏能吸顶，并去掉自己那圈圆角）
@@ -523,7 +523,7 @@ export const PANEL_CSS = `
     fill: currentColor;
 }
 /* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
-   .config__panel > .config__side（这里按「功能 / 界面 / 关于」三个短标签收窄到 220px）。 */
+   .config__panel > .config__side（分类标签都不长，收窄到 220px）。 */
 .${PANEL_CLASS}__side {
     flex: 0 0 auto;
     width: 220px;

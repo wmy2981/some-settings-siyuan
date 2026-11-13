@@ -1,302 +1,133 @@
-1. **HTML 属性会把 U+0000 换成 U+FFFD（65533）。**
-   用不可打印字符拼接并写进 `data-*` 的复合标识，读回时已经变成 `\uFFFD`，切不开、查不到、匹配不上。
-   现象是**「改完保存、重开还是默认值」且没有任何报错**。
-   **规则：任何最终写进 HTML 属性的复合字符串都只能用可打印分隔符。**
+# 开发笔记
 
-2. **压缩会把 `console.log` 丢掉。**
-   minimizer 默认移除 console 调用，于是「出问题但控制台全空」。构建配置里 `drop: []` / `pure: []`
-   的固定项**不要删**。
+只记「读代码看不出来」的东西：宿主行为、踩过的坑、必须遵守的约束。
+API 签名、样式类名、文件布局，以及每个功能**为什么**这么做，都能在 `src/` 里直接读到
+（各功能写在自己的模块头注释里），这里不重复；README 只留用户能感知的结论。
+设置面板的机制见 [setting-panel.md](./setting-panel.md)。
 
-3. **宿主的 `saveData` 在真正落盘前就可能 resolve**，并且不检查 `response.code`。
-   所以「没报错」不等于「存住了」。写后读回校验不能移除。
-
-4. **`Dialog` 不会生成动作区**（`Setting` 才会，见第 22 条）。自建 `Dialog` 要在底栏放按钮
-   （导出 / 导入窗口的「关闭 / 复制」）就得自己拼 `.b3-dialog__action`；设置面板反过来不用这块区域。
-
-5. **不要为了让某个功能跑起来而放宽本文档的限制**（例如跨 feature import、直接改核心 DOM）。
-   先讨论，再改规范。
-
-6. **注入的 `<style>` 必须每次重写内容，不能在元素已存在时直接 return。**
-   「禁用 / 启用插件」和「重载插件」都**不会重载页面**，`<head>` 里的 `<style>` 会留下来，
-   于是新代码配上一份旧样式表。现象极具迷惑性：**JS 改的 DOM 生效了，但 CSS 改的东西（字重、间距）
-   纹丝不动，而且重载插件多少次都没用，只有整页刷新才恢复。**
-   **排查 UI 改动「没生效」时先怀疑这一条。**
-
-7. **`getAllEditor()` 返回的 `Protyle` 是外壳，真正的编辑器在 `protyle.protyle`（`IProtyle`）。**
-   外壳上**没有** `element` / `block` / `disabled`，取 `editor.element` 会得到 `undefined`
-   （`.find()` 直接失配）。另外 `.protyle-wysiwyg` 容器**没有** `data-node-id`，
-   想从 DOM 取文档 id 要用 `.protyle-background[data-node-id]` / `.protyle-title[data-node-id]`。
-   这两处取空值的效果是**「完全不生效」，且只留下一条日志**。
-
-8. **用自定义菜单顶替原生 `<select>` 时，必须把随后的 `click` 也吞掉。**
-   内核的全局 click 处理器见到「点在菜单外面」就收掉菜单，于是菜单「闪一下就消失」；
-   而手指在控件上滑动不会产生 click，现象就变成**「只有滑动能用、点按不行」**。
-   捕获阶段 `preventDefault()` + `stopPropagation()` 可同时挡住浏览器默认弹层与这次 click。
-
-9. **两层对齐（透明输入框 + 底层高亮层）时，主题自带的高亮样式必须压掉。**
-   highlight.js 主题里的 `pre code.hljs { padding: 1em }` 特异性高于自己写的规则，会把高亮层整体
-   错开 1em，主题的 `background` 也会盖住输入框 —— 现象是**编辑框「完全没法用」**。
-   要么用更深的特异性（`.__highlight > code.hljs`），要么 `!important`。
-   同理，输入框的 `color` / `background-color` **只能在变透明之前抄一次**：生效后它俩算出来是透明的，
-   每帧再抄一次会让高亮层的字也一起消失。
-   还有两处同样的坑，都会表现成**「光标和文字之间空一段」**：
-   * **字体没被继承下来。** 浏览器默认样式给 `code` 定死了 `font-family: monospace`，而「直接命中该元素」
-     的规则永远赢过从父级继承来的字体 —— 字体抄在 `pre` 上不够，必须再给 `code` 写一条 `font: inherit`。
-     两套字体字宽不同，光标（输入框画的）会随行长越来越偏离可见文字：实测 8 个字符差 6px、96 个字符差 75px。
-     连字同理：`.b3-text-field` 是 `font-variant-ligatures: none`，抄漏了 `->` `!=` `ffi` 会被合成更窄的字形。
-   * **输入法组字串会跟着输入框的文字一起消失。** 组字串只在输入框里，`textarea.value` 里还没有它，
-     高亮层渲染不出来；所以要监听 `compositionstart` / `compositionend`：组字期间把可见性交还输入框，
-     组字结束再换回来。
-
-10. **页面上的图标容器可能就是那个 `<svg>` 本身。**
-    移动端页签在没有图标时渲染的是 `<svg class="mobile-tabs__item-icon">` —— 容器与 svg 是同一个元素。
-    往 `<svg>` 上写 `textContent` 只会插一个文本节点，而 SVG 不渲染裸文本，页签于是变成**一片空白**。
-    要换 emoji 就把整个元素换成内核自己给 emoji 用的 `<span class="mobile-tabs__item-icon">`。
-    注意 `element.querySelector("svg use")` **能**命中这个元素自己内部的那个 `<use>`，
-    所以「是不是默认图标」的判断照样通过、代码真的会执行下去 —— **判断通过不等于写法正确**。
-    同理，自己改 DOM 的 `MutationObserver` 要在写入前 `disconnect()`，否则每次写入都会再触发自己。
-
-11. **`flex-wrap` 的折行判定发生在收缩之前。**
-    浏览器先用各项的**基准尺寸**（`flex-basis`）判断放不放得下，放不下就换行，换行之后没有收缩的机会。
-    所以「标题 `flex: 1 1 auto`、控件留在同行」在标题一长（或右边是下拉这种更宽的控件）时就会失效。
-    功能行要用 `flex: 1 1 0` 让基准取 0，再由 `flex-grow` 分配剩余宽度。
-    另外 **`:first-child`、`:not(.x)` 里的选择器都算特异性**，想覆盖必须补一级，光靠「写在后面」没用。
-
-12. **不要为「用户离开」自己发明一个信号。**
-    面板真正的生命周期就是它自己的显式动作：关面板、Esc、插件卸载。用户切出去再回来，
-    DOM 弹窗还在原处，改动早已落盘，什么都不用做。
-    **规则：不要自己造「用户离开」的信号；要收 UI 就绑定用户的显式动作。** 两种常见判据都会误判：
-    * `window` 的 blur / focus 不等于用户离开：软键盘收起或弹起、系统弹层、思源自己的菜单、
-      桌面端「去看一眼别的应用再回来」都会派发这一对事件；
-    * `document` 的可见性也不等于用户离开：Chromium 的原生窗口遮挡检测（Windows 上默认开启）把
-      「窗口被别的窗口完全盖住」也算成 hidden —— **换判据只是换了个误判来源**。
-
-13. **拦原生 `<select>` 弹层时不要在 `touchstart` 里 `preventDefault()`。**
-    在 `touchstart`（或第一个 `touchmove`）里取消默认行为会连**页面滚动**一起取消：手指落在下拉控件上
-    就再也划不动，而用户根本不会把这两件事联系起来。原生弹层属于「点击」的默认行为 ——
-    在 `touchend` 里取消一次就够（`pointerdown` / `mousedown` 上取消不影响触摸滚动，可以留着挡鼠标那条路径）。
-
-14. **内核用 `.config__tab-container` 认「哪个弹窗是设置弹窗」，这个类名借不得。**
-    打开思源自己的设置时，内核会先把命中这个类的弹窗 `destroy()`；只要插件面板里出现了它，
-    用户**再打开一次思源设置**就可能连带把插件面板关掉。
-    仿原生外观时只借**纯样式类**（`b3-list-item`、`layout-tab-bar`、`item`、`.config-items`、`.b3-label`），
-    结构类（`.config__panel` / `.config__side` / `.config__tab-wrap` / `.config__tab-container`）
-    一律用自己的类名复刻形制。
-
-15. **页签栏的底色要跟着弹窗容器走，不能留着内核给 `.layout-tab-bar` 的那一份。**
-    内核的 `.layout-tab-bar` 自带 `background-color: var(--b3-theme-background)`，而弹窗容器
-    `.b3-dialog__container` 的底色是 `--b3-theme-surface` —— 深色下 `#1e1e1e` 与 `#2c2c2c`、
-    浅色下 `#fff` 与 `#f6f6f6`，两两都不同。于是页签栏在标题下面变成一条明显的色带；
-    如果还自己给它加一圈上圆角，容器的底色会从两个角上露出来，看起来就是「圆角没贴合」。
-    **底色取 `transparent`，圆角一律不要。**
-
-16. **动作行的副作用必须自己落盘，并让面板控件跟上。**
-    动作行「点击立刻执行」，绕过面板上的开关控件，所以**不能指望用户再点一次开关**。
-    只由动作行配置的功能，用户配完却忘了开开关，功能永远不会挂载 —— 看起来就是「配了没用」。
-    反过来，动作行只改磁盘、不改面板控件，界面就会显示和磁盘不一样的值。
-    所以动作行要**立即落盘、触发挂载，同时把面板上对应的控件改成新值**（`updateConfig` 已经做了）。
-
-17. **宿主投影出来的富标题节点（`.document-title-preview`）整块都不能碰。**
-    思源把文档标题存成行级 AST，再投影进文档树的标题元素、页签条、大纲行与移动端页签概览。
-    靠「标题里出现语法字符就 `replaceChildren`」工作的功能（`doc-tree-title-markdown`、
-    `tab-title-markdown`）于是：
-    * 一旦宿主投影出富标题，插件就把那一片 AST 整块换掉 —— `a_b`、`1*2`、`a = b` 这种普通标题就够触发，
-      标题里的格式、引用、标签、公式全部消失；
-    * 用 `textContent = …` 还原会把富标题**永久**压成纯文本，直到宿主下一次改写这个元素。
-      **规则：宿主自己投影的节点一律按 `document-title-preview` 类早退，既不渲染也不还原。**
-      顺带注意富标题还会给别处带来新作用面：`span[data-type~="code"]` 现在会出现在文档树、页签与大纲里，
-      任何「给正文行内元素挂东西」的功能都要把它排掉。
-
-18. **退出确认要在宿主的键盘封锁之前拿到 Enter / Escape。**
-    3.8.7-beta.4 起宿主的退出在发 `POST /api/system/exit` **之前**就做两件事：铺一张全屏「正在退出」
-    遮罩，并在 `window` **捕获阶段**注册 `keydown / beforeinput / paste / drop`，命中就
-    `preventDefault()` + `stopImmediatePropagation()`。于是插件的确认框：
-    * 弹在遮罩之上（用户先看到「正在退出」再被问话）—— 询问前把遮罩元素删掉即可，宿主随后收遮罩时
-      元素不在也不报错；
-    * 键盘全失效（Enter / Escape / Tab 都进不来，Dialog 自己的 Tab 约束也收不到事件）——
-      必须在 **mount 阶段**就注册 `window` 捕获期 `keydown`：同一节点同一阶段按注册顺序执行，
-      宿主那批是发请求时才注册的，一定排在我们后面。只把 Enter / Escape 转成点确认框的按钮，
-      其余按键照旧让它封。
-      另外取消后宿主必然 catch 出一个「退出等待失败」弹窗，仍要在 1 秒内点掉。
-
-19. **`backdrop-filter: revert` 回滚不到宿主那条规则。**
-    `revert` 回滚的是**级联来源**（回到浏览器默认值），不是「上一条作者样式」，所以想「把这条属性交还宿主」
-    会得到 `none` 而不是宿主的 `blur(8px) saturate(105%)` —— 实测就是进度遮罩的毛玻璃消失。
-    正确做法是**一开始就别匹配**（`:not(.b3-dialog__scrim--progress)`），宿主的声明根本没被覆盖，
-    也就无所谓还回去。
-
-20. **弹窗入场闪烁是两个独立问题（图层与聚焦），只挡一个不够，也不能用其中一个的消失代替另一个。**
-    * **图层**：宿主的 `Dialog` 用 `transform` / `opacity` 做入场（`.b3-dialog__container` 从
-      `scale(.8)` / `opacity: 0` 过渡到 `transform: none`），过渡期间临时建层、结束时再拆层，
-      WebView 在拆层那一帧只能提交拆层前的旧纹理 —— 弹窗闪一帧旧画面。
-      **规则：`new Dialog()` 返回后立刻调 `core/layer.ts` 的 `preheatDialogLayer(dialog)`**，
-      给容器挂 `.some-settings-layer`，由该模块注入的样式把容器、`.b3-dialog__content`
-      和确有滚动正文的区域常驻提升为独立图层。只加 `will-change`：不覆盖宿主的 `transition`、
-      不改 `b3-dialog--open` 的时序、不在 `transitionend` 后移除。
-      补类必须发生在宿主 50ms 后才加的 `b3-dialog--open` 之前，所以只能同步调用。
-    * **聚焦**：打开路径里 `input.focus()` / `textarea.focus()` 会弹起软键盘，键盘的 adjustResize
-      改掉 WebView 高度、整页重排，弹窗在入场那一帧就闪旧画面。
-      **规则：移动端打开弹窗时不程序性聚焦可输入控件**（`isMobileFrontend()` 判一下，桌面端保持），
-      由用户点一下再输入。
-
-21. **面板里的按钮点一次只能跑一次流程。**
-    动作行常常是「先异步准备，再开窗」：导出配置要先把所有功能的配置读出来，导入要等
-    `importMany` 落盘并读回校验，清除配置要先问一次。这段等待里按钮仍然可点，
-    连点几下就会把同一段流程跑几遍 —— 现象是「过了一会儿一下子冒出好几个弹窗」，
-    或者同一批配置被导入两遍。
-    **规则：面板里的按钮一律用 `core/click.ts` 的 `bindPendingClick(button, scope, run)` 绑定**：
-    它在执行期间把按钮置为 disabled（浏览器不会再给 disabled 的按钮派发 click），返回 Promise 时
-    一直禁用到落定，失败时恢复并把错误交给 `reportError`。按钮的点击由面板统一绑定，
-    新功能只写 `onClick`，不用自己防重。
-
-22. **设置面板交给宿主的 `Setting` 打开，插件只往正文里填自己的面板；移动端才会自动变成抽屉。**
-    新版宿主的 `Setting.open()` 内部走 `MobileDialog`：移动端渲染成底部抽屉（抓手、拖动、
-    遮罩、返回键、键盘避让全部由宿主接管），桌面端仍是居中弹窗，设置窗口模式下 `close()`
-    还会替插件收掉那个窗口。自建 `Dialog` 一样都拿不到，还得跟着宿主每一处调整自己追。
-    * `open()` 是同步的：返回时正文已经建好，整块替换正文即可，入场前内容就是完整的。
-      `setting.dialog` / `setting.close()` 在当前 SDK 的类型声明里还没有，只做一处窄类型扩展。
-    * **面板不需要动作区**：控件改完即落盘，所以宿主建的那条 `.b3-dialog__action` 整块加
-      `fn__none` 收起，插件也不往里放任何按钮 —— 于是不存在「保存 / 取消」这套事务语义。
-      改完即写的节奏是：开关 / 下拉改一次写一次；文本 / 数字框打字过程按 400ms 静默期合并写；
-      失焦（change）立即写；关面板时把还在静默期里的那一次补写出去。
-    * 移动端的抽屉高度是**量内容的自然高度**再按视口裁限的，所以面板不能写死高度：
-      `height: 100%` 在自动高度的父级里退化成 `auto`，抽屉会塌成一条。页签栏改成吸顶、
-      底色取 `--b3-theme-surface`，滚动交给宿主的内容区。
-    * `Setting.open()` 会程序性聚焦正文里的第一个输入控件，移动端用
-      `core/frontend.ts` 的 `withoutMobileInputFocus()` 只包住这次同步调用挡掉。
-
-23. **测试的运行环境是按文件选的，两条快路都有各自的代价。**
-    全集原本约 100 秒（环境初始化占 69%，就是给每个文件建 jsdom）；按下面拆开后 14～20 秒。
-    * **纯逻辑测试用 node 环境**：`tests/core/config` / `storage` / `error` / `registry` /
-      `tests/features/declarations` 这类不碰 DOM 的文件，第一行写 `// @vitest-environment node`。
-      公共 `tests/setup.ts` 里动 DOM 的几行必须先用 `typeof document !== "undefined"` 判断，
-      否则给 `window` 赋值的部分在 node 环境里直接抛错；`globalThis` 当 `window` 用的别名照旧保留。
-    * **其余文件走 `vmThreads`**（`vitest.config.mts` 里的 `vm` project）。**VM 上下文不是完整 Node**：
-      `ReadableStream`、Web Crypto 要自己补（见 `setup.ts` 顶部），`crypto.subtle` 还得同时挂到
-      `window.crypto` 上 —— 只补全局的话 jsdom 里的 `window.crypto` 仍是空的。
-    * **例外只能是整块替换 `window.location` 的文件**（`kernel-auto-reconnect`、`kernel-reconnect-button`）：
-      jsdom 的 `location` 连 `Object.defineProperty` 都拒绝，VM 里也没有可换的宿主对象，只能整块换掉才能观察
-      `reload()`。它们在 `forks` project 里跑。别再试 `poolMatchGlobs`：Vitest 5 已经删掉这个字段，
-      写了既不报错也不生效（会被当成未知选项静默忽略）。
-    * **子 project 默认继承根配置，数组是拼接而不是覆盖**：`include` / `exclude` / `setupFiles` 都会合并，
-      所以根配置把 `include` 留成空数组，文件清单只在各 project 里写一次，否则同一批文件会被两个 project 各跑一遍。
-    * **测试没亲手关掉的面板由 `tests/setup.ts` 的 `closeOpenSettings()` 兜底**：面板的视口轮询停止在宿主的
-      `destroyCallback` 里，测试直接把实例丢掉就等于留下一个定时器 —— 它在环境拆除之后才触发，
-      于是 `window is not defined`、进程退出码不为 0（断言却全是绿的）。
+**不要为了让某个功能跑起来而放宽这里的限制**（跨 feature import、直接改核心 DOM 之类）。
+先讨论，再改规范。
 
 ---
 
-## 各功能的实现取舍
+## 配置与存储
 
-这些细节属于实现层面，README 只留用户能感知的结论。
+* **「没报错」不等于「存住了」。** 宿主的 `saveData` 在文件真正落盘前就可能兑现，回调也从不检查
+  响应 `code`；内核回负数 code（-1、-3 这类）时请求层直接拦截，`fetchPost` 的成功与失败回调都不触发，
+  Promise 会永远悬着。所以写盘必须写后读回校验，失败必须让用户看见。
+* **列目录用 `fetchSyncPost`**（任何 code 都会兑现），并传 `process: false`；插件 API 里没有列目录，
+  走内核 `/api/file/readDir`。
+* **导出 / 导入 / 清除 / 卸载按存储目录里的文件来，不按注册表里的功能来。** 声明里的 `enabled`、
+  前端适配、`minAppVersion` / `maxAppVersion` 只决定功能加不加载；退役的、甚至已经从插件里删掉的
+  功能，配置文件仍躺在 `data/storage/petal/<插件名>/` 下。
+* **卸载时 petal 存储要插件自己清**：内核只删插件包目录与集市元信息。`uninstall` 只有 **5 秒**预算，
+  所以只做「列一次目录 + 逐个删 + 最后删掉整个目录」—— 功能自己建的子目录（`icons/` 这类）逐个删文件
+  清不掉；删不掉只记日志。
+* **写进 HTML 属性的复合标识只能用可打印分隔符。** HTML 属性会把 U+0000 换成 U+FFFD（65533），
+  拼进去的不可打印分隔符读回时已经切不开、匹配不上 —— 现象是「改完、重开还是默认值」且没有任何报错。
 
-* **门控只在运行期生效。** 关掉一个功能**不会**把它的代码从产物里移除：这样「不交出某个功能」
-  只需要把 `index.ts` 里的 `enabled` 改成 `false`，不必删代码、也不必条件导入。代价是包体大小。
-* **功能关着的时候根本不挂载**，所以不能用 `addTopBar` / `addDock` / `addTab` / `addCommand`
-  这类必须在 onload 同步注册的 API。
-* **移动端复制走 App 注入的原生桥。** 安卓 / iOS 的 WebView 没有把剪贴板写权限给页面，
-  `navigator.clipboard` 在那里会被拒绝，要走 `JSAndroid.writeClipboard` /
-  `webkit.messageHandlers.setClipboard`；桌面端与浏览器才用 Clipboard API，最后都留 `execCommand("copy")` 兜底。
-* **功能被禁用后再启用，插件命令需要重载插件**：宿主 API 没有单条命令的移除接口，命令只随插件一起释放。
-* **`inline-code-copy` 的按钮在按下时就复制**，不等 `click`：表格单元格的富编辑器把「单元格之外的
-  `pointerdown`」当成收尾信号，收到就重建整个单元格，行内代码连同布局盒一起消失，按钮随即被收掉 ——
-  这一串都发生在 `mouseup` 之前，`click` 永远不会派发到按钮上。键盘与无障碍工具派发的是 `detail` 为 0 的
-  `click`，那条路仍旧走 `click`。
-  **移动端还要更早一步**：光「按下即复制」只解决了「复制不到」，单元格照样被重建，承载光标的编辑器与
-  浏览器选区一起消失；之后手指落在**空单元格**上就再也点不进去（`td:empty` 只能靠「已有选区 + focus」）。
-  所以在 **window 捕获阶段** `stopPropagation()`（比宿主的 document 捕获更外层），单元格不再重建。
-* **`inline-code-copy` 复制的是「可见文本」，不是 `textContent`**：思源给语义行内元素（code / kbd / tag）
-  内部塞了一个不可见的标记（现在是 `\u2060`，旧文档里是 `\u200b`），它就在 `textContent` 里。
-  手动选中复制走内核自己的剥离通路所以干净；照 `textContent` 复制会把零宽字符写进剪贴板，肉眼看不出差别，
-  粘进严格输入框就直接报错。**规则：把 DOM 文本送进剪贴板时，必须做与内核复制通路同样的一遍规范化**
-  （`\u200d` 要留给 emoji，不能删）。作用面只认**正文**，富标题里整块排掉。
-* **`exit-confirm` 守的是渲染进程发出的那一次 `POST /api/system/exit`** —— 菜单退出、托盘退出、
-  关窗即退出最后都落到它上面，三者请求体一字不差；唯一还能区分托盘退出的是窗口状态，所以只在前台窗口发问。
-  两条路仍拦不住：连接**远程内核**时退出不发这个请求；请求失败时宿主的兜底是直接发 `siyuan-quit`。
-  3.8.7-beta.4 起宿主把 `AbortError` 也当成失败并弹「退出等待失败」，取消后要在 1 秒内点掉（见第 18 条）。
-* **`recording-window` 靠那条永不消失的录音提示驱动**：认出它、把它藏起来（**留在 DOM 里**，
-  那个按钮是 `stopRecord` 的唯一入口），内核收掉它时浮窗跟着关闭。移动端每秒重算底部操作条与键盘工具栏的
-  **顶沿**（不是高度：只量高度会让浮窗压住它），键盘弹起时还要重新抢回层级。
-* **`bookmark-last-position` 管不到已打开的那条路**：文档已在某个页签打开时仍走宿主的 `switchEditor`，
+## 功能生命周期
+
+* **功能关着时根本不挂载**，所以不能用 `addTopBar` / `addDock` / `addTab` / `addCommand` 这类必须在
+  `onload` 同步注册的 API；真要常驻就把 `mount` 写成无条件执行、内部按开关收放。
+  `addProtyleSlash` 是例外：宿主每次打开斜杠菜单才读数组。
+* **门控只在运行期生效**：关掉一个功能**不会**把它从产物里移除，也不必条件导入 —— 代价是包体大小。
+  这正是「退役功能只把 `enabled` 改成 `false`、不必删代码」的前提。
+* **上游做到同一件事后要能退场**：声明 `maxAppVersion`（闭区间），宿主版本超过就不再加载、不显示、
+  不挂载。反过来，补丁只对某个版本之后才存在的差异有效时用 `minAppVersion`。都不是「删掉功能」或
+  「加一个已失效的开关」。
+* **功能被禁用后再启用，插件命令要重载插件才回来**：宿主没有单条命令的移除接口，命令只随插件释放。
+
+## 宿主 DOM 与 API
+
+* **`getAllEditor()` 返回的 `Protyle` 是外壳，真正的编辑器在 `protyle.protyle`（`IProtyle`）。**
+  外壳上没有 `element` / `block` / `disabled`，取 `editor.element` 得到 `undefined`，`.find()` 直接失配。
+  `.protyle-wysiwyg` 容器**没有** `data-node-id`，取文档 id 要用 `.protyle-background[data-node-id]`
+  或 `.protyle-title[data-node-id]`。取空值的效果是「完全不生效」外加一条日志。
+* **宿主投影出来的富标题（`.document-title-preview`）整块都不能碰。** 思源把标题存成行级 AST，
+  再投影进文档树、页签条、大纲行与移动端页签概览。对它 `replaceChildren` 会整块吃掉标题里的格式、
+  引用、标签与公式（`a_b`、`1*2` 这种普通标题就够触发）；用 `textContent = …` 还原会把富标题永久压成
+  纯文本。一律按这个类早退，既不渲染也不还原。顺带：`span[data-type~="code"]` 也会出现在文档树、
+  页签与大纲里，任何「给正文行内元素挂东西」的功能都要把它排掉。
+* **图标容器可能就是那个 `<svg>` 本身。** 往 `<svg>` 上写 `textContent` 只会插一个文本节点，
+  SVG 不渲染裸文本，结果是「一片空白」，而 `querySelector("svg use")` 照样命中它内部的 `<use>` ——
+  判断通过不等于写法正确。要换内容就把整个元素换成内核自己用的 `<span>`；自己改 DOM 的
+  `MutationObserver` 要在写入前 `disconnect()`。
+* **资源菜单不要用事件给的 `detail.menu`**：内核会把插件往里加的东西整体收进菜单末尾的「插件」
+  子菜单。要加到当前正在构建的那个菜单上，才和信息行同级。
+* **观察 `fetch` 响应必须在宿主碰响应体之前 `clone()`**：靠的是「我们的 `.then` 比宿主的 `await`
+  先注册、先执行」。挂在 `fetch` 上的观察者都得守这一条。补数据时要换新的对象，而不是就地改字段 ——
+  界面可能按对象缓存过展示文本。
+* **把 DOM 文本送进剪贴板前，要按内核复制通路做一遍规范化**：思源在语义行内元素里塞了不可见标记
+  （现在是 `\u2060`，旧文档是 `\u200b`），它就在 `textContent` 里，手动选中复制走内核的剥离通路所以干净。
+  `\u200d` 要留给 emoji，不能删。作用面只认正文，富标题里整块排掉。
+* **外链统一走 `core/link.ts`**：它先发内核同款的 `open-link` 插件事件（这样别的插件能拦，本插件自己的
+  「外链跳转前确认」也才拦得到），没人取消才退回 `window.open`。面板自己画的入口各写一份，迟早漏掉一处。
+* **移动端剪贴板走 App 注入的原生桥**：安卓 / iOS 的 WebView 不给页面剪贴板写权限，`navigator.clipboard`
+  会被拒绝，要走 `JSAndroid.writeClipboard` / `webkit.messageHandlers.setClipboard`；桌面端与浏览器用
+  Clipboard API，最后都留 `execCommand("copy")` 兜底。
+
+## 样式
+
+* **注入的 `<style>` 必须每次重写内容**，不能在元素已存在时直接 return。「禁用 / 启用」与「重载插件」
+  都**不会重载页面**，`<head>` 里的旧样式会留下来，于是新代码配一份旧样式表：**JS 改的 DOM 生效了，
+  CSS 改的东西纹丝不动，重载多少次都没用，只有整页刷新才恢复**。排查 UI 改动「没生效」先怀疑这一条。
+* **`flex-wrap` 的折行判定发生在收缩之前**：浏览器先按基准尺寸（`flex-basis`）判断放不放得下，
+  放不下就换行，换行之后没有收缩机会。要让控件留在同行，功能行得用 `flex: 1 1 0` 让基准取 0。
+* **`:first-child`、`:not(.x)` 里的选择器都算特异性**，想覆盖内核的规则必须补一级，光靠「写在后面」没用。
+* **`backdrop-filter: revert` 回滚不到宿主那条规则**：`revert` 回的是级联来源（浏览器默认值），不是
+  「上一条作者样式」，于是想「交还宿主」会得到 `none`。正确做法是一开始就别匹配
+  （`:not(.b3-dialog__scrim--progress)`，进度遮罩自 3.8.9-alpha.6 起由宿主自己写底色与模糊），
+  宿主的声明根本没被覆盖。
+* **两层对齐（透明输入框 + 底层高亮层）时，主题自带的高亮样式必须压掉。** highlight.js 主题里的
+  `pre code.hljs { padding: 1em }` 特异性高于自写规则，会把高亮层整体错开；主题的 `background`
+  也会盖住输入框。用更深的特异性（`.__highlight > code.hljs`）或 `!important`。
+  * 输入框的 `color` / `background-color` **只能在变透明之前抄一次**：生效后它俩算出来是透明的，
+    每帧再抄一次会让高亮层的字一起消失。
+  * **字体要显式继承到 `code`**：浏览器给 `code` 定死了 `font-family: monospace`，直接命中的规则永远
+    赢过继承，只抄在 `pre` 上不够。字宽不同会让光标随行长越来越偏；连字同理，`.b3-text-field` 是
+    `font-variant-ligatures: none`，抄漏了 `->` `ffi` 会被合成更窄的字形。
+  * **输入法组字串只在输入框里**，`textarea.value` 里还没有它，高亮层渲染不出来：组字期间把可见性
+    交还输入框（`compositionstart` / `compositionend`），结束再换回来。
+
+## 交互
+
+* **不要为「用户离开」自己发明一个信号。** 面板的生命周期只有它自己的显式动作：关面板、Esc、插件卸载。
+  `window` 的 blur / focus 不等于用户离开（软键盘收放、系统弹层、思源菜单、桌面端切走再回来都会派发）；
+  `document` 的可见性也不等于（Chromium 的原生窗口遮挡检测把「窗口被完全盖住」也算 hidden）。
+  换判据只是换了个误判来源。
+* **用自定义菜单顶替原生 `<select>` 时，必须把随后那次 `click` 也吞掉。** 内核的全局 click 处理器见到
+  「点在菜单外面」就收掉菜单，于是菜单闪一下就消失；而手指在控件上滑动不产生 click，现象就成了
+  「只有滑动能用、点按不行」。捕获阶段 `preventDefault()` + `stopPropagation()` 能同时挡住浏览器默认弹层
+  与这次 click。
+* **拦原生 `<select>` 弹层不要在 `touchstart` 里 `preventDefault()`**：那会连页面滚动一起取消，手指落在
+  下拉控件上就再也划不动。原生弹层属于「点击」的默认行为，在 `touchend` 里取消一次就够
+  （`pointerdown` / `mousedown` 上取消不影响触摸滚动，可以留着挡鼠标那条路径）。
+* **面板里的按钮点一次只能跑一次流程**（连点会冒出好几个弹窗、同一批配置导入两遍）。
+  用 `core/click.ts` 的 `bindPendingClick` 绑定，见 [setting-panel.md](./setting-panel.md)。
+
+## 已知盲区
+
+改这两个功能之前先看一眼，代码注释里没有这些后果：
+
+* **`bookmark-last-position` 管不到已打开的那条路**：文档已经在某个页签打开时走的是宿主的 `switchEditor`，
   那条路对文档树也一样不重新定位。
-* **`tab-title-markdown` 把语法字符留在 DOM 里只是隐藏**，`textContent` 依旧是原标题 —— `document.title`、
-  拖拽载荷、下拉列表的文字都从它取。宿主会在**原文没变**时重写页签标题（直接写 `innerHTML`），
-  所以「这份原文已经渲染过」的去重不能只看 `textContent`，还要确认节点里仍带着我们的标记，
-  否则那次重写会被当成「已经渲染过」，页签停在纯文本上。宿主开始投影富标题后，这类重写变成行级 AST，
-  这两个标题功能已退役（见第 17 条）。
-* **`deepseek-balance` 的余额行跟着面板走**：智能体面板是懒创建的，也可能被整体换掉，所以 body 一有变化、
-  以及每个轮询周期都要重新插一次。
-* **`oss-usage` 按阿里云 OSS 的 V1 方案签名**：`GetBucketStat` 是 `GET /?stat`，待签字符串照抄官方浏览器 SDK
-  —— 时间用 `x-oss-date`：待签字符串里 Date 那一格填它的值，同时它本身作为 `x-oss-*` 头再出现一次；
-  规范化资源是 `/<bucket>/?stat`，虚拟主机风格与 path 风格同一个。
-  **请求必须由内核发出**：移动端 WebView 直连 OSS 是跨域，桶上没有 CORS 规则时预检就被拒，
-  用户只看到一句 `Failed to fetch`。转发时内核**一定会**替我们写一个 Content-Type，而它是待签字符串的一格，
-  所以那一格必须用显式传给内核的值（留空就全变成签名错误）。按钮要留在设置页那行服务的操作列里，
-  **不要**插进 S3 配置弹窗的动作区 —— 那里只管这份草稿的清除 / 测试连接 / 取消 / 保存，按钮形态也对不上。
-* **`asset-info-menu` 不用事件给的 `detail.menu`**：内核会把插件往里加的东西整体收进菜单末尾的「插件」
-  子菜单，而这几行是资源自己的信息。要加到**当前正在构建的那个菜单**上，与「更新于 / 创建于」同级。
-* **`plugin-reminder` 的链接显示成 `owner/repo`，指向的仍是完整地址**；点击时先发内核同款的 `open-link`
-  插件事件，本插件自己的「外链跳转前确认」才会像对待其它外链一样拦下它，没有插件取消时才退回 `window.open`。
-  同一节里的两颗按钮（上：去 GitHub 点星；下：给插件开发者捐赠）也走 `core/link.ts` 的同一个入口：
-  面板自己画的入口都到不了内核那条路，两处各写一份迟早会漏掉其中一处。两颗的地址都取自插件清单
-  —— 点星用 `url`，捐赠用 `funding.custom`，后者缺失时那一行不显示。
-* **`ref-crumbs-guide` 走目标插件自己的 `openSetting()`**，没装时退回集市详情页 —— 集市没有官方插件 API。
-* **`config-transfer` 导入成功后必须重新载入前端**：导入是一次整体替换，面板此刻还开着、
-  上面显示的是导入之前的值，已经挂载的功能也不会自己按新配置重来。重新载入是让面板、各功能与磁盘
-  重新对齐的唯一可靠做法（清除配置同理）。
-* **配置的导出 / 导入 / 清除 / 卸载要按存储目录里的文件来，不能按注册表里的功能来**：声明里的
-  `enabled`、前端适配、`minAppVersion` / `maxAppVersion` 都只管功能加不加载，退役的、甚至已经从
-  插件里删掉的功能留下的配置文件仍躺在
-  `data/storage/petal/<插件名>/` 下；只看注册表就会漏掉它们。列目录没有插件 API，只能走内核 `/api/file/readDir`。
-* **卸载时 petal 存储要插件自己清**：内核卸载只删插件包目录与集市元信息，不碰
-  `data/storage/petal/<插件名>/`，而这些文件还参与同步。拆除钩子只有 **5 秒**预算（`onunload` 与
-  `uninstall` 共用同一个 deadline），所以只做「列一次目录 + 逐个删」，删不掉只记日志。
-* **内核回负数 code 时 `fetchPost` 的回调不会触发**：宿主见到 `code < 0` 就提示并返回，成功与失败回调都不走，
-  于是 `loadData` / `saveData` / `removeData` 的 Promise 会永远悬着 —— 这也是写盘必须读回校验的原因之一。
-  列目录因此用 `fetchSyncPost`（任何 code 都会兑现），并把 `process` 传 `false`。
-* **`agent-tool-call-detail` 的细节有两条来源**：本轮的事件流（内核在**每个工具执行之前**逐个发
-  `tool_call`，参数就在里面）与写回后的会话存档（权威、带结果）。两条都只是**被动读一遍面板自己已经收到的
-  响应**。读副本的 `clone()` 必须在宿主碰响应体之前调，靠的是「我们的 `.then` 比宿主的 `await` 先注册、
-  先执行」—— 挂在 `fetch` 上的观察者都得守这一条。实时数据按卡片对账，卡片切走就丢弃；
-  **补结果时换的是一个新的调用对象，而不是就地改字段**（界面按对象缓存过展示文本，就地改会一直读到旧文本）。
-  步骤的切法要与宿主一致（一个 `thinking` 事件起一步），否则那一行会整行不显示。
-* **`agent-thinking-sticky-header` 折叠之后要把卡片顶沿对回滚动区上沿**：这一折把正文高度抽掉，卡片随即整个
-  滑到上沿之上 —— 吸顶失效、标题离开视野，下方的输出段落被顶到看不见。判断只看「卡片底沿是否已经在上沿之上」：
-  展开不会让卡片往上走，卡片还在视野里时也没丢位置，这两种情况一律不碰滚动位置。折叠若走 `max-height` 过渡，
-  高度一帧一帧地变，所以点击后先立即对一次、240ms 后再看一眼。**直接写 `scrollTop` 会被宿主的 scroll 监听当成
-  用户自己滚了一下**（插件拿不到它那套「程序化滚动」标志），于是自动贴底停下、出现「回到底部」按钮。
-* **`bazaar-custom-icon` 的图标只能读成 data URL**：内核没有把存储目录暴露成 HTTP 路由，`<img src>` 拿不到，
-  只能走 `/api/file/getFile` 读字节再转。集市列表由内核整块重绘，所以按 DOM 变化重新对账，卡片要带
-  「图标文件名 + 列表版本号」的标记：同一张图被换成同名文件时文件名不变，只有版本号能区分。
-  这也意味着**卸载时不能只删配置文件**：`icons/` 是子目录，最后要直接删整个存储目录，否则图片会留在工作区
-  继续跟着同步走。图标配好却「不生效」几乎都是开关还关着：保存图标要立即把 `enabled` 落盘并挂载（见第 16 条）。
-* **`assets-new-file` 的斜杠命令必须自己删掉 `/xxx`**：宿主只对内置项调用 `range.deleteContents()`，
-  插件回调拿到的 range 里命令文本仍留在文档里。把 range 向左扩到 `/` 或 `、` 之后再 insert，链接才会整段
-  替换命令。向前找起点时要跳过 URL 里的斜杠（只认行首、空白或左括号之后的那个）。
-  创建文件本身走 `/api/asset/upload` 提交一个 0 字节的 Blob：内核按导入流程命名、按当前文档选 assets 目录、
-  对加密笔记本做加密写入 —— 自己拼名字、直接写盘会同时绕开这三件事。
-* **`modal-blur` 只给「宿主没自己处理过的」遮罩加模糊**：进度遮罩自 3.8.9-alpha.6 起宿主自己写了底色与
-  `backdrop-filter`，无差别匹配 `.b3-dialog__scrim` 会把它顶掉（见第 19 条）。移动端底部弹层的遮罩是透明的、
-  只接「拖动下滑关闭」，糊上去就是整页正文被模糊 —— 按类名一次性排除，别逐个列 `data-key`
-  （用它的地方还在增加）。
-* **`first-doc-icon` 不再与宿主赛跑**：3.8.9 起「添加图标」按钮只打开 emoji 面板，本功能变成
-  「面板打开前先把配置好的图标写上」；拦截点击仍然必要。写入必须是**码点十六进制串**，写字符本身会让
-  文件树 / 大纲的分支走错。
-* **`mobile-doc-tree-title-size` 只回退字号，整块样式不要照抄 3.8.9**：两版之间移动端侧栏列表只有
-  `font-size`（14px → 16px）这一处不同，图标、箭头、计数器一模一样，回退那一条就够了，照抄整块只会
-  在宿主下次微调时变成一堆过期值。字号按 `--b3-font-size-editor` 的 0.875 倍算（默认 16px 即 14px），
-  这样用户调大字体大小时标题才跟着长，而不是被钉回固定像素。选择器比内核多一个 `body`：
-  内核那条与这里的 id / 类名数量相同，只能靠元素选择器在多出来的这份特异性上取胜。
-* **`new-doc-fixed-target` 守在普通新建文档唯一的那次内核计划请求上，不去拦 DOM 与按键**：菜单、页签栏 `+`、
-  空白页、搜索结果、快捷键与命令面板最后都走 `newFile()` → `POST /api/filetree/planDocCreate`
-  （`purpose: "document"`、`placement` 为 `configured` 或缺省）。命令面板那一条是直接调用函数，
-  既没有点击也没有键盘事件，逐个拦入口永远会漏、将来新增的入口同样会漏。所以这里接管 `window.fetch`，
-  只把这一次请求的 `notebook` / `contextID` 换成配置的固定父级并把 `placement` 改成 `child`：
-  建文档、标题模板、排序、打开页签、失败提示与移动端差异全部仍由宿主完成。
-  `placement: "child"`（新建子文档 / 同级文档）以及 `purpose` 为 `reference`、`dailyNote` 的一律放行；
-  目标不可用时**不回落**到思源默认位置，直接用与内核同形状的 `{code: -1, msg}` 响应判这次请求失败。
-  唯一必须靠 DOM 认的是斜杠菜单 / 块引提示里的「新建文档（插入块引用）」：它走 `newFileInProtyle`，
-  请求体与普通新建**一字不差**（purpose 都是 document、placement 都是 configured），只有发起点不同。
-  那一条要保留宿主语义（建在当前文档下再插入引用），所以在提示面板候选被点中 / 键盘选中时记一个
-  只对同一次交互有效的放行标记（宿主的点击处理是同步发请求的，标记用 `setTimeout(…, 0)` 收起）——
-  认不出来时只会退回「按固定位置创建」，不会误伤别处。
+* **`agent-thinking-sticky-header` 直接写 `scrollTop` 会被宿主的 scroll 监听当成「用户自己滚了一下」**
+  （插件拿不到它那套「程序化滚动」标志），于是自动贴底停下、冒出「回到底部」按钮。
+
+## 构建与测试
+
+* **压缩会吃掉 `console.log`。** minimizer 默认移除 console 调用，于是「出问题但控制台全空」。
+  构建配置里 `drop: []` / `pure: []` 是**显式钉住这一条**，防止换 minimizer 或有人加 `drop_console`
+  之后日志悄悄消失，不要删。
+* **测试分 `vm` / `forks` 两个 project**：绝大多数文件走 `vmThreads`；只有整块替换 `window.location`
+  的那两个文件留在默认进程池（VM 上下文里连 `Object.defineProperty` 都拒绝）。**VM 不是完整 Node**：
+  `ReadableStream`、Web Crypto 要在 `tests/setup.ts` 里补，`crypto.subtle` 还得同时挂到 `window.crypto`；
+  动 DOM 的那几行必须先 `typeof document !== "undefined"` 判断，否则 node 环境直接抛错。
+  子 project 的 `include` / `exclude` / `setupFiles` 是**拼接**而不是覆盖，所以文件清单只在 project
+  里写一次；纯逻辑文件第一行写 `// @vitest-environment node`。`poolMatchGlobs` 已经删除，别再试 ——
+  写了既不报错也不生效。
+* **`siyuan` 在 npm 上只有类型声明**，运行时由宿主注入。单元测试整块换成 `tests/mocks/siyuan.ts`：
+  前端类型、内核响应、对话框结构与 confirm 答案改它的 `mockState`；`window.siyuan`（版本号、只读 /
+  发布态、容器类型、插件列表）直接改全局，初值在 `tests/setup.ts`。测试没关掉的面板由
+  `closeOpenSettings()` 兜底 —— 丢掉实例会留下一个在环境拆除后才触发的定时器。

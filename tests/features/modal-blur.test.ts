@@ -5,9 +5,9 @@
  * 其中最重要的两条是踩过的坑：
  * 1. **生成的 CSS 永远要非空**。`core/style.ts` 的 `addStyle` 收到空串会直接返回，
  *    旧样式表留在 `<head>` 里清不掉 —— 用户把半径调回默认值时看起来「没生效」
- *    （docs/development.md 第 6 条）。所以每个非法值都必须落到 `blur(10px)`，而不是空样式。
+ *    （docs/development.md 的「样式」一节）。所以每个非法值都必须落到 `blur(10px)`，而不是空样式。
  * 2. **进度遮罩要排除，不能用 `revert` 补救**。宿主的导入 / 重建索引进度遮罩自己写了毛玻璃与底色，
- *    `revert` 回滚到的是浏览器默认值而不是宿主那条规则（docs/development.md 第 19 条）。
+ *    `revert` 回滚到的是浏览器默认值而不是宿主那条规则（docs/development.md 的「样式」一节）。
  */
 import {
     afterEach,
@@ -91,7 +91,7 @@ describe("Modal 高斯模糊", () => {
         expect(css).toMatch(/\.b3-dialog__scrim\[style\*="transparent"\]\s*\{[^}]*backdrop-filter: none;/);
         // 移动端底部弹层整块排除，而不是逐个列 data-key（用它的地方还会增加）
         expect(css).toMatch(/\.mobile-bottom-sheet-dialog \.b3-dialog__scrim\s*\{[^}]*backdrop-filter: none;/);
-        // revert 回滚不到宿主那条规则，只会得到 none（第 19 条）
+        // revert 回滚不到宿主那条规则，只会得到 none（「样式」一节）
         expect(rulesOf(css)).not.toContain("revert");
     });
 

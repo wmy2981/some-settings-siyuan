@@ -7,7 +7,7 @@
  *    `top` 是负的那个 12px 不是笔误 —— 粘性定位参照的是滚动容器的内容盒，
  *    而它自带 `padding-top`，写成 0 会在面板顶部漏出一条缝（见源码注释）。
  *    另外每次挂载都必须**重写**同一张 `<style>`：禁用 / 重载插件都不会重载页面，
- *    元素在时直接 return 会留下旧样式表（development.md 第 6 条）。
+ *    元素在时直接 return 会留下旧样式表（development.md 的「样式」一节）。
  * 2. **滚动**（`scroll.ts`）：折叠后只在「卡片整个滑到上沿之上」时把顶沿对回去。
  *    其余情况一律不碰滚动位置 —— 替用户猜停在哪比不帮忙更糟。
  */
@@ -197,7 +197,7 @@ describe("智能体思考标题固定在顶部", () => {
 
         const second = mount();
 
-        // 元素还在时直接 return 会留下旧样式表：只有整页刷新才恢复（development.md 第 6 条）
+        // 元素还在时直接 return 会留下旧样式表：只有整页刷新才恢复（development.md 的「样式」一节）
         expect(styleCount()).toBe(1);
         expect(document.head.querySelector<HTMLStyleElement>(
             'style[data-some-settings-style="agent-thinking-sticky-header"]',

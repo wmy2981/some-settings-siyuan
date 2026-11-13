@@ -10,7 +10,7 @@
  * 2. `listIcons` / `readIconDataUrl` 对内核各种应答形状的处理（成功、过滤坏条目、404、code≠0、缺字段、
  *    内核把文件读不到时返回的 JSON 错误体）；
  * 3. 管理窗口的核心分支 —— 列表渲染与排序、失败重试、保存时**自动打开功能**（动作行不进草稿，
- *    不这么做用户配完图标却看不到任何变化，docs/development.md 第 16 条）、恢复原图标。
+ *    不这么做用户配完图标却看不到任何变化，docs/setting-panel.md 的 `button` 动作行）、恢复原图标。
  */
 import {
     afterEach,
