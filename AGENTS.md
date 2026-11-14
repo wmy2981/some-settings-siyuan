@@ -46,7 +46,7 @@
 **新增功能**：建 `src/features/<id>/`（id 只用小写字母、数字、连字符）→ `defineFeature` 里
 `name` / `description` 是 **i18n key** 而不是字面量，分类取本文件与 `core/types.ts` 列出的原生功能区，
 `enabled` 按是否需要交出写 `true`，需要限定思源版本时补 `minAppVersion` / `maxAppVersion` →
-在 `registry.ts` 登记（数组顺序即面板顺序）→ 两份 i18n 补齐 key →
+在 `registry.ts` 登记（数组顺序即面板顺序）→ 两份 i18n 补齐 key → 关键动作埋足日志（见第 5 节）→
 `npm run check && npm run typecheck && npm run lint`。
 
 ---
@@ -76,6 +76,10 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
   `logInfo` / `logWarn` / `logError`（作用域写功能 id）。头部自动带
   `[some-settings-siyuan__<功能 id>]`，详细日志默认关闭，开启入口是「插件自身」页签里的
   「详细日志输出」。**不要直接 `console.*`**（`mobile-console-log` 抓取 `console` 的包装除外）。
+* **新功能必须埋足日志**：挂载与卸载、配置变化、接管的对象（DOM / 事件 / 请求）、关键分支与
+  状态变化、失败路径都要有 INFO / WARN / ERROR，只记失败路径不算够。详细日志默认关闭，
+  多记不打扰用户，缺日志才是问题；高频路径（每次重绘、每次对账）只在结果真的变化时记一行，
+  不要刷屏。
 
 ---
 
