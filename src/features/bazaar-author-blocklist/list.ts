@@ -85,12 +85,12 @@ export const packagesOfResponse = (value: unknown): BazaarPackage[] | undefined 
  * 顺序也一致（先兼容性、后明暗）。主题明暗只对 `themes` 生效，`themeMode` 取页签上那个下拉的
  * 值："0" 浅色、"1" 深色、"2" / 缺省为全部。
  */
-export const visiblePackagesOf = (
-    packages: readonly BazaarPackage[],
+export const visiblePackagesOf = <T extends BazaarPackage>(
+    packages: readonly T[],
     type: BazaarType,
     themeMode: string | undefined,
     filters: CompatibilityFilters | undefined,
-): BazaarPackage[] => {
+): T[] => {
     const compatible = packages.filter((item) => {
         if (filters?.hideUnsupportedVersion === true && item.bazaarVersionUnsupported === true) {
             return false;
