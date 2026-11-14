@@ -336,6 +336,27 @@ export const textRowHtml = (
     }${options.disabled ? " disabled" : ""}/>
 </div>`;
 
+/**
+ * 原生风格的多行文本行。
+ *
+ * textarea 塞不进「右侧定宽 200px」那一格，所以这一行折成上下两段：
+ * 标题与说明占满一行，输入框整行落在下面。行本身仍是 `.config-item`，
+ * 分割线、缩进与层级引导线都照旧；横折在样式里单独对齐到标题那一行。
+ */
+export const textareaRowHtml = (
+    key: string,
+    title: string,
+    value: string,
+    options: {placeholder?: string; description?: string; disabled?: boolean; rows?: number;} = {},
+): string =>
+    `<div class="b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__textarea-row" data-ss-row="${escapeHtml(key)}">
+    ${mainHtml(title, options.description)}
+    <textarea class="b3-text-field fn__block ${PANEL_CLASS}__textarea" data-ss-textarea="${escapeHtml(key)}"
+    rows="${options.rows ?? 6}" spellcheck="false"${
+        options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : ""
+    }${options.disabled ? " disabled" : ""}>${escapeHtml(value)}</textarea>
+</div>`;
+
 /** 动作按钮的外观选项：动作行与说明块底部的按钮共用。 */
 export interface ActionButtonOptions {
     disabled?: boolean;
@@ -889,6 +910,23 @@ export const PANEL_CSS = `
     margin-inline-start: auto;
 }
 
+/* 多行文本行 -------------------------------------------------------------
+   textarea 塞不进「右侧定宽 200px」那一格，所以这一行照内核 textBlock 的写法整块竖排：
+   标题与说明在上、输入框整行在下（这一行没有 fn__flex，块布局天然就是上下两段）。
+   行本身仍是 .config-item，分割线与缩进照旧；层级引导线的横折对齐到标题那一行
+   （默认的 50% 会指在输入框中间，看着像指错了对象）。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    resize: vertical;
+    line-height: 1.6;
+}
+.${PANEL_CLASS} .config-items > .${PANEL_CLASS}__textarea-row::after {
+    top: 26px;
+}
+
 /* 移动端 / 窄窗口 ---------------------------------------------------------
    断点与内核一致（内核在 750px 以下把 .config-item 折成上下两段、输入框撑满整行）。
    关键是行内边距：内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，
@@ -957,6 +995,10 @@ export const PANEL_CSS = `
     }
     .b3-dialog__body .${PANEL_CLASS} .config-items > .${CHILD_CLASS}::after {
         width: 8px;
+    }
+    /* 窄屏行内边距收到 8px，标题那一行的中线也跟着上移：多行文本行的横折同样对齐标题 */
+    .b3-dialog__body .${PANEL_CLASS} .config-items > .${PANEL_CLASS}__textarea-row::after {
+        top: 22px;
     }
     .b3-dialog__body .${PANEL_CLASS} .config-item__main {
         flex: 1 1 100%;

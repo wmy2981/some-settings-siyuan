@@ -133,6 +133,7 @@ export const normalizeConfig = (
                     }
                     break;
                 case "text":
+                case "textarea":
                     if (typeof value === "string") {
                         result[field.key] = value;
                     } else {

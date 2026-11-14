@@ -48,6 +48,10 @@ class FakeHost {
         "alpha.repo": "项目仓库",
         "alpha.run": "执行",
         "alpha.runLabel": "点我执行",
+        "area.name": "丁功能",
+        "area.authors": "作者名单",
+        "area.authors.desc": "一行一个作者",
+        "area.authors.ph": "作者占位",
         "secondary.name": "乙功能",
         "switch-mode.name": "丙功能",
         "switch-mode.scope": "适用端",
@@ -330,6 +334,30 @@ describe("show：渲染", () => {
         const select = q<HTMLSelectElement>('[data-ss-select="alpha::mode"]');
         expect([...(select?.options ?? [])].map((option) => option.textContent)).toEqual(["自动", "手动"]);
         expect(q('[data-ss-button="alpha::run"]')?.textContent).toBe("点我执行");
+    });
+
+    it("多行文本渲染成整行的 textarea：行数、占位文案与说明都在", async () => {
+        const {q} = await open([featureOf("area", {
+            settings: [
+                {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
+                {
+                    kind: "textarea",
+                    key: "authors",
+                    title: "area.authors",
+                    description: "area.authors.desc",
+                    placeholder: "area.authors.ph",
+                    default: "acme\nfoo",
+                    rows: 4,
+                },
+            ],
+        })]);
+        const area = q<HTMLTextAreaElement>('[data-ss-textarea="area::authors"]');
+        expect(area?.value).toBe("acme\nfoo");
+        expect(area?.getAttribute("rows")).toBe("4");
+        expect(area?.getAttribute("placeholder")).toBe("作者占位");
+        const row = area?.closest(".config-item");
+        expect(row?.classList.contains(`${PANEL_CLASS}__textarea-row`)).toBe(true);
+        expect(row?.textContent).toContain("一行一个作者");
     });
 
     it("每个功能的最后一个子行带上收尾标记，层级引导线在那里画成折角", async () => {
@@ -779,6 +807,22 @@ describe("改完即写", () => {
 
         await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "改过的"}));
         expect(host.saveData).toHaveBeenCalledTimes(1);
+    });
+
+    it("多行文本与单行文本同一套静默期：打字合并写、失焦立即写", async () => {
+        const {q, host} = await open([featureOf("area", {
+            settings: [
+                {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
+                {kind: "textarea", key: "authors", title: "area.authors", default: ""},
+            ],
+        })]);
+        const area = q<HTMLTextAreaElement>('[data-ss-textarea="area::authors"]')!;
+        area.value = "acme\nfoo";
+        fire(area, "input");
+        expect(host.saveData).not.toHaveBeenCalled();
+
+        fire(area, "change");
+        await vi.waitFor(() => expect(host.files.get("feature-area")).toMatchObject({authors: "acme\nfoo"}));
     });
 
     it("连续输入从最后一次输入重新计时", async () => {
@@ -1452,6 +1496,23 @@ describe("搜索", () => {
             typeQuery(input, "甲 说明");
             expect(hidden(empty)).toBe(true);
             expect(hidden(q('[data-ss-feature="alpha"]'))).toBe(false);
+        });
+
+        it("多行文本的占位文案也进搜索索引", async () => {
+            const {root, q} = await open([featureOf("area", {
+                settings: [
+                    {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
+                    {
+                        kind: "textarea",
+                        key: "authors",
+                        title: "area.authors",
+                        placeholder: "area.authors.ph",
+                        default: "",
+                    },
+                ],
+            })]);
+            typeQuery(searchBox(root), "作者占位");
+            expect(hidden(q('[data-ss-feature="area"]'))).toBe(false);
         });
 
         it("静态文案的中英文版本算一个匹配域：命中另一语言时不高亮", async () => {

@@ -168,6 +168,20 @@ export type SettingField =
         placeholder?: string;
     }
     | {
+        /**
+         * 多行文本。取值语义与 `text` 完全相同（存字符串），只是控件换成 `<textarea>`，
+         * 供「一行一项」这类列表型输入（例如作者名单）使用；行的切分方式由功能自己解释。
+         */
+        kind: "textarea";
+        key: string;
+        title: string;
+        description?: string;
+        default: string;
+        placeholder?: string;
+        /** 可见行数，默认 6；写进 `rows` 属性，不随内容自适应。 */
+        rows?: number;
+    }
+    | {
         kind: "number";
         key: string;
         title: string;

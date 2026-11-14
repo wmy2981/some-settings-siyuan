@@ -105,7 +105,7 @@ describe("开关约定", () => {
     });
 
     it("设置项的 key 不重复，控件类型是已知的", () => {
-        const kinds = ["switch", "text", "number", "select", "note", "button"];
+        const kinds = ["switch", "text", "textarea", "number", "select", "note", "button"];
         FEATURES.forEach((feature) => {
             const keys = feature.settings.map((field) => field.key);
             expect(new Set(keys).size, `${feature.id} 的 key 有重复`).toBe(keys.length);

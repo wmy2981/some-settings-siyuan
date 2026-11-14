@@ -102,6 +102,7 @@ import {
     tabPaneHtml,
     tabSideHtml,
     tabViewsHtml,
+    textareaRowHtml,
     textRowHtml,
 } from "./ui";
 // 搜索要把静态文案的**两种语言**都索引进同一个匹配域，而宿主只交出当前语言那一份 i18n，
@@ -1023,6 +1024,18 @@ export class SettingsPanel {
                         disabled: readonly,
                     },
                 );
+            case "textarea":
+                return textareaRowHtml(
+                    bindKey(feature.id, field.key),
+                    this.t(field.title),
+                    String(config[field.key] ?? field.default),
+                    {
+                        placeholder: field.placeholder ? this.t(field.placeholder) : "",
+                        description: field.description ? this.t(field.description) : "",
+                        disabled: readonly,
+                        rows: field.rows,
+                    },
+                );
             default:
                 return "";
         }
@@ -1053,6 +1066,11 @@ export class SettingsPanel {
         scope.querySelectorAll<HTMLInputElement>("[data-ss-text]").forEach((input) => {
             input.addEventListener("input", () => this.typeInput(input.dataset.ssText as string, input.value));
             input.addEventListener("change", () => this.commitInput(input.dataset.ssText as string, input.value));
+        });
+        // 多行文本与单行文本同一套静默期：打字过程合并写盘，失焦 / 回车立即写。
+        scope.querySelectorAll<HTMLTextAreaElement>("[data-ss-textarea]").forEach((area) => {
+            area.addEventListener("input", () => this.typeInput(area.dataset.ssTextarea as string, area.value));
+            area.addEventListener("change", () => this.commitInput(area.dataset.ssTextarea as string, area.value));
         });
         // 说明块里的链接：不让 <a> 走默认跳转 —— 移动端 WebView 可能把整个前端导航走。
         scope.querySelectorAll<HTMLAnchorElement>(`.${PANEL_CLASS}__note a[href]`).forEach((anchor) => {
@@ -1312,12 +1330,15 @@ export class SettingsPanel {
                 select.value = String(config[key] ?? "");
             }
         });
-        root.querySelectorAll<HTMLInputElement>("[data-ss-number], [data-ss-text]").forEach((input) => {
-            const key = keyOf(input.dataset.ssNumber ?? input.dataset.ssText);
-            if (key) {
-                input.value = String(config[key] ?? "");
-            }
-        });
+        root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+            "[data-ss-number], [data-ss-text], [data-ss-textarea]",
+        )
+            .forEach((input) => {
+                const key = keyOf(input.dataset.ssNumber ?? input.dataset.ssText ?? input.dataset.ssTextarea);
+                if (key) {
+                    input.value = String(config[key] ?? "");
+                }
+            });
     }
 
     // ------------------------------------------------------------ 搜索
@@ -1731,7 +1752,7 @@ export class SettingsPanel {
                 if (field.description) {
                     fields.push(this.staticField(field.description));
                 }
-                if (field.kind === "text" && field.placeholder) {
+                if ((field.kind === "text" || field.kind === "textarea") && field.placeholder) {
                     fields.push(this.staticField(field.placeholder));
                 }
                 if (field.kind === "select") {

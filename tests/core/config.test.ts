@@ -250,6 +250,15 @@ describe("normalizeConfig", () => {
     it("空字符串是合法文本", () => {
         expect(normalizeConfig(settings, {label: ""}).label).toBe("");
     });
+
+    it("多行文本与单行文本同一套校验：存字符串，类型不符回落默认值", () => {
+        const fields: SettingField[] = [{kind: "textarea", key: "authors", title: "s.authors", default: ""}];
+        expect(normalizeConfig(fields, {authors: "a\nb"}).authors).toBe("a\nb");
+        expect(normalizeConfig(fields, {authors: ""}).authors).toBe("");
+        const warnings: string[] = [];
+        expect(normalizeConfig(fields, {authors: 3}, (message) => warnings.push(message)).authors).toBe("");
+        expect(warnings[0]).toBe('"authors" should be string, got 3, falling back to the default');
+    });
 });
 
 describe("sameConfig", () => {

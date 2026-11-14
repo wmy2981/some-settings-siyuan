@@ -35,6 +35,7 @@ import {
     tabPaneHtml,
     tabSideHtml,
     tabViewsHtml,
+    textareaRowHtml,
     textRowHtml,
 } from "../../src/core/ui";
 import {mockState} from "../mocks/siyuan";
@@ -313,6 +314,25 @@ describe("行容器", () => {
         expect(input.value).toBe('a"b');
         expect(input.getAttribute("spellcheck")).toBe("false");
         expect(input.getAttribute("placeholder")).toBe("提示");
+    });
+
+    it("多行文本行：textarea 整行铺满，值被转义、行数可配", () => {
+        const root = parse(textareaRowHtml("demo::area", "标题", "a\nb</textarea>", {placeholder: "提示", rows: 4}));
+        const area = root.querySelector<HTMLTextAreaElement>("textarea")!;
+        expect(area.value).toBe("a\nb</textarea>");
+        expect(area.getAttribute("rows")).toBe("4");
+        expect(area.getAttribute("spellcheck")).toBe("false");
+        expect(area.getAttribute("placeholder")).toBe("提示");
+        expect(area.dataset.ssTextarea).toBe("demo::area");
+        expect(area.className).toContain("fn__block");
+        expect(area.closest("div")?.classList.contains(`${PANEL_CLASS}__textarea-row`)).toBe(true);
+        expect(area.closest("div")?.classList.contains(CHILD_CLASS)).toBe(true);
+    });
+
+    it("多行文本行默认 6 行", () => {
+        const area = query<HTMLTextAreaElement>(textareaRowHtml("demo::area", "标题", ""), "textarea")!;
+        expect(area.getAttribute("rows")).toBe("6");
+        expect(area.value).toBe("");
     });
 
     it("动作行是 button 元素，不参与表单提交", () => {
