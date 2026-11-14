@@ -15,8 +15,8 @@ export default defineFeature({
     id: "mobile-dock-blur",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileDockBlur.name",
-    description: "feature.mobileDockBlur.desc",
+    name: "feature.mobileDockBlur.title",
+    description: "feature.mobileDockBlur.description",
     frontends: ["mobile"],
     settings: [
         {
@@ -28,7 +28,7 @@ export default defineFeature({
         {
             kind: "number",
             key: "radius",
-            title: "mobileDockBlur.radius",
+            title: "feature.mobileDockBlur.radius",
             default: 14,
             min: 1,
             max: 40,
@@ -38,7 +38,7 @@ export default defineFeature({
         {
             kind: "number",
             key: "opacity",
-            title: "mobileDockBlur.opacity",
+            title: "feature.mobileDockBlur.opacity",
             default: 70,
             min: 0,
             max: 100,

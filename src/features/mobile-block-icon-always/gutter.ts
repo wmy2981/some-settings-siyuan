@@ -84,7 +84,7 @@ export const mountMobileBlockIconAlways = (host: FeatureHost): FeatureInstance =
         gutter.style.cssText = pin.position;
         gutter.classList.remove("fn__none");
         pin.restores += 1;
-        host.log(`restored the block icon (restore ${pin.restores}, block ${pin.blockId})`);
+        host.log.info(`restored the block icon (restore ${pin.restores}, block ${pin.blockId})`);
     };
 
     const scan = () => {

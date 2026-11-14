@@ -19,8 +19,8 @@ export default defineFeature({
     id: "agent-tool-call-detail",
     category: "ai",
     enabled: true,
-    name: "feature.agentToolCallDetail.name",
-    description: "feature.agentToolCallDetail.desc",
+    name: "feature.agentToolCallDetail.title",
+    description: "feature.agentToolCallDetail.description",
     settings: [
         {
             kind: "switch",

@@ -12,8 +12,8 @@ export default defineFeature({
     id: "asset-info-menu",
     category: "editor",
     enabled: true,
-    name: "feature.assetInfoMenu.name",
-    description: "feature.assetInfoMenu.desc",
+    name: "feature.assetInfoMenu.title",
+    description: "feature.assetInfoMenu.description",
     settings: [
         {
             kind: "switch",

@@ -306,27 +306,27 @@ const parseStat = (xml: string): BucketStat => {
     }
     const classes: StorageClass[] = [
         {
-            label: "ossUsage.standard",
+            label: "feature.ossUsage.standard",
             storage: numberIn(document_, "BucketStat > StandardStorage"),
             objectCount: numberIn(document_, "BucketStat > StandardObjectCount"),
         },
         {
-            label: "ossUsage.ia",
+            label: "feature.ossUsage.ia",
             storage: numberIn(document_, "BucketStat > InfrequentAccessStorage"),
             objectCount: numberIn(document_, "BucketStat > InfrequentAccessObjectCount"),
         },
         {
-            label: "ossUsage.archive",
+            label: "feature.ossUsage.archive",
             storage: numberIn(document_, "BucketStat > ArchiveStorage"),
             objectCount: numberIn(document_, "BucketStat > ArchiveObjectCount"),
         },
         {
-            label: "ossUsage.coldArchive",
+            label: "feature.ossUsage.coldArchive",
             storage: numberIn(document_, "BucketStat > ColdArchiveStorage"),
             objectCount: numberIn(document_, "BucketStat > ColdArchiveObjectCount"),
         },
         {
-            label: "ossUsage.deepColdArchive",
+            label: "feature.ossUsage.deepColdArchive",
             storage: numberIn(document_, "BucketStat > DeepColdArchiveStorage"),
             objectCount: numberIn(document_, "BucketStat > DeepColdArchiveObjectCount"),
         },
@@ -493,7 +493,7 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
         button.type = "button";
         button.className = `b3-button b3-button--outline ${target.buttonClass}`;
         button.setAttribute(BUTTON_ATTR, "true");
-        button.innerHTML = `<svg><use xlink:href="#iconCloud"></use></svg>${escapeHtml(t("ossUsage.button"))}`;
+        button.innerHTML = `<svg><use xlink:href="#iconCloud"></use></svg>${escapeHtml(t("feature.ossUsage.button"))}`;
         button.addEventListener("click", () => openUsage());
         appendButton(target, button);
     };
@@ -519,14 +519,14 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
                 `<div class="${CLASS}__row"><span class="${CLASS}__key">${escapeHtml(key)}</span>` +
                     `<span class="${CLASS}__value">${escapeHtml(value)}</span></div>`,
             );
-        row(t("ossUsage.total"), `${formatSize(stat.storage)}（${stat.storage} B）`);
-        row(t("ossUsage.objectCount"), `${stat.objectCount} ${t("ossUsage.objects")}`);
-        row(t("ossUsage.multipart"), `${stat.multipartUploadCount} ${t("ossUsage.objects")}`);
+        row(t("feature.ossUsage.total"), `${formatSize(stat.storage)}（${stat.storage} B）`);
+        row(t("feature.ossUsage.objectCount"), `${stat.objectCount} ${t("feature.ossUsage.objects")}`);
+        row(t("feature.ossUsage.multipart"), `${stat.multipartUploadCount} ${t("feature.ossUsage.objects")}`);
         stat.classes.forEach((item) => {
-            row(t(item.label), `${formatSize(item.storage)} · ${item.objectCount} ${t("ossUsage.objects")}`);
+            row(t(item.label), `${formatSize(item.storage)} · ${item.objectCount} ${t("feature.ossUsage.objects")}`);
         });
         if (stat.lastModifiedTime > 0) {
-            row(t("ossUsage.statTime"), new Date(stat.lastModifiedTime * 1000).toLocaleString());
+            row(t("feature.ossUsage.statTime"), new Date(stat.lastModifiedTime * 1000).toLocaleString());
         }
         body.innerHTML = rows.join("");
     };
@@ -534,12 +534,12 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
     const renderFailure = (body: HTMLElement, result: StatResult) => {
         // 请求没能送到 OSS 时多给一句：这种情况多半是网络不通或地址不对，而不是凭据不对
         const tip = result.network ?
-            `<div class="${CLASS}__tip">${escapeHtml(t("ossUsage.networkHint"))}</div>` :
+            `<div class="${CLASS}__tip">${escapeHtml(t("feature.ossUsage.networkTip"))}</div>` :
             "";
         body.innerHTML = `<div class="${CLASS}__row">` +
-            `<span class="${CLASS}__key">${escapeHtml(t("ossUsage.failed"))}</span>` +
+            `<span class="${CLASS}__key">${escapeHtml(t("feature.ossUsage.failed"))}</span>` +
             `<span class="${CLASS}__error">${escapeHtml(result.message ?? "")}</span></div>${tip}`;
-        host.log(`GetBucketStat failed: ${result.message ?? "unknown"}`);
+        host.log.warn(`GetBucketStat failed: ${result.message ?? "unknown"}`);
     };
 
     const stopRequest = () => {
@@ -556,16 +556,16 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
     const openUsage = () => {
         const {target, missing} = resolveTarget();
         if (!target) {
-            host.showMessage(t("ossUsage.missingConfig").replace("{fields}", missing.join(" / ")));
+            host.showMessage(t("feature.ossUsage.missingConfig").replace("{fields}", missing.join(" / ")));
             return;
         }
         dialog?.destroy();
         dialog = new Dialog({
-            title: t("ossUsage.title"),
+            title: t("feature.ossUsage.dialogTitle"),
             width: isMobile() ? "92vw" : "520px",
             content: `<div class="b3-dialog__content">
     ${headHtml(target)}
-    <div class="${CLASS}__body">${escapeHtml(t("ossUsage.loading"))}</div>
+    <div class="${CLASS}__body">${escapeHtml(t("feature.ossUsage.loading"))}</div>
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" type="button" data-ss-close>${escapeHtml(t("common.close"))}</button>
@@ -595,6 +595,7 @@ export const mountOssUsage = (host: FeatureHost): FeatureInstance => {
                 return;
             }
             if (result.stat) {
+                host.log.info(`bucket usage loaded: ${result.stat.objectCount} object(s), ${result.stat.storage} B`);
                 renderStat(body, result.stat);
             } else {
                 renderFailure(body, result);

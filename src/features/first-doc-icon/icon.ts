@@ -64,7 +64,7 @@ export const mountFirstDocIcon = (host: FeatureHost): FeatureInstance => {
         }
         fetchPost("/api/attr/setBlockAttrs", {id: rootID, attrs: {icon}}, (response) => {
             if (response.code !== 0) {
-                host.log(`failed to write the document icon: ${response.msg}`);
+                host.log.warn(`failed to write the document icon: ${response.msg}`);
                 return;
             }
             paintListIcons(rootID, emoji);
@@ -98,7 +98,7 @@ export const mountFirstDocIcon = (host: FeatureHost): FeatureInstance => {
         }
         const rootID = owner?.protyle.block?.rootID || background.getAttribute("data-node-id") || "";
         if (!rootID) {
-            host.log("no document ID available; skipping");
+            host.log.info("no document ID available; skipping");
             return;
         }
         const emoji = emojiOf(host);

@@ -11,8 +11,8 @@ export default defineFeature({
     id: "heading-level-icon",
     category: "editor",
     enabled: true,
-    name: "feature.headingLevelIcon.name",
-    description: "feature.headingLevelIcon.desc",
+    name: "feature.headingLevelIcon.title",
+    description: "feature.headingLevelIcon.description",
     settings: [
         {
             kind: "switch",

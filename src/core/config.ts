@@ -13,9 +13,12 @@
  * 功能留下的配置文件同样是本插件的配置（见 core/storage.ts）。
  */
 import type {Plugin} from "siyuan";
+import {createLogger} from "./log";
 import {featureById} from "./registry";
 import {
+    CONFIG_IO_CONCURRENCY,
     listStoredFiles,
+    mapLimit,
     readStoredFile,
     removeStoredFile,
     writeStoredFile,
@@ -46,13 +49,24 @@ const idOfStoredFile = (fileName: string): string | undefined => {
     return ID_PATTERN.test(id) ? id : undefined;
 };
 
-const PREFIX = "[some-settings-siyuan]";
+const log = createLogger("core.config");
 
 /** 给错误挂上可读的问题清单，供面板一次性提示。 */
 export const attachProblems = (problems: string[]): Error & {problems: string[];} => {
     const error = new Error(problems.join("; ")) as Error & {problems: string[];};
     error.problems = problems;
     return error;
+};
+
+/**
+ * 两份配置在 schema 意义上是否相同。
+ *
+ * 值按 JSON 比较：导入的配置可能带嵌套对象，`!==` 会把它们全判成不同。
+ * 设置面板靠它在写盘前挡掉「下拉重选同一项」「开关重设同一状态」这类没有改动的改动。
+ */
+export const sameConfig = (left: FeatureConfig, right: FeatureConfig): boolean => {
+    const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+    return [...keys].every((key) => JSON.stringify(left[key]) === JSON.stringify(right[key]));
 };
 
 /**
@@ -119,6 +133,7 @@ export const normalizeConfig = (
                     }
                     break;
                 case "text":
+                case "textarea":
                     if (typeof value === "string") {
                         result[field.key] = value;
                     } else {
@@ -181,9 +196,55 @@ export class ConfigStore {
     private readonly plugin: Plugin;
     private readonly entries = new Map<string, Entry>();
     private readonly listeners = new Map<string, Set<() => void>>();
+    private readonly patchQueues = new Map<string, Promise<void>>();
+    /**
+     * `prefetch()` 已经读回来的原始值，键是功能 id。
+     *
+     * 只影响「什么时候读」，`register()` 仍然按调用顺序应用，于是挂载顺序与日志顺序都不变。
+     * 存的是**未兑现的 Promise**：某个文件读得慢 / 一直不返回时，只有它自己与排在它后面的
+     * 功能会等，前面的功能照常挂载（先等全部读完再逐个注册会把一次慢读放大成整插件启动失败）。
+     * 被 `register()` 取走的条目读完即删：预读只是一次性加速，不额外留一份可能过期的缓存；
+     * 没被取走的在 `dispose()` 时清空。
+     */
+    private readonly prefetched = new Map<string, Promise<{stored?: unknown; error?: unknown;}>>();
 
     constructor(plugin: Plugin) {
         this.plugin = plugin;
+    }
+
+    /**
+     * 并发预读一批功能的配置文件。
+     *
+     * 启动阶段每个功能各要一次 `loadData`，逐个 await 会把 N 次内核往返串起来
+     * （实测 34 个功能、每次 2ms 时要 87ms）；这些文件互不依赖，可以先一起读回来，
+     * 再由 `register()` 按注册表顺序逐个应用。读失败不抛：`register()` 里按老规矩
+     * 记一条警告并回落默认值。
+     */
+    async prefetch(definitions: FeatureDefinition[]): Promise<void> {
+        // 每条配置一个「先发出去的 Promise」：请求按 CONFIG_IO_CONCURRENCY 的并发度提前发出，
+        // 但每条各自兑现，`register()` 只等自己那一条 —— 某个文件读得慢不会拖住别的功能。
+        const pending = new Map<string, (read: {stored?: unknown; error?: unknown;}) => void>();
+        definitions.forEach((definition) => {
+            let resolve: (read: {stored?: unknown; error?: unknown;}) => void = () => undefined;
+            const promise = new Promise<{stored?: unknown; error?: unknown;}>((done) => {
+                resolve = done;
+            });
+            pending.set(definition.id, resolve);
+            this.prefetched.set(definition.id, promise);
+        });
+        // 请求本身不等待：预读只是把读盘提前，真正的等待发生在各自 register() 里
+        void mapLimit(definitions, CONFIG_IO_CONCURRENCY, async (definition) => {
+            const done = pending.get(definition.id);
+            try {
+                done?.({stored: await this.plugin.loadData(storageNameOf(definition.id))});
+            } catch (error) {
+                done?.({error});
+            }
+        }).catch((error: unknown) => {
+            // mapper 自己已经收敛了读盘异常，走到这里说明有意外抛出。把还没兑现的预读
+            // 一律以同一个错误兑现，register() 才不会永久挂在一条没人会再 resolve 的 Promise 上。
+            pending.forEach((done) => done({error}));
+        });
     }
 
     /** 用 schema 默认值建立内存态，并读回磁盘上已有的配置。 */
@@ -200,10 +261,22 @@ export class ConfigStore {
             return;
         }
         let stored: unknown = null;
-        try {
-            stored = await this.plugin.loadData(storageNameOf(id));
-        } catch (error) {
-            console.warn(`[some-settings-siyuan] failed to read ${storageNameOf(id)}, using the default`, error);
+        const prefetched = this.prefetched.get(id);
+        this.prefetched.delete(id);
+        if (prefetched) {
+            // 预读失败与现场读失败的处理完全一致：记一条警告，回落默认值
+            const read = await prefetched;
+            if ("error" in read) {
+                log.warn(`cannot read ${storageNameOf(id)}; using the defaults`, read.error);
+            } else {
+                stored = read.stored;
+            }
+        } else {
+            try {
+                stored = await this.plugin.loadData(storageNameOf(id));
+            } catch (error) {
+                log.warn(`cannot read ${storageNameOf(id)}; using the defaults`, error);
+            }
         }
         // 文件不存在时宿主 resolve 空串
         if (typeof stored === "string") {
@@ -211,9 +284,14 @@ export class ConfigStore {
         }
         const warnings: string[] = [];
         entry.config = normalizeConfig(entry.definition.settings, stored, (message) => warnings.push(message));
+        if (stored === null) {
+            log.info(`${id}: no saved configuration, using the defaults`, entry.config);
+        } else {
+            log.info(`${id}: loaded`, entry.config);
+        }
         if (warnings.length > 0) {
-            console.warn(`[some-settings-siyuan] ${storageNameOf(id)} has ${warnings.length} field problem(s):`);
-            warnings.forEach((warning) => console.warn(`[some-settings-siyuan] - ${warning}`));
+            log.warn(`${id}: ${warnings.length} field problem(s) in ${storageNameOf(id)}`);
+            warnings.forEach((warning) => log.warn(`${id}: ${warning}`));
         }
     }
 
@@ -238,19 +316,6 @@ export class ConfigStore {
     }
 
     /**
-     * 立即写盘。
-     *
-     * 注意：只写这一个功能自己的文件，不牵动别的功能；磁盘与内存态在这一步一起更新。
-     */
-    async saveNow(id: string): Promise<void> {
-        const entry = this.entries.get(id);
-        if (!entry) {
-            return;
-        }
-        await this.plugin.saveData(storageNameOf(id), entry.config);
-    }
-
-    /**
      * 目录里此刻有哪些配置文件。
      *
      * 这是导出 / 导入 / 清除的共同入口：目标集合由磁盘决定，不受声明里的 enabled、
@@ -262,7 +327,7 @@ export class ConfigStore {
         for (const storageName of await listStoredFiles(this.plugin)) {
             const id = idOfStoredFile(storageName);
             if (typeof id === "undefined") {
-                console.warn(`${PREFIX} ${storageName} is not a feature configuration file, leaving it alone`);
+                log.warn(`${storageName} is not a feature configuration file, leaving it alone`);
                 continue;
             }
             files.push({id, storageName});
@@ -285,84 +350,96 @@ export class ConfigStore {
      *
      * 写完立刻读回的理由：宿主 saveData 的 Promise 在文件真的落盘前就可能 resolve，
      * code 非 0 时也照样兑现（宿主的消息处理只拦负数 code），光看「没报错」不足以说明存住了。
-     * 读回不一致就抛出，让面板保持打开、把真实原因暴露出来，
+     * 读回不一致就抛出，让调用方把控件退回磁盘上的值、把真实原因暴露出来，
      * 而不是等用户下次打开时发现又变回默认值。
      */
     private async writeFiles(files: {storageName: string; value: FeatureConfig;}[]): Promise<void> {
         const failed: string[] = [];
-        for (const {storageName, value} of files) {
-            console.log(`${PREFIX} writing ${storageName}`, value);
+        log.info(`writing ${files.length} configuration file(s)`);
+        // 每个文件都是独立的「写 + 读回」，彼此没有先后关系，按有限并发一起跑到完成；
+        // 结果按输入顺序回填，问题清单的顺序仍然与文件清单一致。
+        const problems = await mapLimit(files, CONFIG_IO_CONCURRENCY, async ({storageName, value}) => {
+            log.info(`writing ${storageName}`, value);
             const status = await writeStoredFile(this.plugin, storageName, value);
             if (!status.ok) {
-                console.error(`${PREFIX} ${storageName} was rejected by the kernel: ${status.detail}`);
-                failed.push(`${storageName}: ${status.detail}`);
-                continue;
+                log.error(`${storageName} was rejected by the kernel: ${status.detail}`);
+                return `${storageName}: ${status.detail}`;
             }
             const readBack = await readStoredFile(this.plugin, storageName);
             const detail = describeMismatch(value, readBack);
             if (detail) {
-                console.error(`${PREFIX} ${storageName} read back mismatch after write: ${detail}`, {
+                log.error(`${storageName} read back mismatch after write: ${detail}`, {
                     written: value,
                     readBack,
                 });
-                failed.push(`${storageName}：${detail}`);
-            } else {
-                console.log(`${PREFIX} ${storageName} written and read back consistently`);
+                return `${storageName}：${detail}`;
             }
-        }
+            log.info(`${storageName} written and read back consistently`);
+            return "";
+        });
+        problems.forEach((problem) => {
+            if (problem) {
+                failed.push(problem);
+            }
+        });
         if (failed.length > 0) {
             throw attachProblems(failed);
         }
     }
 
     /**
-     * 批量保存（设置面板点「保存」时调用）。
+     * 合并 patch 后立即落盘，并通知订阅者 —— 设置面板的每一次控件改动都走这里。
      *
-     * 先按每个功能的 schema 归一化并把问题收齐，一旦有问题就整体不写，
-     * 让用户能一次性看到全部问题；校验通过才逐个落盘，最后统一通知订阅者。
+     * 顺序固定为「按 schema 归一化 → 合并内存态 → 写盘 → 读回校验 → 通知」：
+     * - 与当前值相同的改动不写盘：下拉重选同一项、开关重设同一状态都算没改；
+     * - 写盘失败或读回不一致时把内存态退回改动之前，再把问题抛给调用方 ——
+     *   界面据此把控件改回磁盘上的值，不允许停在「看着存住了、其实没存」的状态。
+     *
+     * 同一功能的归一化、写入、读回与回滚按调用顺序串行执行：乱序完成会让旧值覆盖新值，
+     * 失败回滚也可能把后来已经落盘的改动一起抹掉。失败只拒绝自己的调用，不能中断后续队列。
      */
-    async saveMany(drafts: Record<string, FeatureConfig>): Promise<void> {
-        const prepared: {id: string; config: FeatureConfig;}[] = [];
-        const problems: string[] = [];
-        Object.keys(drafts).forEach((id) => {
-            const entry = this.entries.get(id);
-            if (!entry) {
-                problems.push(`${id}: no config store entry for this feature`);
-                return;
+    async patch(id: string, patch: FeatureConfig): Promise<void> {
+        const previousQueue = this.patchQueues.get(id) || Promise.resolve();
+        const queued = previousQueue.catch((): void => undefined).then(() => this.applyPatch(id, patch));
+        this.patchQueues.set(id, queued);
+        try {
+            await queued;
+        } finally {
+            if (this.patchQueues.get(id) === queued) {
+                this.patchQueues.delete(id);
             }
-            const warnings: string[] = [];
-            const config = normalizeConfig(entry.definition.settings, drafts[id], (message) => warnings.push(message));
-            warnings.forEach((warning) => problems.push(`${id}: ${warning}`));
-            prepared.push({id, config});
-        });
-        if (problems.length > 0) {
-            throw attachProblems(problems);
         }
-
-        prepared.forEach(({id, config}) => {
-            const entry = this.entries.get(id);
-            if (entry) {
-                entry.config = config;
-            }
-        });
-        await this.writeFiles(prepared.map(({id, config}) => ({storageName: storageNameOf(id), value: config})));
-        prepared.forEach(({id}) => this.notify(id));
     }
 
-    /** 合并 patch 后落盘，并通知订阅者。写失败时抛出，由调用方回滚 UI。 */
-    async patch(id: string, patch: FeatureConfig): Promise<void> {
+    private async applyPatch(id: string, patch: FeatureConfig): Promise<void> {
         const entry = this.entries.get(id);
         if (!entry) {
             return;
         }
+        const previous = entry.config;
         const warnings: string[] = [];
-        entry.config = normalizeConfig(
+        const next = normalizeConfig(
             entry.definition.settings,
-            {...entry.config, ...patch},
+            {...previous, ...patch},
             (message) => warnings.push(message),
         );
-        warnings.forEach((warning) => console.warn(`[some-settings-siyuan] ${warning}`));
-        await this.saveNow(id);
+        warnings.forEach((warning) => log.warn(`${id}: ${warning}`));
+        if (sameConfig(previous, next)) {
+            log.info(`${id}: patch changes nothing, skipping the write`);
+            return;
+        }
+        log.info(`${id}: applying patch`, patch);
+        entry.config = next;
+        try {
+            await this.writeFiles([{storageName: storageNameOf(id), value: next}]);
+        } catch (error) {
+            // 只在本功能的内存态仍是这次写入的值时才回退：期间若已有更晚的改动落盘，
+            // 用旧值覆盖会把那次改动一起抹掉。
+            if (entry.config === next) {
+                entry.config = previous;
+            }
+            throw error;
+        }
         this.notify(id);
     }
 
@@ -379,15 +456,24 @@ export class ConfigStore {
     async clearAll(): Promise<void> {
         const failed: string[] = [];
         const cleared: string[] = [];
-        for (const {id, storageName} of await this.storedFiles()) {
-            const status = await removeStoredFile(this.plugin, storageName);
+        const files = await this.storedFiles();
+        log.info(`clearing ${files.length} configuration file(s)`);
+        // 删的是互不依赖的文件，按有限并发一起删；日志与问题清单仍按文件顺序落，
+        // 用户看到的顺序不随完成先后变化。
+        const outcomes = await mapLimit(
+            files,
+            CONFIG_IO_CONCURRENCY,
+            async ({storageName}) => ({storageName, status: await removeStoredFile(this.plugin, storageName)}),
+        );
+        outcomes.forEach(({storageName, status}, index) => {
             if (status.ok) {
-                cleared.push(id);
-                continue;
+                log.info(`cleared ${storageName}`);
+                cleared.push(files[index].id);
+                return;
             }
-            console.warn(`${PREFIX} failed to clear ${storageName}: ${status.detail}`);
+            log.warn(`failed to clear ${storageName}: ${status.detail}`);
             failed.push(`${storageName}: ${status.detail}`);
-        }
+        });
         cleared.forEach((id) => {
             const entry = this.entries.get(id);
             if (!entry) {
@@ -409,14 +495,21 @@ export class ConfigStore {
      */
     async exportAll(): Promise<Record<string, FeatureConfig>> {
         const result: Record<string, FeatureConfig> = {};
-        for (const {id, storageName} of await this.storedFiles()) {
-            const stored = await readStoredFile(this.plugin, storageName);
+        const files = await this.storedFiles();
+        // 读文件互不依赖：并发读回来，再按目录顺序组装（去重与覆盖语义与逐个读一致）
+        const reads = await mapLimit(
+            files,
+            CONFIG_IO_CONCURRENCY,
+            async ({storageName}) => ({storageName, stored: await readStoredFile(this.plugin, storageName)}),
+        );
+        reads.forEach(({storageName, stored}, index) => {
             if (!isPlainObject(stored)) {
-                console.warn(`${PREFIX} ${storageName} does not hold an object, skipping it in the export`);
-                continue;
+                log.warn(`${storageName} does not hold an object, skipping it in the export`);
+                return;
             }
-            result[id] = stored;
-        }
+            result[files[index].id] = stored;
+        });
+        log.info(`exported ${Object.keys(result).length} configuration file(s)`, Object.keys(result));
         return result;
     }
 
@@ -461,6 +554,11 @@ export class ConfigStore {
         }
 
         const files = [...prepared, ...foreign].map(({id, value}) => ({storageName: storageNameOf(id), value}));
+        log.info(`importing ${files.length} configuration file(s)`, {
+            known: prepared.map(({id}) => id),
+            foreign: foreign.map(({id}) => id),
+            skipped,
+        });
         await this.writeFiles(files);
         // 内存态跟着磁盘走，导入的配置立刻生效，不必等页面重载
         prepared.forEach(({id, value}) => {
@@ -473,8 +571,9 @@ export class ConfigStore {
         return {applied, skipped};
     }
 
-    /** 插件卸载时收尾：清掉订阅者，不再需要延迟写盘（保存已改为显式提交）。 */
+    /** 插件卸载时收尾：清掉订阅者。待写的改动由设置面板在关闭时自己补上。 */
     dispose(): void {
         this.listeners.clear();
+        this.prefetched.clear();
     }
 }

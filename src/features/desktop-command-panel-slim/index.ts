@@ -14,8 +14,8 @@ export default defineFeature({
     id: "desktop-command-panel-slim",
     category: "appearance",
     enabled: true,
-    name: "feature.commandPanelSlim.name",
-    description: "feature.commandPanelSlim.desc",
+    name: "feature.desktopCommandPanelSlim.title",
+    description: "feature.desktopCommandPanelSlim.description",
     frontends: ["desktop"],
     settings: [
         {
@@ -27,8 +27,8 @@ export default defineFeature({
         {
             kind: "number",
             key: "width",
-            title: "commandPanelSlim.width",
-            description: "commandPanelSlim.widthTip",
+            title: "feature.desktopCommandPanelSlim.width",
+            description: "feature.desktopCommandPanelSlim.widthTip",
             default: 50,
             min: 20,
             max: 100,

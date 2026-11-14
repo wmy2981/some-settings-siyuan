@@ -8,9 +8,9 @@
  * 改动立即生效，没有草稿：图标文件写进插件自己的 `icons/`，然后通知已经挂载的功能
  * 重新读一遍目录；集市列表下一次重绘时就会换成新图标。
  *
- * 保存图标会顺手打开本功能（它默认是关着的）：图标管理窗口是「动作行」，不受面板
- * 草稿的开关约束，用户既然已经配好了图标，就该立刻看到效果，而不是再去找一遍开关。
- * 打开动作立刻落盘，面板里的草稿也会同步，避免随后点「保存」把它覆盖回去。
+ * 保存图标会顺手打开本功能（它默认是关着的）：图标管理窗口是「动作行」，绕过了面板上的
+ * 开关，用户既然已经配好了图标，就该立刻看到效果，而不是再去找一遍开关。
+ * 打开动作立刻落盘，面板上那个开关也跟着变（`updateConfig` 会同步控件）。
  */
 import {
     Dialog,
@@ -20,6 +20,10 @@ import {
 } from "siyuan";
 import {reportError} from "../../core/error";
 import {preheatDialogLayer} from "../../core/layer";
+import {
+    logInfo,
+    logWarn,
+} from "../../core/log";
 import {
     escapeHtml,
     isMobileFrontend,
@@ -200,7 +204,7 @@ export const openIconManager = (options: IconManagerOptions): void => {
                 return [icon.fileName, await readIconDataUrl(icon)] as const;
             } catch (error) {
                 // 一张读不出来不该让整个窗口打不开，退回原图标即可
-                console.warn(`[some-settings-siyuan] cannot read custom icon ${icon.fileName}`, error);
+                logWarn("bazaar-custom-icon", `cannot read custom icon ${icon.fileName}`, error);
                 return undefined;
             }
         }));
@@ -217,7 +221,7 @@ export const openIconManager = (options: IconManagerOptions): void => {
     const rowHtml = (pkg: InstalledPackage): string => {
         const icon = iconOf(pkg);
         const src = previewSrc(pkg, icon);
-        const typeLabel = t(`bazaarIcon.type.${pkg.type}`);
+        const typeLabel = t(`feature.bazaarCustomIcon.type.${pkg.type}`);
         const preview = src ?
             `<img src="${escapeHtml(src)}" alt="" loading="lazy">` :
             '<svg><use xlink:href="#iconBazaar"></use></svg>';
@@ -227,18 +231,18 @@ export const openIconManager = (options: IconManagerOptions): void => {
         <div class="${CLASS}__title">${escapeHtml(pkg.label)}</div>
         <div class="${CLASS}__meta">${escapeHtml(`${pkg.owner}/${pkg.name} · ${typeLabel}`)}</div>
     </div>
-    <span class="${CLASS}__state">${icon ? escapeHtml(t("bazaarIcon.customized")) : ""}</span>
+    <span class="${CLASS}__state">${icon ? escapeHtml(t("feature.bazaarCustomIcon.customized")) : ""}</span>
     <div class="${CLASS}__actions">
         <button class="b3-button b3-button--outline b3-button--small" type="button" data-action="pick">${
-            escapeHtml(t("bazaarIcon.pick"))
+            escapeHtml(t("feature.bazaarCustomIcon.pick"))
         }</button>
         <button class="b3-button b3-button--text b3-button--small" type="button" data-action="base64">${
-            escapeHtml(t("bazaarIcon.base64"))
+            escapeHtml(t("feature.bazaarCustomIcon.base64"))
         }</button>
         ${
             icon ?
                 `<button class="b3-button b3-button--text b3-button--small" type="button" data-action="reset">${
-                    escapeHtml(t("bazaarIcon.reset"))
+                    escapeHtml(t("feature.bazaarCustomIcon.reset"))
                 }</button>` :
                 ""
         }
@@ -252,18 +256,18 @@ export const openIconManager = (options: IconManagerOptions): void => {
             return;
         }
         if (loading) {
-            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("bazaarIcon.loading"))}</div>`;
+            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("feature.bazaarCustomIcon.loading"))}</div>`;
             return;
         }
         if (failed) {
-            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("bazaarIcon.failed"))}
+            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("feature.bazaarCustomIcon.failed"))}
     <button class="b3-button b3-button--outline b3-button--small" type="button" data-retry>${
-                escapeHtml(t("bazaarIcon.retry"))
+                escapeHtml(t("common.retry"))
             }</button></div>`;
             return;
         }
         if (packages.length === 0) {
-            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("bazaarIcon.empty"))}</div>`;
+            list.innerHTML = `<div class="${CLASS}__tip">${escapeHtml(t("feature.bazaarCustomIcon.empty"))}</div>`;
             return;
         }
         list.innerHTML = packages.map(rowHtml).join("");
@@ -347,7 +351,11 @@ export const openIconManager = (options: IconManagerOptions): void => {
                 enabledNow = true;
             }
             notifyChanged();
-            showMessage(t(enabledNow ? "bazaarIcon.savedAndEnabled" : "bazaarIcon.saved"), 3000);
+            logInfo("bazaar-custom-icon", `saved the icon for ${owner}/${name}`);
+            showMessage(
+                t(enabledNow ? "feature.bazaarCustomIcon.savedAndEnabled" : "feature.bazaarCustomIcon.saved"),
+                3000,
+            );
         } catch (error) {
             reportError("bazaar-custom-icon.save", error);
         }
@@ -362,7 +370,8 @@ export const openIconManager = (options: IconManagerOptions): void => {
             await reloadIcons();
             render();
             notifyChanged();
-            showMessage(t("bazaarIcon.removed"), 2000);
+            logInfo("bazaar-custom-icon", `restored the default icon for ${owner}/${name}`);
+            showMessage(t("feature.bazaarCustomIcon.removed"), 2000);
         } catch (error) {
             reportError("bazaar-custom-icon.reset", error);
         }
@@ -371,18 +380,20 @@ export const openIconManager = (options: IconManagerOptions): void => {
     const openBase64Dialog = (owner: string, name: string): void => {
         let nested: Dialog | undefined;
         nested = new Dialog({
-            title: t("bazaarIcon.base64Title"),
+            title: t("feature.bazaarCustomIcon.base64Title"),
             content: `<div class="b3-dialog__content">
     <style>${CSS}</style>
-    <div class="${CLASS}__tip">${escapeHtml(t("bazaarIcon.base64Tip"))}</div>
+    <div class="${CLASS}__tip">${escapeHtml(t("feature.bazaarCustomIcon.base64Tip"))}</div>
     <textarea class="b3-text-field fn__block" data-text spellcheck="false" rows="6"
-        placeholder="${escapeHtml(t("bazaarIcon.base64Placeholder"))}"></textarea>
+        placeholder="${escapeHtml(t("feature.bazaarCustomIcon.base64Placeholder"))}"></textarea>
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" type="button" data-cancel>${
-                escapeHtml(t("bazaarIcon.cancel"))
+                escapeHtml(t("common.cancel"))
             }</button><div class="fn__space"></div>
-    <button class="b3-button b3-button--text" type="button" data-confirm>${escapeHtml(t("bazaarIcon.confirm"))}</button>
+    <button class="b3-button b3-button--text" type="button" data-confirm>${
+                escapeHtml(t("feature.bazaarCustomIcon.confirm"))
+            }</button>
 </div>`,
             width: isMobileFrontend() ? "92vw" : "520px",
             destroyCallback: () => {
@@ -400,7 +411,7 @@ export const openIconManager = (options: IconManagerOptions): void => {
                 void save(owner, name, image);
             } catch (error) {
                 reportError("bazaar-custom-icon.base64", error, false);
-                showMessage(t("bazaarIcon.invalid"), 5000, "error");
+                showMessage(t("feature.bazaarCustomIcon.invalid"), 5000, "error");
             }
         });
         // 移动端不聚焦输入框：软键盘在入场动画期间弹起会让视口缩小、弹窗重新居中，
@@ -424,19 +435,19 @@ export const openIconManager = (options: IconManagerOptions): void => {
         }
         void imageFromFile(file).then((image) => save(target.owner, target.name, image)).catch((error: unknown) => {
             reportError("bazaar-custom-icon.pick", error, false);
-            showMessage(t("bazaarIcon.invalid"), 5000, "error");
+            showMessage(t("feature.bazaarCustomIcon.invalid"), 5000, "error");
         });
     });
 
     dialog = new Dialog({
-        title: t("bazaarIcon.title"),
+        title: t("feature.bazaarCustomIcon.dialogTitle"),
         content: `<div class="b3-dialog__content">
     <style>${CSS}</style>
-    <div class="${CLASS}__tip">${escapeHtml(t("bazaarIcon.tip"))}</div>
+    <div class="${CLASS}__tip">${escapeHtml(t("feature.bazaarCustomIcon.tip"))}</div>
     <div class="${CLASS}__list" data-list></div>
 </div>
 <div class="b3-dialog__action">
-    <button class="b3-button b3-button--cancel" type="button" data-close>${escapeHtml(t("bazaarIcon.close"))}</button>
+    <button class="b3-button b3-button--cancel" type="button" data-close>${escapeHtml(t("common.close"))}</button>
 </div>`,
         width: isMobileFrontend() ? "92vw" : "720px",
         height: "82vh",

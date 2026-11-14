@@ -20,7 +20,20 @@ import {
     guardSilent,
     reportError,
 } from "./error";
-import {activeFeatures} from "./registry";
+import {
+    currentFrontend,
+    supportsCurrentFrontend,
+} from "./frontend";
+import {
+    createLogger,
+    isDetailedLogging,
+    LOG_FEATURE_ID,
+    setDetailedLogging,
+} from "./log";
+import {
+    activeFeatures,
+    FEATURES,
+} from "./registry";
 import {SettingsPanel} from "./setting-dialog";
 import {
     addStyle,
@@ -42,6 +55,17 @@ import type {
 const isEnabled = (definition: FeatureDefinition, config: FeatureConfig): boolean =>
     definition.isEnabled ? definition.isEnabled(config) : config.enabled === true;
 
+/** 功能没被装载的原因，写进加载日志：排查「开关明明开着却没生效」时先看这一行。 */
+const skipReason = (definition: FeatureDefinition): string => {
+    if (!definition.enabled) {
+        return "the declaration says enabled: false";
+    }
+    if (!supportsCurrentFrontend(definition)) {
+        return `it does not apply to the ${currentFrontend()} frontend`;
+    }
+    return "the host version is outside its declared range";
+};
+
 interface MountedFeature {
     definition: FeatureDefinition;
     host: FeatureHost;
@@ -55,6 +79,7 @@ export class FeatureManager {
     readonly store: ConfigStore;
     readonly panel: SettingsPanel;
     private readonly mounted = new Map<string, MountedFeature>();
+    private readonly log = createLogger("core.bootstrap");
     private disposed = false;
 
     constructor(plugin: Plugin) {
@@ -72,20 +97,54 @@ export class FeatureManager {
      * 由插件在 onload 阶段调用一次。
      */
     async load(): Promise<void> {
+        const active = activeFeatures();
+        // 先把各功能的读盘请求并发发出去：每个功能一个文件、互不依赖，逐个 await 会把
+        // N 次内核往返串成一条线。这里不等结果（每条请求各自兑现），所以某个文件读得慢
+        // 不会拖住排在它前面的功能；下面的注册与挂载仍按注册表顺序逐个进行。
+        await this.store.prefetch(active);
+        // 「日志输出」必须先落地：它挂载时才打开详细日志，排在别的功能后面的话，
+        // 它前面那些功能的装载日志会被开关吞掉。注册表里它也必须是第一个，
+        // `tests/core/registry.test.ts` 守着这条约定。
+        const logDefinition = active.find((definition) => definition.id === LOG_FEATURE_ID);
+        if (logDefinition && await this.register(logDefinition)) {
+            this.syncMount(logDefinition);
+        }
+        this.log.info(`loading ${active.length} of ${FEATURES.length} feature(s)`, {
+            frontend: currentFrontend(),
+            kernelVersion: window.siyuan?.config?.system?.kernelVersion ?? "unknown",
+            detailedLogging: isDetailedLogging(),
+        });
         // 不生效的功能（前端对不上、宿主版本超出支持区间、声明 enabled: false）根本不在
         // activeFeatures() 里：既不会读配置、也不会出现在面板里、更不会挂载。
-        for (const definition of activeFeatures()) {
-            try {
-                await this.store.register(definition);
-            } catch (error) {
-                reportError(`${definition.id}.config`, error);
+        // 它们最容易被误当成「功能坏了」，所以逐条写明跳过的原因。
+        FEATURES.filter((definition) => !active.includes(definition)).forEach((definition) => {
+            this.log.info(`skip ${definition.id}: ${skipReason(definition)}`);
+        });
+        for (const definition of active) {
+            if (definition === logDefinition) {
                 continue;
             }
-            this.syncMount(definition);
-            // 面板一保存就立刻按新开关生效：打开即挂载、关闭即完整卸载，
-            // 不需要为了关掉一个功能去重载插件。
-            this.store.subscribe(definition.id, () => this.syncMount(definition));
+            if (await this.register(definition)) {
+                this.syncMount(definition);
+            }
         }
+    }
+
+    /**
+     * 注册一个功能的配置并订阅它的开关。
+     *
+     * 面板一保存就立刻按新开关生效：打开即挂载、关闭即完整卸载，不需要重载插件。
+     * 单个功能读配置失败只上报并跳过它，不影响其他功能。
+     */
+    private async register(definition: FeatureDefinition): Promise<boolean> {
+        try {
+            await this.store.register(definition);
+        } catch (error) {
+            reportError(`${definition.id}.config`, error);
+            return false;
+        }
+        this.store.subscribe(definition.id, () => this.syncMount(definition));
+        return true;
     }
 
     /** 按「该不该运行」调整挂载状态；幂等。 */
@@ -99,7 +158,7 @@ export class FeatureManager {
             this.mount(definition);
             return;
         }
-        this.unmount(definition.id);
+        this.unmount(definition.id, "switch");
     }
 
     private mount(definition: FeatureDefinition): void {
@@ -118,19 +177,21 @@ export class FeatureManager {
             if (instance && typeof instance.destroy === "function") {
                 record.instance = instance;
             }
+            createLogger(definition.id).info("mounted");
         } catch (error) {
             reportError(`${definition.id}.mount`, error);
             // 回滚该功能已经注册的 UI，其他功能不受影响
-            this.unmount(definition.id);
+            this.unmount(definition.id, "rollback");
         }
     }
 
-    /** 手动移除单个功能（异常回滚用）。 */
-    private unmount(id: string): void {
+    /** 手动移除单个功能（开关关闭 / 异常回滚 / 插件卸载）。 */
+    private unmount(id: string, reason: "switch" | "rollback" | "dispose"): void {
         const record = this.mounted.get(id);
         if (!record) {
             return;
         }
+        createLogger(id).info(`unmounted (${reason})`);
         this.mounted.delete(id);
         guardSilent(`${id}.abort`, () => record.controller.abort());
         record.teardowns.splice(0).reverse().forEach((teardown) => {
@@ -165,7 +226,7 @@ export class FeatureManager {
                 const value = plugin.i18n?.[key];
                 return typeof value === "string" && value ? value : key;
             },
-            log: (...args: unknown[]) => console.log(`[some-settings-siyuan][${definition.id}]`, ...args),
+            log: createLogger(definition.id),
             setConfig: async (patch: FeatureConfig) => {
                 await store.patch(definition.id, patch);
             },
@@ -259,8 +320,18 @@ export class FeatureManager {
             return;
         }
         this.disposed = true;
+        this.log.info(`disposing ${this.mounted.size} mounted feature(s)`);
         guardSilent("panel.close", () => this.panel.dispose());
-        [...this.mounted.keys()].forEach((id) => this.unmount(id));
+        // 「日志输出」永远最后卸载：它的 destroy 会关掉详细日志，早一步关掉，
+        // 后面那些功能的卸载日志就全没了。其余功能后挂载的先卸载。
+        // 不能只靠倒序：用户中途关掉再打开日志功能时，它在 Map 里的位置会变到末尾。
+        const ids = [...this.mounted.keys()];
+        const logId = ids.includes(LOG_FEATURE_ID) ? LOG_FEATURE_ID : undefined;
+        ids.filter((id) => id !== logId).reverse().forEach((id) => this.unmount(id, "dispose"));
+        if (logId) {
+            this.unmount(logId, "dispose");
+        }
         guardSilent("config.dispose", () => this.store.dispose());
+        setDetailedLogging(false);
     }
 }

@@ -16,6 +16,7 @@
  *
  * 卸载时把属性恢复成挂载前的样子（原本有值就还回原值，原本没有就删掉）。
  */
+import {logWarn} from "../../core/log";
 import type {
     FeatureHost,
     FeatureInstance,
@@ -60,7 +61,7 @@ const apply = (): void => {
             set: () => undefined,
         });
     } catch (error) {
-        console.warn("[some-settings-siyuan][code-block-lang-empty] failed to override local-codelang", error);
+        logWarn("code-block-lang-empty", "failed to override local-codelang", error);
     }
 };
 
@@ -77,7 +78,7 @@ const restore = (): void => {
             delete storage[STORAGE_KEY];
         }
     } catch (error) {
-        console.warn("[some-settings-siyuan][code-block-lang-empty] failed to restore local-codelang", error);
+        logWarn("code-block-lang-empty", "failed to restore local-codelang", error);
     }
     savedDescriptor = undefined;
 };

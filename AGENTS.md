@@ -46,8 +46,30 @@
 **新增功能**：建 `src/features/<id>/`（id 只用小写字母、数字、连字符）→ `defineFeature` 里
 `name` / `description` 是 **i18n key** 而不是字面量，分类取本文件与 `core/types.ts` 列出的原生功能区，
 `enabled` 按是否需要交出写 `true`，需要限定思源版本时补 `minAppVersion` / `maxAppVersion` →
-在 `registry.ts` 登记（数组顺序即面板顺序）→ 两份 i18n 补齐 key →
+在 `registry.ts` 登记（数组顺序即面板顺序）→ 各语言文件补齐 key → 关键动作埋足日志（见第 5 节）→
 `npm run check && npm run typecheck && npm run lint`。
+
+### i18n 键名
+
+键名只由功能 id / 分类 id 机械决定，不维护映射表；写错、写歪、多写、少写都由 `npm run check` 拦下。
+
+* **前缀只有五组**，各语言文件都按这个顺序排：`plugin.` → `category.` → `panel.` → `common.` → `feature.`。
+* **`feature.<camelId>.` 里的 camelId 由功能 id 推导**：按 `-` 切分，首段原样、后续段首字母大写
+  （`desktop-command-panel-slim` → `desktopCommandPanelSlim`）。推导只写在 `core/i18n-key.ts`，
+  检查脚本里有一份同规则副本。
+* **功能声明只占两个末段**：`feature.<camelId>.title` / `.description`。这两个末段名**不再给任何别的文案用**，
+  `settings` 行的 `key` 也不许叫 `title` / `description`。
+* **设置行跟着自己的 `key` 走**：标题 `feature.<camelId>.<key>`，说明（写了才有）`<key>Tip`，
+  输入框占位符 `<key>Placeholder`，`select` 选项标签 `<key>.<option.value>`（与 `value` 逐字一致）。
+  开关行是唯一例外：标题固定 `common.enabled`。
+* **运行期文案**（对话框、toast、按钮）用语义槽位收尾：`…Title` / `…Tip` / `…Placeholder` /
+  `…Action` / `…Notice` / `…Label`；状态键用裸词 `loading` / `empty` / `failed` / `copied` / `invalid` / `retry`。
+  一个功能里有多个同类对象时才拼成 `<对象><槽位>`（`exportTitle` / `importTip`）。
+* **只把通用控件词放 `common.*`**（cancel / close / copied / copyFailed / retry / enabled / scope.*）。
+  含义具体的一律留在功能自己的命名空间里，哪怕字面完全相同（「使用这张图」「创建」各自一个 `confirm`）。
+* **分类键是 `category.<分类 id 转驼峰>`**（`category.docTree`）；分类 id 本身仍是 kebab，
+  由 `core/i18n-key.ts` 的 `categoryKey()` 在运行期转换，代码里不要再手拼 `category.${…}`。
+* **每条键都得有代码取用**：没有引用的键（含只在测试里出现的）会让检查失败，先删译文再删代码引用。
 
 ---
 
@@ -56,9 +78,11 @@
 * 每个功能一个文件：`data/storage/petal/some-settings-siyuan/feature-<id>`。
 * **只能用** `plugin.loadData` / `saveData` / `removeData`。**禁止 `fs`、`require("electron")`
   或任何 Node API** —— 会破坏同步并可能损坏云数据。
-* 面板改的是**草稿**，点「保存」才写盘，点「取消」丢弃，有未保存改动时先确认。
+* 面板**改完即落盘**：控件一变就写该功能自己的配置文件，没有草稿、没有「保存 / 取消」按钮。
+  文本 / 数字框按静默期合并写盘（失焦立即写，关面板时补写），与磁盘相同的值不重复写盘。
 * 写盘后必须**读回校验**：宿主的 `saveData` 在文件真正落盘前就可能 resolve，而且从不检查
-  `response.code`。校验失败 / 写盘失败**不允许静默通过**，必须让用户看见问题。
+  `response.code`。校验失败 / 写盘失败**不允许静默通过**：内存态退回改动之前，面板把控件改回
+  磁盘上的值并让用户看见问题。
 
 ---
 
@@ -70,6 +94,14 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
 * **插件本体不在顶栏 / 状态栏 / 停靠栏注册任何入口**；设置面板的唯一入口是覆盖 `Plugin.openSetting()`。
 * 所以**只有单个功能**才允许注册自己的按钮 / 命令 / 停靠栏，且必须可撤销。
 * 所有注册都要有配对的清理，卸载逻辑必须幂等。
+* 日志一律走 `core/log.ts`：功能里用 `host.log` 的 `info` / `warn` / `error`，动作行用
+  `logInfo` / `logWarn` / `logError`（作用域写功能 id）。头部自动带
+  `[some-settings-siyuan__<功能 id>]`，详细日志默认关闭，开启入口是「插件自身」页签里的
+  「详细日志输出」。**不要直接 `console.*`**（`mobile-console-log` 抓取 `console` 的包装除外）。
+* **新功能必须埋足日志**：挂载与卸载、配置变化、接管的对象（DOM / 事件 / 请求）、关键分支与
+  状态变化、失败路径都要有 INFO / WARN / ERROR，只记失败路径不算够。详细日志默认关闭，
+  多记不打扰用户，缺日志才是问题；高频路径（每次重绘、每次对账）只在结果真的变化时记一行，
+  不要刷屏。
 
 ---
 
@@ -90,6 +122,10 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
 `npm run dev | build | check | typecheck | lint | format | format:check`。`assets/` 里的图标与预览图
 由 `scripts/` 生成，不要手改。
 
+`npm test` 走两个 project（`vm` / `forks`，见 `vitest.config.mts`），纯逻辑测试的文件级环境声明、
+`vmThreads` 缺的 Web API 补齐、`closeOpenSettings()` 收尾都不能删——删了要么变慢十倍，要么留下
+退出码不为 0 的定时器（见 development.md 的「构建与测试」）。
+
 发布：本地提交完成 → `plugin.json` 与 `package.json` 的 `version` **同步**提升 → `git push origin main`。
 **非用户要求禁止自行发布新版本、修改版本号。**
 
@@ -98,7 +134,8 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
 ## 8. 提交与文档
 
 * **Conventional Commits**，一个小改动一个 commit，提交信息用英文说清「改了什么」。
-* 用户可见的文案必须**中英双语**同时写进两份 i18n。
-* `README.md` / `README.zh-CN.md` 是集市展示页，改动用户可见行为时要同步更新，两份内容必须一致。
+* 用户可见的文案必须同时写进**全部语言文件**（英文 / 简体中文 / 繁体中文），键名按第 3 节「i18n 键名」的规则取，
+  不自己另起一套（`npm run check` 会校验前缀、末段、各语言文件的键集与顺序）。
+* `README.md` / `README.zh-CN.md` / `README.zh-TW.md` 是集市展示页，改动用户可见行为时要同步更新，三份内容必须一致。
 * **`dev-refs/` 是本地唯一权威开发参考资料，不得纳入版本管理，也不得在任何文档、注释、提交信息里引用或提及。**
 * 非用户明确要求，**禁止自行进行端到端测试或操作用户的思源工作空间**。

@@ -18,8 +18,8 @@ export default defineFeature({
     id: "mobile-bar-animation",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileBarAnimation.name",
-    description: "feature.mobileBarAnimation.desc",
+    name: "feature.mobileBarAnimation.title",
+    description: "feature.mobileBarAnimation.description",
     frontends: ["mobile"],
     settings: [
         {
@@ -31,7 +31,7 @@ export default defineFeature({
         {
             kind: "number",
             key: "duration",
-            title: "mobileBarAnimation.duration",
+            title: "feature.mobileBarAnimation.duration",
             default: 200,
             min: 0,
             max: 600,
@@ -41,12 +41,12 @@ export default defineFeature({
         {
             kind: "select",
             key: "easing",
-            title: "mobileBarAnimation.easing",
+            title: "feature.mobileBarAnimation.easing",
             default: "emphasized",
             options: [
-                {value: "emphasized", label: "mobileBarAnimation.easingEmphasized"},
-                {value: "standard", label: "mobileBarAnimation.easingStandard"},
-                {value: "linear", label: "mobileBarAnimation.easingLinear"},
+                {value: "emphasized", label: "feature.mobileBarAnimation.easing.emphasized"},
+                {value: "standard", label: "feature.mobileBarAnimation.easing.standard"},
+                {value: "linear", label: "feature.mobileBarAnimation.easing.linear"},
             ],
         },
     ],

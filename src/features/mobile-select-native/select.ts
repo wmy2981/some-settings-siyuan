@@ -85,7 +85,7 @@ export const mountMobileSelectNative = (host: FeatureHost): FeatureInstance => {
 
         const rect = select.getBoundingClientRect();
         next.open({x: rect.left, y: rect.bottom, h: rect.height, w: rect.width});
-        host.log(`native menu took over the select (${select.options.length} options)`);
+        host.log.info(`native menu took over the select (${select.options.length} options)`);
     };
 
     const selectOf = (event: Event): HTMLSelectElement | undefined => {

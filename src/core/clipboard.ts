@@ -10,6 +10,8 @@
  * 之前的实现只用 `navigator.clipboard?.writeText(...)`，而且用了可选链——
  * 桥不存在时整条链静默短路，连一句「复制失败」都不会提示。
  */
+import {logWarn} from "./log";
+
 type NativeContainer = "android" | "ios" | "harmony";
 
 interface ClipboardHost {
@@ -68,8 +70,9 @@ const writeViaTextarea = (text: string): boolean => {
     let copied: boolean;
     try {
         copied = document.execCommand("copy");
-    } catch {
+    } catch (error) {
         // 个别内核上 execCommand 会直接抛，按复制失败处理
+        logWarn("core.clipboard", "execCommand copy threw; treating it as a failure", error);
         copied = false;
     }
     area.remove();
@@ -90,8 +93,13 @@ export const copyText = async (text: string): Promise<boolean> => {
             await navigator.clipboard.writeText(text);
             return true;
         }
-    } catch {
+    } catch (error) {
         // http 来源、没有写权限、文档失焦时都会拒绝，落到下面的兜底
+        logWarn("core.clipboard", "navigator.clipboard refused the write; falling back", error);
     }
-    return writeViaTextarea(text);
+    const copied = writeViaTextarea(text);
+    if (!copied) {
+        logWarn("core.clipboard", "could not copy: every clipboard path failed");
+    }
+    return copied;
 };

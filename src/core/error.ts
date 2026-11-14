@@ -3,28 +3,27 @@
  *
  * 原则（可回退）：任何功能的异常都不允许冒泡到插件入口，
  * 更不允许让插件整体崩溃。这里提供最小的记录与提示能力。
+ *
+ * 记录走 `core/log.ts` 的分级日志：作用域就是出错的位置（`<功能 id>.<动作>`），
+ * 这样打开详细日志后每条错误都带 `[some-settings-siyuan__<作用域>]` 头部；
+ * 详细日志关着时控制台保持安静，但**给用户的提示照旧弹出** —— 提示是功能的一部分，
+ * 不属于「详细日志」。
  */
 import {showMessage} from "siyuan";
-
-const PREFIX = "[some-settings-siyuan]";
-
-export const logInfo = (...args: unknown[]): void => {
-    console.log(PREFIX, ...args);
-};
-
-export const logWarn = (...args: unknown[]): void => {
-    console.warn(PREFIX, ...args);
-};
+import {
+    LOG_PREFIX,
+    logError,
+} from "./log";
 
 /** 记录错误并尽力给用户一个可见提示；提示本身失败也不再抛。 */
 export const reportError = (scope: string, error: unknown, notifyUser = true): void => {
-    console.error(`${PREFIX} [${scope}]`, error);
+    logError(scope, error);
     if (!notifyUser) {
         return;
     }
     const message = error instanceof Error ? error.message : String(error);
     try {
-        showMessage(`${PREFIX} [${scope}] ${message}`, 6000, "error");
+        showMessage(`[${LOG_PREFIX}] [${scope}] ${message}`, 6000, "error");
     } catch {
         // 提示失败无需处理
     }
@@ -55,6 +54,6 @@ export const guardSilent = (scope: string, action: () => void): void => {
     try {
         action();
     } catch (error) {
-        console.error(`${PREFIX} [${scope}] cleanup failed`, error);
+        logError(scope, "cleanup failed", error);
     }
 };

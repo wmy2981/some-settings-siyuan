@@ -8,8 +8,8 @@ export default defineFeature({
     id: "external-link-confirm",
     category: "editor",
     enabled: true,
-    name: "feature.externalLinkConfirm.name",
-    description: "feature.externalLinkConfirm.desc",
+    name: "feature.externalLinkConfirm.title",
+    description: "feature.externalLinkConfirm.description",
     settings: [
         {
             kind: "switch",

@@ -60,7 +60,7 @@ export const mountDevtoolsHotkey = (host: FeatureHost): FeatureInstance => {
     const ipc = electronIpc();
     if (!ipc) {
         // 浏览器里 F12 本来就是浏览器自己的开发者工具，这里不需要也不该插手
-        host.log("the host is not the desktop app, F12 is left to the browser");
+        host.log.warn("the host is not the desktop app, F12 is left to the browser");
         return;
     }
 

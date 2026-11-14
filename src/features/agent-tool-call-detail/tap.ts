@@ -9,6 +9,8 @@
  * 返回的函数只还原自己装上的那一个 `fetch`，期间可能已经有别的代码换过它。
  */
 
+import {logWarn} from "../../core/log";
+
 const urlOf = (input: RequestInfo | URL): string => {
     if (typeof input === "string") {
         return input;
@@ -26,8 +28,9 @@ export const createResponseTap = (match: (url: string) => boolean, read: (respon
     const patched = (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
         const response = original.call(window, input, init);
         if (match(urlOf(input))) {
-            void response.then((value) => read(value.clone())).catch(() => {
-                // 宿主自己会处理这次失败，这里不需要做任何事
+            void response.then((value) => read(value.clone())).catch((error: unknown) => {
+                // 宿主自己会处理这次失败；这条只用来解释「详情为什么没出现」
+                logWarn("agent-tool-call-detail", "could not read a tapped tool-call response", error);
             });
         }
         return response;

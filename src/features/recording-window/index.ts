@@ -12,8 +12,8 @@ export default defineFeature({
     id: "recording-window",
     category: "editor",
     enabled: true,
-    name: "feature.recordingWindow.name",
-    description: "feature.recordingWindow.desc",
+    name: "feature.recordingWindow.title",
+    description: "feature.recordingWindow.description",
     settings: [
         {
             kind: "switch",

@@ -229,6 +229,7 @@ export const mountRecordingWindow = (host: FeatureHost): FeatureInstance => {
             window.clearInterval(timer);
             timer = 0;
         }
+        host.log.info("recording window closed");
         element?.remove();
         element = undefined;
         // 还原本地藏起来的那条原生提示：功能被关掉时不能让它一直隐身
@@ -237,6 +238,7 @@ export const mountRecordingWindow = (host: FeatureHost): FeatureInstance => {
     };
 
     const open = (native: NativeToast) => {
+        host.log.info("recording window opened");
         current = native;
         // 原生提示留着（它的按钮是停止录音的唯一入口），只是不再显示
         native.toast.classList.add(HIDDEN_CLASS);

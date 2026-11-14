@@ -11,8 +11,8 @@ export default defineFeature({
     id: "bookmark-last-position",
     category: "doc-tree",
     enabled: true,
-    name: "feature.bookmarkLastPosition.name",
-    description: "feature.bookmarkLastPosition.desc",
+    name: "feature.bookmarkLastPosition.title",
+    description: "feature.bookmarkLastPosition.description",
     settings: [
         {
             kind: "switch",

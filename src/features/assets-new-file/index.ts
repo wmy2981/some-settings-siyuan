@@ -11,8 +11,8 @@ export default defineFeature({
     id: "assets-new-file",
     category: "editor",
     enabled: true,
-    name: "feature.assetsNewFile.name",
-    description: "feature.assetsNewFile.desc",
+    name: "feature.assetsNewFile.title",
+    description: "feature.assetsNewFile.description",
     settings: [
         {
             kind: "switch",
