@@ -28,14 +28,24 @@ import {
     compareVersion,
     parseVersion,
 } from "../../src/core/version";
-import en from "../../src/i18n/en.json";
-import zhCN from "../../src/i18n/zh-CN.json";
 
 const sourceDir = path.join(process.cwd(), "src", "features");
 const featureDirs = fs.readdirSync(sourceDir, {withFileTypes: true})
     .filter((entry) => entry.isDirectory())
     .map((entry) => entry.name)
     .sort();
+
+/** `src/i18n` 下的全部语言文件，按文件名排序；新增语言不用再改这里。 */
+const localeDir = path.join(process.cwd(), "src", "i18n");
+const locales = new Map(
+    fs.readdirSync(localeDir)
+        .filter((file) => file.endsWith(".json"))
+        .sort()
+        .map((file) => [
+            file,
+            JSON.parse(fs.readFileSync(path.join(localeDir, file), "utf8")) as Record<string, string>,
+        ]),
+);
 
 const localeOf = (locale: Record<string, unknown>, key: string): string | undefined => {
     const value = locale[key];
@@ -144,17 +154,25 @@ describe("功能声明", () => {
         });
     });
 
-    it("文案 key 在中英两份 i18n 里都有非空译文", () => {
+    it("文案 key 在每个语言文件里都有非空译文", () => {
         FEATURES.forEach((feature) => {
             i18nKeysOfFeature(feature).forEach((key) => {
-                expect(localeOf(zhCN, key), `${feature.id}: ${key} (zh-CN)`).toBeTruthy();
-                expect(localeOf(en, key), `${feature.id}: ${key} (en)`).toBeTruthy();
+                locales.forEach((data, file) => {
+                    expect(localeOf(data, key), `${feature.id}: ${key} (${file})`).toBeTruthy();
+                });
             });
         });
     });
 
-    it("i18n 的键集合在中英两份文件里完全一致", () => {
-        expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
+    it("i18n 的键集与顺序在每个语言文件里完全一致", () => {
+        const [referenceFile, reference] = [...locales.entries()][0];
+        const referenceKeys = Object.keys(reference);
+        locales.forEach((data, file) => {
+            if (file === referenceFile) {
+                return;
+            }
+            expect(Object.keys(data), `${file} 与 ${referenceFile} 的键顺序不一致`).toEqual(referenceKeys);
+        });
     });
 
     it("版本区间合法：能解析，且下限不高于上限", () => {

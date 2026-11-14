@@ -46,14 +46,14 @@
 **新增功能**：建 `src/features/<id>/`（id 只用小写字母、数字、连字符）→ `defineFeature` 里
 `name` / `description` 是 **i18n key** 而不是字面量，分类取本文件与 `core/types.ts` 列出的原生功能区，
 `enabled` 按是否需要交出写 `true`，需要限定思源版本时补 `minAppVersion` / `maxAppVersion` →
-在 `registry.ts` 登记（数组顺序即面板顺序）→ 两份 i18n 补齐 key → 关键动作埋足日志（见第 5 节）→
+在 `registry.ts` 登记（数组顺序即面板顺序）→ 各语言文件补齐 key → 关键动作埋足日志（见第 5 节）→
 `npm run check && npm run typecheck && npm run lint`。
 
 ### i18n 键名
 
 键名只由功能 id / 分类 id 机械决定，不维护映射表；写错、写歪、多写、少写都由 `npm run check` 拦下。
 
-* **前缀只有五组**，两份语言文件都按这个顺序排：`plugin.` → `category.` → `panel.` → `common.` → `feature.`。
+* **前缀只有五组**，各语言文件都按这个顺序排：`plugin.` → `category.` → `panel.` → `common.` → `feature.`。
 * **`feature.<camelId>.` 里的 camelId 由功能 id 推导**：按 `-` 切分，首段原样、后续段首字母大写
   （`desktop-command-panel-slim` → `desktopCommandPanelSlim`）。推导只写在 `core/i18n-key.ts`，
   检查脚本里有一份同规则副本。
@@ -134,8 +134,8 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
 ## 8. 提交与文档
 
 * **Conventional Commits**，一个小改动一个 commit，提交信息用英文说清「改了什么」。
-* 用户可见的文案必须**中英双语**同时写进两份 i18n，键名按第 3 节「i18n 键名」的规则取，
-  不自己另起一套（`npm run check` 会校验前缀、末段、两份文件的键集与顺序）。
-* `README.md` / `README.zh-CN.md` 是集市展示页，改动用户可见行为时要同步更新，两份内容必须一致。
+* 用户可见的文案必须同时写进**全部语言文件**（英文 / 简体中文 / 繁体中文），键名按第 3 节「i18n 键名」的规则取，
+  不自己另起一套（`npm run check` 会校验前缀、末段、各语言文件的键集与顺序）。
+* `README.md` / `README.zh-CN.md` / `README.zh-TW.md` 是集市展示页，改动用户可见行为时要同步更新，三份内容必须一致。
 * **`dev-refs/` 是本地唯一权威开发参考资料，不得纳入版本管理，也不得在任何文档、注释、提交信息里引用或提及。**
 * 非用户明确要求，**禁止自行进行端到端测试或操作用户的思源工作空间**。

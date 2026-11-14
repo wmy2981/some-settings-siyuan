@@ -39,6 +39,7 @@ import {
 } from "../../src/core/version";
 import enLocale from "../../src/i18n/en.json";
 import zhLocale from "../../src/i18n/zh-CN.json";
+import zhTWLocale from "../../src/i18n/zh-TW.json";
 import {
     measure,
     printRows,
@@ -47,9 +48,10 @@ import type {BenchRow} from "./harness";
 
 const en = enLocale as Record<string, string>;
 const zh = zhLocale as Record<string, string>;
+const zhTW = zhTWLocale as Record<string, string>;
 
-/** 与面板的索引构造同形：一个字段的若干语言版本。 */
-const staticField = (key: string): SearchField => fieldOf(zh[key], en[key] === zh[key] ? undefined : en[key]);
+/** 与面板的索引构造同形：一个字段的若干语言版本（`fieldOf` 负责去重）。 */
+const staticField = (key: string): SearchField => fieldOf(zh[key], zhTW[key], en[key]);
 
 /** 面板实际会生成的那份索引（42 个功能、每个功能十几个字段）。 */
 const buildIndex = (): SearchIndex => {

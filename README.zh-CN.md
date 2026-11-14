@@ -1,4 +1,4 @@
-[English](README.md)
+[English](README.md) | [繁體中文](README.zh-TW.md)
 
 # 一些设置
 

@@ -105,10 +105,11 @@ import {
     textareaRowHtml,
     textRowHtml,
 } from "./ui";
-// 搜索要把静态文案的**两种语言**都索引进同一个匹配域，而宿主只交出当前语言那一份 i18n，
-// 所以这里把两份语言文件一起打进包里：它们本来就是插件自带的，读取时不经过任何运行时 API。
+// 搜索要把静态文案的**所有语言**都索引进同一个匹配域，而宿主只交出当前语言那一份 i18n，
+// 所以这里把全部语言文件一起打进包里：它们本来就是插件自带的，读取时不经过任何运行时 API。
 import enLocale from "../i18n/en.json";
 import zhLocale from "../i18n/zh-CN.json";
+import zhTWLocale from "../i18n/zh-TW.json";
 import {categoryKey} from "./i18n-key";
 
 const log = createLogger("core.panel");
@@ -274,12 +275,12 @@ const isEditingControl = (element: Element | null): boolean => {
 };
 
 /**
- * 静态 i18n 文案的另一份语言文件。
+ * 静态 i18n 文案的其余语言文件。
  *
- * 搜索要把同一个字段的中英文版本当成一个匹配域，而宿主的 `plugin.i18n` 只含当前语言。
- * 两份语言文件本来就是插件自带的资源，直接读它们即可，不经过任何运行时 API。
+ * 搜索要把同一个字段的多语言版本当成一个匹配域，而宿主的 `plugin.i18n` 只含当前语言。
+ * 各语言文件本来就是插件自带的资源，直接读它们即可，不经过任何运行时 API。
  */
-const LOCALE_TEXTS: readonly Record<string, string>[] = [enLocale, zhLocale] as readonly Record<string, string>[];
+const LOCALE_TEXTS: readonly Record<string, string>[] = [enLocale, zhLocale, zhTWLocale];
 
 /** 视口变化轮询间隔。 */
 const VIEWPORT_POLL_MS = 250;
@@ -1715,7 +1716,7 @@ export class SettingsPanel {
      * 输入框 placeholder；下拉选项标签；说明块的文字、值与标签；按钮的标题、说明与当前文字。
      * **不收**用户填写的值、开关状态、当前选中值，也不读任何配置文件。
      *
-     * 静态 i18n 文案把两份语言文件里的同一条都算进同一个匹配域（中英文可混着搜），
+     * 静态 i18n 文案把各语言文件里的同一条都算进同一个匹配域（不同语言可混着搜），
      * 运行时才知道的文案（动态下拉候选集、函数型按钮文字）只收此刻解析出的可见内容。
      *
      * 每次过滤现算：查询一变就要用最新索引，改过设置之后再输入才能命中新文案。
@@ -1738,7 +1739,7 @@ export class SettingsPanel {
                 // 内部 key 始终可搜，与它有没有文案无关
                 fields.push(fieldOf(field.key));
                 if (field.kind === "note") {
-                    // 说明块：可见文字（两种语言）+ 占位符的值与链接标签，算同一个字段
+                    // 说明块：可见文字（各语言）+ 占位符的值与链接标签，算同一个字段
                     fields.push(fieldOf(
                         ...this.localeTexts(field.text),
                         ...Object.values(field.values ?? {}),
@@ -1762,7 +1763,7 @@ export class SettingsPanel {
                     }
                 }
                 if (field.kind === "button") {
-                    // 字符串型按钮文字是 i18n key（两种语言都收）；函数型跟着运行期状态变，
+                    // 字符串型按钮文字是 i18n key（各语言都收）；函数型跟着运行期状态变，
                     // 只收此刻算出来的那一份
                     fields.push(
                         typeof field.label === "function" ?
@@ -1776,7 +1777,7 @@ export class SettingsPanel {
         return {categories, features};
     }
 
-    /** 一条静态 i18n 文案的匹配域：当前语言那一份，加上两份语言文件里的同一条。 */
+    /** 一条静态 i18n 文案的匹配域：当前语言那一份，加上各语言文件里的同一条。 */
     private staticField(key: string): SearchField {
         return fieldOf(...this.localeTexts(key));
     }
@@ -1784,7 +1785,7 @@ export class SettingsPanel {
     /**
      * 一个 i18n key 的全部语言版本。
      *
-     * 当前语言取宿主给的 `plugin.i18n`（也就是面板上真正显示的那份），另外两份直接读插件自带的
+     * 当前语言取宿主给的 `plugin.i18n`（也就是面板上真正显示的那份），其余语言直接读插件自带的
      * 语言文件；查不到的 key 一律丢掉，不要让「找不到文案时回退成 key 本身」污染索引。
      */
     private localeTexts(key: string): string[] {

@@ -27,8 +27,11 @@ import type {FeatureDefinition} from "../../src/core/types";
 import {mockState} from "../mocks/siyuan";
 
 const ROOT = path.join(__dirname, "..", "..");
+const LOCALE_DIR = path.join(ROOT, "src", "i18n");
+/** 语言文件全部参与校验：新增一种语言不用再改这里。 */
+const LOCALE_FILES = fs.readdirSync(LOCALE_DIR).filter((file) => file.endsWith(".json")).sort();
 const readI18n = (file: string): Record<string, string> =>
-    JSON.parse(fs.readFileSync(path.join(ROOT, "src", "i18n", file), "utf8")) as Record<string, string>;
+    JSON.parse(fs.readFileSync(path.join(LOCALE_DIR, file), "utf8")) as Record<string, string>;
 
 describe("清单本身", () => {
     it("「日志输出」排在第一位：装载器靠它先把详细日志开关打开", () => {
@@ -71,13 +74,13 @@ describe("清单本身", () => {
         });
     });
 
-    it("name / description 是 i18n key，两份语言文件都有", () => {
-        const en = readI18n("en.json");
-        const zh = readI18n("zh-CN.json");
+    it("name / description 是 i18n key，每个语言文件都有", () => {
+        const locales = LOCALE_FILES.map((file) => [file, readI18n(file)] as const);
         FEATURES.forEach((feature) => {
             [feature.name, feature.description].filter(Boolean).forEach((key) => {
-                expect(en[key as string], `${feature.id} 缺英文 ${key}`).toBeTruthy();
-                expect(zh[key as string], `${feature.id} 缺中文 ${key}`).toBeTruthy();
+                locales.forEach(([file, data]) => {
+                    expect(data[key as string], `${feature.id} 缺 ${file} 里的 ${key}`).toBeTruthy();
+                });
             });
         });
     });

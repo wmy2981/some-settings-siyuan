@@ -1,7 +1,7 @@
 /**
  * 设置面板基准：打开一次面板、每敲一个字符过滤一次。
  *
- * 用真实的注册表与真实的两份语言文件，行数、文案长度都与线上一致；
+ * 用真实的注册表与真实的全部语言文件，行数、文案长度都与线上一致；
  * 时间花在字符串拼接、innerHTML 解析与逐行显隐上，正是用户能感知的那一段。
  */
 import type {Plugin} from "siyuan";
@@ -15,6 +15,7 @@ import {activeFeatures} from "../../src/core/registry";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import enLocale from "../../src/i18n/en.json";
 import zhLocale from "../../src/i18n/zh-CN.json";
+import zhTWLocale from "../../src/i18n/zh-TW.json";
 import {mockState} from "../mocks/siyuan";
 import {
     measure,
@@ -28,7 +29,7 @@ class BenchHost {
     readonly displayName = "some settings";
     readonly i18n: Record<string, string> = zhLocale as Record<string, string>;
     readonly files = new Map<string, unknown>();
-    readonly locales = [enLocale, zhLocale];
+    readonly locales = [enLocale, zhLocale, zhTWLocale];
 
     async loadData(name: string): Promise<unknown> {
         return this.files.get(name) ?? "";

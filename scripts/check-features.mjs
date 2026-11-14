@@ -385,7 +385,7 @@ for (const locale of locales) {
     }
 }
 
-// 5.1 功能用到的 key 两份语言文件都得有
+// 5.1 功能用到的 key 各语言文件都得有
 for (const [id, info] of found) {
     for (const key of info.i18nKeys) {
         for (const [locale, data] of localeData) {
@@ -396,7 +396,7 @@ for (const [id, info] of found) {
     }
 }
 
-// 5.2 两份语言文件的键集与顺序必须完全一致：漏一条译文、两边顺序不同都会让人以为改错了地方
+// 5.2 各语言文件的键集与顺序必须完全一致：漏一条译文、顺序不同都会让人以为改错了地方
 const [referenceLocale, ...otherLocales] = [...localeData.keys()];
 const reference = localeData.get(referenceLocale) ?? {};
 const referenceKeys = Object.keys(reference);
