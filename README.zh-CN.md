@@ -110,4 +110,4 @@
 
 ## 许可证
 
-[MIT](./LICENSE)
+[AGPL-3.0-or-later](./LICENSE)

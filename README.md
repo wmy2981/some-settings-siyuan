@@ -116,4 +116,4 @@ plugin adds no top bar button, no status bar item and no dock item.
 
 ## License
 
-[MIT](./LICENSE)
+[AGPL-3.0-or-later](./LICENSE)

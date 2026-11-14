@@ -16,6 +16,10 @@ import {logInfo} from "../../core/log";
  * 原样取自本体的 `Constants.SIYUAN_IMAGE_SPONSOR`（32×32 的渐变爱心，
  * 由内核的 `.b3-button svg` 规则缩到 16px 并留出 4px 间距）。
  * 换掉它就不再是官方那颗按钮了，所以整段照抄、不改造型、不换成 symbol。
+ *
+ * 它是思源源码里的字面量、随本体按 AGPL-3.0 发布，复制进本插件后整份作品就得同许可，
+ * 所以本插件整体是 AGPL-3.0（见 LICENSE 与两份 README 的许可证段），不再是 MIT。
+ * 这段图不要再挪进别处，也不要再假设本插件是宽松许可。
  */
 export const DONATE_ICON =
     `<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">

@@ -33,8 +33,16 @@ module.exports = (env, argv) => {
     ];
     if (production) {
         plugins.push(
+            // 头部只放一段短的许可声明：完整文本随包发在 LICENSE 里（见下面的 CopyPlugin）。
+            // 不要把整份 LICENSE 塞进 banner —— AGPL 全文 34KB，只会变成 bundle 开头一大段注释。
             new webpack.BannerPlugin({
-                banner: () => fs.readFileSync("LICENSE").toString(),
+                banner: [
+                    `${pluginManifest.displayName.default} v${pluginManifest.version} - ${pluginManifest.url}`,
+                    "Copyright (C) 2026 wmy2981",
+                    "SPDX-License-Identifier: AGPL-3.0-or-later",
+                    "Licensed under the GNU Affero General Public License v3.0 or later; see LICENSE for the full text.",
+                    "The sponsor icon in the donate button is taken from SiYuan (AGPL-3.0, (C) siyuan-note).",
+                ].join("\n"),
             }),
         );
         plugins.push(
@@ -42,6 +50,8 @@ module.exports = (env, argv) => {
                 patterns: [
                     ...packageImagePatterns,
                     {from: "README*.md", to: "./dist/"},
+                    // AGPL 要求分发时随附许可全文，所以 LICENSE 必须进 package.zip
+                    {from: "LICENSE", to: "./dist/"},
                     {from: "plugin.json", to: "./dist/"},
                     {from: "src/i18n/", to: "./dist/i18n/"},
                 ],
