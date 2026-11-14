@@ -680,3 +680,43 @@ describe("openSettings / dispose", () => {
         expect(document.head.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
     });
 });
+
+describe("load 的配置读取", () => {
+    it("并发读盘，但挂载顺序仍是注册表顺序", async () => {
+        const ids = ["alpha", "beta", "gamma", "delta"];
+        const mounted: string[] = [];
+        hoisted.active = ids.map((id) =>
+            featureOf(id, {
+                mount: () => {
+                    mounted.push(id);
+                    return {destroy: () => undefined};
+                },
+            })
+        );
+        const plugin = new FakePlugin();
+        ids.forEach((id) => plugin.files.set(`feature-${id}`, {enabled: true}));
+
+        const original = plugin.loadData.getMockImplementation() as (name: string) => Promise<unknown>;
+        let running = 0;
+        let peak = 0;
+        plugin.loadData.mockImplementation(async (name: string) => {
+            running += 1;
+            peak = Math.max(peak, running);
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            try {
+                return await original(name);
+            } finally {
+                running -= 1;
+            }
+        });
+
+        const manager = new FeatureManager(plugin as never);
+        await manager.load();
+        manager.dispose();
+
+        // 读盘是并发的（逐个 await 时 peak 只能是 1）
+        expect(peak).toBeGreaterThan(1);
+        // 挂载顺序不受完成顺序影响
+        expect(mounted).toEqual(ids);
+    });
+});

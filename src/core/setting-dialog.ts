@@ -357,6 +357,13 @@ export class SettingsPanel {
     private scrollFrame?: number;
     /** 移动端页签栏展开后，删掉过渡起点高度的那个定时器。 */
     private tabBarTimer?: number;
+    /**
+     * 一页里的行按功能分组的结果。
+     *
+     * 搜索期间行只改变显隐、不增删，分组结果可以按 pane 缓存；`render()` 会换掉整块
+     * innerHTML，pane 变成新对象后旧缓存自然失效，不需要手工清理。
+     */
+    private readonly featureRowsCache = new WeakMap<HTMLElement, Map<string, HTMLElement[]>>();
 
     constructor(options: SettingsPanelOptions) {
         this.options = options;
@@ -1208,13 +1215,24 @@ export class SettingsPanel {
         this.pending.delete(featureId);
         // 立即提交后旧计时器必须失效，否则写入途中再次输入会留下一次没有新输入触发的静默写盘。
         this.clearFlushTimer();
-        return this.write(featureId, queued ? {...queued, ...patch} : patch);
+        const writing = this.write(featureId, queued ? {...queued, ...patch} : patch);
+        // 别的功能还有静默期里的输入：刚才清掉的计时器是共用的，这里把它重新排上，
+        // 否则那些改动要等到关面板才落盘（彼此无关的两个输入框，改完 A 再去改 B 就会触发）。
+        if (this.pending.size > 0) {
+            this.armFlushTimer();
+        }
+        return writing;
     }
 
     /** 把一次改动放进静默队列；静默期结束后统一写盘。 */
     private schedule(featureId: string, patch: FeatureConfig): void {
         this.pending.set(featureId, {...this.pending.get(featureId), ...patch});
         this.clearFlushTimer();
+        this.armFlushTimer();
+    }
+
+    /** 排一次静默期结束后的写盘（调用方负责先清掉旧计时器，这样每次 input 都重新计时）。 */
+    private armFlushTimer(): void {
         this.flushTimer = window.setTimeout(() => {
             this.flushTimer = undefined;
             void this.flushPending();
@@ -1516,7 +1534,10 @@ export class SettingsPanel {
         root.querySelector<HTMLElement>(`.${PANEL_CLASS}__search-empty`)?.classList.add("fn__none");
         root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
             pane.classList.remove("fn__none");
-            pane.querySelectorAll<HTMLElement>(".config-item").forEach((row) => row.classList.remove("fn__none"));
+            // 只有被搜索藏起来的行需要恢复：搜索之外没有任何代码给行加 fn__none
+            pane.querySelectorAll<HTMLElement>(".config-item.fn__none").forEach((row) =>
+                row.classList.remove("fn__none")
+            );
             pane.querySelector<HTMLElement>("[data-ss-search-group]")?.classList.add("fn__none");
             this.refreshLastRow(pane);
             this.refreshChildMarks(this.rowsByFeature(pane));
@@ -1536,9 +1557,11 @@ export class SettingsPanel {
      * 这一页的下分割线、层级引导线的收尾都靠它，所以每次显隐变化后重算一遍。
      */
     private refreshLastRow(pane: HTMLElement): void {
-        const rows = [...pane.querySelectorAll<HTMLElement>(".config-item")];
-        rows.forEach((row) => row.classList.remove(LAST_ROW_CLASS));
-        rows.filter((row) => !row.classList.contains("fn__none")).pop()?.classList.add(LAST_ROW_CLASS);
+        // 整页同时只有一行带这个标记（渲染时打一个，之后每次重算都先摘掉再打），
+        // 所以摘标记只需要动那一行，不必把全部行扫一遍。
+        pane.querySelector<HTMLElement>(`.${LAST_ROW_CLASS}`)?.classList.remove(LAST_ROW_CLASS);
+        const rows = pane.querySelectorAll<HTMLElement>(".config-item:not(.fn__none)");
+        rows[rows.length - 1]?.classList.add(LAST_ROW_CLASS);
     }
 
     /**
@@ -1550,15 +1573,29 @@ export class SettingsPanel {
      */
     private refreshChildMarks(features: Map<string, HTMLElement[]>): void {
         features.forEach((rows) => {
-            rows.forEach((row) => row.classList.remove(LAST_CHILD_CLASS));
-            rows
-                .filter((row) => row.classList.contains(CHILD_CLASS) && !row.classList.contains("fn__none"))
-                .pop()?.classList.add(LAST_CHILD_CLASS);
+            let last: HTMLElement | undefined;
+            rows.forEach((row) => {
+                if (!row.classList.contains(CHILD_CLASS)) {
+                    return;
+                }
+                // 每个功能里同样只有一行带收尾标记：只摘那一行，不给全部子行各写一次
+                if (row.classList.contains(LAST_CHILD_CLASS)) {
+                    row.classList.remove(LAST_CHILD_CLASS);
+                }
+                if (!row.classList.contains("fn__none")) {
+                    last = row;
+                }
+            });
+            last?.classList.add(LAST_CHILD_CLASS);
         });
     }
 
     /** 按功能 id 把一页里的行分组：显隐、收尾标记与高亮都按「一个功能」为单位处理。 */
     private rowsByFeature(pane: HTMLElement): Map<string, HTMLElement[]> {
+        const cached = this.featureRowsCache.get(pane);
+        if (cached) {
+            return cached;
+        }
         const features = new Map<string, HTMLElement[]>();
         pane.querySelectorAll<HTMLElement>(".config-item").forEach((row) => {
             const id = row.dataset.ssFeature;
@@ -1572,6 +1609,7 @@ export class SettingsPanel {
             }
             features.set(id, [row]);
         });
+        this.featureRowsCache.set(pane, features);
         return features;
     }
 
@@ -1598,6 +1636,16 @@ export class SettingsPanel {
      * 下拉选项标签参与匹配，但那里塞不进标记。
      */
     private highlightText(element: HTMLElement, keywords: string[]): void {
+        // 先用整块文字判一次：绝大多数元素里一个关键词都没有，省掉一次 TreeWalker
+        // 与逐节点分段。命中的元素仍按 text node 走，切分结果不变。
+        const text = element.textContent ?? "";
+        if (text === "") {
+            return;
+        }
+        const haystack = text.toLowerCase();
+        if (!keywords.some((keyword) => haystack.includes(keyword))) {
+            return;
+        }
         const walker = element.ownerDocument.createTreeWalker(element, SHOW_TEXT);
         const nodes: Text[] = [];
         while (walker.nextNode()) {
@@ -1628,12 +1676,17 @@ export class SettingsPanel {
 
     /** 拆掉所有高亮，把文本节点合回去（下一次过滤重新算，切回普通视图时也不留痕迹）。 */
     private clearHighlights(root: HTMLElement): void {
+        // 只合并真正被切开过的元素：原先对整页每个行都 normalize 一遍，
+        // 而没有被高亮过的子树里根本没有相邻文本节点，合并没有任何效果。
+        const touched = new Set<Element>();
         root.querySelectorAll(`mark.${HIT_CLASS}`).forEach((mark) => {
+            const parent = mark.parentElement;
             mark.replaceWith(document.createTextNode(mark.textContent ?? ""));
+            if (parent) {
+                touched.add(parent);
+            }
         });
-        root.querySelectorAll<HTMLElement>(".config-item, [data-ss-search-group]").forEach((element) => {
-            element.normalize();
-        });
+        touched.forEach((element) => element.normalize());
     }
 
     /**

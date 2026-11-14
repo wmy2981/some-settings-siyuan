@@ -19,7 +19,9 @@ import {
 } from "vitest";
 import {setDetailedLogging} from "../../src/core/log";
 import {
+    CONFIG_IO_CONCURRENCY,
     listStoredFiles,
+    mapLimit,
     readStoredFile,
     removeStorageDir,
     removeStoredFile,
@@ -250,5 +252,78 @@ describe("removeStorageDir", () => {
         expect(status.ok).toBe(false);
         expect(status.detail).toContain("offline");
         expect(vi.mocked(console.warn)).toHaveBeenCalled();
+    });
+});
+
+describe("mapLimit", () => {
+    it("结果按输入顺序返回，与完成顺序无关", async () => {
+        const delays = [30, 5, 20, 1];
+        const results = await mapLimit(delays, 4, async (delay, index) => {
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            return index;
+        });
+        expect(results).toEqual([0, 1, 2, 3]);
+    });
+
+    it("同时运行的任务不超过上限", async () => {
+        let running = 0;
+        let peak = 0;
+        await mapLimit(Array.from({length: 12}, (_, index) => index), CONFIG_IO_CONCURRENCY, async () => {
+            running += 1;
+            peak = Math.max(peak, running);
+            await new Promise((resolve) => setTimeout(resolve, 2));
+            running -= 1;
+            return undefined;
+        });
+        expect(peak).toBe(CONFIG_IO_CONCURRENCY);
+    });
+
+    it("空清单直接把空数组交回去", async () => {
+        const run = vi.fn();
+        await expect(mapLimit([], 4, run)).resolves.toEqual([]);
+        expect(run).not.toHaveBeenCalled();
+    });
+
+    it("并发度按上限切分，不会把整批同时压出去", async () => {
+        let running = 0;
+        let peak = 0;
+        const results = await mapLimit([1, 2, 3, 4, 5], 2, async (value) => {
+            running += 1;
+            peak = Math.max(peak, running);
+            await new Promise((resolve) => setTimeout(resolve, 2));
+            running -= 1;
+            return value * 2;
+        });
+        expect(results).toEqual([2, 4, 6, 8, 10]);
+        expect(peak).toBe(2);
+    });
+
+    it("上限为 0 时至少跑一个，不会卡死", async () => {
+        const run = vi.fn(async (value: number) => value);
+        await expect(mapLimit([1, 2, 3], 0, run)).resolves.toEqual([1, 2, 3]);
+        expect(run).toHaveBeenCalledTimes(3);
+    });
+
+    it("任务抛错后，其余的仍会被存活的 worker 跑完", async () => {
+        const ran: number[] = [];
+        void mapLimit([1, 2, 3, 4], 2, async (value) => {
+            ran.push(value);
+            if (value === 1) {
+                throw new Error("boom");
+            }
+            await new Promise((resolve) => setTimeout(resolve, 1));
+            return value;
+        }).catch(() => undefined);
+        await vi.waitFor(() => expect(ran).toHaveLength(4));
+        expect([...ran].sort()).toEqual([1, 2, 3, 4]);
+    });
+
+    it("任务抛错时整体拒绝", async () => {
+        await expect(mapLimit([1, 2, 3], 2, async (value) => {
+            if (value === 2) {
+                throw new Error("boom");
+            }
+            return value;
+        })).rejects.toThrow("boom");
     });
 });

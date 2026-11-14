@@ -83,12 +83,24 @@ export const isMobileFrontend = (): boolean => {
     return frontend === "mobile" || frontend === "browser-mobile";
 };
 
-export const escapeHtml = (value: string): string =>
-    value.replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+/** 五个需要转义的字符及其替换文本。 */
+const HTML_ESCAPES: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+};
+
+const HTML_ESCAPE_PATTERN = /[&"'<>]/g;
+
+/**
+ * 转义要写进 HTML 的文案。
+ *
+ * 一次 `replace` 扫完整串：面板渲染一次要转义几百段文案，连着五趟正则各扫一遍
+ * 会多分配四份中间字符串。输出与逐字符替换完全一致。
+ */
+export const escapeHtml = (value: string): string => value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPES[char]);
 
 /** 原生「主文案 + 说明」块。 */
 export const mainHtml = (title: string, description?: string): string =>

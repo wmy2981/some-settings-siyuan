@@ -12,6 +12,9 @@
  * `event` 是触发本次跳转的原始事件：插件可以靠它找回链接元素、在用户确认后补发一次点击。
  * 按钮这类没有链接元素的入口可以不传。
  */
+
+import {reportError} from "./error";
+
 export const openExternalLink = (href: string, event?: MouseEvent): void => {
     const detail = {href, originalHref: href, event};
     for (const plugin of window.siyuan?.ws?.app?.plugins ?? []) {
@@ -19,5 +22,12 @@ export const openExternalLink = (href: string, event?: MouseEvent): void => {
             return;
         }
     }
-    window.open(href, "_blank");
+    try {
+        window.open(href, "_blank");
+    } catch (error) {
+        // 弹窗被拦截、宿主没提供 window.open 时只记录，不弹提示：改动前的行为是
+        // 「点了没反应 + 控制台一条未捕获异常」，用户看不到任何信息；这里保持一样的结果，
+        // 但不再让异常冒到事件循环里把后面的处理器一起打断。
+        reportError("core.link", error, false);
+    }
 };

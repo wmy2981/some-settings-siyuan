@@ -27,7 +27,9 @@ import {
 } from "./core/log";
 import {ALL_FEATURE_IDS} from "./core/registry";
 import {
+    CONFIG_IO_CONCURRENCY,
     listStoredFiles,
+    mapLimit,
     removeStorageDir,
     removeStoredFile,
 } from "./core/storage";
@@ -85,7 +87,9 @@ export default class SomeSettingsPlugin extends Plugin {
     async uninstall(): Promise<void> {
         const storageNames = await this.storageNamesToRemove();
         log.info(`uninstall: removing ${storageNames.length} configuration file(s)`);
-        for (const storageName of storageNames) {
+        // 宿主只给 5 秒预算，逐个 await 在大目录上会把预算吃光；文件之间互不依赖，
+        // 按有限并发一起删。每个文件的结局单独收敛，一个失败不影响其余文件。
+        await mapLimit(storageNames, CONFIG_IO_CONCURRENCY, async (storageName) => {
             await guardAsync(`uninstall.${storageName}`, async () => {
                 const status = await removeStoredFile(this, storageName);
                 if (!status.ok) {
@@ -94,7 +98,7 @@ export default class SomeSettingsPlugin extends Plugin {
                     log.info(`uninstall removed ${storageName}`);
                 }
             }, false);
-        }
+        });
         // 存储目录下可能还有功能自己建的子目录（例如自定义图标），逐个删文件清不掉它们；
         // 最后直接删整个目录收尾。整个卸载只有 5 秒预算，这一条也只发一次请求。
         await guardAsync("uninstall.storage", async () => {

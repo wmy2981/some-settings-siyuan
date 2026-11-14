@@ -692,3 +692,96 @@ describe("ConfigStore.importMany", () => {
         });
     });
 });
+
+describe("prefetch", () => {
+    it("并发读回配置文件，register 之后不再重复读盘", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true, label: "已存"});
+        host.files.set("feature-beta", {enabled: false});
+        let running = 0;
+        let peak = 0;
+        const original = host.loadData.getMockImplementation() as (name: string) => Promise<unknown>;
+        host.loadData.mockImplementation(async (name: string): Promise<unknown> => {
+            running += 1;
+            peak = Math.max(peak, running);
+            await new Promise((resolve) => setTimeout(resolve, 2));
+            try {
+                return await original(name);
+            } finally {
+                running -= 1;
+            }
+        });
+
+        const store = new ConfigStore(host.asPlugin());
+        await store.prefetch([definitionOf("alpha"), definitionOf("beta")]);
+        // 两次读盘是同时在跑，不是一次等一次
+        expect(peak).toBe(2);
+        const reads = host.loadData.mock.calls.length;
+
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: true, label: "已存"});
+        await expect(store.register(definitionOf("beta"))).resolves.toMatchObject({enabled: false});
+        // 预读过的文件不再读第二次
+        expect(host.loadData.mock.calls.length).toBe(reads);
+    });
+
+    it("预读失败的功能回落默认值并记一条告警", async () => {
+        const host = new FakeHost();
+        host.loadData.mockRejectedValueOnce(new Error("offline"));
+        const store = new ConfigStore(host.asPlugin());
+        await store.prefetch([definitionOf("alpha")]);
+
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: false, label: "hi"});
+        expect(vi.mocked(console.warn)).toHaveBeenCalled();
+    });
+
+    it("某个文件读得慢只影响它自己的 register", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true});
+        host.files.set("feature-beta", {enabled: true});
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        const original = host.loadData.getMockImplementation() as (name: string) => Promise<unknown>;
+        host.loadData.mockImplementation(async (name: string): Promise<unknown> => {
+            if (name === "feature-alpha") {
+                await gate;
+            }
+            return original(name);
+        });
+
+        const store = new ConfigStore(host.asPlugin());
+        await store.prefetch([definitionOf("alpha"), definitionOf("beta")]);
+        // alpha 的读盘还悬着，beta 照常拿到自己的配置
+        await expect(store.register(definitionOf("beta"))).resolves.toMatchObject({enabled: true});
+
+        let resolved = false;
+        const alpha = store.register(definitionOf("alpha")).then(() => {
+            resolved = true;
+        });
+        await new Promise((done) => setTimeout(done, 5));
+        expect(resolved).toBe(false);
+        release();
+        await alpha;
+        expect(resolved).toBe(true);
+    });
+
+    it("没有预读过的功能仍然现场读盘", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true});
+        const store = new ConfigStore(host.asPlugin());
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: true});
+        expect(host.loadData).toHaveBeenCalledWith("feature-alpha");
+    });
+
+    it("预读结果读完即用，不留在内存里覆盖之后的改动", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true});
+        const store = new ConfigStore(host.asPlugin());
+        await store.prefetch([definitionOf("alpha")]);
+        await store.register(definitionOf("alpha"));
+        // 第二次注册（例如设置面板重建）必须重新读盘，拿到的是最新值
+        host.files.set("feature-alpha", {enabled: false, label: "新值"});
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: false, label: "新值"});
+    });
+});

@@ -15,7 +15,8 @@
     "typecheck:test": "tsc -p tests/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "bench": "vitest run --config vitest.bench.config.mts"
   },
   "keywords": [
     "siyuan",

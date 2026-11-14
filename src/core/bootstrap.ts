@@ -98,6 +98,10 @@ export class FeatureManager {
      */
     async load(): Promise<void> {
         const active = activeFeatures();
+        // 先把各功能的读盘请求并发发出去：每个功能一个文件、互不依赖，逐个 await 会把
+        // N 次内核往返串成一条线。这里不等结果（每条请求各自兑现），所以某个文件读得慢
+        // 不会拖住排在它前面的功能；下面的注册与挂载仍按注册表顺序逐个进行。
+        await this.store.prefetch(active);
         // 「日志输出」必须先落地：它挂载时才打开详细日志，排在别的功能后面的话，
         // 它前面那些功能的装载日志会被开关吞掉。注册表里它也必须是第一个，
         // `tests/core/registry.test.ts` 守着这条约定。
