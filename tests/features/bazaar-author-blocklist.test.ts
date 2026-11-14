@@ -220,6 +220,24 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("installed")).toBe(false);
     });
 
+    it("详细日志记下挂载、接管列表、计数修正与卸载", async () => {
+        document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "a"), cardMarkup("other", "b")], 2);
+        stubListFetch(packagesPayload({author: "acme", name: "a"}, {author: "other", name: "b"}));
+        const harness = mount();
+        await flushFrames();
+        await window.fetch("/api/bazaar/getBazaarPlugin", {method: "POST"});
+        await flushFrames();
+        harness.dispose();
+
+        const lines = harness.records.logs.map((args) => String(args[0]));
+        expect(lines).toContain("marketplace author blocklist mounted (1 author(s))");
+        expect(lines).toContain("tracking the plugins marketplace list");
+        expect(lines).toContain("read 2 plugins packages from a list response");
+        expect(lines).toContain("hid 1 of 2 plugins packages");
+        expect(lines).toContain("marketplace author blocklist unmounted");
+        expect(harness.records.logLevels).not.toContain("warn");
+    });
+
     it("忽略大小写，不做子串匹配", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("ACME", "upper"),

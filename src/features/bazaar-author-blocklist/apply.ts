@@ -101,6 +101,8 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
     let scheduled = false;
     let disposed = false;
 
+    host.log.info(`marketplace author blocklist mounted (${authors.size} author(s))`);
+
     /**
      * 对账安排在微任务里：MutationObserver 的回调本身就在渲染之前跑，
      * 这里再把同一轮里的多次变动并成一次，确保被屏蔽的卡片在**绘制之前**就被收掉，
@@ -196,6 +198,10 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
             return;
         }
         const corrected = Math.max(0, hostCount - blocked);
+        // 每次重绘都会走这里，只在数字真的变了的时候记一行，避免刷屏
+        if (blocked > 0 && (!previous || previous.hostCount !== hostCount || previous.corrected !== corrected)) {
+            host.log.info(`hid ${blocked} of ${hostCount} ${type} packages`);
+        }
         counters.set(type, {hostCount, corrected});
         const text = String(corrected);
         if (counter.textContent !== text) {
@@ -238,6 +244,7 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
             const list = packagesOfResponse(response);
             if (list) {
                 packages.set(type, list);
+                host.log.info(`loaded ${list.length} ${type} packages for the blocklist`);
                 schedule();
             }
         } catch (error) {
@@ -282,6 +289,7 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
             observer.observe(next, {childList: true, subtree: true});
             observers.set(type, observer);
             containers.set(type, next);
+            host.log.info(`tracking the ${type} marketplace list`);
         });
         if (changed) {
             refreshMissingPackages();
@@ -292,6 +300,7 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
     const removeTap = createBazaarListTap(
         (type, list) => {
             packages.set(type, list);
+            host.log.info(`read ${list.length} ${type} packages from a list response`);
             schedule();
         },
         (message, error) => host.log.warn(message, error),
@@ -316,6 +325,7 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
 
     host.onConfigChange(() => {
         authors = parseAuthorList(host.config.authors);
+        host.log.info(`author blocklist updated (${authors.size} author(s))`);
         refreshMissingPackages();
         schedule();
     });
@@ -338,6 +348,7 @@ export const mountBazaarAuthorBlocklist = (host: FeatureHost): FeatureInstance =
             document.querySelectorAll<HTMLElement>(`[${HINT_ATTR}]`).forEach((hint) => hint.remove());
             document.querySelectorAll<HTMLElement>(`[${ALL_BLOCKED_ATTR}]`)
                 .forEach((container) => container.removeAttribute(ALL_BLOCKED_ATTR));
+            host.log.info("marketplace author blocklist unmounted");
         },
     };
 };
