@@ -54,7 +54,7 @@
   "feature.exitConfirm.description": "退出应用前弹窗确认（主菜单的「退出应用」与设置为「关闭窗口即退出」时的关窗）；从桌面托盘菜单退出时不询问。",
   "feature.exitConfirm.dialogTitle": "退出思源",
   "feature.exitConfirm.text": "确定要退出思源吗？",
-  "feature.modalBlur.title": "Modal 高斯模糊",
+  "feature.modalBlur.title": "Modal 遮罩模糊",
   "feature.modalBlur.description": "给弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰。",
   "feature.modalBlur.radius": "模糊半径",
   "feature.docTreeOpenedAccent.title": "文档树已打开笔记强调色",

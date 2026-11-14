@@ -1,5 +1,5 @@
 /**
- * Modal 高斯模糊。
+ * Modal 遮罩模糊。
  *
  * 这个功能只有一段 CSS，所以断言全部落在注入的文本上：半径怎么取值与回落、哪些遮罩被排除。
  * 其中最重要的两条是踩过的坑：
@@ -34,7 +34,7 @@ const styleCount = (): number => document.head.querySelectorAll('style[data-some
  */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("Modal 高斯模糊", () => {
+describe("Modal 遮罩模糊", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {

@@ -54,7 +54,7 @@
   "feature.exitConfirm.description": "離開應用程式前彈出確認視窗（主選單的「離開應用程式」與設定為「關閉視窗即離開」時的關閉視窗）；從桌面系統匣選單離開時不詢問。",
   "feature.exitConfirm.dialogTitle": "離開思源",
   "feature.exitConfirm.text": "確定要離開思源嗎？",
-  "feature.modalBlur.title": "Modal 高斯模糊",
+  "feature.modalBlur.title": "Modal 遮罩模糊",
   "feature.modalBlur.description": "為彈出視窗遮罩加上高斯模糊，被遮住的編輯區變得模糊，彈出視窗本身保持清晰。",
   "feature.modalBlur.radius": "模糊半徑",
   "feature.docTreeOpenedAccent.title": "文件樹已開啟筆記強調色",
