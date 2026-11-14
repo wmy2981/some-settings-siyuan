@@ -198,6 +198,15 @@ export class ConfigStore {
     private readonly listeners = new Map<string, Set<() => void>>();
     private readonly patchQueues = new Map<string, Promise<void>>();
     /**
+     * 正在进行的整体替换操作（清空 / 导入）；有值时新改动一律丢弃，见 `applyPatch()`。
+     *
+     * 这类操作改的是同一批配置文件：先等排队 / 在途的写盘落地再动手 —— 写盘与删除 / 覆盖
+     * 是独立的内核调用，交错会把刚写完的内容又改回去。
+     */
+    private exclusive?: Promise<void>;
+    /** 正在进行的「清空全部配置」：期间重复调用跟随同一次，避免两遍删除互相踩。 */
+    private clearing?: Promise<void>;
+    /**
      * `prefetch()` 已经读回来的原始值，键是功能 id。
      *
      * 只影响「什么时候读」，`register()` 仍然按调用顺序应用，于是挂载顺序与日志顺序都不变。
@@ -412,6 +421,12 @@ export class ConfigStore {
     }
 
     private async applyPatch(id: string, patch: FeatureConfig): Promise<void> {
+        // 清空 / 导入正在进行：这次改动属于马上要被替换掉的那一份，丢弃它。
+        // 调用方（设置面板）会按 store 的当前值回显控件，用户看到的是「这次没改」。
+        if (this.exclusive) {
+            log.warn(`${id}: configuration is being cleared, dropping this patch`, patch);
+            return;
+        }
         const entry = this.entries.get(id);
         if (!entry) {
             return;
@@ -452,8 +467,31 @@ export class ConfigStore {
      *
      * 删成功的文件对应把内存态回落默认值并通知订阅者，所以磁盘与内存在这一步就一致了；
      * 有任何一个删不掉就把它们收集起来一次性抛出，让用户看见具体是哪个文件。
+     *
+     * 同一时刻只跑一次：清空期间重复调用直接跟随正在进行的那一次，避免两遍删除互相踩。
      */
-    async clearAll(): Promise<void> {
+    clearAll(): Promise<void> {
+        if (this.clearing) {
+            log.info("clearAll is already running, following the same pass");
+            return this.clearing;
+        }
+        const running = this.withExclusive(() => this.runClearAll()).finally(() => {
+            if (this.clearing === running) {
+                this.clearing = undefined;
+            }
+        });
+        this.clearing = running;
+        return running;
+    }
+
+    /**
+     * 清空的实现：**先等在途写盘落地，再删文件**。
+     *
+     * 顺序不能反：`patch()` 的写盘与删除是两次独立的内核调用，先删后写会把文件重新写回来。
+     * 清空期间新来的改动由 `applyPatch()` 直接丢弃（门闩是 `this.exclusive`）。
+     */
+    private async runClearAll(): Promise<void> {
+        await this.drainPatches();
         const failed: string[] = [];
         const cleared: string[] = [];
         const files = await this.storedFiles();
@@ -485,6 +523,40 @@ export class ConfigStore {
         if (failed.length > 0) {
             throw attachProblems(failed);
         }
+    }
+
+    /**
+     * 等所有在途 / 排队的写盘完成。
+     *
+     * 队列条目会在自己完成时摘掉，清空期间新改动又不会入队，所以循环到队列为空即可；
+     * 某个写盘失败不该拦住清除，所以每条都自己吞掉 rejection（ES2019 的 lib 里没有 allSettled）。
+     */
+    private async drainPatches(): Promise<void> {
+        while (this.patchQueues.size > 0) {
+            await Promise.all([...this.patchQueues.values()].map((writing) => writing.catch((): void => undefined)));
+        }
+    }
+
+    /**
+     * 串行执行一次「整体替换」：清空与导入改的是同一批文件，交错会互相覆盖。
+     *
+     * 期间 `applyPatch()` 丢弃新改动（门闩是 `this.exclusive`），调用方负责先排空写盘队列。
+     * 前一个整体操作还没结束时先等它：两个操作各自都以为自己是最后写入的那一方，交错就会互相覆盖。
+     */
+    private async withExclusive<T>(task: () => Promise<T>): Promise<T> {
+        while (this.exclusive) {
+            await this.exclusive;
+        }
+        const running = task();
+        const gate = running.then((): void => undefined, (): void => undefined);
+        this.exclusive = gate;
+        // 操作自己的文件读写已经结束就放行写盘：门闩不该比实际操作多拦一刻
+        void gate.then(() => {
+            if (this.exclusive === gate) {
+                this.exclusive = undefined;
+            }
+        });
+        return running;
     }
 
     /**
@@ -523,6 +595,13 @@ export class ConfigStore {
      * id 不合规（可能借此把文件写到目录外）或值不是对象的条目一律不写，交回调用方汇报。
      */
     async importMany(input: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}> {
+        // 导入是整体替换：与清空走同一把锁，期间丢弃新改动，并先等在途写盘落地
+        return this.withExclusive(() => this.runImport(input));
+    }
+
+    private async runImport(input: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}> {
+        // 写盘是异步的：导入前先把在途 / 排队的写盘排空，否则晚到的旧写盘会盖掉刚导入的配置
+        await this.drainPatches();
         const applied: string[] = [];
         const skipped: string[] = [];
         const known: {id: string; value: FeatureConfig;}[] = [];
@@ -559,7 +638,21 @@ export class ConfigStore {
             foreign: foreign.map(({id}) => id),
             skipped,
         });
-        await this.writeFiles(files);
+        // 写之前留一份原样快照：导入是整体替换，任何一个文件失败都要能退回，不能留下半套
+        const snapshot = await mapLimit(files, CONFIG_IO_CONCURRENCY, async ({storageName}) => ({
+            storageName,
+            previous: await readStoredFile(this.plugin, storageName),
+        }));
+        try {
+            await this.writeFiles(files);
+        } catch (error) {
+            const restoreProblems = await this.restoreFiles(snapshot);
+            if (restoreProblems.length > 0) {
+                const written = (error as {problems?: string[];}).problems ?? [String(error)];
+                throw attachProblems([...written, ...restoreProblems]);
+            }
+            throw error;
+        }
         // 内存态跟着磁盘走，导入的配置立刻生效，不必等页面重载
         prepared.forEach(({id, value}) => {
             const entry = this.entries.get(id);
@@ -569,6 +662,27 @@ export class ConfigStore {
             this.notify(id);
         });
         return {applied, skipped};
+    }
+
+    /**
+     * 导入失败后把写过的文件退回原样，返回退不回去的那些。
+     *
+     * 写盘按并发跑，一次失败时其他文件可能已经落盘：不退回就会留下「半套新配置」，
+     * 而内存态还没更新 —— 界面、磁盘、内存各说各话，直到下次载入才暴露。
+     */
+    private async restoreFiles(snapshot: {storageName: string; previous: unknown;}[]): Promise<string[]> {
+        const failed = await mapLimit(snapshot, CONFIG_IO_CONCURRENCY, async ({storageName, previous}) => {
+            const status = previous === null ?
+                await removeStoredFile(this.plugin, storageName) :
+                await writeStoredFile(this.plugin, storageName, previous);
+            if (status.ok) {
+                log.info(`restored ${storageName} after the failed import`);
+                return "";
+            }
+            log.error(`cannot restore ${storageName} after the failed import: ${status.detail}`);
+            return `${storageName}: cannot restore the previous content (${status.detail})`;
+        });
+        return failed.filter((problem) => problem);
     }
 
     /** 插件卸载时收尾：清掉订阅者。待写的改动由设置面板在关闭时自己补上。 */

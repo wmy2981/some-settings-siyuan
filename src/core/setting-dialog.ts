@@ -327,9 +327,26 @@ export class SettingsPanel {
      * 关面板时把这里剩下的内容补写出去。
      */
     private pending = new Map<string, FeatureConfig>();
+    /**
+     * 用户已经改了、但对应的那次写盘还没回显过的控件（键是编码键 `功能 id::字段 key`，值是改动序号）。
+     *
+     * 写盘是异步的（`saveData` + 读回校验）：文本 / 数字框在写盘途中继续输入时，新内容只进了
+     * `pending`，store 里还是上一批的值。这时若按 store 回写控件，会把用户正在输入的内容覆盖掉，
+     * 接着打字还会按被截断的值落盘。所以有在途改动的控件一律不回写，等它自己那次写盘完成再对齐。
+     */
+    private readonly dirtyControls = new Map<string, number>();
+    /** 每次用户改动自增；写盘开始时取一份快照，用来判断「写完之后有没有更新的输入」。 */
+    private editSeq = 0;
     private flushTimer?: number;
     /** 插件卸载中：这时不再补写待落地的改动（宿主已经不再接受写入）。 */
     private disposed = false;
+    /**
+     * 正在整体替换配置（清空 / 导入）。
+     *
+     * 成功后窗口很快会重新载入，这期间面板上显示的还是替换前的值：继续接受输入
+     * 会把旧值当成新值写回文件（替换等于没做）。操作失败时（不会重载）解除封锁。
+     */
+    private frozen = false;
     private viewportTimer?: number;
     /** 动作行注册的「插件卸载时」清理回调。 */
     private readonly unloadListeners = new Set<() => void>();
@@ -418,6 +435,8 @@ export class SettingsPanel {
                 this.setting = undefined;
                 this.dialog = undefined;
                 this.pending = new Map();
+                this.dirtyControls.clear();
+                this.frozen = false;
                 this.clearFlushTimer();
                 this.stopViewportWatch();
                 this.cancelRevealFrame();
@@ -1151,9 +1170,38 @@ export class SettingsPanel {
                 // 开关状态变了就把面板上的控件一起改掉，不让界面和磁盘各说各话
                 this.syncControls(id);
             },
-            clearAllConfigs: () => this.options.store.clearAll(),
-            exportConfigs: () => this.options.store.exportAll(),
-            importConfigs: (config: Record<string, unknown>) => this.options.store.importMany(config),
+            clearAllConfigs: () => {
+                // 清空是全量重置：静默期里还没落盘的输入属于要被清掉的那一份，直接丢掉。
+                // 留着它会在删除完成之后写盘，把刚清掉的配置又带回来。
+                this.clearFlushTimer();
+                this.pending = new Map();
+                this.dirtyControls.clear();
+                // 清空成功后窗口很快会重新载入，这期间面板上还是清空前的值：继续接受输入
+                // 会把旧值当成新值写回文件。清空失败（不会重载）时解除封锁。
+                this.frozen = true;
+                return this.options.store.clearAll().catch((error: unknown) => {
+                    this.frozen = false;
+                    throw error;
+                });
+            },
+            exportConfigs: async () => {
+                // 导出读的是磁盘：静默期里还没落盘的输入先写掉，导出的才是用户此刻看到的值
+                await this.flushPending();
+                return this.options.store.exportAll();
+            },
+            importConfigs: async (config: Record<string, unknown>) => {
+                // 导入是整体替换：静默期里还没落盘的输入先写掉（导入会覆盖同一批文件，
+                // 留在队列里反而会在导入完成后再写一次旧值）。成功后窗口很快重新载入，
+                // 这期间不再接受输入；失败时解除封锁。
+                this.frozen = true;
+                try {
+                    await this.flushPending();
+                    return await this.options.store.importMany(config);
+                } catch (error) {
+                    this.frozen = false;
+                    throw error;
+                }
+            },
         };
     }
 
@@ -1228,6 +1276,10 @@ export class SettingsPanel {
 
     /** 立即写盘；同一功能还有排队中的输入时一起写掉，同一个文件不写两遍。 */
     private commit(featureId: string, patch: FeatureConfig): Promise<void> {
+        if (this.frozen) {
+            return Promise.resolve();
+        }
+        this.markEdits(featureId, patch);
         const queued = this.pending.get(featureId);
         this.pending.delete(featureId);
         // 立即提交后旧计时器必须失效，否则写入途中再次输入会留下一次没有新输入触发的静默写盘。
@@ -1243,9 +1295,40 @@ export class SettingsPanel {
 
     /** 把一次改动放进静默队列；静默期结束后统一写盘。 */
     private schedule(featureId: string, patch: FeatureConfig): void {
+        if (this.frozen) {
+            return;
+        }
+        this.markEdits(featureId, patch);
         this.pending.set(featureId, {...this.pending.get(featureId), ...patch});
         this.clearFlushTimer();
         this.armFlushTimer();
+    }
+
+    /**
+     * 记下这一次用户改动：这些控件在对应的写盘回显之前不能被 store 的值覆盖。
+     *
+     * 序号同时用来区分「这次写盘负责的改动」与「写盘途中又来的改动」，见 `settleEdits`。
+     */
+    private markEdits(featureId: string, patch: FeatureConfig): void {
+        for (const key of Object.keys(patch)) {
+            this.dirtyControls.set(bindKey(featureId, key), ++this.editSeq);
+        }
+    }
+
+    /**
+     * 一次写盘结束后，把这次负责的控件从「在途」里摘掉。
+     *
+     * 只摘没有更新改动的那些：写盘途中又被改过的控件保留在途状态，等它自己的写盘完成，
+     * 否则这次回显仍然会覆盖用户正在输入的新内容。
+     */
+    private settleEdits(featureId: string, patch: FeatureConfig, editSeq: number): void {
+        for (const key of Object.keys(patch)) {
+            const encoded = bindKey(featureId, key);
+            const last = this.dirtyControls.get(encoded);
+            if (last !== undefined && last <= editSeq) {
+                this.dirtyControls.delete(encoded);
+            }
+        }
     }
 
     /** 排一次静默期结束后的写盘（调用方负责先清掉旧计时器，这样每次 input 都重新计时）。 */
@@ -1290,11 +1373,14 @@ export class SettingsPanel {
      * 这里把控件改回磁盘上的值，再把错误交给用户，不允许界面停在「看着改了、其实没存」的状态。
      */
     private async write(featureId: string, patch: FeatureConfig): Promise<void> {
+        // 这次写盘只回显到此刻为止的输入：之后又来的改动序号更大，回显时必须跳过。
+        const editSeq = this.editSeq;
         try {
             await this.options.store.patch(featureId, patch);
         } catch (error) {
             reportError(`settings.${featureId}`, error);
         } finally {
+            this.settleEdits(featureId, patch, editSeq);
             this.syncControls(featureId);
         }
     }
@@ -1303,6 +1389,11 @@ export class SettingsPanel {
      * 把某个功能的控件改回存储里的值（写盘失败后使用）。
      *
      * 只动这一个功能的控件：别的功能没有改动，不该被动过。
+     *
+     * 有在途改动的控件跳过：写盘是异步的，用户可能在这次写盘途中又输入了新内容（还在
+     * `pending` 里、没进 store），按 store 回写会把他正在输入的内容覆盖掉，接着打字还会
+     * 按被截断的值落盘。等它自己那次写盘完成时再对齐。
+     * 值没变的控件也不赋值：给 `input.value` 赋值会把光标挪到末尾，等于打断正在编辑的输入。
      */
     private syncControls(featureId: string): void {
         const root = this.dialog?.element;
@@ -1317,25 +1408,37 @@ export class SettingsPanel {
             const [id, key] = parseBindKey(encoded);
             return id === featureId ? key : undefined;
         };
+        const inFlight = (encoded: string | undefined): boolean =>
+            typeof encoded === "string" && this.dirtyControls.has(encoded);
         root.querySelectorAll<HTMLInputElement>("[data-ss-switch]").forEach((input) => {
             const key = keyOf(input.dataset.ssSwitch);
-            if (key) {
-                input.checked = config[key] === true;
+            if (key && !inFlight(input.dataset.ssSwitch)) {
+                const next = config[key] === true;
+                if (input.checked !== next) {
+                    input.checked = next;
+                }
             }
         });
         root.querySelectorAll<HTMLSelectElement>("[data-ss-select]").forEach((select) => {
             const key = keyOf(select.dataset.ssSelect);
-            if (key) {
-                select.value = String(config[key] ?? "");
+            if (key && !inFlight(select.dataset.ssSelect)) {
+                const next = String(config[key] ?? "");
+                if (select.value !== next) {
+                    select.value = next;
+                }
             }
         });
         root.querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
             "[data-ss-number], [data-ss-text], [data-ss-textarea]",
         )
             .forEach((input) => {
-                const key = keyOf(input.dataset.ssNumber ?? input.dataset.ssText ?? input.dataset.ssTextarea);
-                if (key) {
-                    input.value = String(config[key] ?? "");
+                const encoded = input.dataset.ssNumber ?? input.dataset.ssText ?? input.dataset.ssTextarea;
+                const key = keyOf(encoded);
+                if (key && !inFlight(encoded)) {
+                    const next = String(config[key] ?? "");
+                    if (input.value !== next) {
+                        input.value = next;
+                    }
                 }
             });
     }

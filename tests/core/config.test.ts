@@ -531,6 +531,91 @@ describe("ConfigStore.clearAll", () => {
         expect(listener).toHaveBeenCalledTimes(1);
     });
 
+    it("清空先等在途写盘落地，删除之后不会被写回来", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
+        serveDirListing(host);
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        host.saveData.mockImplementationOnce(async (name: string, value: unknown) => {
+            await gate;
+            host.files.set(name, JSON.parse(JSON.stringify(value)));
+            return {code: 0};
+        });
+
+        const patching = store.patch("alpha", {label: "new"});
+        await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
+        const clearing = store.clearAll();
+        // 写盘还没回来：清空必须等着，不能先删（否则删完又被写回来）
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(host.removeData).not.toHaveBeenCalled();
+
+        release();
+        await patching;
+        await clearing;
+
+        expect(host.files.size).toBe(0);
+        expect(store.get("alpha")).toMatchObject({label: "hi"});
+    });
+
+    it("清空期间的新改动直接丢弃，不会把文件写回来", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
+        serveDirListing(host);
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        host.removeData.mockImplementationOnce(async (name: string) => {
+            await gate;
+            host.files.delete(name);
+            return {code: 0};
+        });
+
+        const clearing = store.clearAll();
+        await vi.waitFor(() => expect(host.removeData).toHaveBeenCalledTimes(1));
+
+        // 删除还没完成时来一次改动：丢弃，不写盘
+        await expect(store.patch("alpha", {label: "late"})).resolves.toBeUndefined();
+        expect(host.saveData).not.toHaveBeenCalled();
+
+        release();
+        await clearing;
+        expect(host.files.size).toBe(0);
+        expect(store.get("alpha")).toMatchObject({label: "hi"});
+    });
+
+    it("清空进行中再次调用跟随同一次，不重复删除", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true});
+        serveDirListing(host);
+        const store = new ConfigStore(host.asPlugin());
+        const first = store.clearAll();
+        const second = store.clearAll();
+        expect(second).toBe(first);
+        await Promise.all([first, second]);
+        expect(host.files.size).toBe(0);
+        expect(host.removeData).toHaveBeenCalledTimes(1);
+    });
+
+    it("清空完成后新改动照常落盘", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
+        serveDirListing(host);
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        await store.clearAll();
+        await store.patch("alpha", {label: "after"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "after"});
+        expect(store.get("alpha")).toMatchObject({label: "after"});
+    });
+
     it("历史上带 .json 扩展名的配置文件也认", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha.json", {enabled: true});
@@ -689,6 +774,108 @@ describe("ConfigStore.importMany", () => {
             problems: [expect.stringContaining('alpha: "enabled" should be boolean')],
         });
         expect(host.files.size).toBe(0);
+    });
+
+    it("导入先等在途写盘落地，旧写盘不会覆盖导入结果", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: false, label: "old", size: 12, mode: "auto"});
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        host.saveData.mockImplementationOnce(async (name: string, value: unknown) => {
+            await gate;
+            host.files.set(name, JSON.parse(JSON.stringify(value)));
+            return {code: 0};
+        });
+        const patching = store.patch("alpha", {label: "patch 的旧值"});
+        await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
+
+        const importing = store.importMany({alpha: {label: "导入值"}});
+        release();
+        await patching;
+        await importing;
+
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+        expect(store.get("alpha")).toMatchObject({label: "导入值"});
+    });
+
+    it("导入期间的新改动直接丢弃，不会在导入之后写回旧值", async () => {
+        const host = new FakeHost();
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        host.saveData.mockImplementationOnce(async (name: string, value: unknown) => {
+            await gate;
+            host.files.set(name, JSON.parse(JSON.stringify(value)));
+            return {code: 0};
+        });
+
+        const importing = store.importMany({alpha: {label: "导入值"}});
+        await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
+        // 导入写盘还没回来时来一次改动：丢弃，不写盘
+        await expect(store.patch("alpha", {label: "导入后的改动"})).resolves.toBeUndefined();
+        expect(host.saveData).toHaveBeenCalledTimes(1);
+
+        release();
+        await importing;
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+        expect(store.get("alpha")).toMatchObject({label: "导入值"});
+    });
+
+    it("导入部分失败时把已经写进去的文件退回原样", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: false, label: "a-old", size: 12, mode: "auto"});
+        host.files.set("feature-beta", {enabled: false, label: "b-old"});
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        const original = host.saveData.getMockImplementation() as (name: string, value: unknown) => Promise<unknown>;
+        let betaAttempts = 0;
+        host.saveData.mockImplementation(async (name: string, value: unknown) => {
+            // beta 的第一次写入失败，回滚时的第二次放行
+            if (name === "feature-beta" && betaAttempts++ === 0) {
+                return {code: 1, msg: "readonly"};
+            }
+            return original(name, value);
+        });
+
+        await expect(store.importMany({alpha: {label: "a-new"}, beta: {label: "b-new"}})).rejects.toMatchObject({
+            problems: ["feature-beta: code 1: readonly"],
+        });
+
+        // 写进去的 alpha 必须退回，没写成功的 beta 保持原样，内存态也不能变
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "a-old"});
+        expect(host.files.get("feature-beta")).toMatchObject({label: "b-old"});
+        expect(store.get("alpha")).toMatchObject({label: "a-old"});
+    });
+
+    it("回滚也失败时把没能退回的文件报出来", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: false, label: "a-old", size: 12, mode: "auto"});
+        host.files.set("feature-beta", {enabled: false, label: "b-old"});
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(definitionOf("alpha"));
+        const original = host.saveData.getMockImplementation() as (name: string, value: unknown) => Promise<unknown>;
+        host.saveData.mockImplementation(async (name: string, value: unknown) => {
+            if (name === "feature-beta") {
+                return {code: 1, msg: "readonly"};
+            }
+            return original(name, value);
+        });
+
+        await expect(store.importMany({alpha: {label: "a-new"}, beta: {label: "b-new"}})).rejects.toMatchObject({
+            problems: [
+                "feature-beta: code 1: readonly",
+                "feature-beta: cannot restore the previous content (code 1: readonly)",
+            ],
+        });
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "a-old"});
+        expect(store.get("alpha")).toMatchObject({label: "a-old"});
     });
 
     it("写盘失败时抛出带问题的错误", async () => {

@@ -898,6 +898,38 @@ describe("改完即写", () => {
         expect(input.value).toBe("第二次");
     });
 
+    it("写盘途中继续输入，回显不能覆盖正在输入的内容、也不能丢字", async () => {
+        const {q, host} = await open();
+        let release: () => void = () => undefined;
+        const gate = new Promise<void>((resolve) => {
+            release = resolve;
+        });
+        host.saveData.mockImplementationOnce(async (name: string, value: unknown): Promise<unknown> => {
+            await gate;
+            host.files.set(name, JSON.parse(JSON.stringify(value)));
+            return {code: 0};
+        });
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        // 第一次输入后失焦：立即写盘，写盘卡在 gate 上
+        input.value = "第一次";
+        fire(input, "input");
+        fire(input, "change");
+        await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
+
+        // 写盘还没回来就继续输入：新内容进下一批，还没进 store
+        input.value = "第一次+新字";
+        fire(input, "input");
+        release();
+        // 第一批写盘完成时的回显不能把用户正在输入的内容改回去
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "第一次"}));
+        expect(input.value).toBe("第一次+新字");
+
+        // 再接着敲一个字：落盘的必须是完整内容，不能按被截断的值写
+        input.value = `${input.value}又`;
+        fire(input, "input");
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "第一次+新字又"}));
+    });
+
     it("关面板时把还没落地的那一次补上", async () => {
         const {q, host, panel} = await open();
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
@@ -1000,6 +1032,138 @@ describe("动作行", () => {
             skipped: [],
         });
         expect(host.files.get("feature-alpha")).toMatchObject({label: "回来的"});
+    });
+
+    it("清除配置前丢掉静默期里还没落盘的输入", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+
+        // 静默期里的一次输入：还没落盘
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "还没落盘";
+        fire(input, "input");
+        expect(host.saveData).not.toHaveBeenCalled();
+
+        mockState.fetchSyncPost.mockResolvedValue({code: 0, data: [{name: "feature-alpha", isDir: false}]});
+        await expect(context!.clearAllConfigs()).resolves.toBeUndefined();
+        expect(host.files.size).toBe(0);
+
+        // 静默期到点后也不能把刚清掉的文件写回来
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(host.saveData).not.toHaveBeenCalled();
+        expect(host.files.size).toBe(0);
+    });
+
+    it("清除成功后到重新载入前不再接受输入", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+        mockState.fetchSyncPost.mockResolvedValue({code: 0, data: [{name: "feature-alpha", isDir: false}]});
+        await expect(context!.clearAllConfigs()).resolves.toBeUndefined();
+        expect(host.files.size).toBe(0);
+
+        // 面板上还是清空前的值：这时候的输入不能把旧值写回文件
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "清空后又敲的字";
+        fire(input, "input");
+        fire(input, "change");
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        expect(host.saveData).not.toHaveBeenCalled();
+        expect(host.files.size).toBe(0);
+    });
+
+    it("清除失败时面板恢复可用", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+        mockState.fetchSyncPost.mockResolvedValue({code: 0, data: [{name: "feature-alpha", isDir: false}]});
+        host.removeData.mockResolvedValue({code: 500, msg: "io error"});
+        await expect(context!.clearAllConfigs()).rejects.toBeDefined();
+
+        // 没有重载，封锁必须解除：用户还得能改设置
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "失败后还能改";
+        fire(input, "input");
+        fire(input, "change");
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "失败后还能改"}));
+    });
+
+    it("导入前先写掉静默期里的输入，导入结果不会被旧输入覆盖", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+
+        // 静默期里的一次输入：还没落盘
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "还没落盘";
+        fire(input, "input");
+        expect(host.saveData).not.toHaveBeenCalled();
+
+        await expect(context!.importConfigs({alpha: {label: "导入值"}})).resolves.toMatchObject({applied: ["alpha"]});
+        // 静默期到点后也不能用旧输入覆盖导入结果
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+    });
+
+    it("导入成功后到重新载入前不再接受输入", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+        await expect(context!.importConfigs({alpha: {label: "导入值"}})).resolves.toBeDefined();
+
+        // 面板上还是导入前的值：这时候的输入不能把它写回文件
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "导入后敲的字";
+        fire(input, "input");
+        fire(input, "change");
+        await new Promise((resolve) => setTimeout(resolve, 450));
+        expect(host.saveData).toHaveBeenCalledTimes(1);
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+    });
+
+    it("导入失败时面板恢复可用", async () => {
+        let context: FeatureActionContext | undefined;
+        const {q, host} = await open([featureOf("alpha", {
+            settings: alphaSettings((actionContext) => {
+                context = actionContext;
+            }),
+        })], {alpha: {enabled: true, label: "x"}});
+        (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
+        await vi.waitFor(() => expect(context).toBeDefined());
+        await expect(context!.importConfigs({alpha: {enabled: "yes"}})).rejects.toBeDefined();
+
+        // 没有重载，封锁必须解除：用户还得能改设置
+        const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
+        input.value = "失败后还能改";
+        fire(input, "input");
+        fire(input, "change");
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "失败后还能改"}));
     });
 
     it("动作行注册的清理回调在插件卸载时执行，关面板时不执行", async () => {
