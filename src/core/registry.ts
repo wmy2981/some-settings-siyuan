@@ -31,6 +31,7 @@ import headingLevelIcon from "../features/heading-level-icon";
 import hideAgentWelcomeExamples from "../features/hide-agent-welcome-examples";
 import hideBazaarDownloadedDonate from "../features/hide-bazaar-downloaded-donate";
 import hideMobileExit from "../features/hide-mobile-exit";
+import hideSelectionToolbar from "../features/hide-selection-toolbar";
 import inlineCodeCopy from "../features/inline-code-copy";
 import kernelAutoReconnect from "../features/kernel-auto-reconnect";
 import kernelReconnectButton from "../features/kernel-reconnect-button";
@@ -100,6 +101,7 @@ export const FEATURES: FeatureDefinition[] = [
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,
     inlineCodeCopy,
+    hideSelectionToolbar,
     desktopCommandPanelSlim,
     codeSnippetHighlight,
     devtoolsHotkey,

@@ -27,6 +27,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * A floating window instead of the recording notice
 * Heading level in the title icon
 * Copy button for inline code
+* Hide the selection toolbar
 * Guide to the Ref Crumbs plugin
 
 ### Document tree and tabs
