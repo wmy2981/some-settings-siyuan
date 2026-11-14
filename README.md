@@ -62,6 +62,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 
 * Aliyun OSS bucket usage
 * Custom marketplace icons
+* Block marketplace packages by author
 * Hide downloaded donation buttons
 * Syntax highlighting for snippets
 * Console log viewer
@@ -103,6 +104,10 @@ plugin adds no top bar button, no status bar item and no dock item.
 * Import, export and clear cover every configuration file under `data/storage/petal/some-settings-siyuan`; custom
   marketplace icons change this client only, sync with SiYuan and survive a configuration clear.
 * Both reconnect features reload the whole frontend; note content lives in the kernel, so a reload loses nothing.
+* The author blocklist only covers the five online marketplace list tabs; downloaded and update lists stay
+  unchanged. Authors are matched exactly against the author field of the marketplace index (case-insensitive),
+  the hiding is re-applied whenever SiYuan repaints the list, and the package count plus the "all blocked" hint
+  follow the same rule.
 * Per-feature limits: the mobile inline-code copy button follows the caret and copies visible text only; the bookmark
   jump only takes over whole-document bookmarks opened with a plain left click; the recording window only replaces
   the UI (SiYuan's recorder has no pause, so it offers stop only); asset metadata only covers workspace assets
