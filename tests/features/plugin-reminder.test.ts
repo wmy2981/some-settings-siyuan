@@ -45,7 +45,7 @@ describe("关于本插件", () => {
         const note = noteField();
         expect(note.kind).toBe("note");
         expect(note.key).toBe("notice");
-        expect(note.text).toBe("pluginReminder.notice");
+        expect(note.text).toBe("feature.pluginReminder.notice");
         expect(note.values).toEqual({version: manifest.version, repo: manifest.url});
         expect(note.labels).toEqual({repo: "wmy2981/some-settings-siyuan"});
     });
@@ -54,14 +54,14 @@ describe("关于本插件", () => {
         const actions = actionsOf();
         expect(actions.map((action) => action.key)).toEqual(["star", "donate"]);
         expect(actions[0]).toMatchObject({
-            label: "pluginReminder.starAction",
+            label: "feature.pluginReminder.starAction",
             appearance: "block",
             tone: "primary",
             icon: "iconGithub",
         });
         expect(actions[0].iconSvg).toBeUndefined();
         expect(actions[1]).toMatchObject({
-            label: "pluginReminder.donateAction",
+            label: "feature.pluginReminder.donateAction",
             appearance: "block",
             tone: "pink",
         });

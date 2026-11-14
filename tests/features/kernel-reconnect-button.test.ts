@@ -65,9 +65,9 @@ const hangProbe = (): void => {
 };
 
 const I18N: Record<string, string> = {
-    "kernelReconnectButton.label": "立即重连",
-    "kernelReconnectButton.working": "正在重连…",
-    "kernelReconnectButton.offline": "内核还没有恢复，请稍后再试",
+    "feature.kernelReconnectButton.label": "立即重连",
+    "feature.kernelReconnectButton.working": "正在重连…",
+    "feature.kernelReconnectButton.offline": "内核还没有恢复，请稍后再试",
 };
 
 const i18n = (key: string): string => I18N[key] ?? key;

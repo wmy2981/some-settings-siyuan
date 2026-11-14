@@ -14,8 +14,8 @@ export default defineFeature({
     id: "deepseek-balance",
     category: "ai",
     enabled: true,
-    name: "feature.deepseekBalance.name",
-    description: "feature.deepseekBalance.desc",
+    name: "feature.deepseekBalance.title",
+    description: "feature.deepseekBalance.description",
     settings: [
         {
             kind: "switch",
@@ -26,13 +26,13 @@ export default defineFeature({
         {
             kind: "number",
             key: "interval",
-            title: "deepseekBalance.interval",
-            description: "deepseekBalance.intervalTip",
+            title: "feature.deepseekBalance.interval",
+            description: "feature.deepseekBalance.intervalTip",
             default: 30,
             min: 1,
             max: 3600,
             step: 1,
-            unit: "deepseekBalance.seconds",
+            unit: "feature.deepseekBalance.seconds",
         },
     ],
     mount: mountDeepseekBalance,

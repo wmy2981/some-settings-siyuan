@@ -14,8 +14,8 @@ export default defineFeature({
     id: "doc-tree-opened-accent",
     category: "doc-tree",
     enabled: true,
-    name: "feature.docTreeOpenedAccent.name",
-    description: "feature.docTreeOpenedAccent.desc",
+    name: "feature.docTreeOpenedAccent.title",
+    description: "feature.docTreeOpenedAccent.description",
     settings: [
         {
             kind: "switch",
@@ -26,15 +26,15 @@ export default defineFeature({
         {
             kind: "text",
             key: "color",
-            title: "docTreeOpenedAccent.color",
-            description: "docTreeOpenedAccent.colorTip",
+            title: "feature.docTreeOpenedAccent.color",
+            description: "feature.docTreeOpenedAccent.colorTip",
             default: "",
-            placeholder: "docTreeOpenedAccent.colorPlaceholder",
+            placeholder: "feature.docTreeOpenedAccent.colorPlaceholder",
         },
         {
             kind: "number",
             key: "width",
-            title: "docTreeOpenedAccent.width",
+            title: "feature.docTreeOpenedAccent.width",
             default: 3,
             min: 1,
             max: 10,

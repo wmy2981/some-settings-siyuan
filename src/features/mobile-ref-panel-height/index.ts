@@ -16,8 +16,8 @@ export default defineFeature({
     id: "mobile-ref-panel-height",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileRefPanelHeight.name",
-    description: "feature.mobileRefPanelHeight.desc",
+    name: "feature.mobileRefPanelHeight.title",
+    description: "feature.mobileRefPanelHeight.description",
     frontends: ["mobile"],
     settings: [
         {
@@ -29,8 +29,8 @@ export default defineFeature({
         {
             kind: "number",
             key: "maxHeight",
-            title: "mobileRefPanelHeight.maxHeight",
-            description: "mobileRefPanelHeight.maxHeightTip",
+            title: "feature.mobileRefPanelHeight.maxHeight",
+            description: "feature.mobileRefPanelHeight.maxHeightTip",
             default: 60,
             min: 20,
             max: 100,

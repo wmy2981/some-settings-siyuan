@@ -26,22 +26,22 @@ import {mockState} from "../mocks/siyuan";
 
 /** 与 `src/i18n/zh-CN.json` 里 ossUsage 段的文案一致，方便断言真实呈现的文字。 */
 const messages: Record<string, string> = {
-    "ossUsage.button": "使用数据",
-    "ossUsage.title": "存储桶使用数据",
-    "ossUsage.loading": "正在查询…",
-    "ossUsage.total": "总存储量",
-    "ossUsage.objectCount": "对象数",
-    "ossUsage.objects": "个",
-    "ossUsage.multipart": "未完成的分片上传",
-    "ossUsage.standard": "标准存储",
-    "ossUsage.ia": "低频访问",
-    "ossUsage.archive": "归档",
-    "ossUsage.coldArchive": "冷归档",
-    "ossUsage.deepColdArchive": "深度冷归档",
-    "ossUsage.statTime": "统计时间",
-    "ossUsage.failed": "查询失败",
-    "ossUsage.networkHint": "请求由内核代为发出，但它没能送出去：请检查网络连接与 Endpoint 是否正确。",
-    "ossUsage.missingConfig": "S3 配置不完整，请先在下面填好并保存这几项：{fields}",
+    "feature.ossUsage.button": "使用数据",
+    "feature.ossUsage.dialogTitle": "存储桶使用数据",
+    "feature.ossUsage.loading": "正在查询…",
+    "feature.ossUsage.total": "总存储量",
+    "feature.ossUsage.objectCount": "对象数",
+    "feature.ossUsage.objects": "个",
+    "feature.ossUsage.multipart": "未完成的分片上传",
+    "feature.ossUsage.standard": "标准存储",
+    "feature.ossUsage.ia": "低频访问",
+    "feature.ossUsage.archive": "归档",
+    "feature.ossUsage.coldArchive": "冷归档",
+    "feature.ossUsage.deepColdArchive": "深度冷归档",
+    "feature.ossUsage.statTime": "统计时间",
+    "feature.ossUsage.failed": "查询失败",
+    "feature.ossUsage.networkTip": "请求由内核代为发出，但它没能送出去：请检查网络连接与 Endpoint 是否正确。",
+    "feature.ossUsage.missingConfig": "S3 配置不完整，请先在下面填好并保存这几项：{fields}",
     "common.close": "关闭",
 };
 const i18n = (key: string): string => messages[key] ?? key;
@@ -312,7 +312,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
 
         expect(rowPairs()).toEqual([{key: "查询失败", value: "proxy failed"}]);
         expect(document.querySelector(".ss-oss-usage__tip")?.textContent).toBe(
-            messages["ossUsage.networkHint"],
+            messages["feature.ossUsage.networkTip"],
         );
         // 失败必须落到日志里：用户报上来时只有这一句能定位
         expect(harness.records.logs).toContainEqual(["GetBucketStat failed: proxy failed"]);

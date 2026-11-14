@@ -109,6 +109,7 @@ import {
 // 所以这里把两份语言文件一起打进包里：它们本来就是插件自带的，读取时不经过任何运行时 API。
 import enLocale from "../i18n/en.json";
 import zhLocale from "../i18n/zh-CN.json";
+import {categoryKey} from "./i18n-key";
 
 const log = createLogger("core.panel");
 
@@ -129,9 +130,6 @@ interface SearchSnapshot {
     /** 每一页各自的滚动位置，键是分类 id。 */
     panes: Map<string, number>;
 }
-
-/** 分类文案的 i18n key：与分类 id 一一对应，`npm run check` 会校验两份语言文件都有。 */
-const categoryLabelKey = (category: FeatureCategory): string => `category.${category}`;
 
 /** 页签条目上表示「当前选中」的类名：桌面端与移动端各一个。 */
 const TAB_FOCUS_CLASSES = ["b3-list-item--focus", "item--focus"];
@@ -714,19 +712,19 @@ export class SettingsPanel {
             // 页签只在这里出现一次：顺序、文案与图标都由这一处决定，默认打开第一个有内容的页签
             tabs.push({
                 id: category,
-                label: this.t(categoryLabelKey(category), category),
+                label: this.t(categoryKey(category), category),
                 icon: CATEGORY_ICONS[category],
             });
             // 分类名那一行是搜索结果的分组标题：平时收起，搜索时显示（见 searchGroupHtml）。
             panes.push(tabPaneHtml(
                 category,
-                searchGroupHtml(category, this.t(categoryLabelKey(category), category)) + markLastRow(rows.join("")),
+                searchGroupHtml(category, this.t(categoryKey(category), category)) + markLastRow(rows.join("")),
                 tabs.length === 1,
             ));
             this.currentTab ??= category;
         });
         if (tabs.length === 0) {
-            panel.innerHTML = `<div class="${PANEL_CLASS}__empty">${escapeHtml(this.t("panel.none"))}</div>`;
+            panel.innerHTML = `<div class="${PANEL_CLASS}__empty">${escapeHtml(this.t("panel.empty"))}</div>`;
             this.bindControls(panel);
             return;
         }
@@ -736,7 +734,7 @@ export class SettingsPanel {
         const search = searchBoxHtml(this.t("panel.search.placeholder"), this.t("panel.search.clear"));
         // 「无结果」只在搜索时可能露出来，平时一直收起。
         const empty = `<div class="${PANEL_CLASS}__empty ${PANEL_CLASS}__search-empty fn__none">${
-            escapeHtml(this.t("panel.search.none"))
+            escapeHtml(this.t("panel.search.empty"))
         }</div>`;
         panel.innerHTML = mobile ?
             search + tabBarHtml(items) + tabViewsHtml("", panes.join(""), empty) :
@@ -1006,7 +1004,7 @@ export class SettingsPanel {
                         max: field.max,
                         step: field.step,
                         // 单位同样按 i18n key 解析：像 "px" 这种查不到的会原样返回，
-                        // 而 "kernelAutoReconnect.times" 这种才能翻成「次」/ "times"。
+                        // 而 "feature.kernelAutoReconnect.times" 这种才能翻成「次」/ "times"。
                         // 以前这里直接把 key 当字面量渲染，面板上真的会显示那串 key。
                         unit: field.unit ? this.t(field.unit) : undefined,
                         description: field.description ? this.t(field.description) : "",
@@ -1729,7 +1727,7 @@ export class SettingsPanel {
             if (this.visibleFeatures(category).length === 0) {
                 return;
             }
-            categories[category] = this.staticField(categoryLabelKey(category));
+            categories[category] = this.staticField(categoryKey(category));
         });
         this.visibleFeaturesAll().forEach((feature) => {
             const fields: SearchField[] = [fieldOf(feature.id), this.staticField(feature.name)];

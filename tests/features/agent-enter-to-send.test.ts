@@ -93,7 +93,7 @@ describe("智能体回车发送", () => {
         expect(definition.id).toBe("agent-enter-to-send");
         expect(definition.category).toBe("ai");
         expect(definition.enabled).toBe(true);
-        expect(definition.name).toBe("feature.agentEnterToSend.name");
+        expect(definition.name).toBe("feature.agentEnterToSend.title");
         expect(definition.frontends).toBeUndefined();
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

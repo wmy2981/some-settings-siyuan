@@ -167,20 +167,23 @@ const describe = (state: RenderState, t: (key: string) => string): {text: string
     if (state.kind === "idle") {
         // 当前模型不在官方 DeepSeek 上（见 `resolveTarget`）：`render` 会把整行收起来，
         // 这里给出的占位与说明只在状态刚要切换的那一帧可能被用到。
-        const notConfigured = t("deepseekBalance.noProvider");
+        const notConfigured = t("feature.deepseekBalance.noProvider");
         return {text: "—", title: notConfigured};
     }
     if (state.kind === "loading") {
-        return {text: "…", title: t("deepseekBalance.loading")};
+        return {text: "…", title: t("feature.deepseekBalance.loading")};
     }
     if (state.kind === "failed") {
-        return {text: "—", title: t("deepseekBalance.failed")};
+        return {text: "—", title: t("feature.deepseekBalance.failed")};
     }
 
     const {primary, extras} = pickBalance(state.infos);
     if (!primary) {
         // 请求成功但一条余额都没有：明确说"查不到"，不要伪装成 0 元。
-        return {text: "—", title: `${t("deepseekBalance.empty")}${extras.length > 0 ? `\n${extras.join("\n")}` : ""}`};
+        return {
+            text: "—",
+            title: `${t("feature.deepseekBalance.empty")}${extras.length > 0 ? `\n${extras.join("\n")}` : ""}`,
+        };
     }
 
     const symbol = CURRENCY_SYMBOLS[primary.currency.toUpperCase()] ?? "";
@@ -189,13 +192,13 @@ const describe = (state: RenderState, t: (key: string) => string): {text: string
     const shown = symbol ? `${symbol}${amount}` : `${primary.currency} ${amount}`.trim();
     const detail = [
         `${primary.currency} ${amount}`.trim(),
-        `${t("deepseekBalance.granted")} ${formatAmount(primary.granted)}`,
-        `${t("deepseekBalance.toppedUp")} ${formatAmount(primary.toppedUp)}`,
+        `${t("feature.deepseekBalance.granted")} ${formatAmount(primary.granted)}`,
+        `${t("feature.deepseekBalance.toppedUp")} ${formatAmount(primary.toppedUp)}`,
         ...extras,
     ];
     if (!state.available) {
         // is_available 为 false 只表示余额不足以继续调用，余额数字本身仍然有效。
-        detail.push(t("deepseekBalance.insufficient"));
+        detail.push(t("feature.deepseekBalance.insufficient"));
     }
     const insufficient = state.available ? "" : "!";
     return {text: `${shown}${insufficient}`, title: detail.join("\n")};
@@ -477,7 +480,7 @@ export const mountDeepseekBalance = (host: FeatureHost): FeatureInstance => {
         }
         node.classList.toggle("fn__none", lastState.kind === "idle");
         const {text, title} = describe(lastState, t);
-        const shown = `${t("deepseekBalance.label")}${text}`;
+        const shown = `${t("feature.deepseekBalance.label")}${text}`;
         if (shown !== lastText) {
             node.textContent = shown;
             lastText = shown;

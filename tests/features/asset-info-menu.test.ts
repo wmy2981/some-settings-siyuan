@@ -35,11 +35,11 @@ interface MenuItemRecord {
 }
 
 const I18N: Record<string, string> = {
-    "assetInfo.loading": "读取中…",
-    "assetInfo.size": "大小",
-    "assetInfo.dimensions": "尺寸",
-    "assetInfo.type": "类型",
-    "assetInfo.modified": "修改时间",
+    "feature.assetInfoMenu.loading": "读取中…",
+    "feature.assetInfoMenu.size": "大小",
+    "feature.assetInfoMenu.dimensions": "尺寸",
+    "feature.assetInfoMenu.type": "类型",
+    "feature.assetInfoMenu.modified": "修改时间",
 };
 
 const i18n = (key: string): string => I18N[key] ?? key;

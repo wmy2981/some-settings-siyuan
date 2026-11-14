@@ -13,8 +13,8 @@ export default defineFeature({
     id: "new-doc-fixed-target",
     category: "editor",
     enabled: true,
-    name: "feature.newDocFixedTarget.name",
-    description: "feature.newDocFixedTarget.desc",
+    name: "feature.newDocFixedTarget.title",
+    description: "feature.newDocFixedTarget.description",
     settings: [
         {
             kind: "switch",
@@ -25,10 +25,10 @@ export default defineFeature({
         {
             kind: "text",
             key: "target",
-            title: "newDocFixedTarget.target",
-            description: "newDocFixedTarget.targetTip",
+            title: "feature.newDocFixedTarget.target",
+            description: "feature.newDocFixedTarget.targetTip",
             default: "",
-            placeholder: "newDocFixedTarget.targetPlaceholder",
+            placeholder: "feature.newDocFixedTarget.targetPlaceholder",
         },
     ],
     mount: mountNewDocFixedTarget,

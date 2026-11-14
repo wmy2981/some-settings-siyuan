@@ -353,7 +353,7 @@ describe("集市包自定义图标", () => {
 
             // 开关关着也能先配图标：入口不依赖功能挂载
             expect(document.querySelector(".ss-bazaar-icon-manager__list")).not.toBeNull();
-            expect(document.body.textContent).toContain("bazaarIcon.tip");
+            expect(document.body.textContent).toContain("feature.bazaarCustomIcon.tip");
         });
 
         it("动作行保存图标后立刻打开功能，并把草稿同步成 enabled: true", async () => {
@@ -402,7 +402,7 @@ describe("集市包自定义图标", () => {
                 featureId: "bazaar-custom-icon",
                 patch: {enabled: true},
             });
-            expect(mockState.messages.at(-1)?.text).toBe("bazaarIcon.savedAndEnabled");
+            expect(mockState.messages.at(-1)?.text).toBe("feature.bazaarCustomIcon.savedAndEnabled");
         });
     });
 
@@ -488,7 +488,9 @@ describe("集市包自定义图标", () => {
             await vi.waitFor(() => expect(rows()).toHaveLength(1));
 
             const row = rows()[0];
-            expect(row.querySelector(".ss-bazaar-icon-manager__state")?.textContent).toBe("bazaarIcon.customized");
+            expect(row.querySelector(".ss-bazaar-icon-manager__state")?.textContent).toBe(
+                "feature.bazaarCustomIcon.customized",
+            );
             expect(row.querySelector("[data-action='reset']")).not.toBeNull();
             expect(row.querySelector("img")?.getAttribute("src")?.startsWith("data:image/png;base64,")).toBe(true);
         });
@@ -531,7 +533,7 @@ describe("集市包自定义图标", () => {
             });
 
             openIconManager(makeOptions());
-            await vi.waitFor(() => expect(document.body.textContent).toContain("bazaarIcon.failed"));
+            await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.failed"));
             // 失败要让人看见，不能静默成「列表是空的」
             expect(mockState.messages.some((message) => message.text.includes("bazaar-custom-icon.list")))
                 .toBe(true);
@@ -543,13 +545,13 @@ describe("集市包自定义图标", () => {
 
         it("一个包都没有时显示空提示", async () => {
             openIconManager(makeOptions());
-            await vi.waitFor(() => expect(document.body.textContent).toContain("bazaarIcon.empty"));
+            await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
             expect(rows()).toHaveLength(0);
         });
 
         it("关闭按钮收掉窗口；再次打开只保留一个窗口", async () => {
             openIconManager(makeOptions());
-            await vi.waitFor(() => expect(document.body.textContent).toContain("bazaarIcon.empty"));
+            await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
 
             document.querySelector<HTMLElement>("[data-close]")?.click();
             expect(document.querySelector(".ss-bazaar-icon-manager__list")).toBeNull();
@@ -562,7 +564,7 @@ describe("集市包自定义图标", () => {
 
         it("插件卸载时通过 onUnload 收掉窗口", async () => {
             openIconManager(makeOptions());
-            await vi.waitFor(() => expect(document.body.textContent).toContain("bazaarIcon.empty"));
+            await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
             expect(unloads).toHaveLength(1);
 
             unloads[0]();
@@ -611,7 +613,7 @@ describe("集市包自定义图标", () => {
             textarea.value = "这不是 base64";
             document.querySelector<HTMLElement>("[data-confirm]")?.click();
 
-            expect(mockState.messages.at(-1)?.text).toBe("bazaarIcon.invalid");
+            expect(mockState.messages.at(-1)?.text).toBe("feature.bazaarCustomIcon.invalid");
             // 用户还得能改，所以窗口不能跟着关掉
             expect(document.querySelector("[data-text]")).not.toBeNull();
             expect(fetchMock).not.toHaveBeenCalled();
@@ -650,11 +652,11 @@ describe("集市包自定义图标", () => {
             textarea.value = `data:image/png;base64,${btoa(String.fromCharCode(...pngBytes()))}`;
             document.querySelector<HTMLElement>("[data-confirm]")?.click();
 
-            await vi.waitFor(() => expect(mockState.messages.at(-1)?.text).toBe("bazaarIcon.saved"));
+            await vi.waitFor(() => expect(mockState.messages.at(-1)?.text).toBe("feature.bazaarCustomIcon.saved"));
             expect(options.enable).not.toHaveBeenCalled();
             // 保存后要通知已挂载的功能重新读目录，否则集市列表一直是旧图
             expect(rows()[0].querySelector(".ss-bazaar-icon-manager__state")?.textContent)
-                .toBe("bazaarIcon.customized");
+                .toBe("feature.bazaarCustomIcon.customized");
         });
 
         it("「恢复」删掉该包的图标文件，并广播目录变化", async () => {
@@ -683,7 +685,7 @@ describe("集市包自定义图标", () => {
 
             document.querySelector<HTMLElement>("[data-action='reset']")?.click();
 
-            await vi.waitFor(() => expect(mockState.messages.at(-1)?.text).toBe("bazaarIcon.removed"));
+            await vi.waitFor(() => expect(mockState.messages.at(-1)?.text).toBe("feature.bazaarCustomIcon.removed"));
             document.removeEventListener(ICON_CHANGED_EVENT, changed);
             expect(mockState.fetchSyncPost).toHaveBeenCalledWith(
                 "/api/file/removeFile",

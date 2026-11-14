@@ -15,14 +15,14 @@ export default defineFeature({
     id: "log-output",
     category: "plugin",
     enabled: true,
-    name: "feature.logOutput.name",
-    description: "feature.logOutput.desc",
+    name: "feature.logOutput.title",
+    description: "feature.logOutput.description",
     settings: [
         {
             kind: "switch",
             key: "enabled",
-            title: "logOutput.enabled",
-            description: "logOutput.enabledTip",
+            title: "common.enabled",
+            description: "feature.logOutput.enabledTip",
             default: false,
         },
     ],

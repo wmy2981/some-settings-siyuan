@@ -14,6 +14,7 @@ import {
     normalizeConfig,
     sameConfig,
 } from "../../src/core/config";
+import {categoryKey} from "../../src/core/i18n-key";
 import {FEATURES} from "../../src/core/registry";
 import {
     fieldOf,
@@ -54,7 +55,7 @@ const staticField = (key: string): SearchField => fieldOf(zh[key], en[key] === z
 const buildIndex = (): SearchIndex => {
     const categories: Record<string, SearchField> = {};
     const features = FEATURES.map((feature) => {
-        categories[feature.category] = staticField(`category.${feature.category}`);
+        categories[feature.category] = staticField(categoryKey(feature.category));
         const fields: SearchField[] = [fieldOf(feature.id), staticField(feature.name)];
         if (feature.description) {
             fields.push(staticField(feature.description));

@@ -50,15 +50,15 @@ const {setDetailedLogging} = await import("../../src/core/log");
 type Harness = ReturnType<typeof mountFeature>;
 
 const I18N: Record<string, string> = {
-    "assetsNewFile.command": "新建文件到 assets",
-    "assetsNewFile.title": "新建文件到 assets",
-    "assetsNewFile.tip": "输入文件名（可带任意后缀）。",
-    "assetsNewFile.placeholder": "例如：清单.txt",
-    "assetsNewFile.invalid": "文件名不能为空，也不能包含 / 或 \\",
-    "assetsNewFile.creating": "正在创建…",
-    "assetsNewFile.failed": "创建文件失败，请稍后再试",
-    "assetsNewFile.confirm": "创建",
-    "assetsNewFile.cancel": "取消",
+    "feature.assetsNewFile.command": "新建文件到 assets",
+    "feature.assetsNewFile.dialogTitle": "新建文件到 assets",
+    "feature.assetsNewFile.tip": "输入文件名（可带任意后缀）。",
+    "feature.assetsNewFile.placeholder": "例如：清单.txt",
+    "feature.assetsNewFile.invalid": "文件名不能为空，也不能包含 / 或 \\",
+    "feature.assetsNewFile.creating": "正在创建…",
+    "feature.assetsNewFile.failed": "创建文件失败，请稍后再试",
+    "feature.assetsNewFile.confirm": "创建",
+    "common.cancel": "取消",
 };
 
 const i18n = (key: string): string => I18N[key] ?? key;
@@ -536,7 +536,7 @@ describe("斜杠命令新建文件到 assets", () => {
     it("对话框里的文案都经过转义：i18n 里带标记也不会变成 HTML", () => {
         harness.dispose();
         harness = mountFeature(assetsNewFile, {
-            i18n: (key) => key === "assetsNewFile.placeholder" ? "<b>x</b>" : key,
+            i18n: (key) => key === "feature.assetsNewFile.placeholder" ? "<b>x</b>" : key,
         });
 
         const protyle = createProtyle();

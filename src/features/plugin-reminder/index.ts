@@ -27,14 +27,14 @@ export default defineFeature({
     id: "plugin-reminder",
     category: "plugin",
     enabled: true,
-    name: "feature.pluginReminder.name",
-    description: "feature.pluginReminder.desc",
+    name: "feature.pluginReminder.title",
+    description: "feature.pluginReminder.description",
     isEnabled: () => false,
     settings: [
         {
             kind: "note",
             key: "notice",
-            text: "pluginReminder.notice",
+            text: "feature.pluginReminder.notice",
             values: {
                 version: manifest.version,
                 repo: manifest.url,
@@ -48,7 +48,7 @@ export default defineFeature({
             actions: [
                 {
                     key: "star",
-                    label: "pluginReminder.starAction",
+                    label: "feature.pluginReminder.starAction",
                     appearance: "block" as const,
                     tone: "primary" as const,
                     icon: "iconGithub",
@@ -58,7 +58,7 @@ export default defineFeature({
                 ...(hasDonateUrl() ?
                     [{
                         key: "donate",
-                        label: "pluginReminder.donateAction",
+                        label: "feature.pluginReminder.donateAction",
                         appearance: "block" as const,
                         tone: "pink" as const,
                         // 官方那张图：思源「关于」页捐赠按钮用的同一张

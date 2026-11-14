@@ -194,7 +194,7 @@ describe("挂载到在线集市列表", () => {
     const mount = (config: FeatureConfig = {enabled: true, authors: "acme"}): HostHarness => {
         const harness = mountFeature(definition, {
             config,
-            i18n: (key) => key === "bazaarAuthorBlocklist.allBlocked" ? "hidden {count}" : key,
+            i18n: (key) => key === "feature.bazaarAuthorBlocklist.allBlocked" ? "hidden {count}" : key,
         });
         instances.push(harness);
         return harness;

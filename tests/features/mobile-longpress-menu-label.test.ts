@@ -105,7 +105,7 @@ describe("移动端长按菜单补文字", () => {
     it("声明：只在移动端交出，分类是外观，默认不启用", () => {
         expect(definition.id).toBe("mobile-longpress-menu-label");
         expect(definition.category).toBe("appearance");
-        expect(definition.name).toBe("feature.mobileLongpressMenuLabel.name");
+        expect(definition.name).toBe("feature.mobileLongpressMenuLabel.title");
         expect(definition.enabled).toBe(true);
         // 桌面端的长按菜单不是这套 DOM，挂上去只会白扫一遍
         expect(definition.frontends).toEqual(["mobile"]);

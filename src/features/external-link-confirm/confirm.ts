@@ -115,15 +115,15 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
 
     const ask = (detail: OpenLinkDetail, href: string) => {
         dialog = new Dialog({
-            title: host.i18n("externalLinkConfirm.title"),
+            title: host.i18n("feature.externalLinkConfirm.dialogTitle"),
             // 移动端按约定用 92vw：520px 在手机上会整块溢出，复制按钮那一行也跟着看不见
             width: isMobile() ? "92vw" : "520px",
             content: `<div class="b3-dialog__content">
     <div class="ss-external-link__head">
-        <div class="ss-external-link__prompt">${escapeHtml(host.i18n("externalLinkConfirm.prompt"))}</div>
+        <div class="ss-external-link__prompt">${escapeHtml(host.i18n("feature.externalLinkConfirm.prompt"))}</div>
         <button class="b3-button b3-button--outline ss-external-link__copy" type="button" data-ss-copy-link>
             <svg class="b3-button__icon"><use xlink:href="#iconCopy"></use></svg>${
-                escapeHtml(host.i18n("externalLinkConfirm.copy"))
+                escapeHtml(host.i18n("feature.externalLinkConfirm.copy"))
             }
         </button>
     </div>
@@ -132,10 +132,10 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" type="button" data-ss-cancel-link>${
-                escapeHtml(host.i18n("externalLinkConfirm.cancel"))
+                escapeHtml(host.i18n("common.cancel"))
             }</button><div class="fn__space"></div>
     <button class="b3-button b3-button--text" type="button" data-ss-open-link>${
-                escapeHtml(host.i18n("externalLinkConfirm.open"))
+                escapeHtml(host.i18n("feature.externalLinkConfirm.open"))
             }</button>
 </div>`,
             destroyCallback: () => {
@@ -147,7 +147,7 @@ export const mountExternalLinkConfirm = (host: FeatureHost): FeatureInstance => 
         dialog.element.querySelector<HTMLButtonElement>("[data-ss-copy-link]")?.addEventListener("click", () => {
             void copyText(href).then((ok) => {
                 host.showMessage(
-                    ok ? host.i18n("externalLinkConfirm.copied") : host.i18n("externalLinkConfirm.copyFailed"),
+                    ok ? host.i18n("common.copied") : host.i18n("common.copyFailed"),
                 );
             });
         });

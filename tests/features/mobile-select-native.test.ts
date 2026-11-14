@@ -130,7 +130,7 @@ describe("移动端下拉用思源原生样式", () => {
     it("声明：只在移动端交出，到 3.8.7-alpha.2 为止（之后宿主自己统一了下拉）", () => {
         expect(definition.id).toBe("mobile-select-native");
         expect(definition.category).toBe("appearance");
-        expect(definition.name).toBe("feature.mobileSelectNative.name");
+        expect(definition.name).toBe("feature.mobileSelectNative.title");
         expect(definition.enabled).toBe(true);
         expect(definition.frontends).toEqual(["mobile"]);
         // 上游从 v3.8.7-alpha.2 起自己实现了，上限取它的前一个版本：超过就不再加载

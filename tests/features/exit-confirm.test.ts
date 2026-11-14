@@ -111,7 +111,7 @@ describe("退出应用前弹窗确认", () => {
 
         it("确认框的标题与正文取自宿主的 i18n", async () => {
             stubFetch();
-            mount({i18n: (key) => key === "exitConfirm.title" ? "退出思源" : "确定要退出思源吗？"});
+            mount({i18n: (key) => key === "feature.exitConfirm.dialogTitle" ? "退出思源" : "确定要退出思源吗？"});
 
             await window.fetch(EXIT_PATH, {method: "POST", body: exitBody()});
 

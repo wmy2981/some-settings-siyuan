@@ -61,10 +61,10 @@ class FakeHost {
         "category.appearance": "外观",
         "category.settings": "设置",
         "common.enabled": "启用",
-        "panel.none": "本宿主没有可用的设置项",
+        "panel.empty": "本宿主没有可用的设置项",
         "panel.search.placeholder": "搜索...",
         "panel.search.clear": "清空搜索",
-        "panel.search.none": "无结果",
+        "panel.search.empty": "无结果",
         "panel.readonlyTip": "只读工作空间",
         "action.done": "动作已执行",
     };

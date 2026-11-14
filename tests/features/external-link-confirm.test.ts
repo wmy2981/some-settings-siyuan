@@ -168,12 +168,12 @@ describe("外链跳转前确认", () => {
             expect(dialog?.querySelector(".ss-external-link__url")?.textContent)
                 .toBe("https://example.com/a/b?c=1");
             expect(dialog?.querySelector(".ss-external-link__prompt")?.textContent)
-                .toBe("externalLinkConfirm.prompt");
+                .toBe("feature.externalLinkConfirm.prompt");
             const copy = dialog?.querySelector<HTMLElement>("[data-ss-copy-link]");
             expect(copy?.querySelector("use")?.getAttribute("xlink:href")).toBe("#iconCopy");
-            expect(copy?.textContent?.trim()).toBe("externalLinkConfirm.copy");
-            expect(dialog?.querySelector("[data-ss-cancel-link]")?.textContent).toBe("externalLinkConfirm.cancel");
-            expect(dialog?.querySelector("[data-ss-open-link]")?.textContent).toBe("externalLinkConfirm.open");
+            expect(copy?.textContent?.trim()).toBe("feature.externalLinkConfirm.copy");
+            expect(dialog?.querySelector("[data-ss-cancel-link]")?.textContent).toBe("common.cancel");
+            expect(dialog?.querySelector("[data-ss-open-link]")?.textContent).toBe("feature.externalLinkConfirm.open");
         });
 
         it("链接文本按 HTML 转义：网址里的 & 与引号不能把弹窗结构冲掉", () => {
@@ -341,7 +341,7 @@ describe("外链跳转前确认", () => {
 
             dialogElement()?.querySelector<HTMLElement>("[data-ss-copy-link]")?.click();
 
-            await vi.waitFor(() => expect(harness!.records.messages).toEqual(["externalLinkConfirm.copied"]));
+            await vi.waitFor(() => expect(harness!.records.messages).toEqual(["common.copied"]));
             expect(writeText).toHaveBeenCalledWith("https://example.com/copy?a=1");
             // 复制不该收掉弹窗：用户还要接着决定打不打开
             expect(dialogElement()).not.toBeNull();
@@ -354,7 +354,7 @@ describe("外链跳转前确认", () => {
 
             dialogElement()?.querySelector<HTMLElement>("[data-ss-copy-link]")?.click();
 
-            await vi.waitFor(() => expect(harness!.records.messages).toEqual(["externalLinkConfirm.copyFailed"]));
+            await vi.waitFor(() => expect(harness!.records.messages).toEqual(["common.copyFailed"]));
         });
     });
 

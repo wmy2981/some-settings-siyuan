@@ -131,7 +131,7 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
             } else {
                 host.log.warn(`could not copy ${text.length} character(s) from inline code`);
             }
-            host.showMessage(ok ? host.i18n("inlineCodeCopy.copied") : host.i18n("inlineCodeCopy.failed"));
+            host.showMessage(ok ? host.i18n("common.copied") : host.i18n("common.copyFailed"));
         });
     };
 
@@ -139,8 +139,8 @@ export const mountInlineCodeCopy = (host: FeatureHost): FeatureInstance => {
         const button = document.createElement("button");
         button.type = "button";
         button.className = BUTTON_CLASS;
-        button.title = host.i18n("inlineCodeCopy.label");
-        button.setAttribute("aria-label", host.i18n("inlineCodeCopy.label"));
+        button.title = host.i18n("feature.inlineCodeCopy.label");
+        button.setAttribute("aria-label", host.i18n("feature.inlineCodeCopy.label"));
         button.innerHTML = '<svg><use xlink:href="#iconCopy"></use></svg>';
         // 点按钮不能让编辑区失去焦点：那样会收起键盘、丢掉光标，
         // 「悬浮显示」依赖的那个光标一丢，按钮自己就跟着消失了。

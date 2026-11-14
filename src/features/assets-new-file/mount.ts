@@ -214,19 +214,19 @@ const openDialog = (host: FeatureHost, protyle: Protyle): void => {
     let dialog: Dialog | undefined;
 
     dialog = new Dialog({
-        title: t("assetsNewFile.title"),
+        title: t("feature.assetsNewFile.dialogTitle"),
         content: `<div class="b3-dialog__content">
     <style>${DIALOG_CSS}</style>
-    <div class="${TIP_CLASS}">${escapeHtml(t("assetsNewFile.tip"))}</div>
+    <div class="${TIP_CLASS}">${escapeHtml(t("feature.assetsNewFile.tip"))}</div>
     <input class="b3-text-field fn__block" data-name type="text" spellcheck="false"
-        placeholder="${escapeHtml(t("assetsNewFile.placeholder"))}"/>
+        placeholder="${escapeHtml(t("feature.assetsNewFile.placeholder"))}"/>
 </div>
 <div class="b3-dialog__action">
     <button class="b3-button b3-button--cancel" type="button" data-cancel>${
-            escapeHtml(t("assetsNewFile.cancel"))
+            escapeHtml(t("common.cancel"))
         }</button><div class="fn__space"></div>
     <button class="b3-button b3-button--text" type="button" data-confirm>${
-            escapeHtml(t("assetsNewFile.confirm"))
+            escapeHtml(t("feature.assetsNewFile.confirm"))
         }</button>
 </div>`,
         width: isMobileFrontend() ? "92vw" : "440px",
@@ -246,7 +246,7 @@ const openDialog = (host: FeatureHost, protyle: Protyle): void => {
         const value = input?.value.trim() ?? "";
         if (!value || /[\\/]/.test(value)) {
             host.log.warn(`rejected the file name ${JSON.stringify(value)}`);
-            host.showMessage(t("assetsNewFile.invalid"));
+            host.showMessage(t("feature.assetsNewFile.invalid"));
             input?.focus();
             return;
         }
@@ -255,7 +255,7 @@ const openDialog = (host: FeatureHost, protyle: Protyle): void => {
         }
         if (confirm) {
             confirm.disabled = true;
-            confirm.textContent = t("assetsNewFile.creating");
+            confirm.textContent = t("feature.assetsNewFile.creating");
         }
         try {
             const path = await createEmptyAsset(value, rootID);
@@ -271,13 +271,13 @@ const openDialog = (host: FeatureHost, protyle: Protyle): void => {
             dialog?.destroy();
         } catch (error) {
             reportError("assets-new-file.create", error, false);
-            host.showMessage(t("assetsNewFile.failed"));
+            host.showMessage(t("feature.assetsNewFile.failed"));
             if (input) {
                 input.disabled = false;
             }
             if (confirm) {
                 confirm.disabled = false;
-                confirm.textContent = t("assetsNewFile.confirm");
+                confirm.textContent = t("feature.assetsNewFile.confirm");
             }
         }
     };
@@ -308,7 +308,7 @@ export const mountAssetsNewFile = (host: FeatureHost): void => {
         filter: FILTER,
         html:
             `<div class="b3-list-item__first"><svg class="b3-list-item__graphic"><use xlink:href="#iconFile"></use></svg><span class="b3-list-item__text">${
-                escapeHtml(t("assetsNewFile.command"))
+                escapeHtml(t("feature.assetsNewFile.command"))
             }</span></div>`,
         callback: (protyle) => {
             openDialog(host, protyle);

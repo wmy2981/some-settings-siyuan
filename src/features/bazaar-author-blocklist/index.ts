@@ -15,8 +15,8 @@ export default defineFeature({
     id: "bazaar-author-blocklist",
     category: "settings",
     enabled: true,
-    name: "feature.bazaarAuthorBlocklist.name",
-    description: "feature.bazaarAuthorBlocklist.desc",
+    name: "feature.bazaarAuthorBlocklist.title",
+    description: "feature.bazaarAuthorBlocklist.description",
     settings: [
         {
             kind: "switch",
@@ -27,9 +27,9 @@ export default defineFeature({
         {
             kind: "textarea",
             key: "authors",
-            title: "bazaarAuthorBlocklist.authors",
-            description: "bazaarAuthorBlocklist.authorsDesc",
-            placeholder: "bazaarAuthorBlocklist.authorsPlaceholder",
+            title: "feature.bazaarAuthorBlocklist.authors",
+            description: "feature.bazaarAuthorBlocklist.authorsTip",
+            placeholder: "feature.bazaarAuthorBlocklist.authorsPlaceholder",
             default: "",
             rows: 6,
         },

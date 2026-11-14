@@ -35,9 +35,9 @@ const TARGET = "ref-crumbs-siyuan";
 const BAZAAR_URI = `siyuan://bazaar/plugins/${TARGET}/readme`;
 
 const TEXT: Record<string, string> = {
-    "refCrumbsGuide.openAction": "打开设置",
-    "refCrumbsGuide.installAction": "去集市页面",
-    "refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面",
+    "feature.refCrumbsGuide.openAction": "打开设置",
+    "feature.refCrumbsGuide.installAction": "去集市页面",
+    "feature.refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面",
 };
 
 const translate = (key: string): string => TEXT[key] ?? key;
@@ -97,7 +97,7 @@ describe("「引用面包屑」插件引导", () => {
         setPlugins([]);
         const bare = createActionContext({featureId: "ref-crumbs-guide"}).context;
 
-        expect(refCrumbsActionLabel(bare)).toBe("refCrumbsGuide.installAction");
+        expect(refCrumbsActionLabel(bare)).toBe("feature.refCrumbsGuide.installAction");
     });
 
     it("已启用：直接调目标插件自己的 openSetting，不碰集市", () => {
@@ -183,12 +183,12 @@ describe("「引用面包屑」插件引导", () => {
         expect(configKeysOf(definition.settings)).toEqual([]);
 
         const [note, button] = definition.settings;
-        expect(note).toMatchObject({kind: "note", key: "notice", text: "refCrumbsGuide.notice"});
+        expect(note).toMatchObject({kind: "note", key: "notice", text: "feature.refCrumbsGuide.notice"});
         expect(button).toMatchObject({
             kind: "button",
             key: "open",
-            title: "refCrumbsGuide.actionTitle",
-            description: "refCrumbsGuide.actionTip",
+            title: "feature.refCrumbsGuide.actionTitle",
+            description: "feature.refCrumbsGuide.actionTip",
         });
         // 文案与点击都是导出的那两个函数本身：装没装决定文案，行为跟着同一份判定走
         expect((button as {label: unknown;}).label).toBe(refCrumbsActionLabel);

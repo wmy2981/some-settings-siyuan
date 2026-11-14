@@ -36,7 +36,7 @@ const notebooksOf = (): NotebookLike[] => {
  * 于是原样显示；「不指定」是真正的 i18n key。
  */
 export const dailyNoteNotebookOptions = (): SettingOption[] => [
-    {value: UNSET, label: "dailyNoteDirect.notebookUnset"},
+    {value: UNSET, label: "feature.dailyNoteDirect.notebookUnset"},
     ...notebooksOf()
         .filter((notebook) => notebook.id && !notebook.closed)
         .map((notebook) => ({value: notebook.id, label: notebook.name || notebook.id})),

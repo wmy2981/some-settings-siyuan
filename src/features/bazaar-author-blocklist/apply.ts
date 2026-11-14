@@ -53,7 +53,7 @@ const CARD_SELECTOR = ".b3-card[data-package-source='bazaar']";
 /** 作者在卡片上的位置，内容就是集市索引的 author 字段。 */
 const AUTHOR_SELECTOR = ".b3-card__author";
 /** 提示文案的 i18n key 与条数占位符。 */
-const HINT_KEY = "bazaarAuthorBlocklist.allBlocked";
+const HINT_KEY = "feature.bazaarAuthorBlocklist.allBlocked";
 const HINT_PLACEHOLDER = "{count}";
 
 const CSS = `

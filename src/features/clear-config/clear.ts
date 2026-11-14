@@ -61,12 +61,12 @@ export const clearAllConfigs = (context: FeatureActionContext): void => {
     // 清除配置是破坏性操作：确认按钮用思源自己的删除按钮（b3-button--remove），
     // 而不是默认的蓝色文字按钮。第 5 个参数为 true 时内核还会把文案换成「删除」。
     confirmDelete(
-        context.i18n("clearConfig.confirmTitle"),
-        context.i18n("clearConfig.confirmText"),
+        context.i18n("feature.clearConfig.confirmTitle"),
+        context.i18n("feature.clearConfig.confirmText"),
         () => {
             context.clearAllConfigs().then(() => {
                 logInfo("clear-config", "cleared every configuration file, reloading the frontend");
-                showMessage(context.i18n("clearConfig.done"), 3000);
+                showMessage(context.i18n("feature.clearConfig.done"), 3000);
                 window.setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
             }).catch((error: unknown) => {
                 // 有的文件删不掉时不能装作清干净了：重新载入会把没删掉的那份又读回来

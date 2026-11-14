@@ -155,7 +155,7 @@ const resolveTarget = async (rawId: string, host: FeatureHost, send: typeof fetc
         return undefined;
     }
     if (!ID_PATTERN.test(id)) {
-        throw new Error(host.i18n("newDocFixedTarget.invalid"));
+        throw new Error(host.i18n("feature.newDocFixedTarget.invalid"));
     }
     if (openNotebook(id)) {
         return {notebook: id, parentID: null};
@@ -163,10 +163,10 @@ const resolveTarget = async (rawId: string, host: FeatureHost, send: typeof fetc
     const response = await post<BlockInfo>(send, "/api/block/getBlock", {id});
     const block = response.data;
     if (response.code !== 0 || !block) {
-        throw new Error(response.msg || host.i18n("newDocFixedTarget.invalid"));
+        throw new Error(response.msg || host.i18n("feature.newDocFixedTarget.invalid"));
     }
     if (block.type !== "d" || block.id !== id || block.rootID !== id || !block.box || !openNotebook(block.box)) {
-        throw new Error(host.i18n("newDocFixedTarget.invalid"));
+        throw new Error(host.i18n("feature.newDocFixedTarget.invalid"));
     }
     return {notebook: block.box, parentID: id};
 };
@@ -191,7 +191,9 @@ const retarget = async (
         target = await resolveTarget(String(host.config.target ?? ""), host, send);
     } catch (error) {
         host.log.warn("failed to resolve the configured target", error);
-        return failure(error instanceof Error && error.message ? error.message : host.i18n("newDocFixedTarget.failed"));
+        return failure(
+            error instanceof Error && error.message ? error.message : host.i18n("feature.newDocFixedTarget.failed"),
+        );
     }
     if (!target || host.signal.aborted) {
         return await send.call(window, input, init);

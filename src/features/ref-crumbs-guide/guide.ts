@@ -46,7 +46,7 @@ const bazaarAvailable = (): boolean =>
 
 /** 动作行的按钮文案：能开设置面板就说「打开设置」，否则说「去集市安装」。 */
 export const refCrumbsActionLabel = (context: FeatureActionContext): string =>
-    target() ? context.i18n("refCrumbsGuide.openAction") : context.i18n("refCrumbsGuide.installAction");
+    target() ? context.i18n("feature.refCrumbsGuide.openAction") : context.i18n("feature.refCrumbsGuide.installAction");
 
 export const openRefCrumbs = (context: FeatureActionContext): void => {
     const plugin = target();
@@ -55,7 +55,7 @@ export const openRefCrumbs = (context: FeatureActionContext): void => {
         return;
     }
     if (!bazaarAvailable()) {
-        showMessage(context.i18n("refCrumbsGuide.bazaarUnavailable"), 4000);
+        showMessage(context.i18n("feature.refCrumbsGuide.bazaarUnavailable"), 4000);
         return;
     }
     // 交给思源自己的 open：桌面端走进程内协议处理，移动端交给原生桥

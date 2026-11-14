@@ -93,8 +93,8 @@ describe("清除本插件配置", () => {
         clearAllConfigs(context);
 
         expect(mockState.confirms).toEqual([{
-            title: zhCN["clearConfig.confirmTitle"],
-            text: zhCN["clearConfig.confirmText"],
+            title: zhCN["feature.clearConfig.confirmTitle"],
+            text: zhCN["feature.clearConfig.confirmText"],
             accepted: true,
         }]);
         expect(confirmArgs[0]).toHaveLength(5);
@@ -125,7 +125,7 @@ describe("清除本插件配置", () => {
         await flush();
 
         expect(calls.clear).toBe(1);
-        expect(mockState.messages).toEqual([{text: zhCN["clearConfig.done"], timeout: 3000, type: undefined}]);
+        expect(mockState.messages).toEqual([{text: zhCN["feature.clearConfig.done"], timeout: 3000, type: undefined}]);
         // 重新载入是唯一能同时收掉面板草稿、又让插件按默认配置重装的做法
         expect(timers.map((timer) => timer.delay)).toEqual([600]);
         expect(typeof timers[0].handler).toBe("function");
@@ -145,7 +145,7 @@ describe("清除本插件配置", () => {
         await flush();
 
         expect(console.error).toHaveBeenCalledWith(expect.stringContaining("clear-config.clear"));
-        expect(mockState.messages.map((message) => message.text)).not.toContain(zhCN["clearConfig.done"]);
+        expect(mockState.messages.map((message) => message.text)).not.toContain(zhCN["feature.clearConfig.done"]);
         expect(mockState.messages.at(-1)!.text).toContain("permission denied");
         expect(mockState.messages.at(-1)!.type).toBe("error");
         expect(timers).toEqual([]);
@@ -187,9 +187,9 @@ describe("清除本插件配置", () => {
         expect(definition.settings[0]).toMatchObject({
             kind: "button",
             key: "clear",
-            title: "clearConfig.title",
-            description: "clearConfig.tip",
-            label: "clearConfig.action",
+            title: "feature.clearConfig.dialogTitle",
+            description: "feature.clearConfig.tip",
+            label: "feature.clearConfig.action",
         });
     });
 });

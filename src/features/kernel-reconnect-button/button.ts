@@ -63,12 +63,12 @@ export const mountReconnectButton = (host: FeatureHost): FeatureInstance => {
         button.type = "button";
         button.className = "b3-button b3-button--outline";
         button.setAttribute(BUTTON_ATTR, "true");
-        button.textContent = host.i18n("kernelReconnectButton.label");
+        button.textContent = host.i18n("feature.kernelReconnectButton.label");
 
         button.addEventListener("click", () => {
             const idleLabel = button.textContent;
             button.disabled = true;
-            button.textContent = host.i18n("kernelReconnectButton.working");
+            button.textContent = host.i18n("feature.kernelReconnectButton.working");
             void reconnectNow(host).then((alive) => {
                 if (!button.isConnected) {
                     return;
@@ -76,7 +76,7 @@ export const mountReconnectButton = (host: FeatureHost): FeatureInstance => {
                 button.disabled = false;
                 button.textContent = idleLabel;
                 if (!alive) {
-                    host.showMessage(host.i18n("kernelReconnectButton.offline"));
+                    host.showMessage(host.i18n("feature.kernelReconnectButton.offline"));
                 }
             });
         });

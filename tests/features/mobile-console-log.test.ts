@@ -39,13 +39,13 @@ const nativeConsole = {
 
 /** 让 i18n 返回可断言的文案；计数那条必须保留 `${count}` 占位符，功能就是靠它替换的。 */
 const messages: Record<string, string> = {
-    "mobileConsoleLog.title": "控制台日志",
-    "mobileConsoleLog.count": "共 ${count} 条",
-    "mobileConsoleLog.copy": "复制全部",
-    "mobileConsoleLog.clear": "清空",
-    "mobileConsoleLog.copied": "已复制全部日志",
-    "mobileConsoleLog.copyFailed": "复制失败",
-    "mobileConsoleLog.empty": "还没有日志",
+    "feature.mobileConsoleLog.dialogTitle": "控制台日志",
+    "feature.mobileConsoleLog.count": "共 ${count} 条",
+    "feature.mobileConsoleLog.copy": "复制全部",
+    "feature.mobileConsoleLog.clear": "清空",
+    "common.copied": "已复制全部日志",
+    "common.copyFailed": "复制失败",
+    "feature.mobileConsoleLog.empty": "还没有日志",
 };
 const i18n = (key: string): string => messages[key] ?? key;
 
@@ -140,7 +140,7 @@ describe("控制台日志查看器", () => {
             min: 200,
             max: 20000,
             step: 100,
-            unit: "mobileConsoleLog.entries",
+            unit: "feature.mobileConsoleLog.entries",
         });
         // 入口是一行动作按钮：点击直接调 openConsoleLog（不写配置、不进草稿）
         expect(entry.key).toBe("open");

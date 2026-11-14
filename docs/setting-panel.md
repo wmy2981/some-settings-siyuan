@@ -169,6 +169,13 @@
     按钮竖着叠在右侧、每颗 200px，与「导出配置」那些行同一个位置和宽度；
     窄屏才改回文字在上、按钮整行在下。点击同样经 `bindPendingClick`，只读 / 发布模式下禁用
 * **每个功能的第一个设置行必须是默认关闭的开关**（或声明 `isEnabled`），见 [AGENTS.md](../AGENTS.md) 第 3 节。
+* **文案 key 的落点由功能 id 与设置项 `key` 决定，不另写一份清单**：功能名 / 说明是
+  `feature.<功能 id 转驼峰>.title` / `.description`，设置行标题是 `feature.<camelId>.<key>`、
+  说明是 `<key>Tip`、占位符是 `<key>Placeholder`，`select` 选项是 `<key>.<option.value>`；
+  开关行固定用 `common.enabled`，跨功能共用的控件词（取消 / 关闭 / 已复制 / 适用端等）在 `common.*`。
+  规则全文见 [AGENTS.md](../AGENTS.md) 第 3 节「i18n 键名」，转换函数在 `core/i18n-key.ts`，
+  前缀、末段、两份语言文件的键集与顺序都由 `npm run check` 校验。**面板自己拼键的地方只剩分类**
+  （`categoryKey()`），别处一律写字面量。
 * **行与行之间的间距与分割线全部交给内核**（子行缩进与窄屏内边距例外，由 `PANEL_CSS` 给）。
 * 面板每次打开都会**重写**自己那份 `<style>` 的内容（见 [development.md](./development.md) 的「样式」一节），
   所以改 `PANEL_CSS` 后重载插件就能生效，不必整页刷新。
@@ -181,6 +188,6 @@
   （容器类没挂上过一次，媒体查询就整段落空）。
 * **单位标签必须 `white-space: nowrap`**，否则窄屏下会被压成一列一个字。
   数字行的 `unit` 与其它文案一样按 **i18n key** 解析：`"px"` / `"ms"` / `"%"` / `"vh"`
-  查不到就原样返回，而 `"kernelAutoReconnect.times"` 这种才会翻成「次」/ "times"。
+  查不到就原样返回，而 `"feature.kernelAutoReconnect.times"` 这种才会翻成「次」/ "times"。
   `setting-dialog.ts` 里**不能**把 `unit` 当字面量直接拼进 HTML——踩过一次，面板上真的
   显示了那串 key。

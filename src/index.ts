@@ -62,7 +62,7 @@ export default class SomeSettingsPlugin extends Plugin {
             log.info("plugin loaded");
         } else {
             // 详细日志关着时控制台里只留这一行：它来自 i18n，随宿主语言变化
-            logLoaded(`${this.i18n.helloPlugin ?? "some-settings-siyuan loaded"}`);
+            logLoaded(`${this.i18n["plugin.loaded"] ?? "some-settings-siyuan loaded"}`);
         }
     }
 
@@ -109,7 +109,7 @@ export default class SomeSettingsPlugin extends Plugin {
                 log.info("uninstall removed the plugin storage directory");
             }
         }, false);
-        showMessage(`[${this.name}] ${this.i18n.byePlugin}`, 4000);
+        showMessage(`[${this.name}] ${this.i18n["plugin.unloaded"]}`, 4000);
     }
 
     /** 卸载时要删的文件名：目录里的全部文件，列不出目录时退回注册表里的功能名单。 */

@@ -5,8 +5,8 @@ export default defineFeature({
     id: "hide-bazaar-downloaded-donate",
     category: "settings",
     enabled: true,
-    name: "feature.hideBazaarDownloadedDonate.name",
-    description: "feature.hideBazaarDownloadedDonate.desc",
+    name: "feature.hideBazaarDownloadedDonate.title",
+    description: "feature.hideBazaarDownloadedDonate.description",
     settings: [
         {
             kind: "switch",

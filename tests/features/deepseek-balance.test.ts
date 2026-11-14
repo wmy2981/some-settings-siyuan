@@ -27,7 +27,7 @@ import {
 const t = (key: string): string => (zhCN as Record<string, string>)[key] ?? key;
 
 /** 渲染出来的那一行永远以这个前缀开头（前缀自带分隔符，见 zh-CN）。 */
-const LABEL = t("deepseekBalance.label");
+const LABEL = t("feature.deepseekBalance.label");
 
 const NODE_SELECTOR = "[data-ss-deepseek-balance]";
 
@@ -368,7 +368,7 @@ describe("DeepSeek 余额显示", () => {
             mount();
 
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}¥12.50!`));
-            expect(balanceNode()!.title).toContain(t("deepseekBalance.insufficient"));
+            expect(balanceNode()!.title).toContain(t("feature.deepseekBalance.insufficient"));
         });
 
         it("is_available 缺省时视为可用，不加感叹号", async () => {
@@ -424,7 +424,7 @@ describe("DeepSeek 余额显示", () => {
             mount();
 
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}—`));
-            expect(balanceNode()!.title).toBe(t("deepseekBalance.empty"));
+            expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.empty"));
         });
 
         it.each([
@@ -437,7 +437,7 @@ describe("DeepSeek 余额显示", () => {
             mount();
 
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}—`));
-            expect(balanceNode()!.title).toBe(t("deepseekBalance.empty"));
+            expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.empty"));
         });
 
         it("HTTP 报错时带上接口给的 message", async () => {
@@ -448,7 +448,7 @@ describe("DeepSeek 余额显示", () => {
             mount();
 
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}—`));
-            expect(balanceNode()!.title).toBe(t("deepseekBalance.failed"));
+            expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.failed"));
             expect(logsOf(harness).some((line) => line.includes("Invalid API key"))).toBe(true);
         });
 
@@ -495,8 +495,8 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(balanceNode()!.classList.contains("fn__none")).toBe(true));
             expect(balanceNode()!.textContent).toBe(`${LABEL}—`);
             // 行是收起的，说明仍然留着：切回官网模型时不必等下一帧就知道为什么刚才没有数字
-            expect(balanceNode()!.title).toBe(t("deepseekBalance.noProvider"));
-            expect(balanceNode()!.getAttribute("aria-label")).toBe(t("deepseekBalance.noProvider"));
+            expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.noProvider"));
+            expect(balanceNode()!.getAttribute("aria-label")).toBe(t("feature.deepseekBalance.noProvider"));
         });
 
         it("请求超时 15 秒后按失败处理，请求被 abort", async () => {
@@ -522,7 +522,7 @@ describe("DeepSeek 余额显示", () => {
 
             expect(seenSignal!.aborted).toBe(true);
             expect(balanceNode()!.textContent).toBe(`${LABEL}—`);
-            expect(balanceNode()!.title).toBe(t("deepseekBalance.failed"));
+            expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.failed"));
         });
     });
 

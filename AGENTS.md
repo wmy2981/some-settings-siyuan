@@ -49,6 +49,28 @@
 在 `registry.ts` 登记（数组顺序即面板顺序）→ 两份 i18n 补齐 key → 关键动作埋足日志（见第 5 节）→
 `npm run check && npm run typecheck && npm run lint`。
 
+### i18n 键名
+
+键名只由功能 id / 分类 id 机械决定，不维护映射表；写错、写歪、多写、少写都由 `npm run check` 拦下。
+
+* **前缀只有五组**，两份语言文件都按这个顺序排：`plugin.` → `category.` → `panel.` → `common.` → `feature.`。
+* **`feature.<camelId>.` 里的 camelId 由功能 id 推导**：按 `-` 切分，首段原样、后续段首字母大写
+  （`desktop-command-panel-slim` → `desktopCommandPanelSlim`）。推导只写在 `core/i18n-key.ts`，
+  检查脚本里有一份同规则副本。
+* **功能声明只占两个末段**：`feature.<camelId>.title` / `.description`。这两个末段名**不再给任何别的文案用**，
+  `settings` 行的 `key` 也不许叫 `title` / `description`。
+* **设置行跟着自己的 `key` 走**：标题 `feature.<camelId>.<key>`，说明（写了才有）`<key>Tip`，
+  输入框占位符 `<key>Placeholder`，`select` 选项标签 `<key>.<option.value>`（与 `value` 逐字一致）。
+  开关行是唯一例外：标题固定 `common.enabled`。
+* **运行期文案**（对话框、toast、按钮）用语义槽位收尾：`…Title` / `…Tip` / `…Placeholder` /
+  `…Action` / `…Notice` / `…Label`；状态键用裸词 `loading` / `empty` / `failed` / `copied` / `invalid` / `retry`。
+  一个功能里有多个同类对象时才拼成 `<对象><槽位>`（`exportTitle` / `importTip`）。
+* **只把通用控件词放 `common.*`**（cancel / close / copied / copyFailed / retry / enabled / scope.*）。
+  含义具体的一律留在功能自己的命名空间里，哪怕字面完全相同（「使用这张图」「创建」各自一个 `confirm`）。
+* **分类键是 `category.<分类 id 转驼峰>`**（`category.docTree`）；分类 id 本身仍是 kebab，
+  由 `core/i18n-key.ts` 的 `categoryKey()` 在运行期转换，代码里不要再手拼 `category.${…}`。
+* **每条键都得有代码取用**：没有引用的键（含只在测试里出现的）会让检查失败，先删译文再删代码引用。
+
 ---
 
 ## 4. 配置持久化
@@ -112,7 +134,8 @@ from "siyuan"` 去注册 UI；需要新的平台能力时先加进 `FeatureHost`
 ## 8. 提交与文档
 
 * **Conventional Commits**，一个小改动一个 commit，提交信息用英文说清「改了什么」。
-* 用户可见的文案必须**中英双语**同时写进两份 i18n。
+* 用户可见的文案必须**中英双语**同时写进两份 i18n，键名按第 3 节「i18n 键名」的规则取，
+  不自己另起一套（`npm run check` 会校验前缀、末段、两份文件的键集与顺序）。
 * `README.md` / `README.zh-CN.md` 是集市展示页，改动用户可见行为时要同步更新，两份内容必须一致。
 * **`dev-refs/` 是本地唯一权威开发参考资料，不得纳入版本管理，也不得在任何文档、注释、提交信息里引用或提及。**
 * 非用户明确要求，**禁止自行进行端到端测试或操作用户的思源工作空间**。

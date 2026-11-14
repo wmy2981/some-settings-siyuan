@@ -58,7 +58,7 @@ interface AssetSource {
 const isWorkspaceAsset = (src: string): boolean => src.startsWith(ASSET_PREFIX);
 
 const labelOf = (host: FeatureHost, key: string, value?: string): string =>
-    `${escapeHtml(host.i18n(key))}: ${escapeHtml(value ?? host.i18n("assetInfo.loading"))}`;
+    `${escapeHtml(host.i18n(key))}: ${escapeHtml(value ?? host.i18n("feature.assetInfoMenu.loading"))}`;
 
 /** 当前正在构建的那个菜单；不在菜单构建过程中时返回 undefined。 */
 const currentMenu = (): Menu | undefined => window.siyuan?.menus?.menu;
@@ -149,16 +149,16 @@ const appendRows = (host: FeatureHost, source: AssetSource): void => {
     };
 
     menu.addItem({id: SEPARATOR_ID, type: "separator"});
-    const size = add("assetInfo.size");
+    const size = add("feature.assetInfoMenu.size");
     // 尺寸直接读已经加载好的图片，不必等内核
     if (image && image.naturalWidth > 0) {
-        add("assetInfo.dimensions", `${image.naturalWidth} × ${image.naturalHeight}`);
+        add("feature.assetInfoMenu.dimensions", `${image.naturalWidth} × ${image.naturalHeight}`);
     }
     const type = extensionOf(src);
     if (type) {
-        add("assetInfo.type", type);
+        add("feature.assetInfoMenu.type", type);
     }
-    const modified = add("assetInfo.modified");
+    const modified = add("feature.assetInfoMenu.modified");
 
     const settle = (sizeText?: string, modifiedText?: string) => {
         size.value = sizeText;

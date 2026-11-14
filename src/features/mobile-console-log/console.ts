@@ -228,17 +228,17 @@ export const openConsoleLog = (): void => {
     }
     const t = (key: string): string => host.i18n(key);
     const dialog = new Dialog({
-        title: t("mobileConsoleLog.title"),
+        title: t("feature.mobileConsoleLog.dialogTitle"),
         width: isMobile() ? "92vw" : "760px",
         height: "80vh",
         content: `<div class="b3-dialog__content ss-console-log">
     <div class="ss-console-log__bar">
         <span class="ss-console-log__count" data-log-count></span>
         <button class="b3-button b3-button--outline" type="button" data-log-copy>${
-            escapeHtml(t("mobileConsoleLog.copy"))
+            escapeHtml(t("feature.mobileConsoleLog.copy"))
         }</button>
         <button class="b3-button b3-button--outline" type="button" data-log-clear>${
-            escapeHtml(t("mobileConsoleLog.clear"))
+            escapeHtml(t("feature.mobileConsoleLog.clear"))
         }</button>
     </div>
     <div class="ss-console-log__list" data-log-list></div>
@@ -257,16 +257,16 @@ export const openConsoleLog = (): void => {
         if (!list || !count || !dialog.element.isConnected) {
             return;
         }
-        count.textContent = t("mobileConsoleLog.count").replace("${count}", entries.length.toString());
+        count.textContent = t("feature.mobileConsoleLog.count").replace("${count}", entries.length.toString());
         list.innerHTML = entries.length > 0 ?
             rowsHtml() :
-            `<div class="ss-console-log__empty">${escapeHtml(t("mobileConsoleLog.empty"))}</div>`;
+            `<div class="ss-console-log__empty">${escapeHtml(t("feature.mobileConsoleLog.empty"))}</div>`;
         list.scrollTop = list.scrollHeight;
     };
 
     dialog.element.querySelector<HTMLButtonElement>("[data-log-copy]")?.addEventListener("click", () => {
         void copyText(plainText()).then((ok) => {
-            host.showMessage(ok ? t("mobileConsoleLog.copied") : t("mobileConsoleLog.copyFailed"));
+            host.showMessage(ok ? t("common.copied") : t("common.copyFailed"));
         });
     });
     dialog.element.querySelector<HTMLButtonElement>("[data-log-clear]")?.addEventListener("click", () => {
@@ -293,7 +293,7 @@ const scheduleRefresh = (): void => {
             list.scrollTop = list.scrollHeight;
         }
         if (count && activeHost) {
-            count.textContent = activeHost.i18n("mobileConsoleLog.count")
+            count.textContent = activeHost.i18n("feature.mobileConsoleLog.count")
                 .replace("${count}", entries.length.toString());
         }
     });

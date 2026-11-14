@@ -142,8 +142,8 @@ export const mountExitConfirm = (host: FeatureHost): FeatureInstance => {
         new Promise((resolve) => {
             // 这个确认框无论是点取消、按 Esc、点遮罩还是点关闭，都会走到 cancel 回调
             confirm(
-                host.i18n("exitConfirm.title"),
-                host.i18n("exitConfirm.text"),
+                host.i18n("feature.exitConfirm.dialogTitle"),
+                host.i18n("feature.exitConfirm.text"),
                 () => resolve(true),
                 () => resolve(false),
             );

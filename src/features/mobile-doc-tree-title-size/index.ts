@@ -14,8 +14,8 @@ export default defineFeature({
     id: "mobile-doc-tree-title-size",
     category: "doc-tree",
     enabled: true,
-    name: "feature.mobileDocTreeTitleSize.name",
-    description: "feature.mobileDocTreeTitleSize.desc",
+    name: "feature.mobileDocTreeTitleSize.title",
+    description: "feature.mobileDocTreeTitleSize.description",
     frontends: ["mobile"],
     // 字号改动是 3.8.10 才有的：3.8.9 及以前内核本来就是 14px，这份补丁无事可做，
     // 所以下限取它出现的那一版，更早的思源不再加载它的配置，设置面板里也不再出现这一项。

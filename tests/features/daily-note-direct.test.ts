@@ -103,7 +103,7 @@ describe("日记直接创建", () => {
 
         // 「不指定」必须始终存在：用户要能退回思源自己的询问流程，
         // 否则关掉功能只能靠改配置文件
-        expect(options[0]).toEqual({value: "", label: "dailyNoteDirect.notebookUnset"});
+        expect(options[0]).toEqual({value: "", label: "feature.dailyNoteDirect.notebookUnset"});
         // 已关闭的笔记本列出来会让用户选中一个必然失败的项；
         // 没有名字时回落 id，至少还能认出来是哪一个
         expect(options.slice(1)).toEqual([
@@ -114,7 +114,7 @@ describe("日记直接创建", () => {
 
     it("宿主还没给出笔记本列表时，候选项只剩「不指定」", () => {
         setNotebooks(undefined);
-        expect(dailyNoteNotebookOptions()).toEqual([{value: "", label: "dailyNoteDirect.notebookUnset"}]);
+        expect(dailyNoteNotebookOptions()).toEqual([{value: "", label: "feature.dailyNoteDirect.notebookUnset"}]);
 
         // 形状不规则（不是数组）时按同一套兜底处理，不能抛
         setNotebooks({id: "nb-1"});
@@ -282,8 +282,8 @@ describe("日记直接创建", () => {
             {
                 kind: "select",
                 key: "notebook",
-                title: "dailyNoteDirect.notebook",
-                description: "dailyNoteDirect.notebookTip",
+                title: "feature.dailyNoteDirect.notebook",
+                description: "feature.dailyNoteDirect.notebookTip",
                 default: "",
                 optionsProvider: dailyNoteNotebookOptions,
             },

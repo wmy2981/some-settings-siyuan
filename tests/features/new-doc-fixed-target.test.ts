@@ -184,7 +184,11 @@ describe("新建文档到固定位置", () => {
         const response = await window.fetch("/api/filetree/planDocCreate", planRequest());
 
         expect(seen).toHaveLength(0);
-        await expect(response.json()).resolves.toEqual({code: -1, msg: "newDocFixedTarget.invalid", data: null});
+        await expect(response.json()).resolves.toEqual({
+            code: -1,
+            msg: "feature.newDocFixedTarget.invalid",
+            data: null,
+        });
     });
 
     it("文档不存在时用内核的提示判失败", async () => {
@@ -209,11 +213,11 @@ describe("新建文档到固定位置", () => {
         mountForTest(hostOf());
 
         const response = await window.fetch("/api/filetree/planDocCreate", planRequest());
-        await expect(response.json()).resolves.toMatchObject({code: -1, msg: "newDocFixedTarget.invalid"});
+        await expect(response.json()).resolves.toMatchObject({code: -1, msg: "feature.newDocFixedTarget.invalid"});
 
         (window.siyuan as any).notebooks = [{id: NOTEBOOK, closed: true}];
         const closed = await window.fetch("/api/filetree/planDocCreate", planRequest());
-        await expect(closed.json()).resolves.toMatchObject({code: -1, msg: "newDocFixedTarget.invalid"});
+        await expect(closed.json()).resolves.toMatchObject({code: -1, msg: "feature.newDocFixedTarget.invalid"});
         expect(seen).toHaveLength(2);
     });
 

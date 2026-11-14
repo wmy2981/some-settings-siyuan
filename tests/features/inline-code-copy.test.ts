@@ -147,7 +147,7 @@ describe("行内代码复制按钮", () => {
     it("声明：分类是编辑器，开关由 mode 自己表达（没有独立的 enabled 开关）", () => {
         expect(definition.id).toBe("inline-code-copy");
         expect(definition.category).toBe("editor");
-        expect(definition.name).toBe("feature.inlineCodeCopy.name");
+        expect(definition.name).toBe("feature.inlineCodeCopy.title");
         expect(definition.enabled).toBe(true);
         expect(definition.frontends).toBeUndefined();
 
@@ -303,8 +303,8 @@ describe("行内代码复制按钮", () => {
         expect(button.parentElement).toBe(document.body);
         expect(button.tagName).toBe("BUTTON");
         expect(button.type).toBe("button");
-        expect(button.title).toBe("[inlineCodeCopy.label]");
-        expect(button.getAttribute("aria-label")).toBe("[inlineCodeCopy.label]");
+        expect(button.title).toBe("[feature.inlineCodeCopy.label]");
+        expect(button.getAttribute("aria-label")).toBe("[feature.inlineCodeCopy.label]");
         expect(button.innerHTML).toContain("#iconCopy");
     });
 
@@ -344,7 +344,7 @@ describe("行内代码复制按钮", () => {
         expect(event.defaultPrevented).toBe(true);
         expect(writeText).toHaveBeenCalledTimes(1);
         expect(writeText).toHaveBeenCalledWith("值");
-        expect(harness.records.messages).toEqual(["inlineCodeCopy.copied"]);
+        expect(harness.records.messages).toEqual(["common.copied"]);
     });
 
     it("非左键按下不触发复制", async () => {
@@ -383,7 +383,7 @@ describe("行内代码复制按钮", () => {
         button.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true, detail: 0}));
         await flushAsync();
         expect(writeText).toHaveBeenCalledTimes(2);
-        expect(harness.records.messages).toEqual(["inlineCodeCopy.copied", "inlineCodeCopy.copied"]);
+        expect(harness.records.messages).toEqual(["common.copied", "common.copied"]);
     });
 
     it("复制失败时提示「复制失败」，不把异常抛给调用方", async () => {
@@ -404,7 +404,7 @@ describe("行内代码复制按钮", () => {
         expect(() => button.dispatchEvent(point("pointerdown", {button: 0}))).not.toThrow();
         await flushAsync();
 
-        expect(harness.records.messages).toEqual(["inlineCodeCopy.failed"]);
+        expect(harness.records.messages).toEqual(["common.copyFailed"]);
     });
 
     it("复制的是可见文本：零宽标记被剥掉、NBSP 变空格、emoji 的 ZWJ 保留", async () => {
@@ -539,7 +539,7 @@ describe("行内代码复制按钮", () => {
         expect(event.defaultPrevented).toBe(true);
         // 两条路径不能各复制一次
         expect(writeText).toHaveBeenCalledTimes(1);
-        expect(harness.records.messages).toEqual(["inlineCodeCopy.copied"]);
+        expect(harness.records.messages).toEqual(["common.copied"]);
     });
 
     it("移动端：按钮之外的按下照旧冒泡给宿主，只用来重新对账", async () => {

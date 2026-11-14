@@ -119,14 +119,17 @@ export const exportConfigs = async (context: FeatureActionContext): Promise<void
         2,
     );
     openDialog(context, {
-        title: context.i18n("configTransfer.exportTitle"),
-        tip: context.i18n("configTransfer.exportTip"),
+        title: context.i18n("feature.configTransfer.exportTitle"),
+        tip: context.i18n("feature.configTransfer.exportTip"),
         json,
         editable: false,
-        actionLabel: context.i18n("configTransfer.copy"),
+        actionLabel: context.i18n("feature.configTransfer.copy"),
         run: async (text) => {
             const copied = await copyText(text);
-            showMessage(context.i18n(copied ? "configTransfer.copied" : "configTransfer.copyFailed"), 3000);
+            showMessage(
+                context.i18n(copied ? "feature.configTransfer.copied" : "feature.configTransfer.copyFailed"),
+                3000,
+            );
             // 复制完不关窗：用户可能还要在框里自己选一段，或者再复制一次
             return false;
         },
@@ -135,11 +138,11 @@ export const exportConfigs = async (context: FeatureActionContext): Promise<void
 
 export const importConfigs = (context: FeatureActionContext): void => {
     openDialog(context, {
-        title: context.i18n("configTransfer.importTitle"),
-        tip: context.i18n("configTransfer.importTip"),
+        title: context.i18n("feature.configTransfer.importTitle"),
+        tip: context.i18n("feature.configTransfer.importTip"),
         json: "",
         editable: true,
-        actionLabel: context.i18n("configTransfer.importAction"),
+        actionLabel: context.i18n("feature.configTransfer.importAction"),
         run: async (text) => {
             const parsed = parseImport(text);
             if (parsed.kind === "error") {
@@ -147,9 +150,9 @@ export const importConfigs = (context: FeatureActionContext): void => {
                 // 两个分支各写一次字面量 key：写成三元表达式的话，校验脚本会把分支里的
                 // 短片段也当成一个 key 去核对，两边都会被判成"缺文案"
                 if (parsed.reason === "json") {
-                    showMessage(context.i18n("configTransfer.invalidJson"), 4000, "error");
+                    showMessage(context.i18n("feature.configTransfer.invalidJson"), 4000, "error");
                 } else {
-                    showMessage(context.i18n("configTransfer.invalidShape"), 4000, "error");
+                    showMessage(context.i18n("feature.configTransfer.invalidShape"), 4000, "error");
                 }
                 return false;
             }
@@ -160,7 +163,7 @@ export const importConfigs = (context: FeatureActionContext): void => {
                     `imported ${result.applied.length} configuration file(s), skipped ${result.skipped.length}`,
                 );
                 showMessage(
-                    context.i18n("configTransfer.imported")
+                    context.i18n("feature.configTransfer.imported")
                         .replace("{count}", String(result.applied.length))
                         .replace("{skipped}", String(result.skipped.length)),
                     4000,

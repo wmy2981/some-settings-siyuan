@@ -224,7 +224,7 @@ describe("插件配置导入导出", () => {
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
             expect(dialogOptions[0].width).toBe("640px");
-            expect(dialogOptions[0].title).toBe(zhCN["configTransfer.exportTitle"]);
+            expect(dialogOptions[0].title).toBe(zhCN["feature.configTransfer.exportTitle"]);
 
             document.body.innerHTML = "";
             dialogOptions.length = 0;
@@ -237,7 +237,7 @@ describe("插件配置导入导出", () => {
         it("说明文字按 HTML 转义后插入（文案来自 i18n，仍不可当标记用）", async () => {
             const {context} = createActionContext({
                 featureId: "config-transfer",
-                i18n: (key) => key === "configTransfer.exportTip" ? "<b>提示</b>" : key,
+                i18n: (key) => key === "feature.configTransfer.exportTip" ? "<b>提示</b>" : key,
                 exportConfigs: async () => ({}),
             });
             await exportConfigs(context);
@@ -274,7 +274,7 @@ describe("插件配置导入导出", () => {
 
             expect(copied).toEqual([expected]);
             expect(mockState.messages.at(-1)).toEqual({
-                text: zhCN["configTransfer.copied"],
+                text: zhCN["feature.configTransfer.copied"],
                 timeout: 3000,
                 type: undefined,
             });
@@ -290,7 +290,7 @@ describe("插件配置导入导出", () => {
             runButton().click();
             await flush();
 
-            expect(mockState.messages.at(-1)!.text).toBe(zhCN["configTransfer.copyFailed"]);
+            expect(mockState.messages.at(-1)!.text).toBe(zhCN["feature.configTransfer.copyFailed"]);
             expect(dialogElement()).not.toBeNull();
         });
 
@@ -314,12 +314,12 @@ describe("插件配置导入导出", () => {
             expect(importField()!.value).toBe("");
             expect(importField()!.getAttribute("spellcheck")).toBe("false");
             expect(exportField()).toBeNull();
-            expect(dialogOptions[0].title).toBe(zhCN["configTransfer.importTitle"]);
+            expect(dialogOptions[0].title).toBe(zhCN["feature.configTransfer.importTitle"]);
         });
 
         it.each([
-            ["语法错误", "not json", "configTransfer.invalidJson"],
-            ["结构错误", "[1,2,3]", "configTransfer.invalidShape"],
+            ["语法错误", "not json", "feature.configTransfer.invalidJson"],
+            ["结构错误", "[1,2,3]", "feature.configTransfer.invalidShape"],
         ])("%s：提示对应文案、不调用导入、弹窗保持打开", async (_label, text, key) => {
             const {context, calls} = action();
             importConfigs(context);
