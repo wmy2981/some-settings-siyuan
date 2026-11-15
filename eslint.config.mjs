@@ -17,6 +17,7 @@ const compat = new FlatCompat({
 export default [
     {
         ignores: [
+            "dev-refs",
             "dist",
             "node_modules",
             "index.js",

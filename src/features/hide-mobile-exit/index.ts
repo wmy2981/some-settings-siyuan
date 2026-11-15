@@ -15,8 +15,8 @@ export default defineFeature({
     id: "hide-mobile-exit",
     category: "appearance",
     enabled: true,
-    name: "feature.hideMobileExit.name",
-    description: "feature.hideMobileExit.desc",
+    name: "feature.hideMobileExit.title",
+    description: "feature.hideMobileExit.description",
     frontends: ["mobile"],
     settings: [
         {

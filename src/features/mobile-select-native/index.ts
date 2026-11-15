@@ -16,8 +16,8 @@ export default defineFeature({
     id: "mobile-select-native",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileSelectNative.name",
-    description: "feature.mobileSelectNative.desc",
+    name: "feature.mobileSelectNative.title",
+    description: "feature.mobileSelectNative.description",
     frontends: ["mobile"],
     // 思源 v3.8.7-alpha.2 起自己统一了移动端下拉选择器（`mobile/util/nativeSelect.ts`，
     // 比这份补丁更完整：支持 optgroup、option 的 hidden/disabled 与键盘操作），

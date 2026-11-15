@@ -14,8 +14,8 @@ export default defineFeature({
     id: "bazaar-custom-icon",
     category: "settings",
     enabled: true,
-    name: "feature.bazaarCustomIcon.name",
-    description: "feature.bazaarCustomIcon.desc",
+    name: "feature.bazaarCustomIcon.title",
+    description: "feature.bazaarCustomIcon.description",
     settings: [
         {
             kind: "switch",
@@ -26,9 +26,9 @@ export default defineFeature({
         {
             kind: "button",
             key: "manage",
-            title: "bazaarIcon.manageTitle",
-            description: "bazaarIcon.manageDesc",
-            label: "bazaarIcon.manageAction",
+            title: "feature.bazaarCustomIcon.manageTitle",
+            description: "feature.bazaarCustomIcon.manageTip",
+            label: "feature.bazaarCustomIcon.manageAction",
             onClick: (context) => {
                 openIconManager({
                     pluginName: context.pluginName,
@@ -42,7 +42,7 @@ export default defineFeature({
         {
             kind: "note",
             key: "notice",
-            text: "bazaarIcon.notice",
+            text: "feature.bazaarCustomIcon.notice",
         },
     ],
     mount: mountBazaarCustomIcon,

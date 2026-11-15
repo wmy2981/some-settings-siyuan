@@ -43,6 +43,7 @@ const MOBILE_ACTION = ["cb-get-scroll"] as const;
 
 export const mountBookmarkLastPosition = (host: FeatureHost): FeatureInstance => {
     const open = (id: string) => {
+        host.log.info(`opening ${id} at its last read position (${isMobile() ? "mobile" : "desktop"})`);
         if (isMobile()) {
             openMobileFileById(host.plugin.app, id, [...MOBILE_ACTION]);
             return;

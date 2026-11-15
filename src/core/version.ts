@@ -12,9 +12,10 @@
  * 判定失败（读不到或认不出）时一律按「没有限制」处理，并只告警一次：
  * 在需要这份补丁的旧版本上把它藏起来，比让它多显示一项糟糕得多。
  */
+import {createLogger} from "./log";
 import type {FeatureDefinition} from "./types";
 
-const PREFIX = "[some-settings-siyuan]";
+const log = createLogger("core.version");
 
 export interface HostVersion {
     major: number;
@@ -94,7 +95,7 @@ const warnOnce = (key: string, message: string): void => {
         return;
     }
     warned.add(key);
-    console.warn(`${PREFIX} ${message}`);
+    log.warn(message);
 };
 
 /**

@@ -22,8 +22,8 @@ export default defineFeature({
     id: "daily-note-direct",
     category: "editor",
     enabled: true,
-    name: "feature.dailyNoteDirect.name",
-    description: "feature.dailyNoteDirect.desc",
+    name: "feature.dailyNoteDirect.title",
+    description: "feature.dailyNoteDirect.description",
     settings: [
         {
             kind: "switch",
@@ -34,8 +34,8 @@ export default defineFeature({
         {
             kind: "select",
             key: "notebook",
-            title: "dailyNoteDirect.notebook",
-            description: "dailyNoteDirect.notebookTip",
+            title: "feature.dailyNoteDirect.notebook",
+            description: "feature.dailyNoteDirect.notebookTip",
             default: "",
             optionsProvider: dailyNoteNotebookOptions,
         },

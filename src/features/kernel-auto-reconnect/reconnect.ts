@@ -5,7 +5,7 @@
  * 唯一稳定可观察的外部表现）；面板消失说明主 WebSocket 已经重新连上，
  * 这时立刻停掉自己的重试。
  *
- * 注意 `unit: "kernelAutoReconnect.times"` 走的是 i18n：数字行的单位标签与其它
+ * 注意 `unit: "feature.kernelAutoReconnect.times"` 走的是 i18n：数字行的单位标签与其它
  * 文案一样由面板翻译，所以"次"在中英两种语言下都正确。
  */
 import {fetchPost} from "siyuan";
@@ -79,12 +79,14 @@ export const mountKernelAutoReconnect = (host: FeatureHost): FeatureInstance => 
                     return;
                 }
                 if (await probeKernel()) {
-                    host.log(`kernel is back on probe ${index + 1}; reloading the frontend to rebuild the WebSocket`);
+                    host.log.info(
+                        `kernel is back on probe ${index + 1}; reloading the frontend to rebuild the WebSocket`,
+                    );
                     window.location.reload();
                     return;
                 }
             }
-            host.log(
+            host.log.warn(
                 `kernel not detected after ${attempts} auto-reconnect attempts; falling back to SiYuan's own reconnect`,
             );
         } finally {

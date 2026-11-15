@@ -40,19 +40,67 @@ export const PANEL_CLASS = "some-settings-panel";
  * （全部由 `setting-dialog.ts` 的 `fieldHtml()` 调用），所以类名直接写在它们里面，
  * 调用方不需要再传一个「这一行是子行」的开关。以后加新的行类型也照这个约定写。
  */
-const CHILD_CLASS = `${PANEL_CLASS}__child`;
+export const CHILD_CLASS = `${PANEL_CLASS}__child`;
+
+/**
+ * 「一个功能的最后一个子行」的标记类名。
+ *
+ * 子行是平铺在 `.config-items` 里的（页签内不允许分组容器），CSS 的 `:last-child`
+ * 看见的是整页最后一行、而不是某个功能的最后一个子行。层级引导线要在最后一个子行上收尾
+ * （画成 └，而不是一直画到行底、看起来像还有下一项），所以这一处只能由
+ * `setting-dialog.ts` 拼行时显式标记，用法与 `config-item--last-visible` 相同。
+ */
+export const LAST_CHILD_CLASS = `${CHILD_CLASS}--last`;
+
+/**
+ * 给一段「某个功能名下面的全部子行」HTML 里的最后一行打上 `LAST_CHILD_CLASS`。
+ *
+ * 与 `setting-dialog.ts` 的 `markLastRow()` 同一套做法：认的是最后一个带 `CHILD_CLASS`
+ * 这个整词的 class 属性 —— 说明块这类行内部还有自己的元素与 class（段落是
+ * `b3-label__text`），照着最后一个 class 属性下手会标记到段落的头上。
+ * 没有子行（功能只有一个开关）时原样返回。
+ */
+export const markLastChildRow = (rowsHtml: string): string => {
+    const pattern = /class="([^"]*)"/g;
+    let index = -1;
+    let match = pattern.exec(rowsHtml);
+    while (match) {
+        if (match[1].split(/\s+/).includes(CHILD_CLASS)) {
+            index = match.index;
+        }
+        match = pattern.exec(rowsHtml);
+    }
+    if (index < 0) {
+        return rowsHtml;
+    }
+    const head = rowsHtml.slice(0, index + 'class="'.length);
+    const tail = rowsHtml.slice(index + 'class="'.length);
+    return `${head}${LAST_CHILD_CLASS} ${tail}`;
+};
 
 export const isMobileFrontend = (): boolean => {
     const frontend = getFrontend();
     return frontend === "mobile" || frontend === "browser-mobile";
 };
 
-export const escapeHtml = (value: string): string =>
-    value.replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+/** 五个需要转义的字符及其替换文本。 */
+const HTML_ESCAPES: Record<string, string> = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+};
+
+const HTML_ESCAPE_PATTERN = /[&"'<>]/g;
+
+/**
+ * 转义要写进 HTML 的文案。
+ *
+ * 一次 `replace` 扫完整串：面板渲染一次要转义几百段文案，连着五趟正则各扫一遍
+ * 会多分配四份中间字符串。输出与逐字符替换完全一致。
+ */
+export const escapeHtml = (value: string): string => value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPES[char]);
 
 /** 原生「主文案 + 说明」块。 */
 export const mainHtml = (title: string, description?: string): string =>
@@ -71,6 +119,28 @@ export interface PanelTab {
     label: string;
     icon: string;
 }
+
+/**
+ * 面板搜索框。
+ *
+ * 两端各放在自己的位置上（由 `tabViewsHtml` 与 `setting-dialog.ts` 决定）：
+ * 桌面端在内容区顶部、设置行上方（页签栏左侧那条不变）；移动端在面板标题下方、页签栏上方。
+ * 刻意用 `type="text"` 而不是 `type="search"`：浏览器的原生清除按钮样式不受主题控制，
+ * 面板自己放一颗（输入框内右侧、纯图标、思源内置 `iconClose`，有内容才出现）。
+ */
+export const searchBoxHtml = (placeholder: string, clearLabel: string): string =>
+    `<div class="${PANEL_CLASS}__search">
+    <div class="${PANEL_CLASS}__search-field">
+        <input class="b3-text-field" type="text" data-ss-search="1" role="searchbox"
+        autocomplete="off" spellcheck="false" placeholder="${escapeHtml(placeholder)}" aria-label="${
+        escapeHtml(placeholder)
+    }"/>
+        <button class="${PANEL_CLASS}__search-clear fn__none" type="button" data-ss-search-clear="1"
+        aria-label="${escapeHtml(clearLabel)}" title="${escapeHtml(clearLabel)}">
+            <svg><use xlink:href="#iconClose"></use></svg>
+        </button>
+    </div>
+</div>`;
 
 /** 页签列表（桌面端：弹窗左侧的一列，照抄内核设置的 `.config__side`）。 */
 export const tabSideHtml = (itemsHtml: string): string =>
@@ -115,7 +185,26 @@ export const tabPaneHtml = (id: string, bodyHtml: string, active: boolean): stri
     <div class="config-items">${bodyHtml}</div>
 </div>`;
 
-export const tabViewsHtml = (panesHtml: string): string => `<div class="${PANEL_CLASS}__views">${panesHtml}</div>`;
+/**
+ * 搜索结果里一个分类的分组标题。
+ *
+ * 它排在页签内容的第一行，平时带 `fn__none` 收起 —— 搜索结果要把所有命中的分类拼成一列，
+ * 分类名就是那一组的分组标题，而普通状态下分类由页签表达，标题不该出现。
+ */
+export const searchGroupHtml = (category: string, label: string): string =>
+    `<div class="${PANEL_CLASS}__group fn__none" data-ss-search-group="${escapeHtml(category)}">${
+        escapeHtml(label)
+    }</div>`;
+
+/**
+ * 页签内容区：顶部一块搜索框（移动端传空串，搜索框在面板标题下方），下面是一叠页签。
+ *
+ * 搜索框是滚动容器**外面**的一行：桌面端每一页自己滚、搜索时由 `.some-settings-panel__panes`
+ * 滚，两种情况下搜索框都留在内容区顶部，不会被内容顶走，也不额外吸顶。
+ * `trailingHtml`（无结果提示）放在页签容器里，跟着结果一起滚。
+ */
+export const tabViewsHtml = (searchHtml: string, panesHtml: string, trailingHtml = ""): string =>
+    `<div class="${PANEL_CLASS}__views">${searchHtml}<div class="${PANEL_CLASS}__panes">${panesHtml}${trailingHtml}</div></div>`;
 
 /** 开关控件本体（不含行容器）：功能自己那一行与参数行共用同一份标记。 */
 export const switchControlHtml = (
@@ -248,23 +337,94 @@ export const textRowHtml = (
 </div>`;
 
 /**
- * 原生风格的动作行：右侧一个 `b3-button--outline`。
+ * 原生风格的多行文本行。
+ *
+ * textarea 塞不进「右侧定宽 200px」那一格，所以这一行折成上下两段：
+ * 标题与说明占满一行，输入框整行落在下面。行本身仍是 `.config-item`，
+ * 分割线、缩进与层级引导线都照旧；横折在样式里单独对齐到标题那一行。
+ */
+export const textareaRowHtml = (
+    key: string,
+    title: string,
+    value: string,
+    options: {placeholder?: string; description?: string; disabled?: boolean; rows?: number;} = {},
+): string =>
+    `<div class="b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__textarea-row" data-ss-row="${escapeHtml(key)}">
+    ${mainHtml(title, options.description)}
+    <textarea class="b3-text-field fn__block ${PANEL_CLASS}__textarea" data-ss-textarea="${escapeHtml(key)}"
+    rows="${options.rows ?? 6}" spellcheck="false"${
+        options.placeholder ? ` placeholder="${escapeHtml(options.placeholder)}"` : ""
+    }${options.disabled ? " disabled" : ""}>${escapeHtml(value)}</textarea>
+</div>`;
+
+/** 动作按钮的外观选项：动作行与说明块底部的按钮共用。 */
+export interface ActionButtonOptions {
+    disabled?: boolean;
+    /** `outline`（默认）：次要按钮；`block`：撑满所在容器，形制照思源「关于」页那颗捐赠按钮。 */
+    appearance?: "outline" | "block";
+    /** `block` 的底色：`primary`（默认，思源主题色）或 `pink`（思源捐赠按钮那颗粉）。 */
+    tone?: "primary" | "pink";
+    /** 文字前的思源内置 symbol 名（如 `iconGithub`）。 */
+    icon?: string;
+    /** 文字前的现成 SVG 标记，原样插入：思源自己那张赞助图标就没有对应 symbol。 */
+    iconSvg?: string;
+    /** 由调用方补的位置类：同一颗按钮放在动作行里与放在说明块里，宽度来源不同。 */
+    className?: string;
+}
+
+/**
+ * 动作按钮本体（不含行容器）。
+ *
+ * 只借思源自己的类：`b3-button` 打底，`b3-button--outline` 是设置里那种次要按钮，
+ * `b3-button--pink` 正是「关于」页捐赠按钮的底色；图标用 `b3-button__icon` 包一个内置 symbol。
+ */
+export const actionButtonHtml = (
+    key: string,
+    label: string,
+    options: ActionButtonOptions = {},
+): string => {
+    // iconSvg 是调用方给的现成标记（思源那张赞助图），原样插入；symbol 才包一层图标类
+    const icon = options.iconSvg ??
+        (options.icon ?
+            `<svg class="b3-button__icon"><use xlink:href="#${escapeHtml(options.icon)}"></use></svg>` :
+            "");
+    const modifier = options.appearance === "block" ?
+        (options.tone === "pink" ? " b3-button--pink" : "") :
+        " b3-button--outline";
+    const classes = `b3-button${modifier}${options.className ? ` ${options.className}` : ""}`;
+    const disabled = options.disabled ? " disabled" : "";
+    return `<button class="${classes}" type="button" data-ss-button="${escapeHtml(key)}"${disabled}>${icon}${
+        escapeHtml(label)
+    }</button>`;
+};
+
+/**
+ * 原生风格的动作行：右侧一个按钮。
  *
  * 只用于「点击即打开某个窗口」这类没有可持久化取值的入口。
  * 按钮不参与草稿：点击立刻执行，不受「取消 / 保存」影响。
+ *
+ * 外观两套：默认是靠右定宽 `fn__size200` 的次要按钮；`block` 则是外壳 `fn__size200` +
+ * 按钮 `fn__block`，与思源「关于」页那颗捐赠按钮同构，窄屏时外壳由面板媒体查询放开到整行。
  */
 export const buttonRowHtml = (
     key: string,
     title: string,
     label: string,
-    options: {description?: string; disabled?: boolean;} = {},
-): string =>
-    `<div class="fn__flex b3-label config-item ${CHILD_CLASS}" data-ss-row="${escapeHtml(key)}">
+    options: ActionButtonOptions & {description?: string;} = {},
+): string => {
+    const button = options.appearance === "block" ?
+        actionButtonHtml(key, label, {...options, className: "fn__block"}) :
+        actionButtonHtml(key, label, {...options, className: "fn__flex-center fn__size200"});
+    const control = options.appearance === "block" ?
+        `<div class="fn__flex-center fn__size200">${button}</div>` :
+        button;
+    return `<div class="fn__flex b3-label config-item ${CHILD_CLASS}" data-ss-row="${escapeHtml(key)}">
     ${mainHtml(title, options.description)}
     <span class="fn__space"></span>
-    <button class="b3-button b3-button--outline fn__flex-center fn__size200" type="button"
-    data-ss-button="${escapeHtml(key)}"${options.disabled ? " disabled" : ""}>${escapeHtml(label)}</button>
+    ${control}
 </div>`;
+};
 
 /**
  * 只读说明块的正文：一行一段，`{name}` 占位符按 values 替换。
@@ -297,18 +457,24 @@ export const noteBodyHtml = (
  *
  * 刻意不带 `fn__flex` —— 面板里其余每一行都是「左侧文案 + 右侧控件」，
  * 说明块不是设置项，没有控件可放，文案必须占满整行。
+ *
+ * `actionsHtml` 是这段说明配套的一组按钮：它们属于这段说明，不另起设置行。
+ * 有按钮时整行变成和其它行一样的「左侧文案 + 右侧控件」：文字占满剩余宽度，
+ * 按钮在右侧竖着叠、每颗 200px —— 与「导出配置」那些按钮同一个位置、同一个宽度。
  */
-export const noteRowHtml = (key: string, bodyHtml: string): string =>
-    `<div class="b3-label config-item ${PANEL_CLASS}__note ${CHILD_CLASS}" data-ss-row="${
-        escapeHtml(key)
-    }">${bodyHtml}</div>`;
+export const noteRowHtml = (key: string, bodyHtml: string, actionsHtml = ""): string =>
+    `<div class="b3-label config-item ${PANEL_CLASS}__note ${CHILD_CLASS}" data-ss-row="${escapeHtml(key)}">
+    <div class="${PANEL_CLASS}__note-body">${bodyHtml}</div>${
+        actionsHtml ? `<div class="${PANEL_CLASS}__note-actions">${actionsHtml}</div>` : ""
+    }
+</div>`;
 
 /**
  * 面板的全部局部样式：只在插件自己的弹窗作用域内生效。
  *
  * 结构、类名与间距全部照抄「设置页 + 参考插件面板」那套做法，插件只动四件事：
  * - 去掉 .config-items 的灰底大圆角，面板不再有"卡片"这件多余的东西
- * - 文案只有两种角色：设置项名（标题，统一加粗）与说明（统一不加粗、更淡）
+ * - 文案只有两种角色：设置项名（标题，一律常规字重）与说明（更小、更淡）
  * - 页签只有两套外观：桌面端照抄内核设置的左侧页签列表，
  *   移动端照抄内核代码片段弹窗的顶部页签栏（`.layout-tab-bar` 的样式由内核提供，
  *   这里把底色换成弹窗容器的底色让页签栏能吸顶，并去掉自己那圈圆角）
@@ -351,9 +517,26 @@ export const PANEL_CSS = `
     overscroll-behavior-x: contain;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+    /* 搜索时这一条也要收起来，过渡与桌面端左侧栏一套时长、一条曲线。
+       高度是内容撑出来的 auto，auto → 0 不能过渡：JS 在收起前把实测高度写进
+       --ss-tabbar-height 当起点（见 core/setting-dialog.ts 的 lockTabBarHeight），
+       这里只负责两端与时长，和左侧栏那段 width 过渡同一个写法。
+       border-box 是为了让 JS 量到的 offsetHeight 直接能当 height 用（含那条 1px 底边）。 */
+    box-sizing: border-box;
+    height: var(--ss-tabbar-height, auto);
+    transition: height .2s ease, opacity .12s ease, visibility 0s;
 }
 .${PANEL_CLASS}--mobile > .layout-tab-bar::-webkit-scrollbar {
     display: none;
+}
+/* 搜索时收起页签栏：高度收到 0、淡出，收完之后才真正隐身（点不到、Tab 不到），
+   展开时这个延时为 0，一有高度就看得见 —— 与桌面端左侧栏的收起规则同构。 */
+.${PANEL_CLASS}--search.${PANEL_CLASS}--mobile > .layout-tab-bar {
+    height: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: height .2s ease, opacity .12s ease, visibility 0s linear .2s;
 }
 .${PANEL_CLASS}--mobile > .layout-tab-bar > .${PANEL_CLASS}__tab {
     flex: 0 0 auto;
@@ -373,7 +556,7 @@ export const PANEL_CSS = `
     fill: currentColor;
 }
 /* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
-   .config__panel > .config__side（这里按「功能 / 界面 / 关于」三个短标签收窄到 220px）。 */
+   .config__panel > .config__side（分类标签都不长，收窄到 220px）。 */
 .${PANEL_CLASS}__side {
     flex: 0 0 auto;
     width: 220px;
@@ -385,6 +568,32 @@ export const PANEL_CSS = `
     box-sizing: border-box;
     border-right: 1px solid var(--b3-border-color);
     user-select: none;
+    /* 搜索时这一栏要收起来：宽度、内边距与透明度一起过渡，内容区跟着平滑变宽。
+       不用 display:none —— 那样没有过渡，一开一收是硬跳。
+       visibility 在收起时延时到宽度收完才生效（收起后既点不到也 Tab 不到），
+       展开时延迟为 0，立刻可见。 */
+    transition: width .2s ease, padding .2s ease, opacity .12s ease, border-right-color .2s ease,
+        visibility 0s;
+}
+.${PANEL_CLASS}--search > .${PANEL_CLASS}__side {
+    width: 0;
+    padding-inline: 0;
+    opacity: 0;
+    border-right-color: transparent;
+    visibility: hidden;
+    pointer-events: none;
+    transition: width .2s ease, padding .2s ease, opacity .12s ease, border-right-color .2s ease,
+        visibility 0s linear .2s;
+}
+/* 系统里关掉了动效就不要再过渡：宽度 / 高度一步到位。收起方向的那几条也要点名写进来，
+   它们的特异性比基础规则高，只关基础规则的话「收起」照样会动。 */
+@media (prefers-reduced-motion: reduce) {
+    .${PANEL_CLASS}__side,
+    .${PANEL_CLASS}--search > .${PANEL_CLASS}__side,
+    .${PANEL_CLASS}--mobile > .layout-tab-bar,
+    .${PANEL_CLASS}--search.${PANEL_CLASS}--mobile > .layout-tab-bar {
+        transition: none;
+    }
 }
 .${PANEL_CLASS}__tabs {
     flex: 1;
@@ -402,30 +611,113 @@ export const PANEL_CSS = `
 .${PANEL_CLASS}__side .b3-list-item__graphic {
     padding: 0 6px 0 4px;
 }
-/* 页签内容：每一页都铺满内容区，只有当前页留在文档流里（其余是 fn__none），
-   滚动各自独立 —— 弹窗自己的 .b3-dialog__content 不再滚动。 */
+/* 搜索框：桌面端在内容区顶部、设置行上方（移动端由 --mobile 那段单独摆放）。
+   左侧内边距是「页签内容的 24px + 行自己的 24px」，输入框左端与行标题（.config-item__main
+   的文字起点）对齐，而不是跟行间分割线的左端对齐；上下留白就靠这一圈内边距，
+   不加边框也不做成卡片。 */
+.${PANEL_CLASS}__search {
+    flex: 0 0 auto;
+    padding: 16px 24px 8px 48px;
+}
+/* 输入框与它里面那颗清空按钮算一格：按钮绝对定位在输入框内部右侧 */
+.${PANEL_CLASS}__search-field {
+    position: relative;
+}
+/* 桌面端不铺满整行：搜索框是一条输入框，不是标题栏。移动端仍然整行撑满（屏幕本来就窄）。 */
+.${PANEL_CLASS}:not(.${PANEL_CLASS}--mobile) .${PANEL_CLASS}__search-field {
+    max-width: 22rem;
+}
+.${PANEL_CLASS}__search-field .b3-text-field {
+    width: 100%;
+    box-sizing: border-box;
+    /* 右侧给清空按钮让位，长文案不会压到图标上 */
+    padding-inline-end: 28px;
+}
+/* 一键清空：输入框内右侧的纯图标按钮（思源内置 iconClose）。有内容才出现，
+   颜色按内核那套次要图标取 --b3-theme-on-surface-light，悬停时加深。 */
+.${PANEL_CLASS}__search-clear {
+    position: absolute;
+    top: 50%;
+    inset-inline-end: 5px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background-color: transparent;
+    color: var(--b3-theme-on-surface-light);
+    cursor: pointer;
+}
+.${PANEL_CLASS}__search-clear:hover,
+.${PANEL_CLASS}__search-clear:focus-visible {
+    color: var(--b3-theme-on-background);
+    background-color: var(--b3-list-hover);
+}
+.${PANEL_CLASS}__search-clear svg {
+    width: 11px;
+    height: 11px;
+    fill: currentColor;
+}
+/* 移动端是手指在点：按钮与图标都给大一档，输入框右侧同时多让出一点 */
+.${PANEL_CLASS}--mobile .${PANEL_CLASS}__search-clear {
+    width: 22px;
+    height: 22px;
+}
+.${PANEL_CLASS}--mobile .${PANEL_CLASS}__search-clear svg {
+    width: 13px;
+    height: 13px;
+}
+.${PANEL_CLASS}--mobile .${PANEL_CLASS}__search-field .b3-text-field {
+    padding-inline-end: 32px;
+}
+/* 移动端：搜索框整行撑满，落在面板标题下方、页签栏上方；不吸顶（吸顶的只有页签栏）。 */
+.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__search {
+    padding: 8px 8px 0;
+}
+/* 页签内容：最上面一行是搜索框，下面一叠页签。只有当前页留在文档流里（其余是 fn__none），
+   滚动各自独立 —— 弹窗自己的 .b3-dialog__content 不再滚动，搜索框也不会被内容顶走。 */
 .${PANEL_CLASS}__views {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+}
+.${PANEL_CLASS}__panes {
     position: relative;
     flex: 1;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
 }
+/* 顶部内边距比两侧小：上面就是搜索框，再空 24px 会把首行推得太远 */
 .${PANEL_CLASS}__view {
     position: absolute;
     inset: 0;
     overflow: auto;
     box-sizing: border-box;
-    padding: 24px;
+    padding: 4px 24px 24px;
 }
 /* 移动端：整块面板按自然高度排版，滚动交给宿主的内容区（抽屉高度就是量它量出来的）。
-   所以这里把「每页绝对定位 + 各自滚动」拆掉，改成正常文档流；页签栏的吸顶由上面那条规则负责。 */
+   所以这里把「每页绝对定位 + 各自滚动」拆掉，改成正常文档流；页签栏的吸顶由上面那条规则负责。
+   移动端的搜索框在面板标题下方（不在这个容器里），这里只是不再占一行。 */
 .${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views {
     position: static;
     flex: 0 0 auto;
     overflow: visible;
 }
-.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views > .${PANEL_CLASS}__view {
+.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes {
+    position: static;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes > .${PANEL_CLASS}__view {
     position: static;
     overflow: visible;
     padding: 8px;
@@ -435,6 +727,47 @@ export const PANEL_CSS = `
     background-color: transparent;
     border-radius: 0;
 }
+/* 搜索结果视图 -----------------------------------------------------------
+   输入有效关键词后，所有命中的分类按声明顺序拼成一列：桌面端由 views 自己滚（每页不再
+   各自占满整块、也不再分别滚动），移动端本来就是正常文档流、交给宿主的内容区滚。
+   原来的分类导航（左侧页签列表 / 顶部页签栏）由 JS 收起，搜索框留在原处。
+   页签内容的内边距在这里归零：行有自己的内边距，再叠一层只会让结果左右缩进一大截。 */
+.${PANEL_CLASS}--search > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.${PANEL_CLASS}--search > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes > .${PANEL_CLASS}__view {
+    position: static;
+    overflow: visible;
+    /* 横向内边距与普通状态一致：结果列的分割线、文案不会因为搜索而左右跳一下 */
+    padding: 0 24px;
+}
+.${PANEL_CLASS}--search.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes {
+    overflow: visible;
+}
+.${PANEL_CLASS}--search.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes >
+.${PANEL_CLASS}__view {
+    position: static;
+    overflow: visible;
+    padding: 0 8px;
+}
+/* 分组标题：搜索时分类名作为这一组结果的小标题，平时收起（普通状态下分类由页签表达）。
+   横向内边距与行文案的起点对齐（页签内容 24px + 行自己的 24px 里只算这一层，
+   所以这里写 24px 就落在行标题那条竖线上；窄屏跟着 10px 走，见媒体查询）。 */
+.${PANEL_CLASS}__group {
+    padding: 12px 24px 4px;
+    color: var(--b3-theme-on-surface);
+    opacity: .7;
+    font-size: .85em;
+    line-height: 1.6;
+    user-select: none;
+}
+/* 命中文字：只换底色，字号与字重都不动 —— 高亮不能改变行本身的样子。 */
+.${PANEL_CLASS}__hit {
+    background-color: var(--b3-theme-primary-lightest);
+    color: inherit;
+    border-radius: 2px;
+}
 /* 子设置行缩进 -----------------------------------------------------------
    功能名那一行（__sub）保持原样，它下面的参数行、说明块、动作行统一缩进一小格，
    「哪个设置属于哪个功能」一眼就看得出来。缩进加在整行上而不是只挪文案：
@@ -442,17 +775,48 @@ export const PANEL_CSS = `
    基数跟着行自己的内边距走 —— 桌面端内核给 .b3-label 的是 24px，
    窄屏下面板把行压到 10px（见下面的媒体查询），所以两边各写一条。 */
 .${PANEL_CLASS} .config-items > .${CHILD_CLASS} {
+    /* 引导线的定位基准：竖线与横折都相对这一行摆 */
+    position: relative;
     padding-inline-start: 40px;
 }
-/* 面板里的文案只有两种角色：功能名（父项）与它下面的设置项、说明。
-   只有功能名加粗；「重试次数」「重试间隔」这类子设置项一律常规字重，
-   说明再淡一档。之前把所有 .config-item__main 都加粗，子设置项跟着变粗，
-   和它的父项抢视线。 */
-.${PANEL_CLASS} .${PANEL_CLASS}__sub > .config-item__main {
-    font-weight: 600;
+/* 层级引导线 -------------------------------------------------------------
+   缩进之后「这些行属于上面那个功能」还差一口气，再补一条树形引导线：
+   一条竖线把同一功能的所有子行串起来，每一行在自己的垂直中线处伸出一小段横折指向文案。
+   线画在子行自己的伪元素上，所以它天然从功能名那一行的下沿开始，
+   不需要为它加任何分组容器（页签里的行必须保持平铺，多一层就多一层层级）。
+   最后一个子行带 LAST_CHILD_CLASS（由 markLastChildRow 在拼行时打上），
+   竖线只画到折角处、收成 └，否则它会一直画到行的下沿，看着像下面还有内容没显示完。
+   颜色取 --b3-border-color，与行间分割线同色，深浅主题都跟着思源走。 */
+.${PANEL_CLASS} .config-items > .${CHILD_CLASS}::before,
+.${PANEL_CLASS} .config-items > .${CHILD_CLASS}::after {
+    content: "";
+    position: absolute;
+    pointer-events: none;
+    background-color: var(--b3-border-color);
 }
+/* 竖线：从行顶画到行底，与上下相邻的子行接成一条连续的线 */
+.${PANEL_CLASS} .config-items > .${CHILD_CLASS}::before {
+    inset-inline-start: 20px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+}
+/* 横折：从竖线伸到文案左侧，留一小段空隙，不贴字 */
+.${PANEL_CLASS} .config-items > .${CHILD_CLASS}::after {
+    inset-inline-start: 20px;
+    top: 50%;
+    width: 10px;
+    height: 1px;
+}
+/* 最后一行：竖线到折角为止 */
+.${PANEL_CLASS} .config-items > .${CHILD_CLASS}--last::before {
+    bottom: 50%;
+}
+/* 面板里的文案统一常规字重：功能名（父项）与它下面的子设置项、动作行都不加粗。
+   「哪个设置属于哪个功能」由子行的缩进与左侧那条层级引导线表达，不再靠字重——
+   加粗功能名会把两侧的视觉重心都拉到标题上，参数行被压成一片灰。
+   因此这里不给任何一类行单独调字重；说明（.b3-label__text）只换颜色，与内核一致。 */
 .${PANEL_CLASS} .config-item__main .b3-label__text {
-    font-weight: 400;
     color: var(--b3-theme-on-surface);
 }
 .${PANEL_CLASS} .config-item:last-child,
@@ -472,6 +836,30 @@ export const PANEL_CSS = `
 }
 .${PANEL_CLASS} .${PANEL_CLASS}__note .b3-label__text + .b3-label__text {
     margin-top: 6px;
+}
+/* 说明块的动作按钮：与面板里其它行同一套位置 —— 文字让出右侧，按钮竖着叠在右边，
+   每颗 200px、整列上下居中（「导出配置」那些按钮正是这个位置和宽度）。
+   文字因此会被压窄一点，这是对的：一段说明配一组入口，本来就该是「左文右按钮」。
+   窄屏放不下，由下面的媒体查询改回「文字在上、按钮整行在下」。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__note {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__note-body {
+    flex: 1 1 0;
+    min-width: 0;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__note-actions {
+    display: flex;
+    flex: 0 0 200px;
+    width: 200px;
+    flex-direction: column;
+    gap: 8px;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__note-actions .b3-button {
+    width: 100%;
+    box-sizing: border-box;
 }
 .${PANEL_CLASS} .${PANEL_CLASS}__note a {
     color: var(--b3-theme-primary);
@@ -522,6 +910,23 @@ export const PANEL_CSS = `
     margin-inline-start: auto;
 }
 
+/* 多行文本行 -------------------------------------------------------------
+   textarea 塞不进「右侧定宽 200px」那一格，所以这一行照内核 textBlock 的写法整块竖排：
+   标题与说明在上、输入框整行在下（这一行没有 fn__flex，块布局天然就是上下两段）。
+   行本身仍是 .config-item，分割线与缩进照旧；层级引导线的横折对齐到标题那一行
+   （默认的 50% 会指在输入框中间，看着像指错了对象）。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    resize: vertical;
+    line-height: 1.6;
+}
+.${PANEL_CLASS} .config-items > .${PANEL_CLASS}__textarea-row::after {
+    top: 26px;
+}
+
 /* 移动端 / 窄窗口 ---------------------------------------------------------
    断点与内核一致（内核在 750px 以下把 .config-item 折成上下两段、输入框撑满整行）。
    关键是行内边距：内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，
@@ -549,6 +954,31 @@ export const PANEL_CSS = `
     .b3-dialog__body .${PANEL_CLASS}__side .b3-list-item__text {
         display: none;
     }
+    /* 搜索框的横向内边距跟着窄屏走：左侧同样对齐到行标题（页签内容 8px + 行 10px） */
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__search {
+        padding: 8px 10px 6px 18px;
+    }
+    /* 移动端例外：它的搜索框在页签栏上方，左端要对的是「页签栏第一项的左边」和行的分割线
+       （页签栏自己 4px + 项 4px = 8px），不是行标题的文字起点。两端都取 8px，
+       输入框正好铺满分割线的宽度。选择器多带 --mobile 一级，才压得过上面那条窄屏规则。 */
+    .b3-dialog__body .${PANEL_CLASS}.${PANEL_CLASS}--mobile > .${PANEL_CLASS}__search {
+        padding: 8px 8px 6px;
+    }
+    /* 搜索结果的分组标题：窄屏下留白与横向内边距一起跟着 10px 走 */
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__group {
+        padding: 8px 10px 4px;
+    }
+    /* 窄屏下结果列的横向内边距也收到 10px，与普通状态的行一致 */
+    .b3-dialog__body .${PANEL_CLASS}.${PANEL_CLASS}--search > .${PANEL_CLASS}__views >
+    .${PANEL_CLASS}__panes > .${PANEL_CLASS}__view {
+        padding: 0 10px;
+    }
+    /* 移动端同样按 8px 走：进来搜（结果列）和没搜（普通行）时，行的分割线停在同一处，
+       否则一进搜索整列会横向挪 2px，搜索框也跟着对不齐。 */
+    .b3-dialog__body .${PANEL_CLASS}.${PANEL_CLASS}--search.${PANEL_CLASS}--mobile >
+    .${PANEL_CLASS}__views > .${PANEL_CLASS}__panes > .${PANEL_CLASS}__view {
+        padding: 0 8px;
+    }
     .b3-dialog__body .${PANEL_CLASS} .b3-label.config-item,
     .b3-dialog__body .${PANEL_CLASS} .config-item {
         padding: 8px 10px;
@@ -556,6 +986,19 @@ export const PANEL_CSS = `
     /* 子行缩进跟着窄屏这 10px 走；选择器多带 .config-item 一级，才压得过上面那条简写 */
     .b3-dialog__body .${PANEL_CLASS} .b3-label.config-item.${CHILD_CLASS} {
         padding-inline-start: 26px;
+    }
+    /* 引导线跟着窄屏这 26px 一起收：竖线挪到 12px，横折到 20px 为止，
+       与文案之间同样留 6px。缩进改了这里不改，线会压到文字上。 */
+    .b3-dialog__body .${PANEL_CLASS} .config-items > .${CHILD_CLASS}::before,
+    .b3-dialog__body .${PANEL_CLASS} .config-items > .${CHILD_CLASS}::after {
+        inset-inline-start: 12px;
+    }
+    .b3-dialog__body .${PANEL_CLASS} .config-items > .${CHILD_CLASS}::after {
+        width: 8px;
+    }
+    /* 窄屏行内边距收到 8px，标题那一行的中线也跟着上移：多行文本行的横折同样对齐标题 */
+    .b3-dialog__body .${PANEL_CLASS} .config-items > .${PANEL_CLASS}__textarea-row::after {
+        top: 22px;
     }
     .b3-dialog__body .${PANEL_CLASS} .config-item__main {
         flex: 1 1 100%;
@@ -594,6 +1037,18 @@ export const PANEL_CSS = `
         width: 100%;
         max-width: 100%;
         margin-top: 6px;
+    }
+    /* 窄屏放不下「左文右按钮」：说明块改回上下布局，按钮撑满整行 ——
+       200px 在手机上只剩半屏，两颗各占一半更容易误点 */
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__note {
+        display: block;
+    }
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__note-actions {
+        width: auto;
+        margin-top: 12px;
+    }
+    .b3-dialog__body .${PANEL_CLASS} .${PANEL_CLASS}__note-actions .b3-button {
+        width: 100%;
     }
     .b3-dialog__body .${PANEL_CLASS} .config-item__number {
         flex-wrap: nowrap;

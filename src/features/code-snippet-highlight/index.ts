@@ -20,8 +20,8 @@ export default defineFeature({
     id: "code-snippet-highlight",
     category: "settings",
     enabled: true,
-    name: "feature.codeSnippetHighlight.name",
-    description: "feature.codeSnippetHighlight.desc",
+    name: "feature.codeSnippetHighlight.title",
+    description: "feature.codeSnippetHighlight.description",
     settings: [
         {
             kind: "switch",

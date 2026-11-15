@@ -20,6 +20,7 @@
  * （`.agent-chat__edit-editor`）不动：那里的回车是「重新生成回复」，顺手改掉太危险。
  * 桌面端与移动端共用同一个输入框实现，两端都适用。
  */
+import {logInfo} from "../../core/log";
 import type {FeatureInstance} from "../../core/types";
 
 /** 新消息输入框。编辑已有消息的输入框是另一个类名，刻意不认。 */
@@ -70,6 +71,7 @@ const insertLineBreak = () => {
  * 这个功能不需要宿主提供任何东西（不注入样式、不落配置、不订阅），所以不接 FeatureHost 参数。
  */
 export const mountAgentEnterToSend = (): FeatureInstance => {
+    logInfo("agent-enter-to-send", "Enter sends; Ctrl/Cmd+Enter and Shift+Enter insert a line break");
     const onKeydown = (event: KeyboardEvent) => {
         if (event.key !== "Enter" || event.altKey || isComposing(event) || event.defaultPrevented) {
             return;

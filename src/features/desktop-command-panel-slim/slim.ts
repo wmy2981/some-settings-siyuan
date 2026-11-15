@@ -34,6 +34,7 @@ const buildCss = (percent: number): string =>
 export const mountCommandPanelSlim = (host: FeatureHost): FeatureInstance => {
     const apply = () => {
         host.addStyle(buildCss(percentOf(host)));
+        host.log.info(`command panel width set to ${percentOf(host)}% of the native width`);
     };
 
     apply();

@@ -13,8 +13,8 @@ export default defineFeature({
     id: "kernel-auto-reconnect",
     category: "connection",
     enabled: true,
-    name: "feature.kernelAutoReconnect.name",
-    description: "feature.kernelAutoReconnect.desc",
+    name: "feature.kernelAutoReconnect.title",
+    description: "feature.kernelAutoReconnect.description",
     settings: [
         {
             kind: "switch",
@@ -25,18 +25,18 @@ export default defineFeature({
         {
             kind: "number",
             key: "attempts",
-            title: "kernelAutoReconnect.attempts",
-            description: "kernelAutoReconnect.attemptsTip",
+            title: "feature.kernelAutoReconnect.attempts",
+            description: "feature.kernelAutoReconnect.attemptsTip",
             default: 2,
             min: 0,
             max: 20,
             step: 1,
-            unit: "kernelAutoReconnect.times",
+            unit: "feature.kernelAutoReconnect.times",
         },
         {
             kind: "number",
             key: "interval",
-            title: "kernelAutoReconnect.interval",
+            title: "feature.kernelAutoReconnect.interval",
             default: 500,
             min: 100,
             max: 10000,

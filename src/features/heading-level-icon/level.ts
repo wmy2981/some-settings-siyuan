@@ -154,7 +154,7 @@ export const mountHeadingLevelIcon = (host: FeatureHost): FeatureInstance => {
             retryAfter = Date.now() + RETRY_COOLDOWN_MS;
             if (!reportedFailure) {
                 reportedFailure = true;
-                host.log("Block subtype query failed; keeping the plain H icon for now", error);
+                host.log.warn("Block subtype query failed; keeping the plain H icon for now", error);
             }
         }).finally(() => {
             fresh.forEach((id) => querying.delete(id));

@@ -32,8 +32,8 @@ export default defineFeature({
     id: "agent-thinking-sticky-header",
     category: "ai",
     enabled: true,
-    name: "feature.agentThinkingStickyHeader.name",
-    description: "feature.agentThinkingStickyHeader.desc",
+    name: "feature.agentThinkingStickyHeader.title",
+    description: "feature.agentThinkingStickyHeader.description",
     // 思源从 3.8.10-alpha.2 起自己已经把标题吸顶与「折叠后把卡片顶沿对回上沿」都做了
     // （`assets/scss/business/_ai_agent.scss` 的 `.agent-chat__thinking-header` 粘性定位，
     // 加上 `AgentChat.anchorThinkingCard()`），所以上限取它的前一个版本：

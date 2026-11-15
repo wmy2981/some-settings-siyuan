@@ -17,8 +17,8 @@ export default defineFeature({
     id: "mobile-longpress-menu-label",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileLongpressMenuLabel.name",
-    description: "feature.mobileLongpressMenuLabel.desc",
+    name: "feature.mobileLongpressMenuLabel.title",
+    description: "feature.mobileLongpressMenuLabel.description",
     frontends: ["mobile"],
     settings: [
         {

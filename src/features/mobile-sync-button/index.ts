@@ -16,8 +16,8 @@ export default defineFeature({
     id: "mobile-sync-button",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileSyncButton.name",
-    description: "feature.mobileSyncButton.desc",
+    name: "feature.mobileSyncButton.title",
+    description: "feature.mobileSyncButton.description",
     frontends: ["mobile"],
     settings: [
         {

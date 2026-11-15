@@ -13,6 +13,7 @@ import type {
     ICommand,
     IPluginDockTab,
 } from "siyuan";
+import type {Logger} from "./log";
 
 /**
  * 设置项分类：按功能**作用到的思源原生功能**划分，一个分类就是设置面板里的一个页签。
@@ -97,8 +98,8 @@ export interface FeatureActionContext {
     /**
      * 立即合并并落盘某个功能的配置，同时通知订阅者（开关变动会立刻挂载或卸载功能）。
      *
-     * 动作行自己的改动不走面板草稿，但会同步写进面板里这个功能的草稿：
-     * 否则用户随后点「保存」时，手里的旧草稿会把这次改动覆盖回去。
+     * 写盘成功后订阅者会立刻收到通知，设置面板也据此把对应控件改成磁盘上的值，
+     * 界面与磁盘不会各说各话。
      */
     updateConfig(featureId: string, patch: FeatureConfig): Promise<void>;
     /**
@@ -115,6 +116,33 @@ export interface FeatureActionContext {
      * 原样写回；值与 id 不合规的条目原样返回给调用方汇报。校验或写盘失败时抛出（附 problems）。
      */
     importConfigs(config: Record<string, unknown>): Promise<{applied: string[]; skipped: string[];}>;
+}
+
+/**
+ * 说明块（`kind: "note"`）底部的一个动作按钮。
+ *
+ * 与独立的动作行是同一套东西：没有可持久化取值、不参与配置读写、
+ * 只读 / 发布模式下禁用、点击由面板统一走 `bindPendingClick`。
+ * 区别只在于它属于这段说明（「去点星」「捐赠」这类），单独占一行反而把一段话拆成了三条设置，
+ * 所以它挂在 `note` 上：桌面端与其它行同构 —— 文字在左、按钮竖着叠在右侧（每颗 200px），
+ * 窄屏放不下时才落到文字下面、各撑满整行。
+ */
+export interface NoteAction {
+    /** 与动作行的 key 同一套规则：功能内唯一，面板按「功能 id + key」绑定点击。 */
+    key: string;
+    /** 按钮文字。字符串是 i18n key；函数型每次打开面板求值，返回值直接当文案。 */
+    label: string | ((context: FeatureActionContext) => string);
+    /** 与动作行相同的外观选项，见 `SettingField` 的 `button`。 */
+    appearance?: "outline" | "block";
+    tone?: "primary" | "pink";
+    /** 文字前的思源内置 symbol 名（如 `iconGithub`）。 */
+    icon?: string;
+    /**
+     * 文字前的现成 SVG 标记，原样插入 —— 思源自己那张赞助图标就没有对应 symbol。
+     * 只能是代码里的常量，不要拼接运行期字符串。
+     */
+    iconSvg?: string;
+    onClick: (context: FeatureActionContext) => void | Promise<void>;
 }
 
 /**
@@ -138,6 +166,20 @@ export type SettingField =
         description?: string;
         default: string;
         placeholder?: string;
+    }
+    | {
+        /**
+         * 多行文本。取值语义与 `text` 完全相同（存字符串），只是控件换成 `<textarea>`，
+         * 供「一行一项」这类列表型输入（例如作者名单）使用；行的切分方式由功能自己解释。
+         */
+        kind: "textarea";
+        key: string;
+        title: string;
+        description?: string;
+        default: string;
+        placeholder?: string;
+        /** 可见行数，默认 6；写进 `rows` 属性，不随内容自适应。 */
+        rows?: number;
     }
     | {
         kind: "number";
@@ -169,28 +211,44 @@ export type SettingField =
     }
     | {
         /**
-         * 只读说明块：整行铺满的文字，没有任何控件，不参与配置的读写与「保存 / 取消」语义。
+         * 只读说明块：整行铺满的文字，没有任何控件，不参与配置的读写。
          * 只用于面向用户的说明（插件性质、版本号、仓库地址这类），不是设置项。
          *
          * `text` 是 i18n key；值按 `\n` 分段，其中的 `{name}` 占位符由 `values` 逐项替换，
          * 替换值本身是 http(s) 链接时渲染成可点的链接，链接文字默认就是地址本身，
          * `labels` 里给了同名的短写时用它。
+         *
+         * `actions` 是排在说明文字**下方**的一组按钮（见 `NoteAction`）：说明块长起来以后，
+         * 与它配套的入口跟在文字后面比另起几行更清楚，也不会被当成三项独立的设置。
          */
         kind: "note";
         key: string;
         text: string;
         values?: Record<string, string>;
         labels?: Record<string, string>;
+        actions?: NoteAction[];
     }
     | {
         /**
-         * 纯动作行：点击立刻执行，不参与配置的读写与「保存 / 取消」语义。
+         * 纯动作行：点击立刻执行，不参与配置的读写。
          * 只允许用于「打开某个诊断窗口」这类没有可持久化取值的入口。
          */
         kind: "button";
         key: string;
         title: string;
         description?: string;
+        /**
+         * 按钮外观。默认 `outline` —— 内核设置里那种靠右的次要按钮，定宽 200px。
+         * `block` 撑满这一格宽度，与思源「关于」页那颗捐赠按钮同构：
+         * 桌面端 200px、窄屏由面板的媒体查询放开到整行。
+         */
+        appearance?: "outline" | "block";
+        /** `block` 外观的底色：`primary`（默认，思源主题色）或 `pink`（思源捐赠按钮那颗粉）。 */
+        tone?: "primary" | "pink";
+        /** 按钮文字前的思源内置 symbol 名（如 `iconGithub`）；不写就只有文字。 */
+        icon?: string;
+        /** 按钮文字前的现成 SVG 标记，原样插入（思源自己那张赞助图标没有对应 symbol）。 */
+        iconSvg?: string;
         /**
          * 按钮文字。字符串是 i18n key；给函数时每次打开面板求值，
          * **返回值直接当文案用**（函数内部自己取 i18n），用于文案要跟着运行期状态变的入口
@@ -210,10 +268,14 @@ export interface FeatureHost {
     readonly signal: AbortSignal;
     /** 解析 i18n key，缺失时回落到 key 本身。 */
     readonly i18n: (key: string) => string;
-    readonly log: (...args: unknown[]) => void;
+    /**
+     * 本功能的分级日志器，头部自动带 `[some-settings-siyuan__<功能 id>]`。
+     * 详细日志关着时什么都不输出；文案用英文，不参与 i18n。
+     */
+    readonly log: Logger;
     /** 落盘并通知功能自身，patch 会与当前配置合并。 */
     setConfig(patch: FeatureConfig): Promise<void>;
-    /** 订阅本功能配置变化（面板点「保存」后触发），随插件卸载自动退订。 */
+    /** 订阅本功能配置变化（设置面板落盘或动作行改动后触发），随插件卸载自动退订。 */
     onConfigChange(listener: () => void): void;
     /** 注入一段只属于该功能的 CSS，返回撤销函数。 */
     addStyle(css: string): () => void;

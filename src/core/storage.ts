@@ -12,8 +12,47 @@
  */
 import {fetchSyncPost} from "siyuan";
 import type {Plugin} from "siyuan";
+import {createLogger} from "./log";
 
-const PREFIX = "[some-settings-siyuan]";
+const log = createLogger("core.storage");
+
+/**
+ * 一次读 / 写 / 删都是一次内核往返。逐个 await 会把 N 次往返串成一条线，
+ * 全部并发又会一次性把请求全压给内核。上限取 4：墙钟时间压到「往返 × 批数」，
+ * 又不会让一次批量导入把内核的请求队列打满。
+ */
+export const CONFIG_IO_CONCURRENCY = 4;
+
+/**
+ * 以有限并发跑一批异步任务，结果按输入顺序返回。
+ *
+ * 按顺序回填结果，调用方仍然可以按输入顺序汇报问题，不受完成顺序影响。
+ * 任一任务抛错时 `Promise.all` 立刻拒绝，存活的 worker 会继续把剩下的任务跑完
+ * （结果被丢弃，抛错那一条的返回值不再写入）。唯一危险的情形是 `limit <= 1`：
+ * 唯一的 worker 死掉后剩余条目永远不会启动 —— 这里只提供调度，不提供重试或取消，
+ * `run` 应自己把异常收敛成返回值。
+ */
+export const mapLimit = async <T, R>(
+    items: readonly T[],
+    limit: number,
+    run: (item: T, index: number) => Promise<R>,
+): Promise<R[]> => {
+    const results = new Array<R>(items.length);
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+        for (;;) {
+            const index = cursor;
+            cursor += 1;
+            if (index >= items.length) {
+                return;
+            }
+            results[index] = await run(items[index], index);
+        }
+    };
+    const workers = Math.max(1, Math.min(limit, items.length));
+    await Promise.all(Array.from({length: workers}, () => worker()));
+    return results;
+};
 
 /** 插件在思源工作空间里的私有目录。 */
 const storageDirOf = (plugin: Plugin): string => `/data/storage/petal/${plugin.name}`;
@@ -64,9 +103,11 @@ export const listStoredFiles = async (plugin: Plugin): Promise<string[]> => {
         throw new Error(`cannot list ${dir}: code ${String(response.code)}${response.msg ? `: ${response.msg}` : ""}`);
     }
     const entries = Array.isArray(response.data) ? response.data as {name?: unknown; isDir?: unknown;}[] : [];
-    return entries
+    const names = entries
         .filter((entry) => typeof entry.name === "string" && entry.isDir !== true)
         .map((entry) => entry.name as string);
+    log.info(`${dir} holds ${names.length} file(s)`, names);
+    return names;
 };
 
 /** 读文件内容；文件不存在或读不到时返回 null（宿主对不存在的文件兑现空串）。 */
@@ -75,7 +116,7 @@ export const readStoredFile = async (plugin: Plugin, storageName: string): Promi
         const stored = await plugin.loadData(storageName);
         return stored === "" ? null : stored;
     } catch (error) {
-        console.warn(`${PREFIX} failed to read ${storageName}`, error);
+        log.warn(`cannot read ${storageName}`, error);
         return null;
     }
 };
@@ -89,7 +130,7 @@ export const writeStoredFile = async (
     try {
         return statusOf(await plugin.saveData(storageName, value));
     } catch (error) {
-        console.warn(`${PREFIX} failed to write ${storageName}`, error);
+        log.warn(`cannot write ${storageName}`, error);
         return {ok: false, detail: String(error)};
     }
 };
@@ -100,7 +141,7 @@ export const removeStoredFile = async (plugin: Plugin, storageName: string): Pro
         const status = statusOf(await plugin.removeData(storageName));
         return status.code === 404 ? {...status, ok: true} : status;
     } catch (error) {
-        console.warn(`${PREFIX} failed to remove ${storageName}`, error);
+        log.warn(`cannot remove ${storageName}`, error);
         return {ok: false, detail: String(error)};
     }
 };
@@ -118,7 +159,7 @@ export const removeStorageDir = async (plugin: Plugin): Promise<StorageStatus> =
         );
         return status.code === 404 ? {...status, ok: true} : status;
     } catch (error) {
-        console.warn(`${PREFIX} failed to remove ${storageDirOf(plugin)}`, error);
+        log.warn(`cannot remove ${storageDirOf(plugin)}`, error);
         return {ok: false, detail: String(error)};
     }
 };

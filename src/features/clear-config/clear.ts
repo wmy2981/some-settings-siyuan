@@ -7,15 +7,16 @@
  * 清的是目录里的文件，不是代码里注册的功能：当前客户端不加载的功能、已经退役的、
  * 甚至已经从插件里删掉的功能留下的配置文件同样会被清掉，这与声明里的 enabled 无关。
  *
- * 为什么必须重新载入：设置面板此刻还开着，它手里那份草稿是清除之前的值；
- * 用户只要再点一次「保存」，刚删掉的文件就会被原样写回来。重新载入是能同时
- * 收掉面板草稿、又让插件按默认配置重新装载的唯一可靠做法。
+ * 为什么必须重新载入：设置面板此刻还开着，上面显示的还是清除之前的值，
+ * 已经挂载的功能也不会自己回到默认配置。重新载入是让面板、各功能与磁盘重新对齐的
+ * 唯一可靠做法。
  */
 import {
     confirm,
     showMessage,
 } from "siyuan";
 import {reportError} from "../../core/error";
+import {logInfo} from "../../core/log";
 import type {FeatureActionContext} from "../../core/types";
 
 /** 重新载入前的等待：让「已清除」的提示先显示出来，用户能确认这一步做完了。 */
@@ -60,11 +61,12 @@ export const clearAllConfigs = (context: FeatureActionContext): void => {
     // 清除配置是破坏性操作：确认按钮用思源自己的删除按钮（b3-button--remove），
     // 而不是默认的蓝色文字按钮。第 5 个参数为 true 时内核还会把文案换成「删除」。
     confirmDelete(
-        context.i18n("clearConfig.confirmTitle"),
-        context.i18n("clearConfig.confirmText"),
+        context.i18n("feature.clearConfig.confirmTitle"),
+        context.i18n("feature.clearConfig.confirmText"),
         () => {
             context.clearAllConfigs().then(() => {
-                showMessage(context.i18n("clearConfig.done"), 3000);
+                logInfo("clear-config", "cleared every configuration file, reloading the frontend");
+                showMessage(context.i18n("feature.clearConfig.done"), 3000);
                 window.setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
             }).catch((error: unknown) => {
                 // 有的文件删不掉时不能装作清干净了：重新载入会把没删掉的那份又读回来

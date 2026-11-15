@@ -5,11 +5,10 @@
  * JSON 写回去。读写本身由 core 完成（ConfigStore.exportAll / importMany），
  * 两者的目标都是存储目录 `data/storage/petal/<插件名>/` 下的**全部配置文件**，
  * 与声明里的 enabled、当前前端是否适用、功能是否已退役都无关 —— 因此导入的归一化、白名单与写后
- * 读回校验和面板点「保存」是同一条路，非法值不会绕过校验被静默写进磁盘。
+ * 读回校验和设置面板改完即写是同一条路，非法值不会绕过校验被静默写进磁盘。
  *
- * 导入成功后必须重新载入前端，理由和「清除本插件配置」一样：设置面板此刻还开着，
- * 它手里那份草稿是导入之前的值，用户只要再点一次「保存」就会把旧值原样写回来；
- * 重新载入是同时收掉草稿、又让各功能按新配置重新装载的唯一可靠做法。
+ * 导入成功后必须重新载入前端：导入是一次整体替换，面板此刻还开着、上面显示的是导入之前的值，
+ * 已经挂载的功能也不会自己按新配置重来。重新载入是让面板、各功能与磁盘重新对齐的唯一可靠做法。
  */
 import {
     Dialog,
@@ -19,6 +18,10 @@ import {copyText} from "../../core/clipboard";
 import {reportError} from "../../core/error";
 import {isMobile} from "../../core/frontend";
 import {preheatDialogLayer} from "../../core/layer";
+import {
+    logInfo,
+    logWarn,
+} from "../../core/log";
 import type {FeatureActionContext} from "../../core/types";
 import {escapeHtml} from "../../core/ui";
 import {parseImport} from "./parse";
@@ -104,24 +107,29 @@ const openDialog = (context: FeatureActionContext, spec: DialogSpec): void => {
 };
 
 export const exportConfigs = async (context: FeatureActionContext): Promise<void> => {
+    const features = await context.exportConfigs();
+    logInfo("config-transfer", `exporting ${Object.keys(features).length} configuration file(s)`);
     const json = JSON.stringify(
         {
             plugin: MARK,
             version: FORMAT_VERSION,
-            features: await context.exportConfigs(),
+            features,
         },
         null,
         2,
     );
     openDialog(context, {
-        title: context.i18n("configTransfer.exportTitle"),
-        tip: context.i18n("configTransfer.exportTip"),
+        title: context.i18n("feature.configTransfer.exportTitle"),
+        tip: context.i18n("feature.configTransfer.exportTip"),
         json,
         editable: false,
-        actionLabel: context.i18n("configTransfer.copy"),
+        actionLabel: context.i18n("feature.configTransfer.copy"),
         run: async (text) => {
             const copied = await copyText(text);
-            showMessage(context.i18n(copied ? "configTransfer.copied" : "configTransfer.copyFailed"), 3000);
+            showMessage(
+                context.i18n(copied ? "feature.configTransfer.copied" : "feature.configTransfer.copyFailed"),
+                3000,
+            );
             // 复制完不关窗：用户可能还要在框里自己选一段，或者再复制一次
             return false;
         },
@@ -130,27 +138,32 @@ export const exportConfigs = async (context: FeatureActionContext): Promise<void
 
 export const importConfigs = (context: FeatureActionContext): void => {
     openDialog(context, {
-        title: context.i18n("configTransfer.importTitle"),
-        tip: context.i18n("configTransfer.importTip"),
+        title: context.i18n("feature.configTransfer.importTitle"),
+        tip: context.i18n("feature.configTransfer.importTip"),
         json: "",
         editable: true,
-        actionLabel: context.i18n("configTransfer.importAction"),
+        actionLabel: context.i18n("feature.configTransfer.importAction"),
         run: async (text) => {
             const parsed = parseImport(text);
             if (parsed.kind === "error") {
+                logWarn("config-transfer", `the imported document is not usable (${parsed.reason})`);
                 // 两个分支各写一次字面量 key：写成三元表达式的话，校验脚本会把分支里的
                 // 短片段也当成一个 key 去核对，两边都会被判成"缺文案"
                 if (parsed.reason === "json") {
-                    showMessage(context.i18n("configTransfer.invalidJson"), 4000, "error");
+                    showMessage(context.i18n("feature.configTransfer.invalidJson"), 4000, "error");
                 } else {
-                    showMessage(context.i18n("configTransfer.invalidShape"), 4000, "error");
+                    showMessage(context.i18n("feature.configTransfer.invalidShape"), 4000, "error");
                 }
                 return false;
             }
             try {
                 const result = await context.importConfigs(parsed.features);
+                logInfo(
+                    "config-transfer",
+                    `imported ${result.applied.length} configuration file(s), skipped ${result.skipped.length}`,
+                );
                 showMessage(
-                    context.i18n("configTransfer.imported")
+                    context.i18n("feature.configTransfer.imported")
                         .replace("{count}", String(result.applied.length))
                         .replace("{skipped}", String(result.skipped.length)),
                     4000,

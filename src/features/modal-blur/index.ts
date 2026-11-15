@@ -21,8 +21,8 @@ export default defineFeature({
     id: "modal-blur",
     category: "appearance",
     enabled: true,
-    name: "feature.modalBlur.name",
-    description: "feature.modalBlur.desc",
+    name: "feature.modalBlur.title",
+    description: "feature.modalBlur.description",
     settings: [
         {
             kind: "switch",
@@ -33,7 +33,7 @@ export default defineFeature({
         {
             kind: "number",
             key: "radius",
-            title: "modalBlur.radius",
+            title: "feature.modalBlur.radius",
             default: 10,
             min: 1,
             max: 40,

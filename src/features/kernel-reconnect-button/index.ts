@@ -15,8 +15,8 @@ export default defineFeature({
     id: "kernel-reconnect-button",
     category: "connection",
     enabled: true,
-    name: "feature.kernelReconnectButton.name",
-    description: "feature.kernelReconnectButton.desc",
+    name: "feature.kernelReconnectButton.title",
+    description: "feature.kernelReconnectButton.description",
     settings: [
         {
             kind: "switch",

@@ -29,9 +29,9 @@ export const mountAgentToolCallDetail = (host: FeatureHost): FeatureInstance => 
         stepsOf: (entryID) => index.stepsOf(entryID),
         live,
         labels: {
-            args: host.i18n("agentToolDetail.args"),
-            result: host.i18n("agentToolDetail.result"),
-            noArgs: host.i18n("agentToolDetail.noArgs"),
+            args: host.i18n("feature.agentToolCallDetail.args"),
+            result: host.i18n("feature.agentToolCallDetail.result"),
+            noArgs: host.i18n("feature.agentToolCallDetail.noArgs"),
         },
     });
     // 两边都是异步到的（存档写回、事件流读到下一批），到了就重扫一遍已渲染的卡片

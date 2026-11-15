@@ -12,8 +12,8 @@ export default defineFeature({
     id: "oss-usage",
     category: "settings",
     enabled: true,
-    name: "feature.ossUsage.name",
-    description: "feature.ossUsage.desc",
+    name: "feature.ossUsage.title",
+    description: "feature.ossUsage.description",
     settings: [
         {
             kind: "switch",

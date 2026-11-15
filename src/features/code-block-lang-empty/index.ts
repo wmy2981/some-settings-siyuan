@@ -18,8 +18,8 @@ export default defineFeature({
     id: "code-block-lang-empty",
     category: "editor",
     enabled: true,
-    name: "feature.codeBlockLangEmpty.name",
-    description: "feature.codeBlockLangEmpty.desc",
+    name: "feature.codeBlockLangEmpty.title",
+    description: "feature.codeBlockLangEmpty.description",
     settings: [
         {
             kind: "switch",

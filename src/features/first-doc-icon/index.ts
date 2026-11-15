@@ -15,8 +15,8 @@ export default defineFeature({
     id: "first-doc-icon",
     category: "doc-tree",
     enabled: true,
-    name: "feature.firstDocIcon.name",
-    description: "feature.firstDocIcon.desc",
+    name: "feature.firstDocIcon.title",
+    description: "feature.firstDocIcon.description",
     settings: [
         {
             kind: "switch",
@@ -27,10 +27,10 @@ export default defineFeature({
         {
             kind: "text",
             key: "emoji",
-            title: "firstDocIcon.emoji",
-            description: "firstDocIcon.emojiTip",
+            title: "feature.firstDocIcon.emoji",
+            description: "feature.firstDocIcon.emojiTip",
             default: "📄",
-            placeholder: "firstDocIcon.emojiPlaceholder",
+            placeholder: "feature.firstDocIcon.emojiPlaceholder",
         },
     ],
     mount: mountFirstDocIcon,

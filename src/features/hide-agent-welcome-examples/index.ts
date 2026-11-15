@@ -15,8 +15,8 @@ export default defineFeature({
     id: "hide-agent-welcome-examples",
     category: "ai",
     enabled: true,
-    name: "feature.hideAgentWelcomeExamples.name",
-    description: "feature.hideAgentWelcomeExamples.desc",
+    name: "feature.hideAgentWelcomeExamples.title",
+    description: "feature.hideAgentWelcomeExamples.description",
     settings: [
         {
             kind: "switch",

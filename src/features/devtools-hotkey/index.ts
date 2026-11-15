@@ -11,8 +11,8 @@ export default defineFeature({
     id: "devtools-hotkey",
     category: "appearance",
     enabled: true,
-    name: "feature.devtoolsHotkey.name",
-    description: "feature.devtoolsHotkey.desc",
+    name: "feature.devtoolsHotkey.title",
+    description: "feature.devtoolsHotkey.description",
     frontends: ["desktop"],
     settings: [
         {

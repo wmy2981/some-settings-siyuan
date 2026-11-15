@@ -12,8 +12,8 @@ export default defineFeature({
     id: "tab-title-markdown",
     category: "doc-tree",
     enabled: true,
-    name: "feature.tabTitleMarkdown.name",
-    description: "feature.tabTitleMarkdown.desc",
+    name: "feature.tabTitleMarkdown.title",
+    description: "feature.tabTitleMarkdown.description",
     // 思源从 3.8.10-alpha.2 起自己把文档标题存成行级 AST，并把它投影进桌面页签条、
     // 移动端页签概览与大纲（`layout/Tab.ts` 的 `updateTitle`、`mobile/tabs/MobileTabs.ts`、
     // `protyle/header/documentTitlePreview.ts`）。标题里的行内格式从此由宿主负责，
@@ -25,13 +25,13 @@ export default defineFeature({
         {
             kind: "select",
             key: "scope",
-            title: "tabTitleMarkdown.scope",
+            title: "common.scope",
             default: "disabled",
             options: [
-                {value: "disabled", label: "tabTitleMarkdown.scopeDisabled"},
-                {value: "desktop", label: "tabTitleMarkdown.scopeDesktop"},
-                {value: "mobile", label: "tabTitleMarkdown.scopeMobile"},
-                {value: "both", label: "tabTitleMarkdown.scopeBoth"},
+                {value: "disabled", label: "common.scope.disabled"},
+                {value: "desktop", label: "common.scope.desktop"},
+                {value: "mobile", label: "common.scope.mobile"},
+                {value: "both", label: "common.scope.both"},
             ],
         },
     ],

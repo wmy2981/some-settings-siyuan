@@ -20,8 +20,8 @@ export default defineFeature({
     id: "mobile-block-icon-always",
     category: "appearance",
     enabled: true,
-    name: "feature.mobileBlockIconAlways.name",
-    description: "feature.mobileBlockIconAlways.desc",
+    name: "feature.mobileBlockIconAlways.title",
+    description: "feature.mobileBlockIconAlways.description",
     frontends: ["mobile"],
     settings: [
         {
