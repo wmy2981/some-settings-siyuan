@@ -15,6 +15,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Hide the agent's suggested prompts
 * Pin the agent thinking header
 * Details for the agent's tool calls
+* Translate agent thinking
 
 ### Editor
 
@@ -115,6 +116,10 @@ plugin adds no top bar button, no status bar item and no dock item.
   (`assets/…`); snippet highlighting needs SiYuan's own highlight.js and falls back to plain text.
 * _Details for the agent's tool calls_ reads only responses the panel already received, so unmatched calls show no
   parameters; _Send the agent message with Enter_ shadows the default Agent Send shortcut.
+* _Translate agent thinking_ only replaces the displayed text: the original reasoning, the session and the model
+  context stay untouched, and translations are never saved. Translation starts only when a thinking card is expanded,
+  keeps the still-streaming tail in its original language, and sends the reasoning text to the selected free Microsoft
+  or Google endpoint.
 
 ## Bazaar Stats Graph
 
