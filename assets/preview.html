@@ -4,113 +4,246 @@
 <meta charset="utf-8"/>
 <title>Some Settings · preview</title>
 <style>
-/* 调色板、控件尺寸与间距全部照抄思源 daylight 主题与 b3-* 组件，
-   让这张预览图和插件真正打开的设置面板是同一种东西：
-   窗口外壳 = 顶栏 32px + 停靠栏 42px + 正文；弹窗 = .b3-dialog 的遮罩 + 容器，
-   容器 768x80vh，行内边距 16px 24px，行是内核的 .b3-label（16px 24px，下分割线）。 */
+/* 这张图不自己画界面，而是把思源真正的那套样式搬过来：
+   变量与组件规则逐条抄自 siyuan-note/siyuan 的 app/appearance/themes/daylight/theme.css
+   与 app/src/assets/scss 下的 _dialog / _form / _switch / _select / _text-field /
+   _button / _list / _function / business/_config 等文件，控制面板部分的样式则直接取自
+   插件自己的 src/core/ui.ts（PANEL_CSS，见下方 …PANEL_CSS 一节，与仓库里那份逐字一致）。
+   面板标记也照 src/core/ui.ts 的构造函数拼（行结构与类名一一对应），
+   所以图里的面板就是插件在思源里真正渲染出来的那一块。 */
 :root {
+    /* 主色 */
     --b3-theme-primary: #3575f0;
-    --b3-theme-primary-light: rgba(53, 117, 240, .5);
+    --b3-theme-primary-light: rgba(53, 117, 240, .54);
     --b3-theme-primary-lighter: rgba(53, 117, 240, .38);
-    --b3-theme-primary-lightest: rgba(53, 117, 240, .15);
-    --b3-theme-on-primary: #fff;
+    --b3-theme-primary-lightest: rgba(53, 117, 240, .12);
+    --b3-theme-secondary: #ff9200;
     --b3-theme-background: #fff;
     --b3-theme-background-light: #dfe0e1;
     --b3-theme-surface: #f6f6f6;
+    --b3-theme-surface-light: rgba(243, 243, 243, .86);
     --b3-theme-surface-lighter: #e0e0e0;
+    --b3-theme-error: #d23f31;
+    --b3-theme-success: #65b84d;
+
+    /* 文字颜色 */
+    --b3-theme-on-primary: #fff;
+    --b3-theme-on-secondary: #fff;
     --b3-theme-on-background: #222;
     --b3-theme-on-surface: #5f6368;
     --b3-theme-on-surface-light: rgba(95, 99, 104, .68);
     --b3-theme-on-surface-lighter: #c8ccd6;
+    --b3-theme-on-error: #fff;
+
+    /* 字体（:root:lang(zh-CN) 那一档）。截图时按思源在 Windows 上的解析结果取字：
+       拉丁落到 Arial 一族、中文落到微软雅黑，多行文案的折行位置才和真机一致 */
+    /* 字体（:root:lang(zh-CN) 那一档） */
+    --b3-font-family-emoji-reset: "Emojis Additional", "Emojis Reset";
+    --b3-font-family-default: var(--b3-font-family-emoji-reset), BlinkMacSystemFont, Helvetica, "PingFang SC", "Luxi Sans", "DejaVu Sans", arial, "Microsoft Yahei", "Hiragino Sans GB", "Source Han Sans SC", sans-serif, emojis;
+    --b3-font-family: var(--b3-font-family-default);
+    --b3-font-size: 14px;
+
+    /* 背景 */
+    --b3-body-background: #EBECF0;
+
+    /* 顶部工具栏 */
+    --b3-toolbar-color: var(--b3-theme-on-surface-light);
+    --b3-toolbar-hover: rgba(255, 255, 255, .68);
+    --b3-toolbar-left-mac: 74px;
+
+    /* 线条 */
     --b3-border-color: var(--b3-theme-surface-lighter);
     --b3-border-radius: 6px;
+    --b3-border-radius-s: 3px;
     --b3-border-radius-b: 12px;
+
+    /* 列表 */
     --b3-list-hover: rgba(0, 0, 0, .075);
+    --b3-list-icon-hover: rgba(33, 34, 36, .1);
+
+    /* 菜单 / 提示 / 遮罩 */
     --b3-menu-background: var(--b3-theme-background);
-    --b3-toolbar-color: var(--b3-theme-on-surface-light);
     --b3-tooltips-background: #312f35;
     --b3-tooltips-color: var(--b3-theme-background-light);
     --b3-mask-background: rgba(220, 220, 220, .4);
+
+    /* 下拉菜单 */
+    --b3-select-background: url("data:image/svg+xml;utf8,<svg fill='rgba(95, 99, 104, .68)' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>") no-repeat right 2px center var(--b3-menu-background);
+
+    /* switch */
     --b3-switch-background: #e1e3e1;
     --b3-switch-border: var(--b3-theme-on-surface-light);
+    --b3-switch-hover: rgba(31, 31, 31, .06);
     --b3-switch-checked: #fff;
     --b3-switch-checked-background: var(--b3-theme-primary);
+    --b3-switch-checked-hover: #d3e3fd;
+    --b3-switch-checked-hover2: rgba(31, 31, 31, .06);
+
+    /* 阴影 / 动画 */
+    --b3-point-shadow: 0 0 1px 0 rgba(0, 0, 0, .1), 0 0 2px 0 rgba(0, 0, 0, .2);
     --b3-dialog-shadow: 0 8px 24px rgba(0, 0, 0, .2);
-    --b3-select-background:
-        url("data:image/svg+xml;utf8,<svg fill='rgba(95, 99, 104, .68)' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>")
-        no-repeat right 2px center var(--b3-menu-background);
-    --b3-font-family: "Segoe UI", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
-    --b3-font-family-code: "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+    --b3-button-shadow: 0 1px 2px 0 rgb(0 0 0 / .3), 0 1px 3px 1px rgb(0 0 0 / .15);
+    --b3-button-active-shadow: 0 2px 3px 1px rgb(0 0 0 / .3), 0 2px 4px 2px rgb(0 0 0 / .15);
+    --b3-transition: all .2s cubic-bezier(0, 0, .2, 1) 0ms;
 }
 
-* { box-sizing: border-box; }
+/* ------------------------------------------------------------ 内核基础（util/_reset.scss） */
+html {
+    -webkit-text-size-adjust: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+body {
+    text-rendering: optimizeLegibility;
+    margin: 0;
+    font-family: var(--b3-font-family);
+    font-size: var(--b3-font-size);
+    color: var(--b3-theme-on-background);
+    background-color: var(--b3-body-background);
+    height: 100%;
+    box-sizing: border-box;
+    max-height: 100%;
+    overflow: hidden;
+}
+svg {
+    fill: currentColor;
+    display: inline-block;
+}
+ul {
+    margin: 0;
+    padding: 0;
+}
+a {
+    text-decoration: none;
+    color: var(--b3-theme-primary);
+}
 
+/* 预览画布：集市要求 1024x768，overflow 裁掉窗口之外的部分，截图不需要整页 */
 body {
     width: 1024px;
     height: 768px;
-    overflow: hidden;
-    margin: 0;
     position: relative;
-    font-family: var(--b3-font-family);
-    font-size: 14px;
-    line-height: 1.5;
-    color: var(--b3-theme-on-background);
-    background-color: var(--b3-theme-background);
 }
 
-svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+/* ------------------------------------------------------------ 工具类（util/_function.scss） */
+.fn__flex { display: flex; }
+.fn__flex-center { align-self: center; }
+.fn__flex-1 { flex: 1; min-width: .1px; overflow: auto; min-height: .1px; }
+.fn__flex-column { min-height: 100%; display: flex; flex-direction: column; }
+.fn__flex-shrink { flex-shrink: 0; }
+.fn__flex-wrap { flex-wrap: wrap; }
+.fn__none { display: none !important; }
+.fn__block { width: 100%; }
+.fn__size200 { width: 200px; flex-shrink: 0; }
+.fn__space { width: 8px; display: inline-block; flex-shrink: 0; }
+.fn__ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; }
+.ft__on-surface { color: var(--b3-theme-on-surface); }
 
-/* ------------------------------------------------------------ 思源窗口 */
-.toolbar {
-    display: flex;
+/* ------------------------------------------------------------ 弹窗（component/_dialog.scss） */
+.b3-dialog {
+    position: fixed;
+    top: 0;
+    left: 0;
     align-items: center;
-    height: 32px;
-    padding: 0 5px;
-    color: var(--b3-toolbar-color);
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    font-size: var(--b3-font-size, 16px);
 }
-.toolbar__icon { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
-.toolbar__icon svg { width: 16px; height: 16px; }
-.toolbar__title {
-    flex: 1;
-    min-width: 0;
-    color: var(--b3-toolbar-color);
-    font-size: 12px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
+.b3-dialog__scrim {
+    background-color: var(--b3-mask-background);
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 1;
 }
-.toolbar__controls { display: flex; align-items: center; }
-.toolbar__controls svg { width: 12px; height: 12px; margin: 0 6px; }
-
-.layout { display: flex; height: calc(768px - 32px - 26px); }
-.dock {
-    width: 42px;
-    flex: 0 0 auto;
+.b3-dialog__container {
+    outline: none;
+    border-radius: var(--b3-border-radius-b);
+    background-color: var(--b3-theme-surface, Canvas);
+    position: relative;
+    box-shadow: var(--b3-dialog-shadow);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 6px 0;
-    color: var(--b3-theme-on-surface-light);
+    flex-grow: 0;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    max-width: 88vw;
+    border: 1px solid var(--b3-theme-surface-lighter);
 }
-.dock svg { width: 16px; height: 16px; }
-.dock__item { height: 26px; display: flex; align-items: center; justify-content: center; }
-.dock__split { width: 22px; height: 1px; margin: 8px 0; background-color: var(--b3-theme-on-surface-lighter); border-radius: var(--b3-border-radius); }
-.editor { flex: 1; min-width: 0; padding: 32px 96px; }
-.editor__title { font-size: 22px; font-weight: 600; line-height: 32px; }
-.editor__meta { margin-top: 6px; color: var(--b3-theme-on-surface); font-size: 13px; }
-.editor__p { margin-top: 16px; }
-.status {
+.b3-dialog__header {
+    cursor: default;
+    padding: 9px 16px;
+    line-height: 24px;
+    font-size: 16px;
+    font-weight: 500;
+    border-bottom: 1px solid var(--b3-theme-surface-lighter);
+}
+.b3-dialog__body {
+    overflow: auto;
+    flex: 1;
     display: flex;
+    flex-direction: column;
+}
+.b3-dialog__content {
+    padding: 16px 16px;
+    word-break: break-all;
+    flex: 1;
+    overflow: auto;
+}
+.b3-dialog__action {
+    padding: 7px 16px;
+    border-top: 1px solid var(--b3-theme-surface-lighter);
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 12px;
-    height: 26px;
-    padding: 0 12px;
-    border-top: 1px solid var(--b3-border-color);
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
+    justify-content: flex-end;
+    box-sizing: border-box;
+    user-select: none;
 }
 
-/* ------------------------------------------------------------ 原生控件 */
+/* ------------------------------------------------------------ 设置行（component/_form.scss + business/_config.scss） */
+.b3-label {
+    border-bottom: 1px solid var(--b3-border-color);
+    padding: 16px 24px;
+    line-height: 20px;
+}
+.b3-label__text {
+    color: var(--b3-theme-on-surface);
+    font-size: 14px !important;
+    margin-top: 4px;
+    overflow: hidden !important;
+}
+.b3-label:last-child {
+    border-bottom: 0;
+}
+.config-items {
+    background-color: var(--b3-theme-surface);
+    border-radius: var(--b3-border-radius-b);
+}
+.config-items .config-item.config-item--last-visible {
+    border-bottom: 0;
+}
+.config-items .b3-label__text {
+    font-size: 13px !important;
+}
+.config-wrap,
+.config-item.fn__flex,
+.config-item > .fn__flex {
+    align-items: center;
+}
+.config-item__main {
+    font-size: 14px;
+    min-height: auto;
+    overflow: visible;
+}
+
+/* ------------------------------------------------------------ 开关（component/_switch.scss） */
 .b3-switch {
     flex-shrink: 0;
     -webkit-appearance: none;
@@ -124,259 +257,1312 @@ svg { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round
     position: relative;
     cursor: pointer;
     background-color: var(--b3-switch-background);
+    overflow: inherit;
+    user-select: none;
 }
 .b3-switch::after {
-    width: 8px; height: 8px; border-radius: 50%; pointer-events: none; z-index: 1;
-    content: ""; background-color: var(--b3-switch-border); display: block;
-    left: 7px; position: absolute; top: 50%; transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+    z-index: 1;
+    content: "";
+    background-color: var(--b3-switch-border);
+    display: block;
+    left: 7px;
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transition: left 80ms linear, background-color 80ms linear, width 80ms linear, height 80ms linear;
 }
-.b3-switch:checked { background-color: var(--b3-switch-checked-background); border-color: transparent; }
-.b3-switch:checked::after { background-color: var(--b3-switch-checked); height: 12px; width: 12px; left: 17px; }
+.b3-switch:checked {
+    background-color: var(--b3-switch-checked-background);
+    border-color: transparent;
+}
+.b3-switch:checked::after {
+    background-color: var(--b3-switch-checked);
+    height: 12px;
+    width: 12px;
+    left: 17px;
+}
 
+/* ------------------------------------------------------------ 下拉（component/_select.scss） */
 .b3-select {
     border: 0;
     border-radius: var(--b3-border-radius);
     padding: 4px 26px 4px 8px;
-    height: 28px;
+    box-sizing: border-box;
     line-height: 20px;
-    font-size: 14px;
-    font-family: inherit;
     color: var(--b3-theme-on-background);
+    transition: box-shadow 120ms 0ms cubic-bezier(0, 0, .2, 1), background-color .2s cubic-bezier(0, 0, .2, 1) 0ms;
+    height: 28px;
+    font-size: 14px;
     box-shadow: inset 0 0 0 1px var(--b3-border-color);
     background: var(--b3-select-background);
     appearance: none;
     cursor: pointer;
-    outline: none;
+    overflow: hidden;
 }
 
-.b3-button {
-    cursor: pointer;
+/* ------------------------------------------------------------ 输入框（component/_text-field.scss） */
+.b3-text-field {
     border: 0;
     border-radius: var(--b3-border-radius);
+    outline: 1px solid var(--b3-border-color);
+    outline-offset: -1px;
+    box-shadow: none;
     padding: 4px 8px;
-    height: 28px;
-    font-size: 14px;
-    font-family: inherit;
     line-height: 20px;
-    color: var(--b3-theme-on-primary);
-    background-color: var(--b3-theme-primary);
+    box-sizing: border-box;
+    color: var(--b3-theme-on-background);
+    transition: box-shadow 120ms 0ms cubic-bezier(0, 0, .2, 1), outline-color 120ms 0ms cubic-bezier(0, 0, .2, 1);
+    background-color: var(--b3-theme-background);
+    -webkit-appearance: none;
+    font-variant-ligatures: none;
+    font-size: 14px;
+}
+
+/* ------------------------------------------------------------ 按钮（component/_button.scss） */
+.b3-button {
+    cursor: pointer;
+    color: var(--b3-theme-on-primary, ButtonText);
+    border-radius: var(--b3-border-radius, 4px);
+    line-height: 20px;
+    padding: 4px 8px;
+    background-color: var(--b3-theme-primary, ButtonFace);
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    transition: box-shadow 280ms ease;
+    border: 0;
+    box-sizing: border-box;
+    text-align: center;
 }
-.b3-button--cancel { color: var(--b3-theme-on-surface); background-color: transparent; }
-.b3-button--text { color: var(--b3-theme-primary); background-color: transparent; }
-.b3-button--outline {
+.b3-button svg {
+    height: 16px;
+    width: 16px;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.b3-button--text {
     color: var(--b3-theme-primary);
     background-color: transparent;
+}
+.b3-button--cancel {
+    color: var(--b3-theme-on-surface);
+    background-color: transparent;
+}
+.b3-button--outline {
+    color: var(--b3-theme-primary, ButtonText);
     box-shadow: inset 0 0 0 .6px var(--b3-theme-primary);
+    background-color: transparent;
+    text-decoration: none;
+}
+.b3-button--pink {
+    color: var(--b3-theme-on-secondary);
+    background-color: #ea4aaa;
 }
 
-.fn__flex { display: flex; }
-.fn__flex-1 { flex: 1; min-width: 0; }
-.fn__flex-center { display: flex; align-items: center; justify-content: center; }
-.fn__size200 { width: 200px; flex-shrink: 0; }
-.fn__space { width: 8px; flex-shrink: 0; }
+/* ------------------------------------------------------------ 列表（component/_list.scss） */
+.b3-list--background .b3-list-item {
+    border-radius: var(--b3-border-radius);
+}
+.b3-list--background .b3-list-item:hover:not(.b3-list-item--focus),
+.b3-list--background .b3-list-item--focus {
+    background-color: var(--b3-list-hover);
+}
+.b3-list-item {
+    line-height: var(--b3-ui-list-height, 28px);
+    min-height: var(--b3-ui-list-height, 28px);
+    padding: 0 4px;
+    display: flex;
+    cursor: pointer;
+    align-items: center;
+    position: relative;
+    background-color: transparent;
+    text-align: left;
+    border: 0;
+    color: var(--b3-theme-on-background);
+    margin: 1px 8px;
+}
+.b3-list-item__graphic {
+    margin-right: 4px;
+    flex-shrink: 0;
+    padding: 0 1px;
+    height: 16px;
+    width: 16px;
+    line-height: 16px;
+    font-size: 12px;
+    font-family: var(--b3-font-family-emoji);
+}
+.b3-list-item__graphic svg {
+    width: 16px;
+    height: 16px;
+}
+.b3-list-item__text {
+    flex: 1;
+    background-color: transparent;
+    text-align: left;
+    border: 0;
+    padding: 0;
+    color: var(--b3-theme-on-background);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 
-/* ------------------------------------------------------------ 内核的设置行 */
-.b3-label { border-bottom: 1px solid var(--b3-border-color); padding: 16px 24px; line-height: 20px; }
-.b3-label__text { color: var(--b3-theme-on-surface); font-size: 14px; margin-top: 4px; }
-.config-item__main { display: flex; flex-direction: column; justify-content: center; font-size: 14px; }
-.config-title { display: block; margin: 0 0 8px; padding: 0 12px; font-size: 15px; font-weight: bold; }
-.config-title ~ .config-title { margin-top: 14px; }
-/* 插件的面板样式（src/core/ui.ts 的 PANEL_CSS）：不要卡片底色，功能名加粗一档 */
-.some-settings-panel { display: block; }
-.some-settings-panel .config-items { background-color: transparent; border-radius: 0; }
-.some-settings-panel .some-settings-panel__sub > .config-item__main { font-weight: 600; }
-.some-settings-panel .config-item__main .b3-label__text { font-weight: 400; color: var(--b3-theme-on-surface); }
-.some-settings-panel .config-item:last-child,
-.some-settings-panel .config-item--last-visible { border-bottom: 0; }
-.some-settings-panel .b3-switch { margin-inline-start: auto; }
-.some-settings-panel label.config-item > .config-item__main:first-child,
-.some-settings-panel div.config-item > .config-item__main:first-child { flex: 1 1 12rem; }
+/* ------------------------------------------------------------ 思源窗口（business/_layout.scss + main/_main.scss） */
+.toolbar {
+    box-sizing: border-box;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 5px 0 var(--b3-toolbar-left-mac);
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+.toolbar #drag {
+    color: var(--b3-toolbar-color);
+    user-select: none;
+    text-align: center;
+    white-space: nowrap;
+    align-self: center;
+    font-size: 12px;
+    flex: 1;
+    min-width: 148px;
+    box-sizing: border-box;
+}
+.toolbar__item {
+    flex-shrink: 0;
+    cursor: pointer;
+    color: var(--b3-toolbar-color);
+    padding: 4px;
+    margin: 2px;
+    border-radius: var(--b3-border-radius);
+    box-sizing: border-box;
+    transition: var(--b3-transition);
+    display: flex;
+    align-items: center;
+    align-self: center;
+    background-color: transparent;
+    border: 0;
+    line-height: 16px;
+    height: 23.5px;
+}
+.toolbar__item svg {
+    height: 15.5px;
+    width: 15.5px;
+}
+.toolbar__svg {
+    width: 12px;
+    height: 15.5px;
+    margin: 0 -3px 0 2px;
+    opacity: .54;
+}
+.toolbar__item--disabled {
+    opacity: .54;
+    cursor: not-allowed;
+}
+.toolbar__item--win {
+    padding: 9px 13px;
+    margin: 0;
+    height: 31.5px;
+    border-radius: 0;
+}
+.toolbar__item--close {
+    padding: 9px 15px;
+    margin: 0;
+    height: 31.5px;
+    border-radius: 0;
+}
 
-/* ------------------------------------------------------------ 弹窗（.b3-dialog） */
-.b3-dialog {
+.layout {
+    display: flex;
+    height: calc(768px - 32px - 32px);
+    overflow: hidden;
+}
+.dock {
+    display: flex;
+    user-select: none;
+    box-sizing: border-box;
+    width: 42px;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+.dock svg {
+    height: 16px;
+    width: 17.5px;
+}
+.dock__item {
+    padding: 5px;
+    color: var(--b3-theme-on-surface-light);
+    display: flex;
+    border-radius: var(--b3-border-radius);
+    margin: 7px;
+    cursor: pointer;
+}
+.dock__split {
+    height: 17px;
+    position: relative;
+}
+.dock__split::after {
+    height: 1px;
+    width: 22px;
+    background: var(--b3-theme-on-surface-lighter);
+    content: "";
     position: absolute;
-    inset: 0;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: var(--b3-border-radius);
+}
+.layout__center {
+    flex: 1;
+    min-width: 0;
+    border-radius: var(--b3-border-radius-b);
+    background-color: var(--b3-theme-background);
+    overflow: hidden;
+}
+.layout-tab-bar {
+    list-style: none;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+    background-color: var(--b3-theme-background);
+    border-bottom: 1px solid var(--b3-theme-background-light);
+    padding: 0 4px;
+    display: flex;
+}
+.layout-tab-bar .item {
+    line-height: 22px;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    transition: var(--b3-transition);
+    min-height: 29px;
+    position: relative;
+    max-width: 186px;
+    flex-shrink: 0;
+    overflow: hidden;
+    color: var(--b3-theme-on-surface);
+    margin: 6px 4px;
+    border-radius: var(--b3-border-radius);
+}
+.layout-tab-bar .item--focus {
+    background-color: var(--b3-theme-surface-light);
+    box-shadow: 0 0 0 1px var(--b3-border-color) inset;
+}
+.layout-tab-bar .item__close {
+    display: flex;
+    align-items: center;
+    padding-right: 8px;
+}
+.layout-tab-bar .item__close svg {
+    width: 12px;
+    height: 12px;
+    opacity: .68;
+}
+.layout-tab-bar .item__graphic {
+    flex-shrink: 0;
+    height: 14px;
+    width: 14px;
+    margin: 0 4px 0 8px;
+}
+.layout-tab-bar .item__text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 8px;
+}
+.protyle-mock {
+    padding: 24px 96px 0;
+}
+.protyle-mock__title {
+    font-size: 25px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+.protyle-mock__p {
+    margin-top: 12px;
+    font-size: 16px;
+    line-height: 1.625;
+}
+.status {
+    box-sizing: border-box;
+    z-index: 2;
+    height: 32px;
+    line-height: 32px;
+    padding: 0 7px;
+    display: flex;
+    align-items: center;
+}
+.status__msg {
+    color: var(--b3-theme-on-surface);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding-left: 5px;
+    font-size: 12px;
+}
+.status__counter {
+    display: flex;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--b3-theme-on-surface);
+    gap: 12px;
+    margin-left: auto;
+}
+
+/* ------------------------------------------------------------ 插件设置面板（src/core/ui.ts 的 PANEL_CSS，逐字照搬） */
+
+.some-settings-panel {
+    display: flex;
+    height: 100%;
+}
+/* 移动端：顶部页签栏 + 内容，上下分栏，且按内容自然高度排版。
+   宿主把 Setting 渲染成底部抽屉时，抽屉高度是「内容的自然高度」再按视口裁限，
+   所以这里绝不能写死高度（height: 100% 在自动高度的父级里会退化成 auto，
+   抽屉会塌成一条）；整块由宿主的内容区滚动，页签栏吸顶。 */
+.some-settings-panel--mobile {
+    flex-direction: column;
+    height: auto;
+}
+/* 页签栏吸顶后必须有底色遮住从它下面滚过的行。取 --b3-theme-surface，
+   与弹窗容器（含移动端底部抽屉）的底色完全一致；不能用内核给 .layout-tab-bar 的
+   --b3-theme-background：深色主题下 1e1e1e 与 2c2c2c、浅色主题下 fff 与 f6f6f6
+   都不一样，页签栏会变成标题下面一条明显的色带。
+   同理不要圆角：本面板上面还有标题栏，不在容器圆角上，那圈圆角只会把容器底色从两个角上露出来。 */
+.some-settings-panel--mobile > .layout-tab-bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-shrink: 0;
+    background-color: var(--b3-theme-surface);
+    /* 页签按原生功能区划分后有七个，一屏放不下：整条可以左右滑动，
+       每一项按内容给宽度（flex: 0 0 auto），不做等分也不换行。
+       刻意不加 scroll-snap：吸附会在每一项上顿一下，手指的惯性被打断，滑起来是「一格一格」的黏感；
+       页签本来就短，靠惯性滑到看得见的位置比被吸附到整项更顺手。 */
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    /* 搜索时这一条也要收起来，过渡与桌面端左侧栏一套时长、一条曲线。
+       高度是内容撑出来的 auto，auto → 0 不能过渡：JS 在收起前把实测高度写进
+       --ss-tabbar-height 当起点（见 core/setting-dialog.ts 的 lockTabBarHeight），
+       这里只负责两端与时长，和左侧栏那段 width 过渡同一个写法。
+       border-box 是为了让 JS 量到的 offsetHeight 直接能当 height 用（含那条 1px 底边）。 */
+    box-sizing: border-box;
+    height: var(--ss-tabbar-height, auto);
+    transition: height .2s ease, opacity .12s ease, visibility 0s;
+}
+.some-settings-panel--mobile > .layout-tab-bar::-webkit-scrollbar {
+    display: none;
+}
+/* 搜索时收起页签栏：高度收到 0、淡出，收完之后才真正隐身（点不到、Tab 不到），
+   展开时这个延时为 0，一有高度就看得见 —— 与桌面端左侧栏的收起规则同构。 */
+.some-settings-panel--search.some-settings-panel--mobile > .layout-tab-bar {
+    height: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: height .2s ease, opacity .12s ease, visibility 0s linear .2s;
+}
+.some-settings-panel--mobile > .layout-tab-bar > .some-settings-panel__tab {
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    /* 每项一个能整块点中的宽度：图标 + 四个汉字上下，再窄就只能靠精准点字 */
+    min-width: 6.5rem;
+    padding: 0 10px;
 }
-.b3-dialog__scrim {
+/* 页签图标：两端同一份，移动端不再只有文字 */
+.some-settings-panel__tab-icon {
+    width: 16px;
+    height: 16px;
+    flex: 0 0 auto;
+    margin-inline-end: 6px;
+    fill: currentColor;
+}
+/* 桌面端：页签列表 + 内容，左右分栏。宽度、内边距与分隔线照抄内核设置的
+   .config__panel > .config__side（分类标签都不长，收窄到 220px）。 */
+.some-settings-panel__side {
+    flex: 0 0 auto;
+    width: 220px;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding: 12px;
+    box-sizing: border-box;
+    border-right: 1px solid var(--b3-border-color);
+    user-select: none;
+    /* 搜索时这一栏要收起来：宽度、内边距与透明度一起过渡，内容区跟着平滑变宽。
+       不用 display:none —— 那样没有过渡，一开一收是硬跳。
+       visibility 在收起时延时到宽度收完才生效（收起后既点不到也 Tab 不到），
+       展开时延迟为 0，立刻可见。 */
+    transition: width .2s ease, padding .2s ease, opacity .12s ease, border-right-color .2s ease,
+        visibility 0s;
+}
+.some-settings-panel--search > .some-settings-panel__side {
+    width: 0;
+    padding-inline: 0;
+    opacity: 0;
+    border-right-color: transparent;
+    visibility: hidden;
+    pointer-events: none;
+    transition: width .2s ease, padding .2s ease, opacity .12s ease, border-right-color .2s ease,
+        visibility 0s linear .2s;
+}
+/* 系统里关掉了动效就不要再过渡：宽度 / 高度一步到位。收起方向的那几条也要点名写进来，
+   它们的特异性比基础规则高，只关基础规则的话「收起」照样会动。 */
+@media (prefers-reduced-motion: reduce) {
+    .some-settings-panel__side,
+    .some-settings-panel--search > .some-settings-panel__side,
+    .some-settings-panel--mobile > .layout-tab-bar,
+    .some-settings-panel--search.some-settings-panel--mobile > .layout-tab-bar {
+        transition: none;
+    }
+}
+.some-settings-panel__tabs {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.some-settings-panel__side .b3-list-item {
+    line-height: 32px;
+    margin: 8px;
+}
+.some-settings-panel__side .b3-list-item__graphic {
+    padding: 0 6px 0 4px;
+}
+/* 搜索框：桌面端在内容区顶部、设置行上方（移动端由 --mobile 那段单独摆放）。
+   左侧内边距是「页签内容的 24px + 行自己的 24px」，输入框左端与行标题（.config-item__main
+   的文字起点）对齐，而不是跟行间分割线的左端对齐；上下留白就靠这一圈内边距，
+   不加边框也不做成卡片。 */
+.some-settings-panel__search {
+    flex: 0 0 auto;
+    padding: 16px 24px 8px 48px;
+}
+/* 输入框与它里面那颗清空按钮算一格：按钮绝对定位在输入框内部右侧 */
+.some-settings-panel__search-field {
+    position: relative;
+}
+/* 桌面端不铺满整行：搜索框是一条输入框，不是标题栏。移动端仍然整行撑满（屏幕本来就窄）。 */
+.some-settings-panel:not(.some-settings-panel--mobile) .some-settings-panel__search-field {
+    max-width: 22rem;
+}
+.some-settings-panel__search-field .b3-text-field {
+    width: 100%;
+    box-sizing: border-box;
+    /* 右侧给清空按钮让位，长文案不会压到图标上 */
+    padding-inline-end: 28px;
+}
+/* 一键清空：输入框内右侧的纯图标按钮（思源内置 iconClose）。有内容才出现，
+   颜色按内核那套次要图标取 --b3-theme-on-surface-light，悬停时加深。 */
+.some-settings-panel__search-clear {
     position: absolute;
-    inset: 0;
-    background-color: var(--b3-mask-background);
+    top: 50%;
+    inset-inline-end: 5px;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    border-radius: 3px;
+    background-color: transparent;
+    color: var(--b3-theme-on-surface-light);
+    cursor: pointer;
 }
-.b3-dialog__container {
+.some-settings-panel__search-clear:hover,
+.some-settings-panel__search-clear:focus-visible {
+    color: var(--b3-theme-on-background);
+    background-color: var(--b3-list-hover);
+}
+.some-settings-panel__search-clear svg {
+    width: 11px;
+    height: 11px;
+    fill: currentColor;
+}
+/* 移动端是手指在点：按钮与图标都给大一档，输入框右侧同时多让出一点 */
+.some-settings-panel--mobile .some-settings-panel__search-clear {
+    width: 22px;
+    height: 22px;
+}
+.some-settings-panel--mobile .some-settings-panel__search-clear svg {
+    width: 13px;
+    height: 13px;
+}
+.some-settings-panel--mobile .some-settings-panel__search-field .b3-text-field {
+    padding-inline-end: 32px;
+}
+/* 移动端：搜索框整行撑满，落在面板标题下方、页签栏上方；不吸顶（吸顶的只有页签栏）。 */
+.some-settings-panel--mobile > .some-settings-panel__search {
+    padding: 8px 8px 0;
+}
+/* 页签内容：最上面一行是搜索框，下面一叠页签。只有当前页留在文档流里（其余是 fn__none），
+   滚动各自独立 —— 弹窗自己的 .b3-dialog__content 不再滚动，搜索框也不会被内容顶走。 */
+.some-settings-panel__views {
     position: relative;
     display: flex;
     flex-direction: column;
-    width: 768px;
-    height: 614px;
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius-b);
-    background-color: var(--b3-theme-surface);
-    box-shadow: var(--b3-dialog-shadow);
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
-.b3-dialog__header {
-    flex: 0 0 auto;
-    padding: 9px 24px;
-    border-bottom: 1px solid var(--b3-theme-surface-lighter);
-    font-size: 16px;
-    font-weight: 500;
-    line-height: 24px;
+.some-settings-panel__panes {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
 }
-.b3-dialog__body { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-.b3-dialog__content { flex: 1; min-height: 0; padding: 16px 24px; overflow: hidden; }
-.b3-dialog__action {
+/* 顶部内边距比两侧小：上面就是搜索框，再空 24px 会把首行推得太远 */
+.some-settings-panel__view {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    box-sizing: border-box;
+    padding: 4px 24px 24px;
+}
+/* 移动端：整块面板按自然高度排版，滚动交给宿主的内容区（抽屉高度就是量它量出来的）。
+   所以这里把「每页绝对定位 + 各自滚动」拆掉，改成正常文档流；页签栏的吸顶由上面那条规则负责。
+   移动端的搜索框在面板标题下方（不在这个容器里），这里只是不再占一行。 */
+.some-settings-panel--mobile > .some-settings-panel__views {
+    position: static;
     flex: 0 0 auto;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    padding: 7px 24px;
-    border-top: 1px solid var(--b3-theme-surface-lighter);
+    overflow: visible;
+}
+.some-settings-panel--mobile > .some-settings-panel__views > .some-settings-panel__panes {
+    position: static;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+.some-settings-panel--mobile > .some-settings-panel__views > .some-settings-panel__panes > .some-settings-panel__view {
+    position: static;
+    overflow: visible;
+    padding: 8px;
+}
+/* 设置行不要卡片底色与大圆角 */
+.some-settings-panel .config-items {
+    background-color: transparent;
+    border-radius: 0;
+}
+/* 搜索结果视图 -----------------------------------------------------------
+   输入有效关键词后，所有命中的分类按声明顺序拼成一列：桌面端由 views 自己滚（每页不再
+   各自占满整块、也不再分别滚动），移动端本来就是正常文档流、交给宿主的内容区滚。
+   原来的分类导航（左侧页签列表 / 顶部页签栏）由 JS 收起，搜索框留在原处。
+   页签内容的内边距在这里归零：行有自己的内边距，再叠一层只会让结果左右缩进一大截。 */
+.some-settings-panel--search > .some-settings-panel__views > .some-settings-panel__panes {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.some-settings-panel--search > .some-settings-panel__views > .some-settings-panel__panes > .some-settings-panel__view {
+    position: static;
+    overflow: visible;
+    /* 横向内边距与普通状态一致：结果列的分割线、文案不会因为搜索而左右跳一下 */
+    padding: 0 24px;
+}
+.some-settings-panel--search.some-settings-panel--mobile > .some-settings-panel__views > .some-settings-panel__panes {
+    overflow: visible;
+}
+.some-settings-panel--search.some-settings-panel--mobile > .some-settings-panel__views > .some-settings-panel__panes >
+.some-settings-panel__view {
+    position: static;
+    overflow: visible;
+    padding: 0 8px;
+}
+/* 分组标题：搜索时分类名作为这一组结果的小标题，平时收起（普通状态下分类由页签表达）。
+   横向内边距与行文案的起点对齐（页签内容 24px + 行自己的 24px 里只算这一层，
+   所以这里写 24px 就落在行标题那条竖线上；窄屏跟着 10px 走，见媒体查询）。 */
+.some-settings-panel__group {
+    padding: 12px 24px 4px;
+    color: var(--b3-theme-on-surface);
+    opacity: .7;
+    font-size: .85em;
+    line-height: 1.6;
     user-select: none;
 }
-
-/* ------------------------------------------------------------ 说明条
-   浮在遮罩之上，用一句话说清这个插件最核心的那件事：所有功能默认关闭，按需逐项启用。 */
-.caption {
+/* 命中文字：只换底色，字号与字重都不动 —— 高亮不能改变行本身的样子。 */
+.some-settings-panel__hit {
+    background-color: var(--b3-theme-primary-lightest);
+    color: inherit;
+    border-radius: 2px;
+}
+/* 子设置行缩进 -----------------------------------------------------------
+   功能名那一行（__sub）保持原样，它下面的参数行、说明块、动作行统一缩进一小格，
+   「哪个设置属于哪个功能」一眼就看得出来。缩进加在整行上而不是只挪文案：
+   移动端控件会折到第二行，整行一起缩进才对齐；行间的分割线仍由内核画满整行。
+   基数跟着行自己的内边距走 —— 桌面端内核给 .b3-label 的是 24px，
+   窄屏下面板把行压到 10px（见下面的媒体查询），所以两边各写一条。 */
+.some-settings-panel .config-items > .some-settings-panel__child {
+    /* 引导线的定位基准：竖线与横折都相对这一行摆 */
+    position: relative;
+    padding-inline-start: 40px;
+}
+/* 层级引导线 -------------------------------------------------------------
+   缩进之后「这些行属于上面那个功能」还差一口气，再补一条树形引导线：
+   一条竖线把同一功能的所有子行串起来，每一行在自己的垂直中线处伸出一小段横折指向文案。
+   线画在子行自己的伪元素上，所以它天然从功能名那一行的下沿开始，
+   不需要为它加任何分组容器（页签里的行必须保持平铺，多一层就多一层层级）。
+   最后一个子行带 LAST_CHILD_CLASS（由 markLastChildRow 在拼行时打上），
+   竖线只画到折角处、收成 └，否则它会一直画到行的下沿，看着像下面还有内容没显示完。
+   颜色取 --b3-border-color，与行间分割线同色，深浅主题都跟着思源走。 */
+.some-settings-panel .config-items > .some-settings-panel__child::before,
+.some-settings-panel .config-items > .some-settings-panel__child::after {
+    content: "";
     position: absolute;
-    right: 24px;
-    bottom: 14px;
-    left: 24px;
+    pointer-events: none;
+    background-color: var(--b3-border-color);
+}
+/* 竖线：从行顶画到行底，与上下相邻的子行接成一条连续的线 */
+.some-settings-panel .config-items > .some-settings-panel__child::before {
+    inset-inline-start: 20px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+}
+/* 横折：从竖线伸到文案左侧，留一小段空隙，不贴字 */
+.some-settings-panel .config-items > .some-settings-panel__child::after {
+    inset-inline-start: 20px;
+    top: 50%;
+    width: 10px;
+    height: 1px;
+}
+/* 最后一行：竖线到折角为止 */
+.some-settings-panel .config-items > .some-settings-panel__child--last::before {
+    bottom: 50%;
+}
+/* 面板里的文案统一常规字重：功能名（父项）与它下面的子设置项、动作行都不加粗。
+   「哪个设置属于哪个功能」由子行的缩进与左侧那条层级引导线表达，不再靠字重——
+   加粗功能名会把两侧的视觉重心都拉到标题上，参数行被压成一片灰。
+   因此这里不给任何一类行单独调字重；说明（.b3-label__text）只换颜色，与内核一致。 */
+.some-settings-panel .config-item__main .b3-label__text {
+    color: var(--b3-theme-on-surface);
+}
+.some-settings-panel .config-item:last-child,
+.some-settings-panel .config-item--last-visible {
+    border-bottom: 0;
+}
+.some-settings-panel .some-settings-panel__empty {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 18px 12px;
+    text-align: center;
+    color: var(--b3-theme-on-surface);
+    opacity: .7;
+}
+.some-settings-panel .some-settings-panel__note .b3-label__text {
+    margin-top: 0;
+}
+.some-settings-panel .some-settings-panel__note .b3-label__text + .b3-label__text {
+    margin-top: 6px;
+}
+/* 说明块的动作按钮：与面板里其它行同一套位置 —— 文字让出右侧，按钮竖着叠在右边，
+   每颗 200px、整列上下居中（「导出配置」那些按钮正是这个位置和宽度）。
+   文字因此会被压窄一点，这是对的：一段说明配一组入口，本来就该是「左文右按钮」。
+   窄屏放不下，由下面的媒体查询改回「文字在上、按钮整行在下」。 */
+.some-settings-panel .some-settings-panel__note {
     display: flex;
     align-items: center;
-    gap: 10px;
-    height: 44px;
-    padding: 0 16px;
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: var(--b3-border-radius-b);
-    background-color: var(--b3-theme-background);
-    box-shadow: var(--b3-dialog-shadow);
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
+    gap: 8px;
 }
-.caption__name { color: var(--b3-theme-on-background); font-size: 13px; font-weight: 600; }
-.caption__spacer { flex: 1; }
+.some-settings-panel .some-settings-panel__note-body {
+    flex: 1 1 0;
+    min-width: 0;
+}
+.some-settings-panel .some-settings-panel__note-actions {
+    display: flex;
+    flex: 0 0 200px;
+    width: 200px;
+    flex-direction: column;
+    gap: 8px;
+}
+.some-settings-panel .some-settings-panel__note-actions .b3-button {
+    width: 100%;
+    box-sizing: border-box;
+}
+.some-settings-panel .some-settings-panel__note a {
+    color: var(--b3-theme-primary);
+    word-break: break-all;
+}
+
+/* 弹窗容器宽度 -----------------------------------------------------------
+   真正的宽度由 setting-dialog.ts 的 applyPanelWidth() 量完视口写成行内样式，
+   因为 CSS 这条路已经证实不可靠：Dialog 把宽度写成容器上的行内样式
+   （桌面 768px、移动端 92vw），而内核给 .b3-dialog__container 设了
+   flex-shrink: 0 —— 行内宽度 + 不收缩，视口一旦更窄容器就整块溢出屏幕。
+   这里只留一条兜底：CSS 没生效时也别让它宽过视口。
+   必须 !important —— 内核自己也用同优先级的 max-width 声明这一条。 */
+.some-settings-dialog.b3-dialog__container {
+    max-width: 100% !important;
+    min-width: 0;
+}
+
+/* 单位标签：内核给 .b3-dialog__content 设了 word-break: break-all，
+   容器一旦容不下，连 "ms" 这种两个字母的单位都会被从中间断成两行。
+   nowrap 才是止血点（keep-all 只约束 CJK，对 "ms" 无效）。 */
+.some-settings-panel .config-item__unit {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
+/* 窄面板适配 -------------------------------------------------------------
+   弹窗宽度由用户拖拽决定，思源给 .config-item__main 的 flex:1 在窄宽度下
+   会把文案挤成一列单字。这里给文案一个最小宽度，空间不够就让整行折成
+   上下两段（文案在上、控件在下并撑满宽度），而不是把字竖向排开。 */
+.some-settings-panel .config-item,
+.some-settings-panel .config-item__main {
+    min-width: 0;
+}
+.some-settings-panel label.config-item > .config-item__main:first-child,
+.some-settings-panel div.config-item > .config-item__main:first-child {
+    flex: 1 1 12rem;
+}
+.some-settings-panel .config-item .fn__size200,
+.some-settings-panel .config-item .config-item__number {
+    max-width: 100%;
+}
+.some-settings-panel .config-item .b3-select,
+.some-settings-panel .config-item .b3-text-field {
+    min-width: 0;
+}
+.some-settings-panel .b3-switch {
+    margin-inline-start: auto;
+}
+
+/* 多行文本行 -------------------------------------------------------------
+   textarea 塞不进「右侧定宽 200px」那一格，所以这一行照内核 textBlock 的写法整块竖排：
+   标题与说明在上、输入框整行在下（这一行没有 fn__flex，块布局天然就是上下两段）。
+   行本身仍是 .config-item，分割线与缩进照旧；层级引导线的横折对齐到标题那一行
+   （默认的 50% 会指在输入框中间，看着像指错了对象）。 */
+.some-settings-panel .some-settings-panel__textarea {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
+    resize: vertical;
+    line-height: 1.6;
+}
+.some-settings-panel .config-items > .some-settings-panel__textarea-row::after {
+    top: 26px;
+}
+
+/* 移动端 / 窄窗口 ---------------------------------------------------------
+   断点与内核一致（内核在 750px 以下把 .config-item 折成上下两段、输入框撑满整行）。
+   关键是行内边距：内核给 .b3-label 的 16px 24px 在手机上会吃掉近一半屏宽，
+   上下各 16px 还会把每行之间撑出 32px 的空隙——这正是"边距特别大"的主因。
+   选择器比内核的 .config__tab-container .b3-label 多一级，
+   不论样式表加载顺序如何都稳定生效。作用域用容器上的 some-settings-dialog 类限定。 */
+@media (max-width: 750px) {
+    .some-settings-dialog .b3-dialog__action {
+        padding: 7px 8px;
+    }
+    /* 页签内容自己也收到 8px：弹窗内容区已经不再留内边距（见 applyDesktopLayout） */
+    .b3-dialog__body .some-settings-panel__view {
+        padding: 8px;
+    }
+    /* 桌面端把窗口缩到 750px 以下时，侧栏收成一列只有图标的页签（内核设置页同款做法），
+       否则 220px 的侧栏会把内容区挤没。 */
+    .b3-dialog__body .some-settings-panel__side {
+        width: auto;
+        padding: 12px 4px;
+    }
+    .b3-dialog__body .some-settings-panel__side .b3-list-item {
+        width: 24px;
+        margin: 8px auto;
+    }
+    .b3-dialog__body .some-settings-panel__side .b3-list-item__text {
+        display: none;
+    }
+    /* 搜索框的横向内边距跟着窄屏走：左侧同样对齐到行标题（页签内容 8px + 行 10px） */
+    .b3-dialog__body .some-settings-panel .some-settings-panel__search {
+        padding: 8px 10px 6px 18px;
+    }
+    /* 移动端例外：它的搜索框在页签栏上方，左端要对的是「页签栏第一项的左边」和行的分割线
+       （页签栏自己 4px + 项 4px = 8px），不是行标题的文字起点。两端都取 8px，
+       输入框正好铺满分割线的宽度。选择器多带 --mobile 一级，才压得过上面那条窄屏规则。 */
+    .b3-dialog__body .some-settings-panel.some-settings-panel--mobile > .some-settings-panel__search {
+        padding: 8px 8px 6px;
+    }
+    /* 搜索结果的分组标题：窄屏下留白与横向内边距一起跟着 10px 走 */
+    .b3-dialog__body .some-settings-panel .some-settings-panel__group {
+        padding: 8px 10px 4px;
+    }
+    /* 窄屏下结果列的横向内边距也收到 10px，与普通状态的行一致 */
+    .b3-dialog__body .some-settings-panel.some-settings-panel--search > .some-settings-panel__views >
+    .some-settings-panel__panes > .some-settings-panel__view {
+        padding: 0 10px;
+    }
+    /* 移动端同样按 8px 走：进来搜（结果列）和没搜（普通行）时，行的分割线停在同一处，
+       否则一进搜索整列会横向挪 2px，搜索框也跟着对不齐。 */
+    .b3-dialog__body .some-settings-panel.some-settings-panel--search.some-settings-panel--mobile >
+    .some-settings-panel__views > .some-settings-panel__panes > .some-settings-panel__view {
+        padding: 0 8px;
+    }
+    .b3-dialog__body .some-settings-panel .b3-label.config-item,
+    .b3-dialog__body .some-settings-panel .config-item {
+        padding: 8px 10px;
+    }
+    /* 子行缩进跟着窄屏这 10px 走；选择器多带 .config-item 一级，才压得过上面那条简写 */
+    .b3-dialog__body .some-settings-panel .b3-label.config-item.some-settings-panel__child {
+        padding-inline-start: 26px;
+    }
+    /* 引导线跟着窄屏这 26px 一起收：竖线挪到 12px，横折到 20px 为止，
+       与文案之间同样留 6px。缩进改了这里不改，线会压到文字上。 */
+    .b3-dialog__body .some-settings-panel .config-items > .some-settings-panel__child::before,
+    .b3-dialog__body .some-settings-panel .config-items > .some-settings-panel__child::after {
+        inset-inline-start: 12px;
+    }
+    .b3-dialog__body .some-settings-panel .config-items > .some-settings-panel__child::after {
+        width: 8px;
+    }
+    /* 窄屏行内边距收到 8px，标题那一行的中线也跟着上移：多行文本行的横折同样对齐标题 */
+    .b3-dialog__body .some-settings-panel .config-items > .some-settings-panel__textarea-row::after {
+        top: 22px;
+    }
+    .b3-dialog__body .some-settings-panel .config-item__main {
+        flex: 1 1 100%;
+        margin: 0;
+    }
+    /* 功能行的右边只有一个开关，把标题也撑满整行只会把开关挤到第二行去，
+       所以这一行保持左右布局，让标题自己让出空间。
+       flex-basis 必须取 0 而不是 auto：内核给 .config-item 开了 flex-wrap，
+       折行判定发生在收缩之前，用的是「基准尺寸之和」——基准取内容宽度时，
+       标题一长（或右边是下拉而不是开关时）就会把控件整个顶到第二行去。
+       取 0 之后先是同一行，再由 grow 把剩下的宽度分给标题。
+       选择器必须多带一个 .config-item：上面那条 div.config-item > ...:first-child
+       的 :first-child 也算一份特异性，不带就跟它打平、按先后顺序输掉。 */
+    .b3-dialog__body .some-settings-panel .config-item.some-settings-panel__sub > .config-item__main {
+        flex: 1 1 0;
+    }
+    /* 拿 selector 当开关的功能，那个下拉也在功能行里，同样不许被上面的
+       「控件撑满整行」规则挤到第二行去：让它在标题让出空间之后占满剩余宽度。
+       选择器多一级（带 __sub），不论样式表顺序如何都稳定生效。 */
+    .b3-dialog__body .some-settings-panel .config-item.some-settings-panel__sub > .b3-select {
+        flex: 0 1 auto;
+        width: auto;
+        min-width: 7rem;
+        max-width: 55%;
+        margin-top: 0;
+    }
+    .b3-dialog__body .some-settings-panel .config-item > .fn__space {
+        display: none;
+    }
+    /* 参数行上的控件撑满整行；功能行（__sub）不算参数行，它右边的下拉要留在
+       功能名那一行，所以这里把 __sub 排除掉，交给下面那条规则处理。
+       少了这个排除，同样特异性的「撑满整行」会按后来的顺序压掉那条规则。 */
+    .b3-dialog__body .some-settings-panel .config-item:not(.some-settings-panel__sub) > .fn__size200:not(.b3-switch),
+    .b3-dialog__body .some-settings-panel .config-item > .b3-text-field,
+    .b3-dialog__body .some-settings-panel .config-item > .b3-select {
+        width: 100%;
+        max-width: 100%;
+        margin-top: 6px;
+    }
+    /* 窄屏放不下「左文右按钮」：说明块改回上下布局，按钮撑满整行 ——
+       200px 在手机上只剩半屏，两颗各占一半更容易误点 */
+    .b3-dialog__body .some-settings-panel .some-settings-panel__note {
+        display: block;
+    }
+    .b3-dialog__body .some-settings-panel .some-settings-panel__note-actions {
+        width: auto;
+        margin-top: 12px;
+    }
+    .b3-dialog__body .some-settings-panel .some-settings-panel__note-actions .b3-button {
+        width: 100%;
+    }
+    .b3-dialog__body .some-settings-panel .config-item__number {
+        flex-wrap: nowrap;
+    }
+    .b3-dialog__body .some-settings-panel .config-item__number > .b3-text-field {
+        width: auto;
+        margin-top: 0;
+    }
+}
 </style>
 </head>
 <body>
-<!-- 思源主窗口：顶栏 + 停靠栏 + 正文 + 状态栏 -->
+<svg style="position: absolute; width: 0; height: 0; overflow: hidden;">
+    <defs>
+                <symbol id="iconDown" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m6 9 6 6 6-6"/>
+          </symbol>
+        <symbol id="iconCloudSucc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m17 15-5.5 5.5L9 18"/><path d="M5.516 16.07A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 3.501 7.327"/>
+          </symbol>
+        <symbol id="iconCalendarPlus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 18h6"/><path d="M16 2v3"/><path d="M19 15v6"/><path d="M21 11.5V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8.3"/><path d="M3 9h18"/><path d="M8 2v3"/>
+          </symbol>
+        <symbol id="iconRiffCard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/>
+          </symbol>
+        <symbol id="iconBack" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>
+          </symbol>
+        <symbol id="iconForward" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </symbol>
+        <symbol id="iconPlugin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z"/>
+          </symbol>
+        <symbol id="iconTerminal" viewBox="1 1 22 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m7 11 2-2-2-2"/><path d="M11 13h4"/><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/>
+          </symbol>
+        <symbol id="iconSearch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/>
+          </symbol>
+        <symbol id="iconLight" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>
+          </symbol>
+        <symbol id="iconMore" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/>
+          </symbol>
+        <symbol id="iconMin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 12h14"/>
+          </symbol>
+        <symbol id="iconMax" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+          </symbol>
+        <symbol id="iconClose" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+          </symbol>
+        <symbol id="iconFiles" viewBox="40 -920 880 880">
+            <path d="M300-172.31v-416q0-29.92 21.5-50.8Q343-660 372.92-660h414.77q29.92 0 51.12 21.19Q860-617.61 860-587.69v299.23L671.54-100H372.31q-29.92 0-51.12-21.19Q300-142.39 300-172.31ZM101-703.08Q95.39-733 112.66-757q17.26-24 47.19-29.61L569.23-859q29.92-5.61 53.92 11.66 24 17.26 29.62 47.19l9.23 52.46h-61.23L593-791.54q-.77-4.23-4.62-6.73-3.84-2.5-8.46-1.73l-409.53 72.77q-5.39.77-8.08 5-2.69 4.23-1.93 9.62l51.93 293.31v178.22q-14.85-7.84-25.39-21.5-10.53-13.65-13.53-31.11L101-703.08Zm259 115.39v415.38q0 5.39 3.46 8.85t8.85 3.46H640v-160h160v-267.69q0-5.39-3.46-8.85t-8.85-3.46H372.31q-5.39 0-8.85 3.46t-3.46 8.85ZM580-380Z"/>
+          </symbol>
+        <symbol id="iconOutline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 5H3"/><path d="M16 12H3"/><path d="M16 19H3"/><path d="M21 5h.01"/><path d="M21 12h.01"/><path d="M21 19h.01"/>
+          </symbol>
+        <symbol id="iconInbox" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+          </symbol>
+        <symbol id="iconBookmark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>
+          </symbol>
+        <symbol id="iconTag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>
+          </symbol>
+        <symbol id="iconSparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3H9"/>
+          </symbol>
+        <symbol id="iconGraph" viewBox="30 -930 900 900">
+            <path d="M286.99-100.39q-44.68 0-76.03-31.29-31.34-31.3-31.34-76.01 0-36.31 21.92-64.81t55.38-37.81v-340.15q-33.46-9.31-55.38-37.81t-21.92-64.81q0-44.55 31.27-75.73Q242.17-860 286.86-860q44.68 0 76.02 31.3 31.35 31.3 31.35 76.01 0 36.31-21.73 64.61-21.73 28.31-55.58 37.62v192q23.85-24 55.7-37.96 31.84-13.96 68.92-13.96h76.92q51.76 0 88-36.73 36.23-36.74 36.23-88.66v-14.69q-33.46-9.31-55.19-37.62-21.73-28.3-21.73-64.61 0-44.71 31.2-76.01 31.2-31.3 75.77-31.3 44.57 0 76.1 31.3 31.54 31.3 31.54 76.01 0 36.31-21.92 64.61-21.92 28.31-55.77 37.62v14.69q0 76.94-53.89 131.16-53.88 54.22-130.34 54.22h-76.92q-51.92 0-88.27 36.69-36.35 36.68-36.35 89.08v14.31q33.85 9.31 55.58 37.81 21.73 28.5 21.73 64.81 0 44.71-31.28 76.01-31.28 31.29-75.96 31.29Zm.13-605.38q19.88 0 33.5-13.59 13.61-13.6 13.61-33.7 0-20.09-13.6-33.71-13.6-13.61-33.71-13.61-19.69 0-33.5 13.8-13.8 13.81-13.8 33.5 0 19.7 13.8 33.5 13.81 13.81 33.7 13.81Zm385.76 0q19.89 0 33.5-13.59 13.62-13.6 13.62-33.7 0-20.09-13.6-33.71-13.6-13.61-33.71-13.61-19.69 0-33.5 13.8-13.81 13.81-13.81 33.5 0 19.7 13.81 33.5 13.81 13.81 33.69 13.81ZM287.12-160.38q19.88 0 33.5-13.6 13.61-13.6 13.61-33.69 0-20.1-13.6-33.72Q307.03-255 286.92-255q-19.69 0-33.5 13.81-13.8 13.8-13.8 33.5 0 19.69 13.8 33.5 13.81 13.81 33.7 13.81Zm-.2-592.7Zm385.77 0ZM286.92-207.69Z"/>
+          </symbol>
+        <symbol id="iconEdit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>
+          </symbol>
+        <symbol id="iconTheme" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22a1 1 0 0 1 0-20 10 9 0 0 1 10 9 5 5 0 0 1-5 5h-2.25a1.75 1.75 0 0 0-1.4 2.8l.3.4a1.75 1.75 0 0 1-1.4 2.8z"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+          </symbol>
+        <symbol id="iconPlugZap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"/><path d="m2 22 3-3"/><path d="M7.5 13.5 10 11"/><path d="M10.5 16.5 13 14"/><path d="m18 3-4 4h6l-4 4"/>
+          </symbol>
+        <symbol id="iconSettings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/>
+          </symbol>
+    </defs>
+</svg>
+
+<!-- 思源主窗口：顶栏 + 停靠栏 + 页签 + 正文 + 状态栏（顶栏条目顺序照 layout/topBar.ts） -->
 <div class="toolbar">
-    <span class="toolbar__icon"><svg viewBox="0 0 24 24"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg></span>
-    <span class="toolbar__title">一些设置</span>
-    <span class="toolbar__controls">
-        <svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
-        <svg viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
-        <svg viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-    </span>
+    <div class="toolbar__item"><span class="toolbar__text">SiYuan</span><svg class="toolbar__svg"><use xlink:href="#iconDown"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconCloudSucc"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconCalendarPlus"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconRiffCard"></use></svg></div>
+    <div class="toolbar__item toolbar__item--disabled"><svg><use xlink:href="#iconBack"></use></svg></div>
+    <div class="toolbar__item toolbar__item--disabled"><svg><use xlink:href="#iconForward"></use></svg></div>
+    <div id="drag" class="fn__flex-1 fn__ellipsis">一些设置</div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconPlugin"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconTerminal"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconSearch"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconLight"></use></svg></div>
+    <div class="toolbar__item"><svg><use xlink:href="#iconMore"></use></svg></div>
+    <div class="fn__flex">
+        <div class="toolbar__item toolbar__item--win"><svg><use xlink:href="#iconMin"></use></svg></div>
+        <div class="toolbar__item toolbar__item--win"><svg><use xlink:href="#iconMax"></use></svg></div>
+        <div class="toolbar__item toolbar__item--win toolbar__item--close"><svg><use xlink:href="#iconClose"></use></svg></div>
+    </div>
 </div>
 <div class="layout">
     <div class="dock">
-        <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span>
-        <span class="dock__item"><svg viewBox="0 0 24 24"><path d="m21 21-4.34-4.34"/><circle cx="11" cy="11" r="8"/></svg></span>
-        <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/></svg></span>
-        <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5"/></svg></span>
-        <span class="dock__item"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="18" r="2"/></svg></span>
-        <span class="dock__split"></span>
-        <span class="dock__item"><svg viewBox="0 0 24 24"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"/><circle cx="12" cy="12" r="3"/></svg></span>
+        <div class="dock__item dock__item--active"><svg><use xlink:href="#iconFiles"></use></svg></div>
+        <div class="dock__item"><svg><use xlink:href="#iconOutline"></use></svg></div>
+        <div class="dock__item"><svg><use xlink:href="#iconInbox"></use></svg></div>
+        <div class="dock__split"></div>
+        <div class="dock__item"><svg><use xlink:href="#iconBookmark"></use></svg></div>
+        <div class="dock__item"><svg><use xlink:href="#iconTag"></use></svg></div>
+        <div class="dock__split"></div>
+        <div class="dock__item"><svg><use xlink:href="#iconSparkles"></use></svg></div>
+        <div class="dock__item"><svg><use xlink:href="#iconGraph"></use></svg></div>
     </div>
-    <div class="editor">
-        <div class="editor__title">一些设置</div>
-        <div class="editor__meta">一批可独立启停的桌面端与移动端增强功能</div>
-        <div class="editor__p">每个功能都有自己的开关，可以单独启用、单独关闭，互不影响。</div>
-        <div class="editor__p">所有功能默认关闭，按需逐项启用；保存后立刻生效，不用重载插件。</div>
+    <div class="layout__center">
+        <ul class="layout-tab-bar">
+            <li class="item item--focus">
+                <svg class="item__graphic"><use xlink:href="#iconFiles"></use></svg>
+                <span class="item__text">一些设置</span>
+                <span class="item__close"><svg><use xlink:href="#iconClose"></use></svg></span>
+            </li>
+        </ul>
+        <div class="protyle-mock">
+            <div class="protyle-mock__title">一些设置</div>
+            <div class="protyle-mock__p">一批可独立启停的桌面端与移动端增强功能和优化后的样式。</div>
+        </div>
     </div>
 </div>
 <div class="status">
-    <span>思源笔记</span>
-    <span class="fn__flex-1"></span>
-    <span>已同步</span>
-    <span>1234 字</span>
+    <span class="status__msg">已同步</span>
+    <span class="status__counter"><span>1234 字</span><span>42 行</span></span>
 </div>
 
-<!-- 设置弹窗：遮罩 + 容器，结构、尺寸与内边距都取自内核 .b3-dialog -->
+<!-- 设置弹窗：宿主的 Setting 建的 Dialog（宽 768px、高 80vh，面板自己把宽度改成 900px） -->
 <div class="b3-dialog">
     <div class="b3-dialog__scrim"></div>
-    <div class="b3-dialog__container">
+    <div role="dialog" aria-modal="true" tabindex="-1" class="b3-dialog__container some-settings-layer" style="width: 900px; max-width: 900px; min-width: 0; height: 80vh; height: 80vh;">
         <div class="b3-dialog__header">一些设置</div>
         <div class="b3-dialog__body">
-            <div class="b3-dialog__content">
-                <div class="config some-settings-panel">
-                    <!-- 功能 -->
-                    <div class="config-title">功能</div>
-                    <div class="config-items">
-                        <label class="fn__flex b3-label config-item some-settings-panel__sub">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>书签打开笔记时跳到上次位置</div>
-                                <div class="b3-label__text">整篇文档的书签按文档树那条路打开，恢复上次读到的位置。</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <input class="b3-switch fn__flex-center" type="checkbox" checked/>
-                        </label>
-                        <label class="fn__flex b3-label config-item some-settings-panel__sub">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>用悬浮窗口取代录音提示</div>
-                                <div class="b3-label__text">录音期间改用小浮窗：不遮挡正文，显示已录时长，也能直接结束。</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <input class="b3-switch fn__flex-center" type="checkbox" checked/>
-                        </label>
-                    </div>
-
-                    <!-- 界面 -->
-                    <div class="config-title">界面</div>
-                    <div class="config-items">
-                        <div class="fn__flex b3-label config-item some-settings-panel__sub">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>页签标题渲染行级 Markdown</div>
-                                <div class="b3-label__text">页签条、页签下拉列表与移动端页签概览都支持行级语法。</div>
-                            </div>
-                            <span class="fn__space"></span>
-                            <select class="b3-select fn__flex-center fn__size200">
-                                <option>禁用</option>
-                                <option>桌面端</option>
-                                <option>移动端</option>
-                                <option selected>桌面端 + 移动端</option>
-                            </select>
+            <!-- 桌面端布局：内容区零内边距、不滚动，滚动交给每一页 -->
+            <div class="b3-dialog__content" style="padding: 0; overflow: hidden;">
+            <div class="config some-settings-panel some-settings-panel--tabs">
+                <div class="some-settings-panel__side b3-list b3-list--background">
+                    <ul class="some-settings-panel__tabs" role="tablist" tabindex="-1">
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="ai" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconSparkles"></use>
+                            </svg>
+                            <span class="b3-list-item__text">人工智能</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="editor" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconEdit"></use>
+                            </svg>
+                            <span class="b3-list-item__text">编辑器</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="doc-tree" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconFiles"></use>
+                            </svg>
+                            <span class="b3-list-item__text">文档树与页签</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab b3-list-item--focus item--focus" data-ss-tab="appearance" role="tab" tabindex="0" aria-selected="true">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconTheme"></use>
+                            </svg>
+                            <span class="b3-list-item__text">界面与外观</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="connection" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconPlugZap"></use>
+                            </svg>
+                            <span class="b3-list-item__text">连接与内核</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="settings" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconSettings"></use>
+                            </svg>
+                            <span class="b3-list-item__text">设置与集市</span>
+                        </li>
+                        <li class="b3-list-item some-settings-panel__tab" data-ss-tab="plugin" role="tab" tabindex="0" aria-selected="false">
+                            <svg class="b3-list-item__graphic">
+                                <use xlink:href="#iconPlugin"></use>
+                            </svg>
+                            <span class="b3-list-item__text">插件自身</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="some-settings-panel__views">
+                    <div class="some-settings-panel__search">
+                        <div class="some-settings-panel__search-field">
+                            <input class="b3-text-field" type="text" data-ss-search="1" role="searchbox" autocomplete="off" spellcheck="false" placeholder="搜索..." aria-label="搜索...">
+                            <button class="some-settings-panel__search-clear fn__none" type="button" data-ss-search-clear="1" aria-label="清空搜索" title="清空搜索">
+                                <svg>
+                                    <use xlink:href="#iconClose"></use>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-
-                    <!-- 开发 -->
-                    <div class="config-title">开发</div>
-                    <div class="config-items">
-                        <div class="fn__flex b3-label config-item some-settings-panel__sub">
-                            <div class="fn__flex-1 config-item__main">
-                                <div>插件配置导入导出</div>
-                                <div class="b3-label__text">把全部功能的当前配置打成一段 JSON，也能按功能 id 写回来。</div>
+                    <div class="some-settings-panel__panes">
+                        <div class="some-settings-panel__view" data-ss-tab-panel="appearance" role="tabpanel">
+                            <div class="config-items">
+                                <div class="some-settings-panel__group fn__none" data-ss-search-group="appearance">界面与外观</div>
+                                <div class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="exit-confirm" data-ss-row="exit-confirm::scope">
+                                    <div class="fn__flex-1 config-item__main">退出应用前弹窗确认
+                                        <div class="b3-label__text">退出应用前弹窗确认（主菜单的「退出应用」与设置为「关闭窗口即退出」时的关窗）；从桌面托盘菜单退出时不询问。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <select class="b3-select fn__flex-center fn__size200" data-ss-select="exit-confirm::scope">
+                                        <option value="disabled">禁用</option>
+                                        <option value="desktop">桌面端</option>
+                                        <option value="mobile">移动端</option>
+                                        <option value="both" selected="">桌面端 + 移动端</option>
+                                    </select>
+                                </div>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="modal-blur" data-ss-row="modal-blur::enabled">
+                                    <div class="fn__flex-1 config-item__main">Modal 遮罩模糊
+                                        <div class="b3-label__text">给弹窗遮罩加高斯模糊，被遮住的编辑区虚化，弹窗本身保持清晰。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="modal-blur::enabled" aria-label="启用" checked="">
+                                </label>
+                                <div class="some-settings-panel__child--last fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="modal-blur" data-ss-row="modal-blur::radius">
+                                    <div class="fn__flex-1 config-item__main">模糊半径</div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="modal-blur::radius" value="10" min="1" max="40" step="1">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">px</span>
+                                    </div>
+                                </div>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-dock-blur" data-ss-row="mobile-dock-blur::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端悬浮 dock 栏高斯模糊
+                                        <div class="b3-label__text">移动端悬浮 dock 栏改为半透明毛玻璃，滚动时正文在胶囊下虚化。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-dock-blur::enabled" aria-label="启用" checked="">
+                                </label>
+                                <div class="fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="mobile-dock-blur" data-ss-row="mobile-dock-blur::radius">
+                                    <div class="fn__flex-1 config-item__main">模糊半径</div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="mobile-dock-blur::radius" value="14" min="1" max="40" step="1">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">px</span>
+                                    </div>
+                                </div>
+                                <div class="some-settings-panel__child--last fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="mobile-dock-blur" data-ss-row="mobile-dock-blur::opacity">
+                                    <div class="fn__flex-1 config-item__main">胶囊底色不透明度</div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="mobile-dock-blur::opacity" value="70" min="0" max="100" step="1">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">%</span>
+                                    </div>
+                                </div>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-bar-animation" data-ss-row="mobile-bar-animation::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端栏体动画优化
+                                        <div class="b3-label__text">移动端顶栏、面包屑与悬浮 dock 栏的显隐加入平滑过渡；dock 栏只在整体显示与整体隐藏之间切换。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-bar-animation::enabled" aria-label="启用">
+                                </label>
+                                <div class="fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="mobile-bar-animation" data-ss-row="mobile-bar-animation::duration">
+                                    <div class="fn__flex-1 config-item__main">过渡时长</div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="mobile-bar-animation::duration" value="200" min="0" max="600" step="20">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">ms</span>
+                                    </div>
+                                </div>
+                                <div class="some-settings-panel__child--last fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="mobile-bar-animation" data-ss-row="mobile-bar-animation::easing">
+                                    <div class="fn__flex-1 config-item__main">缓动曲线</div>
+                                    <span class="fn__space"></span>
+                                    <select class="b3-select fn__flex-center fn__size200" data-ss-select="mobile-bar-animation::easing">
+                                        <option value="emphasized" selected="">强调（Material 风格）</option>
+                                        <option value="standard">标准</option>
+                                        <option value="linear">线性</option>
+                                    </select>
+                                </div>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-sync-button" data-ss-row="mobile-sync-button::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端常显立即同步
+                                        <div class="b3-label__text">移动端右上角常显「立即同步」按钮。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-sync-button::enabled" aria-label="启用">
+                                </label>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="hide-mobile-exit" data-ss-row="hide-mobile-exit::enabled">
+                                    <div class="fn__flex-1 config-item__main">隐藏移动端退出应用按钮
+                                        <div class="b3-label__text">隐藏移动端侧面板里那个只有图标的「退出应用」按钮。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="hide-mobile-exit::enabled" aria-label="启用">
+                                </label>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-ref-panel-height" data-ss-row="mobile-ref-panel-height::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端增大候选浮层高度
+                                        <div class="b3-label__text">移动端把引用搜索等候选浮层的高度放宽到视口的指定比例，且不超出可视区底部。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-ref-panel-height::enabled" aria-label="启用">
+                                </label>
+                                <div class="some-settings-panel__child--last fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="mobile-ref-panel-height" data-ss-row="mobile-ref-panel-height::maxHeight">
+                                    <div class="fn__flex-1 config-item__main">目标高度
+                                        <div class="b3-label__text">占视口高度的比例；实际高度还受面板到屏幕底部空间的限制</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="mobile-ref-panel-height::maxHeight" value="60" min="20" max="100" step="5">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">vh</span>
+                                    </div>
+                                </div>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-select-native" data-ss-row="mobile-select-native::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端下拉用思源原生样式
+                                        <div class="b3-label__text">移动端点开下拉选择器时弹出思源原生菜单，选中后照常触发变更。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-select-native::enabled" aria-label="启用">
+                                </label>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-longpress-menu-label" data-ss-row="mobile-longpress-menu-label::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端长按菜单补文字
+                                        <div class="b3-label__text">给移动端长按菜单里只有图标的按钮补上文字；「返回上一层」保持纯图标。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-longpress-menu-label::enabled" aria-label="启用">
+                                </label>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="mobile-block-icon-always" data-ss-row="mobile-block-icon-always::enabled">
+                                    <div class="fn__flex-1 config-item__main">移动端块标保持显示
+                                        <div class="b3-label__text">移动端操作块时块标保持显示，点击仍弹出原生菜单。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="mobile-block-icon-always::enabled" aria-label="启用">
+                                </label>
+                                <label class="fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="desktop-command-panel-slim" data-ss-row="desktop-command-panel-slim::enabled">
+                                    <div class="fn__flex-1 config-item__main">桌面端命令面板瘦身
+                                        <div class="b3-label__text">把桌面端命令面板的宽度缩到思源原生宽度的指定百分比。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="desktop-command-panel-slim::enabled" aria-label="启用">
+                                </label>
+                                <div class="some-settings-panel__child--last fn__flex b3-label config-item some-settings-panel__child" data-ss-feature="desktop-command-panel-slim" data-ss-row="desktop-command-panel-slim::width">
+                                    <div class="fn__flex-1 config-item__main">面板宽度
+                                        <div class="b3-label__text">占思源原生宽度（80vw）的百分比，50% 即 40vw</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <div class="fn__size200 fn__flex-center fn__flex config-item__number">
+                                        <input class="b3-text-field fn__flex-1" type="number" data-ss-number="desktop-command-panel-slim::width" value="50" min="20" max="100" step="5">
+                                        <span class="fn__space"></span>
+                                        <span class="config-item__unit ft__on-surface">%</span>
+                                    </div>
+                                </div>
+                                <label class="config-item--last-visible fn__flex b3-label config-item some-settings-panel__sub" data-ss-feature="devtools-hotkey" data-ss-row="devtools-hotkey::enabled">
+                                    <div class="fn__flex-1 config-item__main">桌面端 F12 开关开发者工具
+                                        <div class="b3-label__text">桌面端按 F12 打开或关闭开发者工具，与思源状态栏右键菜单里的入口等效。</div>
+                                    </div>
+                                    <span class="fn__space"></span>
+                                    <input class="b3-switch fn__flex-center" type="checkbox" data-ss-switch="devtools-hotkey::enabled" aria-label="启用">
+                                </label>
                             </div>
-                            <span class="fn__space"></span>
-                            <button class="b3-button b3-button--outline fn__flex-center fn__size200" type="button">导出</button>
-                        </div>
-                        <div class="b3-label config-item some-settings-panel__note config-item--last-visible">
-                            <div class="b3-label__text">本插件由个人开发维护，不是思源官方功能；所有功能默认关闭，按需逐项启用。</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="b3-dialog__action">
-                <button class="b3-button b3-button--cancel" type="button">取消</button>
-                <div class="fn__space"></div>
-                <button class="b3-button b3-button--text" type="button">保存</button>
             </div>
+            <!-- 面板改完即落盘，宿主的动作区整块被 fn__none 收起 -->
+            <div class="b3-dialog__action fn__none"></div>
         </div>
     </div>
-</div>
-
-<div class="caption">
-    <span class="caption__name">Some Settings · 一些设置</span>
-    <span class="caption__spacer"></span>
-    <span>每个功能一个开关，所有功能默认关闭</span>
 </div>
 </body>
 </html>
