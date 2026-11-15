@@ -17,10 +17,17 @@ import {defineConfig} from "vitest/config";
 
 const pathOf = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
 
-/** 依赖替换整个 `window.location` 的测试文件，只能用默认进程池。 */
+/**
+ * 依赖替换整个 `window.location` 的测试文件，只能用默认进程池。
+ *
+ * 这两个文件必须写成**相对路径**，不能像 `alias` / `setupFiles` 那样用 `pathOf()` 生成绝对路径：
+ * 它是 `include` / `exclude` 的 glob 模式，而 `pathOf()` 在 Windows 上给出的是
+ * `E:\Projects\...` 这种带反斜杠的绝对路径 —— 反斜杠在 glob 里是转义符，vitest 会在这条
+ * 模式上一直转不出来，整个 `npm test` 卡住不返回（Linux 上反斜杠不出现，所以 CI 正常）。
+ */
 const locationTests = [
-    pathOf("./tests/features/kernel-auto-reconnect.test.ts"),
-    pathOf("./tests/features/kernel-reconnect-button.test.ts"),
+    "tests/features/kernel-auto-reconnect.test.ts",
+    "tests/features/kernel-reconnect-button.test.ts",
 ];
 
 export default defineConfig({
