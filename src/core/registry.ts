@@ -8,6 +8,7 @@
  */
 import agentEnterToSend from "../features/agent-enter-to-send";
 import agentThinkingStickyHeader from "../features/agent-thinking-sticky-header";
+import agentThinkingTranslate from "../features/agent-thinking-translate";
 import agentToolCallDetail from "../features/agent-tool-call-detail";
 import assetInfoMenu from "../features/asset-info-menu";
 import assetsNewFile from "../features/assets-new-file";
@@ -87,6 +88,7 @@ export const FEATURES: FeatureDefinition[] = [
     agentEnterToSend,
     agentThinkingStickyHeader,
     agentToolCallDetail,
+    agentThinkingTranslate,
     refCrumbsGuide,
     dailyNoteDirect,
     newDocFixedTarget,
