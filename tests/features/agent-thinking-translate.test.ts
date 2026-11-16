@@ -16,6 +16,7 @@ import {
     describe,
     expect,
     it,
+    vi,
 } from "vitest";
 import definition from "../../src/features/agent-thinking-translate/index";
 import {
@@ -27,9 +28,13 @@ import {
 } from "../../src/features/agent-thinking-translate/provider";
 import {
     ReasoningTranslation,
+    retryPolicyOf,
     splitFragments,
 } from "../../src/features/agent-thinking-translate/translation";
-import type {TranslationState} from "../../src/features/agent-thinking-translate/translation";
+import type {
+    RetryPolicy,
+    TranslationState,
+} from "../../src/features/agent-thinking-translate/translation";
 import {mountFeature} from "../helpers/feature-host";
 import type {HostHarness} from "../helpers/feature-host";
 import {mockState} from "../mocks/siyuan";
@@ -159,6 +164,27 @@ const mount = (config: Record<string, unknown> = {}): HostHarness => {
     return harness;
 };
 
+/**
+ * 造一个翻译状态机，并记录它发布过的每个状态。
+ *
+ * @param translate 一次片段翻译；测试里自己决定成功、失败或挂起。
+ * @param retry 自动重试策略；不传就完全不自动重试，失败直接进失败态。
+ */
+const createTranslation = (
+    translate: (text: string, signal: AbortSignal) => Promise<string>,
+    cache = new Map<string, string>(),
+    retry?: RetryPolicy,
+) => {
+    const states: TranslationState[] = [];
+    const translation = new ReasoningTranslation(
+        translate,
+        cache,
+        (state) => states.push(state),
+        retry ? {retry} : undefined,
+    );
+    return {translation, states, cache};
+};
+
 describe("智能体思考翻译", () => {
     beforeEach(() => {
         // 目标语言固定成简体中文，测试不依赖运行环境的界面语言
@@ -235,7 +261,7 @@ describe("智能体思考翻译", () => {
             const request = buildRequest({provider: "google", text: "hello world", target: "zh-CN"});
             const url = new URL(request.url);
             expect(url.origin + url.pathname).toBe("https://translate.googleapis.com/translate_a/single");
-            expect(url.searchParams.get("client")).toBe("gtx");
+            expect(url.searchParams.get("client")).toBe("dict-chrome-ex");
             expect(url.searchParams.get("sl")).toBe("auto");
             expect(url.searchParams.get("tl")).toBe("zh-CN");
             expect(url.searchParams.get("dt")).toBe("t");
@@ -271,15 +297,9 @@ describe("智能体思考翻译", () => {
     });
 
     describe("ReasoningTranslation（状态机）", () => {
-        const create = (translate: (text: string, signal: AbortSignal) => Promise<string>, cache = new Map()) => {
-            const states: TranslationState[] = [];
-            const translation = new ReasoningTranslation(translate, cache, (state) => states.push(state));
-            return {translation, states, cache};
-        };
-
         it("只翻完整段落，流式尾巴保留原文；结束后补翻尾巴", async () => {
             const calls: string[] = [];
-            const {translation, states} = create(async (text) => {
+            const {translation, states} = createTranslation(async (text) => {
                 calls.push(text);
                 return `译:${text}`;
             });
@@ -303,11 +323,11 @@ describe("智能体思考翻译", () => {
                 calls.push(text);
                 return `译:${text}`;
             };
-            const first = create(translate, cache);
+            const first = createTranslation(translate, cache);
             first.translation.update("A", false);
             await Promise.resolve();
             await Promise.resolve();
-            const second = create(translate, cache);
+            const second = createTranslation(translate, cache);
             second.translation.update("A", false);
             await Promise.resolve();
             await Promise.resolve();
@@ -318,7 +338,7 @@ describe("智能体思考翻译", () => {
         it("失败后保留原文并停下，重试成功后继续", async () => {
             let fail = true;
             const calls: string[] = [];
-            const {translation, states} = create(async (text) => {
+            const {translation, states} = createTranslation(async (text) => {
                 calls.push(text);
                 if (fail) {
                     throw new Error("boom");
@@ -346,7 +366,7 @@ describe("智能体思考翻译", () => {
             const pending = new Promise<string>((resolve) => {
                 release = resolve;
             });
-            const {translation, states} = create(() => pending);
+            const {translation, states} = createTranslation(() => pending);
             translation.update("A", false);
             await Promise.resolve();
             const count = states.length;
@@ -354,6 +374,132 @@ describe("智能体思考翻译", () => {
             release("译:A");
             await Promise.resolve();
             await Promise.resolve();
+            expect(states.length).toBe(count);
+        });
+    });
+
+    describe("retryPolicyOf（重试策略）", () => {
+        it("缺省值就是默认策略", () => {
+            expect(retryPolicyOf(undefined, undefined)).toEqual({retries: 2, interval: 1000});
+        });
+
+        it("越界与写坏的值都收进合法区间", () => {
+            expect(retryPolicyOf(-3, 5)).toEqual({retries: 0, interval: 200});
+            expect(retryPolicyOf(99, 999999)).toEqual({retries: 5, interval: 10000});
+            expect(retryPolicyOf("3", null)).toEqual({retries: 2, interval: 1000});
+            expect(retryPolicyOf(1.6, 250.4)).toEqual({retries: 2, interval: 250});
+        });
+    });
+
+    describe("自动重试", () => {
+        afterEach(() => {
+            vi.useRealTimers();
+        });
+
+        it("失败后按策略重试，成功后继续翻下一段", async () => {
+            vi.useFakeTimers();
+            const calls: string[] = [];
+            let failures = 1;
+            const {translation, states} = createTranslation(
+                async (text) => {
+                    calls.push(text);
+                    if (failures > 0) {
+                        failures -= 1;
+                        throw new Error("boom");
+                    }
+                    return `译:${text}`;
+                },
+                new Map(),
+                {retries: 2, interval: 500},
+            );
+            translation.update("A\n\nB", false);
+            await vi.advanceTimersByTimeAsync(0);
+            expect(calls).toEqual(["A"]);
+            await vi.advanceTimersByTimeAsync(500);
+            expect(calls).toEqual(["A", "A", "B"]);
+            expect(states[states.length - 1].failed).toBe(false);
+            expect(states[states.length - 1].text).toBe("译:A\n\n译:B");
+        });
+
+        it("重试期间保持 pending，次数用完才切成失败态", async () => {
+            vi.useFakeTimers();
+            let calls = 0;
+            const {translation, states} = createTranslation(
+                async () => {
+                    calls += 1;
+                    throw new Error("boom");
+                },
+                new Map(),
+                {retries: 1, interval: 200},
+            );
+            translation.update("A", false);
+            await vi.advanceTimersByTimeAsync(0);
+            expect(states[states.length - 1].pending).toBe(true);
+            expect(states[states.length - 1].failed).toBe(false);
+            await vi.advanceTimersByTimeAsync(200);
+            expect(calls).toBe(2);
+            expect(states[states.length - 1].failed).toBe(true);
+            expect(states[states.length - 1].text).toBe("A");
+            await vi.advanceTimersByTimeAsync(5000);
+            expect(calls).toBe(2);
+        });
+
+        it("手动重试会重新给一轮自动重试机会", async () => {
+            vi.useFakeTimers();
+            let calls = 0;
+            const {translation, states} = createTranslation(
+                async () => {
+                    calls += 1;
+                    throw new Error("boom");
+                },
+                new Map(),
+                {retries: 1, interval: 200},
+            );
+            translation.update("A", false);
+            await vi.advanceTimersByTimeAsync(200);
+            expect(calls).toBe(2);
+            translation.retry();
+            await vi.advanceTimersByTimeAsync(200);
+            expect(calls).toBe(4);
+            expect(states[states.length - 1].failed).toBe(true);
+        });
+
+        it("重试次数为 0 时只发一次请求", async () => {
+            let calls = 0;
+            const {translation, states} = createTranslation(
+                async () => {
+                    calls += 1;
+                    throw new Error("boom");
+                },
+                new Map(),
+                {retries: 0, interval: 200},
+            );
+            translation.update("A", false);
+            for (let index = 0; index < 4; index++) {
+                await Promise.resolve();
+            }
+            expect(calls).toBe(1);
+            expect(states[states.length - 1].failed).toBe(true);
+        });
+
+        it("退避等待中取消后不再重试，也不发布失败态", async () => {
+            vi.useFakeTimers();
+            let calls = 0;
+            const {translation, states} = createTranslation(
+                async () => {
+                    calls += 1;
+                    throw new Error("boom");
+                },
+                new Map(),
+                {retries: 3, interval: 500},
+            );
+            translation.update("A", false);
+            await vi.advanceTimersByTimeAsync(0);
+            expect(calls).toBe(1);
+            const count = states.length;
+            translation.dispose();
+            await vi.advanceTimersByTimeAsync(5000);
+            expect(calls).toBe(1);
             expect(states.length).toBe(count);
         });
     });
@@ -430,7 +576,8 @@ describe("智能体思考翻译", () => {
             let fail = true;
             stubTranslation(() => (fail ? {code: 1} : {}));
             const {card, reasoning} = buildCard({expanded: true, done: true, texts: ["Hello"]});
-            const harness = mount();
+            // 关掉自动重试，让失败立刻暴露（自动重试本身另有专门用例）
+            const harness = mount({retries: 0});
             await settle();
             await expect.poll(() => card.querySelector<HTMLElement>(`.${FAILURE_CLASS}`)?.hidden).toBe(false);
             expect(outputOf(card)?.hidden).toBe(true);
@@ -445,6 +592,41 @@ describe("智能体思考翻译", () => {
             expect(outputOf(card)?.hidden).toBe(false);
             expect(card.querySelector<HTMLElement>(`.${FAILURE_CLASS}`)?.hidden).toBe(true);
             expect(toggleOf(card).disabled).toBe(false);
+            harness.dispose();
+        });
+
+        it("偶发失败时自动重试，成功后显示译文并留下 warn 日志", async () => {
+            let fail = true;
+            const calls = stubTranslation(() => {
+                if (!fail) {
+                    return {};
+                }
+                fail = false;
+                return {code: 1};
+            });
+            const {card} = buildCard({expanded: true, done: true, texts: ["Hello"]});
+            const harness = mount({retries: 1, retryInterval: 200});
+            await settle();
+            await expect.poll(() => outputOf(card)?.textContent, {timeout: 2000}).toBe("译:Hello");
+            expect(calls).toHaveLength(2);
+            expect(card.querySelector<HTMLElement>(`.${FAILURE_CLASS}`)?.hidden).toBe(true);
+            expect(harness.records.logLevels).toContain("warn");
+            expect(harness.records.logs.some((args) => String(args[0]).includes("retrying thinking translation")))
+                .toBe(true);
+            harness.dispose();
+        });
+
+        it("只改重试设置时保留缓存，不重翻已翻好的段落", async () => {
+            const calls = stubTranslation();
+            const {card} = buildCard({expanded: true, done: true, texts: ["Hello"]});
+            const harness = mount();
+            await settle();
+            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            harness.config.retries = 4;
+            harness.notifyConfigChange();
+            await settle();
+            expect(calls).toHaveLength(1);
+            expect(outputOf(card)?.textContent).toBe("译:Hello");
             harness.dispose();
         });
 

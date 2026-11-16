@@ -31,8 +31,12 @@ import type {
     TargetPreference,
     TranslationProvider,
 } from "./provider";
-import {ReasoningTranslation} from "./translation";
+import {
+    ReasoningTranslation,
+    retryPolicyOf,
+} from "./translation";
 import type {
+    RetryPolicy,
     TranslateText,
     TranslationState,
 } from "./translation";
@@ -67,11 +71,12 @@ interface Labels {
     retry: string;
 }
 
-/** 当前选择的服务与目标语言；目标语言在创建时就解析成接口要的标签。 */
+/** 当前选择的服务、目标语言与重试策略；目标语言在创建时就解析成接口要的标签。 */
 interface Selection {
     provider: TranslationProvider;
     preference: TargetPreference;
     target: string;
+    retry: RetryPolicy;
 }
 
 type View = "translated" | "original";
@@ -101,6 +106,8 @@ interface CardController {
 
 interface ControllerOptions {
     readonly translate: TranslateText;
+    /** 自动重试策略；界面切换服务 / 重试设置后由外层重建控制器生效。 */
+    readonly retry: RetryPolicy;
     readonly labels: Labels;
     readonly log: Logger;
 }
@@ -221,7 +228,7 @@ const createCardController = (state: CardState, options: ControllerOptions): Car
                     block.state = next;
                     renderBlock(block);
                     renderToolbar();
-                });
+                }, {retry: options.retry, log: options.log});
                 blocks.set(element, block);
             } else if (!block.output.isConnected) {
                 // 宿主整块重绘过正文：译文节点跟着原文重新插回去
@@ -251,7 +258,12 @@ const selectionOf = (host: FeatureHost): Selection => {
     const provider = providerOf(host.config.provider);
     const preference = targetPreferenceOf(host.config.target);
     const uiLanguage = window.siyuan?.config?.lang ?? "en";
-    return {provider, preference, target: resolveTargetLanguage(preference, uiLanguage, provider)};
+    return {
+        provider,
+        preference,
+        target: resolveTargetLanguage(preference, uiLanguage, provider),
+        retry: retryPolicyOf(host.config.retries, host.config.retryInterval),
+    };
 };
 
 const CSS = `/* 思考卡片的译文：排版与原文一致，只换内容来源 */
@@ -366,6 +378,7 @@ export const mountAgentThinkingTranslate = (host: FeatureHost): FeatureInstance 
                 state.controller = createCardController(state, {
                     translate: (text, signal) =>
                         requestTranslation({provider: selection.provider, text, target: selection.target}, signal),
+                    retry: selection.retry,
                     labels,
                     log: host.log,
                 });
@@ -408,16 +421,27 @@ export const mountAgentThinkingTranslate = (host: FeatureHost): FeatureInstance 
 
     host.onConfigChange(() => {
         const next = selectionOf(host);
-        if (next.provider === selection.provider && next.target === selection.target) {
+        const sameService = next.provider === selection.provider && next.target === selection.target;
+        const sameRetry = next.retry.retries === selection.retry.retries &&
+            next.retry.interval === selection.retry.interval;
+        if (sameService && sameRetry) {
             return;
         }
         selection = next;
-        host.log.info("translation service changed", {provider: next.provider, target: next.target});
-        // 缓存按原文片段存，换了服务 / 目标语言后旧译文不再成立，整批丢掉重翻
+        host.log.info("translation settings changed", {
+            provider: next.provider,
+            target: next.target,
+            retries: next.retry.retries,
+            retryInterval: next.retry.interval,
+        });
+        // 控制器持有创建时的策略快照，统一重建：换服务 / 目标语言顺便丢掉缓存（旧译文不再成立），
+        // 只改重试设置时保留缓存，已翻好的段落不必重翻
         cards.forEach((state) => {
             state.controller?.dispose();
             state.controller = undefined;
-            state.cache.clear();
+            if (!sameService) {
+                state.cache.clear();
+            }
         });
         schedule();
     });
