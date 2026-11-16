@@ -50,6 +50,7 @@ import mobileSyncButton from "../features/mobile-sync-button";
 import modalBlur from "../features/modal-blur";
 import newDocFixedTarget from "../features/new-doc-fixed-target";
 import ossUsage from "../features/oss-usage";
+import outlineLevelFilter from "../features/outline-level-filter";
 import pluginReminder from "../features/plugin-reminder";
 import recordingWindow from "../features/recording-window";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
@@ -77,6 +78,7 @@ export const FEATURES: FeatureDefinition[] = [
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
     tabTitleMarkdown,
+    outlineLevelFilter,
     headingLevelIcon,
     bazaarCustomIcon,
     hideBazaarDownloadedDonate,
