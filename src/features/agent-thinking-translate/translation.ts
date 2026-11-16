@@ -7,12 +7,14 @@
  *   否则每来一个 token 就要发一次请求，既慢又会被免费接口限流；
  * - 超长段落按上限切开，优先切在空白处，不把代理对（emoji 这类）劈成两半；
  * - 译文按原文片段缓存，同一段不会重复请求；已翻好的段落先显示译文，没翻到的先显示原文；
- * - 请求逐个串行，失败就停下并保留原文，等用户点「重试」；取消（折叠 / 卸载）后
- *   不再发布任何结果。
+ * - 请求逐个串行；某一段失败后按面板上的「重试次数 / 重试间隔」自动退避重试，
+ *   次数用完仍失败就停下并保留原文，等用户点手动「重试」；取消（折叠 / 卸载）后
+ *   立即中断在途请求与退避等待，不再发布任何结果。
  *
  * 这里不碰任何会话数据：调用方把「要显示成什么文本」渲染到自己的节点里，
  * 宿主的原文节点一直原样保留。
  */
+import type {Logger} from "../../core/log";
 
 /** 一个可翻译片段：正文、它后面的分隔空白、以及是否已经完整。 */
 export interface Fragment {
@@ -33,6 +35,33 @@ export type TranslateText = (text: string, signal: AbortSignal) => Promise<strin
 
 /** 单次请求的字符上限，与 DSH 的 translator 默认值一致。 */
 export const MAX_TEXT_CHARS = 4000;
+
+/** 自动重试策略：失败后等 `interval` 毫秒再试，最多再试 `retries` 次。 */
+export interface RetryPolicy {
+    retries: number;
+    interval: number;
+}
+
+/** 面板默认值；配置写坏时也回退到这里。 */
+export const DEFAULT_RETRY_POLICY: RetryPolicy = {retries: 2, interval: 1000};
+
+/** 重试次数与间隔的合法区间：面板填离谱的数字也不至于把免费接口打成刷流量。 */
+const MAX_RETRIES = 5;
+const MIN_INTERVAL_MS = 200;
+const MAX_INTERVAL_MS = 10000;
+
+const clampInteger = (value: unknown, min: number, max: number, fallback: number): number => {
+    if (typeof value !== "number" || !Number.isFinite(value)) {
+        return fallback;
+    }
+    return Math.min(max, Math.max(min, Math.round(value)));
+};
+
+/** 面板上的两个数字字段转成策略；写坏或越界都收进合法区间。 */
+export const retryPolicyOf = (retries: unknown, interval: unknown): RetryPolicy => ({
+    retries: clampInteger(retries, 0, MAX_RETRIES, DEFAULT_RETRY_POLICY.retries),
+    interval: clampInteger(interval, MIN_INTERVAL_MS, MAX_INTERVAL_MS, DEFAULT_RETRY_POLICY.interval),
+});
 
 /**
  * 把思考正文切成片段。
@@ -73,6 +102,20 @@ export const splitFragments = (text: string, running: boolean, maxChars = MAX_TE
     }
 };
 
+/** 错误只留消息，绝不带思考正文；日志与界面提示都用它。 */
+const reasonOf = (error: unknown): string => error instanceof Error ? error.message : String(error);
+
+/** 没配重试策略时的兜底：一次都不重试。 */
+const NO_RETRY: RetryPolicy = {retries: 0, interval: DEFAULT_RETRY_POLICY.interval};
+
+/** 构造时与「怎么翻」相关的那部分：重试策略与日志出口。 */
+export interface ReasoningTranslationOptions {
+    /** 自动重试策略；不传就一次都不重试，失败直接交给用户。 */
+    retry?: RetryPolicy;
+    /** 失败与重试的日志出口；功能里传 `host.log`。 */
+    log?: Logger;
+}
+
 /**
  * 一块思考正文的翻译状态机。
  *
@@ -81,6 +124,8 @@ export const splitFragments = (text: string, running: boolean, maxChars = MAX_TE
  */
 export class ReasoningTranslation {
     private readonly controller = new AbortController();
+    /** 自动重试策略快照；不要叫 `retry`，那会盖掉同名的手动重试方法。 */
+    private readonly policy: RetryPolicy;
     private fragments: Fragment[] = [];
     private pending = false;
     private failed = false;
@@ -95,7 +140,10 @@ export class ReasoningTranslation {
         private readonly translate: TranslateText,
         private readonly cache: Map<string, string>,
         private readonly publish: (state: TranslationState) => void,
-    ) {}
+        private readonly options: ReasoningTranslationOptions = {},
+    ) {
+        this.policy = options.retry ?? NO_RETRY;
+    }
 
     /** 接入最新的原文；已翻好的片段直接复用缓存。 */
     update(text: string, running: boolean): void {
@@ -146,7 +194,53 @@ export class ReasoningTranslation {
         );
     }
 
-    /** 串行把能翻的片段翻完；任何失败都停下，等用户重试。 */
+    /**
+     * 发一次片段请求，失败按策略自动重试。
+     *
+     * 重试期间 `pending` 一直是真，界面上的转圈不会断；次数用完才把错误抛给 `pump`，
+     * 由它切成失败态等用户手动重试。取消（折叠 / 卸载）立即放弃，不再发下一次。
+     */
+    private async send(text: string): Promise<string> {
+        for (let attempt = 0;; attempt += 1) {
+            try {
+                return await this.translate(text, this.controller.signal);
+            } catch (error) {
+                if (this.disposed || this.controller.signal.aborted) {
+                    throw error;
+                }
+                if (attempt >= this.policy.retries) {
+                    throw error;
+                }
+                this.options.log?.warn(
+                    `retrying thinking translation in ${this.policy.interval}ms ` +
+                        `(attempt ${attempt + 2}/${this.policy.retries + 1}), ${reasonOf(error)}`,
+                );
+                await this.wait(this.policy.interval);
+            }
+        }
+    }
+
+    /** 可取消的退避等待：折叠或卸载时立刻结束，不留下悬挂的定时器。 */
+    private wait(ms: number): Promise<void> {
+        const signal = this.controller.signal;
+        return new Promise<void>((resolve, reject) => {
+            if (signal.aborted) {
+                reject(new Error("translation retry cancelled"));
+                return;
+            }
+            const onAbort = (): void => {
+                clearTimeout(timer);
+                reject(new Error("translation retry cancelled"));
+            };
+            const timer = setTimeout(() => {
+                signal.removeEventListener("abort", onAbort);
+                resolve();
+            }, ms);
+            signal.addEventListener("abort", onAbort, {once: true});
+        });
+    }
+
+    /** 串行把能翻的片段翻完；重试用完仍失败就停下，等用户手动重试。 */
     private async pump(): Promise<void> {
         if (this.pending || this.failed || this.disposed) {
             return;
@@ -159,7 +253,7 @@ export class ReasoningTranslation {
         this.publishState();
         try {
             while (next) {
-                const translated = await this.translate(next.text, this.controller.signal);
+                const translated = await this.send(next.text);
                 if (this.disposed) {
                     return;
                 }
@@ -167,10 +261,11 @@ export class ReasoningTranslation {
                 this.publishState();
                 next = this.next();
             }
-        } catch {
-            // 取消不算失败；真正的请求错误保留原文并暴露重试
+        } catch (error) {
+            // 取消不算失败；真正的请求错误保留原文并暴露手动重试
             if (!this.disposed) {
                 this.failed = true;
+                this.options.log?.warn(`thinking translation failed, ${reasonOf(error)}`);
                 this.publishState();
             }
         } finally {
