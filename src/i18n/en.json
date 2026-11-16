@@ -136,7 +136,7 @@
   "feature.agentThinkingTranslate.title": "Translate agent thinking",
   "feature.agentThinkingTranslate.description": "Translate expanded agent thinking paragraph by paragraph into the selected language; display only, the session is untouched.",
   "feature.agentThinkingTranslate.provider": "Translation service",
-  "feature.agentThinkingTranslate.providerTip": "Uses the free Microsoft or Google translation endpoint; the thinking text is sent to the selected service.",
+  "feature.agentThinkingTranslate.providerTip": "Uses the free Microsoft or Google translation endpoint; the thinking text is sent to the selected service. Google is unreachable without a proxy: configure the network proxy in SiYuan, or run the whole network through a TUN proxy or VPN.",
   "feature.agentThinkingTranslate.provider.bing": "Microsoft",
   "feature.agentThinkingTranslate.provider.google": "Google",
   "feature.agentThinkingTranslate.target": "Target language",

@@ -235,7 +235,7 @@ describe("智能体思考翻译", () => {
             const request = buildRequest({provider: "google", text: "hello world", target: "zh-CN"});
             const url = new URL(request.url);
             expect(url.origin + url.pathname).toBe("https://translate.googleapis.com/translate_a/single");
-            expect(url.searchParams.get("client")).toBe("gtx");
+            expect(url.searchParams.get("client")).toBe("dict-chrome-ex");
             expect(url.searchParams.get("sl")).toBe("auto");
             expect(url.searchParams.get("tl")).toBe("zh-CN");
             expect(url.searchParams.get("dt")).toBe("t");

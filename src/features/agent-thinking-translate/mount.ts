@@ -364,8 +364,21 @@ export const mountAgentThinkingTranslate = (host: FeatureHost): FeatureInstance 
             }
             if (!state.controller) {
                 state.controller = createCardController(state, {
-                    translate: (text, signal) =>
-                        requestTranslation({provider: selection.provider, text, target: selection.target}, signal),
+                    translate: async (text, signal) => {
+                        try {
+                            return await requestTranslation(
+                                {provider: selection.provider, text, target: selection.target},
+                                signal,
+                            );
+                        } catch (error) {
+                            // 取消是正常路径（折叠 / 切换设置 / 卸载）；真正的失败只记服务与原因，绝不记思考正文
+                            if (!signal.aborted) {
+                                const reason = error instanceof Error ? error.message : String(error);
+                                host.log.warn(`thinking translation failed, ${reason}`);
+                            }
+                            throw error;
+                        }
+                    },
                     labels,
                     log: host.log,
                 });

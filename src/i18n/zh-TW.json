@@ -136,7 +136,7 @@
   "feature.agentThinkingTranslate.title": "智能體思考翻譯",
   "feature.agentThinkingTranslate.description": "展開思考卡片後，把英文思考正文按段翻譯成所選語言；只改介面顯示，不動會話資料。",
   "feature.agentThinkingTranslate.provider": "翻譯服務",
-  "feature.agentThinkingTranslate.providerTip": "使用免費的微軟或 Google 翻譯介面，思考內容會傳送給所選服務。",
+  "feature.agentThinkingTranslate.providerTip": "使用免費的微軟或 Google 翻譯介面，思考內容會傳送給所選服務。Google 連不上時要走代理：在思源裡設好網路代理，或用 TUN 模式 / VPN 讓整台機器走代理。",
   "feature.agentThinkingTranslate.provider.bing": "微軟翻譯",
   "feature.agentThinkingTranslate.provider.google": "Google 翻譯",
   "feature.agentThinkingTranslate.target": "目標語言",

@@ -136,7 +136,7 @@
   "feature.agentThinkingTranslate.title": "智能体思考翻译",
   "feature.agentThinkingTranslate.description": "展开思考卡片后，把英文思考正文按段翻译成所选语言；只改界面显示，不动会话数据。",
   "feature.agentThinkingTranslate.provider": "翻译服务",
-  "feature.agentThinkingTranslate.providerTip": "使用免费的微软或谷歌翻译接口，思考内容会发送给所选服务。",
+  "feature.agentThinkingTranslate.providerTip": "使用免费的微软或谷歌翻译接口，思考内容会发送给所选服务。谷歌连不上时要走代理：在思源里配好网络代理，或用 TUN 模式 / VPN 让整台机器走代理。",
   "feature.agentThinkingTranslate.provider.bing": "微软翻译",
   "feature.agentThinkingTranslate.provider.google": "谷歌翻译",
   "feature.agentThinkingTranslate.target": "目标语言",

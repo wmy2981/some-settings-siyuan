@@ -5,8 +5,13 @@
  * （`@deepseek-ai/dsh-experimental-client-ui-cot-translation` 与 `dsh-experimental-translator`）：
  * - 微软：`POST edge.microsoft.com/translate/translatetext?to=…&isEnterpriseClient=false`，
  *   请求体是 `["文本"]`，响应是 `[{translations:[{text}]}]`；
- * - 谷歌：`POST translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=…&dt=t`，
+ * - 谷歌：`POST translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&tl=…&dt=t`，
  *   请求体是 `q=文本`，响应是 `[[[译文, 原文, …], …], …]`，各段按顺序拼接。
+ *   客户端标识用 Chrome 内置翻译的 `dict-chrome-ex` 而不是常见的 `gtx`：`gtx` 被大量脚本滥用，
+ *   接口会直接回 429「Sorry」页（正文是 HTML，解析必然失败），换成前者在同一个出口 IP 上仍然 200。
+ *
+ * 谷歌的域名在国内网络连不上，用户要自己走代理：要么在思源里配好网络代理（内核 `forwardProxy`
+ * 走 `HTTP(S)_PROXY`），要么用 TUN 模式 / VPN 让整台机器的流量都走代理；微软的接口可以直连。
  *
  * 走内核的 `/api/network/forwardProxy` 而不是页面里的 `fetch`：这两个域名都没有给
  * 桌面端渲染进程开 CORS，直接在页面里请求会被浏览器拦掉；内核代理是思源给插件准备的
@@ -47,6 +52,8 @@ interface ForwardProxyResponse {
 }
 
 const GOOGLE_ENDPOINT = "https://translate.googleapis.com/translate_a/single";
+/** Chrome 内置翻译的客户端标识；`gtx` 会被接口当滥用流量回 429。 */
+const GOOGLE_CLIENT = "dict-chrome-ex";
 const BING_ENDPOINT = "https://edge.microsoft.com/translate/translatetext";
 /** 单次请求的期限；超过就按失败处理，界面给重试入口。 */
 const REQUEST_TIMEOUT_MS = 15000;
@@ -115,7 +122,7 @@ export const resolveTargetLanguage = (
 export const buildRequest = (request: TranslationRequest): RequestSpec => {
     if (request.provider === "google") {
         const url = new URL(GOOGLE_ENDPOINT);
-        url.searchParams.set("client", "gtx");
+        url.searchParams.set("client", GOOGLE_CLIENT);
         url.searchParams.set("sl", "auto");
         url.searchParams.set("tl", request.target);
         url.searchParams.set("dt", "t");
