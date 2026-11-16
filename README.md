@@ -43,6 +43,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 ### Interface and appearance
 
 * Blur behind modals
+* Keep the exit screen blurred
 * Slimmer desktop command panel
 * Blur behind the mobile dock bar
 * Smoother mobile bars

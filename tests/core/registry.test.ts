@@ -24,6 +24,7 @@ import {
 } from "../../src/core/registry";
 import {FEATURE_CATEGORIES} from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
+import {supportsCurrentHost} from "../../src/core/version";
 import {mockState} from "../mocks/siyuan";
 
 const ROOT = path.join(__dirname, "..", "..");
@@ -205,11 +206,12 @@ describe("activeFeatures", () => {
         });
         // 本宿主版本（3.8.7）在 3.8.10-alpha.1 之前，那几个「上游已实现就退场」的功能仍然生效
         expect(active.has("doc-tree-title-markdown")).toBe(true);
-        // 与「enabled 且适用桌面端」的手工筛选完全一致
+        // 与「enabled、适用桌面端且在支持区间内」的手工筛选完全一致
         expect(active.size).toBe(
             FEATURES.filter((feature) =>
                 feature.enabled &&
-                (!feature.frontends?.length || feature.frontends.includes("desktop"))
+                (!feature.frontends?.length || feature.frontends.includes("desktop")) &&
+                supportsCurrentHost(feature)
             ).length,
         );
     });

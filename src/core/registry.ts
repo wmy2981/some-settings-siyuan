@@ -26,6 +26,7 @@ import devtoolsHotkey from "../features/devtools-hotkey";
 import docTreeOpenedAccent from "../features/doc-tree-opened-accent";
 import docTreeTitleMarkdown from "../features/doc-tree-title-markdown";
 import exitConfirm from "../features/exit-confirm";
+import exitMaskBlur from "../features/exit-mask-blur";
 import externalLinkConfirm from "../features/external-link-confirm";
 import firstDocIcon from "../features/first-doc-icon";
 import headingLevelIcon from "../features/heading-level-icon";
@@ -72,6 +73,7 @@ export const FEATURES: FeatureDefinition[] = [
     recordingWindow,
     exitConfirm,
     modalBlur,
+    exitMaskBlur,
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
     tabTitleMarkdown,

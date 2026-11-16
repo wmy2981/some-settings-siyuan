@@ -57,6 +57,8 @@
   "feature.modalBlur.title": "Blur behind modals",
   "feature.modalBlur.description": "Applies a backdrop blur to the dialog scrim so the editor behind it is softened while the dialog itself stays sharp.",
   "feature.modalBlur.radius": "Blur radius",
+  "feature.exitMaskBlur.title": "Keep the exit screen blurred",
+  "feature.exitMaskBlur.description": "SiYuan fades the exit screen's backdrop blur in over five seconds; this keeps the same Gaussian blur as the other progress overlays right away.",
   "feature.docTreeOpenedAccent.title": "Accent for the opened note",
   "feature.docTreeOpenedAccent.description": "Draws an accent bar on the left edge of the currently opened note in the document tree; the colour is configurable.",
   "feature.docTreeOpenedAccent.color": "Accent colour",
