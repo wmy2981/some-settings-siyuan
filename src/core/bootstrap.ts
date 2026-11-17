@@ -89,6 +89,9 @@ export class FeatureManager {
             plugin,
             store: this.store,
             features: activeFeatures(),
+            // 面板要把「不可用」的那部分也画出来（开发者禁用 / 平台不符 / 版本区间不符），
+            // 所以除生效清单外还要拿到整张注册表。
+            allFeatures: FEATURES,
         });
     }
 

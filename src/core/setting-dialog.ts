@@ -41,9 +41,18 @@ import type {
     Dialog,
     Plugin,
 } from "siyuan";
+import type {UnavailableReason} from "./availability";
+import {
+    isShowUnavailable,
+    SHOW_UNAVAILABLE_FEATURE_ID,
+    unavailableReason,
+} from "./availability";
 import {bindPendingClick} from "./click";
 import type {ConfigStore} from "./config";
-import {storageNameOf} from "./config";
+import {
+    defaultConfig,
+    storageNameOf,
+} from "./config";
 import {
     guardAsync,
     guardSilent,
@@ -79,6 +88,7 @@ import {FEATURE_CATEGORIES} from "./types";
 import {
     actionButtonHtml,
     buttonRowHtml,
+    categoryEmptyHtml,
     CHILD_CLASS,
     ensurePanelCss,
     escapeHtml,
@@ -104,6 +114,7 @@ import {
     tabViewsHtml,
     textareaRowHtml,
     textRowHtml,
+    unavailableReasonRowHtml,
 } from "./ui";
 // 搜索要把静态文案的**所有语言**都索引进同一个匹配域，而宿主只交出当前语言那一份 i18n，
 // 所以这里把全部语言文件一起打进包里：它们本来就是插件自带的，读取时不经过任何运行时 API。
@@ -154,7 +165,14 @@ const CATEGORY_ICONS: Record<FeatureCategory, string> = {
 export interface SettingsPanelOptions {
     plugin: Plugin;
     store: ConfigStore;
+    /** 当前宿主上真正可用的功能（`activeFeatures()`），面板按它们拼页签。 */
     features: FeatureDefinition[];
+    /**
+     * 注册表里的全部功能，用来找出「不可用」的那部分（开发者禁用 / 平台不符 / 版本区间不符）。
+     *
+     * 不传就当作没有不可用功能：面板测试里直接给一份功能清单时不必额外准备第二份。
+     */
+    allFeatures?: FeatureDefinition[];
 }
 
 const isReadonly = (): boolean => Boolean(window.siyuan?.config?.readonly || window.siyuan?.isPublish);
@@ -196,6 +214,31 @@ const LAST_ROW_CLASS = "config-item--last-visible";
 
 /** 行上的面板私有元数据：这一行属于哪个功能。搜索按它显隐整个功能。 */
 const ROW_FEATURE_ATTR = "data-ss-feature";
+
+/** 行上的面板私有元数据：这一行属于「不可用」条目。显隐、灰显与搜索都按它认。 */
+const UNAVAILABLE_ATTR = "data-ss-unavailable";
+
+/** 不可用条目的行类名：整块灰显、不可操作。 */
+const UNAVAILABLE_CLASS = `${PANEL_CLASS}__unavailable`;
+
+/**
+ * 搜索结果里「不可用」那一组的页签 id。
+ *
+ * 它不是一个功能分类：只在搜索时出现，把各分类里不可用的功能汇总到结果最底部，
+ * 与现有的分类分组同一套做法（分组标题 + 该组的行）。平时整页收起。
+ */
+const UNAVAILABLE_PANE_ID = "__unavailable";
+
+/** 「显示不可用的设置」打开时挂在面板根上的状态类（面板此刻的显示模式，测试与调试都认它）。 */
+const SHOW_UNAVAILABLE_CLASS = `${PANEL_CLASS}--show-unavailable`;
+
+/** 不可用原因 → i18n key。版本两种原因带 `{version}`，平台那种带 `{platform}`。 */
+const REASON_KEYS: Record<UnavailableReason, string> = {
+    disabled: "panel.unavailable.disabled",
+    frontend: "panel.unavailable.frontend",
+    minAppVersion: "panel.unavailable.minVersion",
+    maxAppVersion: "panel.unavailable.maxVersion",
+};
 
 /**
  * 判断一份 class 属性是不是「一个行」的：行带 `config-item` 这个整词。
@@ -244,6 +287,22 @@ const tagRows = (rowsHtml: string, featureId: string): string =>
         /class="([^"]*)"/g,
         (whole: string, classes: string) =>
             isRowClass(classes) ? `${whole} ${ROW_FEATURE_ATTR}="${escapeHtml(featureId)}"` : whole,
+    );
+
+/**
+ * 把一段行 HTML 里的每一行都标成「不可用」：加类名（灰显）与元数据（显隐、搜索都按它认）。
+ *
+ * 与 `tagRows()` 同一套做法：只认带 `config-item` 整词的 class 属性，
+ * 所以说明块内部的段落不会被一起标记。属性必须加在整个 `class="…"` 之后，
+ * 加在引号里会把类名拼坏。
+ */
+const markUnavailableRows = (rowsHtml: string): string =>
+    rowsHtml.replace(
+        /class="([^"]*)"/g,
+        (whole: string, classes: string) =>
+            isRowClass(classes) ?
+                `${whole.replace(classes, `${UNAVAILABLE_CLASS} ${classes}`)} ${UNAVAILABLE_ATTR}="1"` :
+                whole,
     );
 
 /** `NodeFilter.SHOW_TEXT`：直接写数值，省得依赖全局 NodeFilter（测试环境里不一定有）。 */
@@ -350,6 +409,8 @@ export class SettingsPanel {
     private viewportTimer?: number;
     /** 动作行注册的「插件卸载时」清理回调。 */
     private readonly unloadListeners = new Set<() => void>();
+    /** 「显示不可用的设置」开关的订阅：开着面板时翻开关，不可用条目立刻显隐。 */
+    private toggleUnsubscribe?: () => void;
     /** 当前页签；内存里先更新，关闭面板时再落盘。 */
     private currentTab?: FeatureCategory;
     /** 上一次打开面板时从磁盘读到的状态，用来挡掉没有变化的重复写盘。 */
@@ -407,6 +468,21 @@ export class SettingsPanel {
         return this.visibleFeaturesAll().filter((feature) => feature.category === category);
     }
 
+    /**
+     * 注册表里在当前宿主上不可用的功能（开发者禁用 / 平台不符 / 版本区间不符）。
+     *
+     * 面板默认不显示它们；「显示不可用的设置」打开后，每个页签底部会灰显出来并注明原因。
+     * 它们不参与配置装载（`activeFeatures()` 已经把它们筛掉了），所以控件只能按声明默认值显示。
+     */
+    private unavailableFeaturesAll(): FeatureDefinition[] {
+        return (this.options.allFeatures ?? []).filter((feature) => unavailableReason(feature) !== undefined);
+    }
+
+    /** 当前分类（页签）下不可用的功能，顺序与注册表一致。 */
+    private unavailableFeatures(category: FeatureCategory): FeatureDefinition[] {
+        return this.unavailableFeaturesAll().filter((feature) => feature.category === category);
+    }
+
     // ------------------------------------------------------------ 生命周期
 
     show(): void {
@@ -441,6 +517,8 @@ export class SettingsPanel {
                 this.stopViewportWatch();
                 this.cancelRevealFrame();
                 this.disposeSearch();
+                this.toggleUnsubscribe?.();
+                this.toggleUnsubscribe = undefined;
             },
         }) as SettingWithDialog;
         this.setting = setting;
@@ -497,6 +575,12 @@ export class SettingsPanel {
 
         this.render();
         this.hideActionBar();
+        // 开关一翻就重算不可用条目的显隐：面板开着的时候，功能会被装载器当场挂载 / 卸载，
+        // 面板读到的标记随之改变，这里只负责把结果画出来。
+        this.toggleUnsubscribe?.();
+        this.toggleUnsubscribe = this.options.store.subscribe(SHOW_UNAVAILABLE_FEATURE_ID, () => {
+            this.applyUnavailableVisibility();
+        });
         void this.restoreTab(generation);
 
         if (isReadonly()) {
@@ -671,63 +755,28 @@ export class SettingsPanel {
         this.currentTab = undefined;
         CATEGORY_ORDER.forEach((category) => {
             const features = this.visibleFeatures(category);
-            if (features.length === 0) {
+            const unavailable = this.unavailableFeatures(category);
+            if (features.length === 0 && unavailable.length === 0) {
                 return;
             }
             // 一页是一张连续的行列表：功能名与它下面的设置行全部平铺在一起，
             // 因此「哪一行是最后一行」要跨功能判定，不能交给 :last-child。
             const rows: string[] = [];
             features.forEach((feature) => {
-                const config = this.options.store.get(feature.id);
-                // 功能自己的开关跟着功能名走，不单独占一行；剩下的才是它的参数
-                const toggle = feature.settings.find(
-                    (field): field is Extract<SettingField, {kind: "switch";}> =>
-                        field.kind === "switch" && field.key === "enabled",
-                );
-                // 拿 selector 当开关的功能（声明了 isEnabled）没有 enabled 开关，
-                // 那个 selector 就是它的开关，同样提到功能名那一行，不另起一行。
-                // 只有 select 型才会被提上来：别的控件不是「开关」这个角色的写法。
-                const inlineSelect = !toggle && feature.isEnabled ?
-                    feature.settings.find((field): field is Extract<SettingField, {kind: "select";}> =>
-                        field.kind === "select"
-                    ) :
-                    undefined;
-                const inline = toggle ?
-                    {
-                        key: bindKey(feature.id, toggle.key),
-                        html: switchControlHtml(
-                            bindKey(feature.id, toggle.key),
-                            this.t(toggle.title),
-                            Boolean(config[toggle.key]),
-                            readonly,
-                        ),
-                        toggles: true,
-                    } :
-                    inlineSelect && {
-                        key: bindKey(feature.id, inlineSelect.key),
-                        html: selectControlHtml(
-                            bindKey(feature.id, inlineSelect.key),
-                            this.selectOptionsOf(inlineSelect),
-                            String(config[inlineSelect.key] ?? inlineSelect.default),
-                            readonly,
-                        ),
-                    };
-                // 子行先各自成串，再给这个功能的最后一行打上标记：层级引导线要在那里收尾（画成 └）。
-                // 不能交给 CSS 的 :last-child —— 行是跨功能平铺的，它只看得见整页最后一行。
-                const childRows: string[] = [];
-                feature.settings
-                    .filter((field) => field !== toggle && field !== inlineSelect)
-                    .forEach((field) => childRows.push(this.fieldHtml(feature, field, config, readonly)));
-                const featureRows = [
-                    subtitleRowHtml(
-                        this.nameOf(feature),
-                        feature.description ? this.t(feature.description) : "",
-                        inline || undefined,
+                rows.push(
+                    tagRows(
+                        this.featureBlockHtml(feature, this.options.store.get(feature.id), readonly),
+                        feature.id,
                     ),
-                    markLastChildRow(childRows.join("")),
-                ];
-                // 每行都带上「属于哪个功能」的元数据：搜索靠它整块显隐一个功能。
-                rows.push(tagRows(featureRows.join(""), feature.id));
+                );
+            });
+            // 这个分类一个可用的功能都没有：平时只显示这句提示；打开「显示不可用的设置」后
+            // 由下面那些灰显条目替代（收起 / 露出由 applyUnavailableVisibility() 切 fn__none）。
+            if (features.length === 0) {
+                rows.push(categoryEmptyHtml(this.t("panel.categoryEmpty")));
+            }
+            unavailable.forEach((feature) => {
+                rows.push(markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id)));
             });
             // 页签只在这里出现一次：顺序、文案与图标都由这一处决定，默认打开第一个有内容的页签
             tabs.push({
@@ -743,6 +792,21 @@ export class SettingsPanel {
             ));
             this.currentTab ??= category;
         });
+        // 搜索结果里的「不可用」分组：把各分类里不可用的功能汇总到结果最底部，平时整页收起。
+        // 它与分类页里那份是两套行（同一时刻只有一份可见），这样搜索仍然只是「切显隐」，
+        // 不用在进 / 出搜索时搬运 DOM。
+        const unavailableAll = this.unavailableFeaturesAll();
+        if (unavailableAll.length > 0) {
+            panes.push(tabPaneHtml(
+                UNAVAILABLE_PANE_ID,
+                searchGroupHtml(UNAVAILABLE_PANE_ID, this.t("panel.unavailable.group")) + markLastRow(
+                    unavailableAll.map((feature) =>
+                        markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id))
+                    ).join(""),
+                ),
+                false,
+            ));
+        }
         if (tabs.length === 0) {
             panel.innerHTML = `<div class="${PANEL_CLASS}__empty">${escapeHtml(this.t("panel.empty"))}</div>`;
             this.bindControls(panel);
@@ -762,7 +826,136 @@ export class SettingsPanel {
         this.bindControls(panel);
         this.bindTabs(panel);
         this.bindSearch(panel);
+        // 不可用条目默认收起，只有「显示不可用的设置」打开时才露出来。
+        this.applyUnavailableVisibility();
         log.info(`panel rendered with ${tabs.length} tab(s)`, tabs.map((tab) => tab.id));
+    }
+
+    /**
+     * 一个功能在页签里的全部行：功能名那一行（带它自己的开关）+ 它下面的设置行。
+     *
+     * `disabled` 为真时所有控件都是 disabled（只读工作空间、或这个功能不可用）。
+     * `reason` 只给不可用条目：它作为这个功能的最后一行排在参数行之后，说明为什么用不了。
+     */
+    private featureBlockHtml(
+        feature: FeatureDefinition,
+        config: FeatureConfig,
+        disabled: boolean,
+        reason?: string,
+    ): string {
+        // 功能自己的开关跟着功能名走，不单独占一行；剩下的才是它的参数
+        const toggle = feature.settings.find(
+            (field): field is Extract<SettingField, {kind: "switch";}> =>
+                field.kind === "switch" && field.key === "enabled",
+        );
+        // 拿 selector 当开关的功能（声明了 isEnabled）没有 enabled 开关，
+        // 那个 selector 就是它的开关，同样提到功能名那一行，不另起一行。
+        // 只有 select 型才会被提上来：别的控件不是「开关」这个角色的写法。
+        const inlineSelect = !toggle && feature.isEnabled ?
+            feature.settings.find((field): field is Extract<SettingField, {kind: "select";}> =>
+                field.kind === "select"
+            ) :
+            undefined;
+        const inline = toggle ?
+            {
+                key: bindKey(feature.id, toggle.key),
+                html: switchControlHtml(
+                    bindKey(feature.id, toggle.key),
+                    this.t(toggle.title),
+                    Boolean(config[toggle.key]),
+                    disabled,
+                ),
+                toggles: true,
+            } :
+            inlineSelect && {
+                key: bindKey(feature.id, inlineSelect.key),
+                html: selectControlHtml(
+                    bindKey(feature.id, inlineSelect.key),
+                    this.selectOptionsOf(inlineSelect),
+                    String(config[inlineSelect.key] ?? inlineSelect.default),
+                    disabled,
+                ),
+            };
+        // 子行先各自成串，再给这个功能的最后一行打上标记：层级引导线要在那里收尾（画成 └）。
+        // 不能交给 CSS 的 :last-child —— 行是跨功能平铺的，它只看得见整页最后一行。
+        const childRows: string[] = [];
+        feature.settings
+            .filter((field) => field !== toggle && field !== inlineSelect)
+            .forEach((field) => childRows.push(this.fieldHtml(feature, field, config, disabled)));
+        if (reason) {
+            childRows.push(unavailableReasonRowHtml(reason));
+        }
+        return subtitleRowHtml(
+            this.nameOf(feature),
+            feature.description ? this.t(feature.description) : "",
+            inline || undefined,
+        ) + markLastChildRow(childRows.join(""));
+    }
+
+    /**
+     * 一个不可用功能的全部行。
+     *
+     * 它的配置不会被装载（`activeFeatures()` 已经把它筛掉），所以控件只能按声明里的默认值
+     * 灰显出来 —— 那不是用户存过的值，但「这个功能长什么样」仍然一眼看得出来。
+     */
+    private unavailableBlockHtml(feature: FeatureDefinition): string {
+        return this.featureBlockHtml(feature, defaultConfig(feature.settings), true, this.reasonTextOf(feature));
+    }
+
+    /** 一个不可用功能的原因文案：版本两种填版本号，平台那种填适用端的名字。 */
+    private reasonTextOf(feature: FeatureDefinition): string {
+        const reason = unavailableReason(feature);
+        if (!reason) {
+            return "";
+        }
+        const template = this.t(REASON_KEYS[reason]);
+        if (reason === "frontend") {
+            return template.replace("{platform}", this.platformLabelsOf(feature));
+        }
+        const version = reason === "minAppVersion" ? feature.minAppVersion : feature.maxAppVersion;
+        return version ? template.replace("{version}", version) : template;
+    }
+
+    /** 功能声明的适用端名字：`["mobile"]` → 「移动端」。 */
+    private platformLabelsOf(feature: FeatureDefinition): string {
+        return (feature.frontends ?? []).map((frontend) =>
+            this.t(frontend === "mobile" ? "common.scope.mobile" : "common.scope.desktop")
+        ).join(" / ");
+    }
+
+    /**
+     * 按「显示不可用的设置」此刻的状态把不可用条目显隐掉。
+     *
+     * 平时它们带着 `fn__none`：不占位、也不参与「最后一行」的判定；打开后重新露出，
+     * 并重算每页最后一行与功能内最后一个子行的标记（层级引导线的 └ 要在新的最后一行上收尾）。
+     * 搜索视图里由 `filterSearch()` 按命中与开关决定，这里只更新根上的类再重过滤一次。
+     */
+    private applyUnavailableVisibility(): void {
+        const root = this.dialog?.element;
+        if (!root) {
+            return;
+        }
+        const show = isShowUnavailable();
+        this.panelElement(root)?.classList.toggle(SHOW_UNAVAILABLE_CLASS, show);
+        if (this.searchActive) {
+            this.filterSearch(parseQuery(this.searchText));
+            return;
+        }
+        root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
+            const dedicated = pane.dataset.ssTabPanel === UNAVAILABLE_PANE_ID;
+            pane.querySelectorAll<HTMLElement>(`[${UNAVAILABLE_ATTR}]`).forEach((row) => {
+                row.classList.toggle("fn__none", !show);
+            });
+            // 一个可用的功能都没有的分类：开关关着时只有这句提示，打开后换成灰显条目
+            pane.querySelector<HTMLElement>(`.${PANEL_CLASS}__category-empty`)?.classList.toggle("fn__none", show);
+            this.refreshLastRow(pane);
+            this.refreshChildMarks(this.rowsByFeature(pane));
+            if (dedicated) {
+                // 汇总页只属于搜索结果：平时整页收起（行自己的显隐仍跟着开关，搜索时直接可用）
+                pane.classList.add("fn__none");
+            }
+        });
+        log.info("unavailable settings visibility applied", {show});
     }
 
     /**
@@ -901,8 +1094,11 @@ export class SettingsPanel {
         if (typeof tab !== "string") {
             return;
         }
+        // 一个分类只要有可用的功能、或有不可用的功能（页签会显示空状态文案 / 灰显条目），
+        // 它就仍然是一个存在的页签。
         const available = CATEGORY_ORDER.some((category) =>
-            category === tab && this.visibleFeatures(category).length > 0
+            category === tab &&
+            (this.visibleFeatures(category).length > 0 || this.unavailableFeatures(category).length > 0)
         );
         if (!available) {
             return;
@@ -1608,14 +1804,23 @@ export class SettingsPanel {
         }
         const hits = matchIndex(this.buildSearchIndex(), keywords);
         this.clearHighlights(root);
+        const showUnavailable = isShowUnavailable();
+        const unavailableAll = this.unavailableFeaturesAll();
+        const unavailableIds = new Set(unavailableAll.map((feature) => feature.id));
+        const unavailableCategoryOf = new Map(unavailableAll.map((feature) => [feature.id, feature.category]));
         let shown = 0;
         root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
+            if (pane.dataset.ssTabPanel === UNAVAILABLE_PANE_ID) {
+                // 汇总页在下面单独处理：它要按「开关 + 命中」决定，还要排在所有分类之后
+                return;
+            }
             const category = pane.dataset.ssTabPanel as string;
             const showAll = hits.categories.has(category);
             const featureRows = this.rowsByFeature(pane);
             let visible = 0;
             featureRows.forEach((rows, id) => {
-                const show = showAll || hits.features.has(id);
+                // 不可用条目统一在结果末尾的「不可用」分组里出现，分类页里那一份始终收起
+                const show = !unavailableIds.has(id) && (showAll || hits.features.has(id));
                 if (show) {
                     visible += 1;
                 }
@@ -1631,9 +1836,33 @@ export class SettingsPanel {
             this.refreshChildMarks(featureRows);
             this.highlightPane(pane, keywords);
         });
+        // 「不可用」分组：所有不可用的功能汇总在结果最底部，只有开关打开且真的命中时才出现。
+        // 搜「不可用」这三个字（分组名本身）也命中这一组，与分类名命中的规则一致。
+        const dedicated = root.querySelector<HTMLElement>(`[data-ss-tab-panel="${UNAVAILABLE_PANE_ID}"]`);
+        if (dedicated) {
+            const showAll = hits.categories.has(UNAVAILABLE_PANE_ID);
+            const featureRows = this.rowsByFeature(dedicated);
+            let visible = 0;
+            featureRows.forEach((rows, id) => {
+                // 分类名命中时，该分类里不可用的功能也跟着出现（与分类分组「命中即整组显示」一致）
+                const show = showUnavailable &&
+                    (showAll || hits.features.has(id) || hits.categories.has(unavailableCategoryOf.get(id) ?? ""));
+                if (show) {
+                    visible += 1;
+                }
+                rows.forEach((row) => row.classList.toggle("fn__none", !show));
+            });
+            dedicated.classList.toggle("fn__none", visible === 0);
+            dedicated.querySelector<HTMLElement>("[data-ss-search-group]")?.classList.toggle("fn__none", visible === 0);
+            if (visible > 0) {
+                shown += visible;
+                this.refreshLastRow(dedicated);
+                this.highlightPane(dedicated, keywords);
+            }
+        }
         // 无结果时只留这一行提示：空分类已经整页收起，这里也不挂清除按钮
         root.querySelector<HTMLElement>(`.${PANEL_CLASS}__search-empty`)?.classList.toggle("fn__none", shown > 0);
-        log.info("search filtered", {keywords, features: shown});
+        log.info("search filtered", {keywords, features: shown, unavailable: showUnavailable});
     }
 
     /**
@@ -1669,6 +1898,9 @@ export class SettingsPanel {
         if (this.currentTab) {
             this.activateTab(this.currentTab);
         }
+        // 搜索期间不可用条目一律收起（统一放在结果末尾的「不可用」分组里），
+        // 回到分类视图时按开关的状态重新露出，并重算每一页的最后一行。
+        this.applyUnavailableVisibility();
         this.restoreScroll(root);
         log.info("search cleared");
     }
@@ -1827,57 +2059,67 @@ export class SettingsPanel {
     private buildSearchIndex(): SearchIndex {
         const categories: Record<string, SearchField> = {};
         const features: SearchRecord[] = [];
+        const unavailable = this.unavailableFeaturesAll();
         CATEGORY_ORDER.forEach((category) => {
-            if (this.visibleFeatures(category).length === 0) {
+            if (this.visibleFeatures(category).length === 0 && this.unavailableFeatures(category).length === 0) {
                 return;
             }
             categories[category] = this.staticField(categoryKey(category));
         });
-        this.visibleFeaturesAll().forEach((feature) => {
-            const fields: SearchField[] = [fieldOf(feature.id), this.staticField(feature.name)];
-            if (feature.description) {
-                fields.push(this.staticField(feature.description));
-            }
-            feature.settings.forEach((field) => {
-                // 内部 key 始终可搜，与它有没有文案无关
-                fields.push(fieldOf(field.key));
-                if (field.kind === "note") {
-                    // 说明块：可见文字（各语言）+ 占位符的值与链接标签，算同一个字段
-                    fields.push(fieldOf(
-                        ...this.localeTexts(field.text),
-                        ...Object.values(field.values ?? {}),
-                        ...Object.values(field.labels ?? {}),
-                    ));
-                    return;
-                }
-                fields.push(this.staticField(field.title));
-                if (field.description) {
-                    fields.push(this.staticField(field.description));
-                }
-                if ((field.kind === "text" || field.kind === "textarea") && field.placeholder) {
-                    fields.push(this.staticField(field.placeholder));
-                }
-                if (field.kind === "select") {
-                    if (field.optionsProvider) {
-                        // 候选集只有运行时才知道（笔记本、插件列表），只收此刻解析出的标签
-                        fields.push(fieldOf(...this.selectOptionsOf(field).map((option) => option.label)));
-                    } else {
-                        (field.options ?? []).forEach((option) => fields.push(this.staticField(option.label)));
-                    }
-                }
-                if (field.kind === "button") {
-                    // 字符串型按钮文字是 i18n key（各语言都收）；函数型跟着运行期状态变，
-                    // 只收此刻算出来的那一份
-                    fields.push(
-                        typeof field.label === "function" ?
-                            fieldOf(this.actionLabel(field.label, feature.id)) :
-                            this.staticField(field.label),
-                    );
-                }
-            });
-            features.push({category: feature.category, id: feature.id, fields});
-        });
+        // 「不可用」分组名本身也是一个匹配域：搜「不可用」就能把这一组整个翻出来，
+        // 与分类名命中的规则一致（命中分组名 → 该组全部条目）。
+        if (unavailable.length > 0) {
+            categories[UNAVAILABLE_PANE_ID] = this.staticField("panel.unavailable.group");
+        }
+        this.visibleFeaturesAll().forEach((feature) => features.push(this.searchRecordOf(feature)));
+        unavailable.forEach((feature) => features.push(this.searchRecordOf(feature)));
         return {categories, features};
+    }
+
+    /** 一个功能的匹配域：id、名称、说明，以及它每个设置项上看得见的文案。 */
+    private searchRecordOf(feature: FeatureDefinition): SearchRecord {
+        const fields: SearchField[] = [fieldOf(feature.id), this.staticField(feature.name)];
+        if (feature.description) {
+            fields.push(this.staticField(feature.description));
+        }
+        feature.settings.forEach((field) => {
+            // 内部 key 始终可搜，与它有没有文案无关
+            fields.push(fieldOf(field.key));
+            if (field.kind === "note") {
+                // 说明块：可见文字（各语言）+ 占位符的值与链接标签，算同一个字段
+                fields.push(fieldOf(
+                    ...this.localeTexts(field.text),
+                    ...Object.values(field.values ?? {}),
+                    ...Object.values(field.labels ?? {}),
+                ));
+                return;
+            }
+            fields.push(this.staticField(field.title));
+            if (field.description) {
+                fields.push(this.staticField(field.description));
+            }
+            if ((field.kind === "text" || field.kind === "textarea") && field.placeholder) {
+                fields.push(this.staticField(field.placeholder));
+            }
+            if (field.kind === "select") {
+                if (field.optionsProvider) {
+                    // 候选集只有运行时才知道（笔记本、插件列表），只收此刻解析出的标签
+                    fields.push(fieldOf(...this.selectOptionsOf(field).map((option) => option.label)));
+                } else {
+                    (field.options ?? []).forEach((option) => fields.push(this.staticField(option.label)));
+                }
+            }
+            if (field.kind === "button") {
+                // 字符串型按钮文字是 i18n key（各语言都收）；函数型跟着运行期状态变，
+                // 只收此刻算出来的那一份
+                fields.push(
+                    typeof field.label === "function" ?
+                        fieldOf(this.actionLabel(field.label, feature.id)) :
+                        this.staticField(field.label),
+                );
+            }
+        });
+        return {category: feature.category, id: feature.id, fields};
     }
 
     /** 一条静态 i18n 文案的匹配域：当前语言那一份，加上各语言文件里的同一条。 */

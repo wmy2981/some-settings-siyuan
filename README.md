@@ -38,6 +38,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Accent for the opened note
 * Inline Markdown in document tree titles
 * Inline Markdown in tab titles
+* Outline heading level limit
 * Mobile document tree title size back to 3.8.9
 
 ### Interface and appearance
@@ -73,6 +74,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 ### This plugin
 
 * Detailed log output
+* Show unavailable settings
 * Clear this plugin's configuration
 * About this plugin
 * Import and export this plugin's configuration
@@ -101,6 +103,10 @@ plugin adds no top bar button, no status bar item and no dock item.
   and setting items at once, showing each matched feature with all of its settings and highlighting the match;
   `Ctrl/Cmd + F` or `/` focuses it, and `Esc` or the clear icon inside the box only empties it. The query is never
   saved, and searching neither mounts features nor writes configuration.
+* With **Show unavailable settings** on under **This plugin**, every tab lists the features that cannot run here
+  at the bottom in gray, with the reason (disabled by the developer, not available on this platform, or outside
+  the supported SiYuan version range); search collects them into a separate **Unavailable** group at the end.
+  Their controls show declaration defaults, cannot be operated, and their configuration is never loaded.
 * Detailed logging is off by default and leaves a single load hint in the console; once enabled under
   **This plugin**, every event is one INFO / WARN / ERROR line tagged with the feature id. The console log viewer
   only collects from the moment its own switch is on, so logs from plugin startup are never recorded.
@@ -115,6 +121,10 @@ plugin adds no top bar button, no status bar item and no dock item.
   jump only takes over whole-document bookmarks opened with a plain left click; the recording window only replaces
   the UI (SiYuan's recorder has no pause, so it offers stop only); asset metadata only covers workspace assets
   (`assets/…`); snippet highlighting needs SiYuan's own highlight.js and falls back to plain text.
+* _Outline heading level limit_ only changes what is displayed: the document, the outline data and SiYuan's own
+  collapse state stay untouched, and turning the feature off brings every row back. A heading below the chosen level
+  gets no current-position highlight while it is hidden, and searching the outline lifts the limit only while the
+  search box has text.
 * _Details for the agent's tool calls_ reads only responses the panel already received, so unmatched calls show no
   parameters; _Send the agent message with Enter_ shadows the default Agent Send shortcut.
 * _Translate agent thinking_ only replaces the displayed text: the original reasoning, the session and the model

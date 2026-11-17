@@ -99,15 +99,20 @@ const warnOnce = (key: string, message: string): void => {
 };
 
 /**
- * 该功能在当前宿主上是否仍然适用。
+ * 宿主版本落在声明区间之外的哪一侧；区间内（或读不到版本、边界写法认不出）时返回 undefined。
  *
  * 两个边界都是**含**的：`minAppVersion` 要求宿主版本不低于它，`maxAppVersion` 要求不高于它。
  * 不写的一侧等于不限。边界写法认不出、或宿主版本读不到时，这一侧按「不限」处理并只告警一次。
+ *
+ * 设置面板用它给「不可用的设置」标原因，`supportsCurrentHost()` 则是它的布尔化 ——
+ * 判定只写这一处，两边不会各说各话。
  */
-export const supportsCurrentHost = (definition: FeatureDefinition): boolean => {
+export const hostRangeProblem = (
+    definition: FeatureDefinition,
+): "minAppVersion" | "maxAppVersion" | undefined => {
     const {minAppVersion, maxAppVersion} = definition;
     if (!minAppVersion && !maxAppVersion) {
-        return true;
+        return undefined;
     }
     const current = hostVersion();
     if (!current) {
@@ -117,10 +122,17 @@ export const supportsCurrentHost = (definition: FeatureDefinition): boolean => {
                 JSON.stringify(window.siyuan?.config?.system?.kernelVersion)
             }, so the declared range ${JSON.stringify({minAppVersion, maxAppVersion})} is ignored`,
         );
-        return true;
+        return undefined;
     }
-    return withinMinimum(definition, current) && withinMaximum(definition, current);
+    if (!withinMinimum(definition, current)) {
+        return "minAppVersion";
+    }
+    return withinMaximum(definition, current) ? undefined : "maxAppVersion";
 };
+
+/** 该功能在当前宿主上是否仍然适用。 */
+export const supportsCurrentHost = (definition: FeatureDefinition): boolean =>
+    hostRangeProblem(definition) === undefined;
 
 const withinMinimum = (definition: FeatureDefinition, current: HostVersion): boolean => {
     const declared = definition.minAppVersion;

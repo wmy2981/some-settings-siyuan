@@ -197,6 +197,26 @@ export const searchGroupHtml = (category: string, label: string): string =>
     }</div>`;
 
 /**
+ * 分类页里的空状态：这个分类下一个可用的功能都没有。
+ *
+ * 它不是设置行（没有 `config-item`），所以不参与「最后一行」标记。
+ * 打开「显示不可用的设置」后由面板切 `fn__none` 收起，换成下面那些灰显的不可用条目。
+ */
+export const categoryEmptyHtml = (message: string): string =>
+    `<div class="${PANEL_CLASS}__category-empty">${escapeHtml(message)}</div>`;
+
+/**
+ * 不可用条目的原因行：这个功能的最后一行，只有一小段文字。
+ *
+ * 与其它子行一样带 `CHILD_CLASS`，所以缩进与层级引导线照旧；
+ * 灰显由面板给整块不可用行加的类负责（见 `setting-dialog.ts` 的 `markUnavailableRows()`）。
+ */
+export const unavailableReasonRowHtml = (text: string): string =>
+    `<div class="b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__unavailable-reason">
+    <div class="${PANEL_CLASS}__unavailable-reason-text">${escapeHtml(text)}</div>
+</div>`;
+
+/**
  * 页签内容区：顶部一块搜索框（移动端传空串，搜索框在面板标题下方），下面是一叠页签。
  *
  * 搜索框是滚动容器**外面**的一行：桌面端每一页自己滚、搜索时由 `.some-settings-panel__panes`
@@ -826,6 +846,28 @@ export const PANEL_CSS = `
 .${PANEL_CLASS} .${PANEL_CLASS}__empty {
     flex: 1 1 auto;
     min-width: 0;
+    padding: 18px 12px;
+    text-align: center;
+    color: var(--b3-theme-on-surface);
+    opacity: .7;
+}
+/* 不可用条目 -------------------------------------------------------------
+   打开「显示不可用的设置」后，每个页签底部列出这个分类里不可用的功能：整块灰显、
+   控件是 disabled 的，再兜一层 pointer-events: none —— 说明块里的链接不是 disabled
+   控件，只靠 disabled 拦不住。原因行是这个功能的最后一行，缩进与引导线照旧。 */
+.${PANEL_CLASS} .config-item.${PANEL_CLASS}__unavailable {
+    opacity: .5;
+    pointer-events: none;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-text {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: var(--b3-theme-on-surface);
+    font-size: .85em;
+    line-height: 1.6;
+}
+/* 分类里一个可用的功能都没有时的提示；打开「显示不可用的设置」后由面板换成灰显条目 */
+.${PANEL_CLASS} .${PANEL_CLASS}__category-empty {
     padding: 18px 12px;
     text-align: center;
     color: var(--b3-theme-on-surface);
