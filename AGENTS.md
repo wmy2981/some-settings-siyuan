@@ -32,8 +32,9 @@
 | `enabled: false` | 否           | 默认不显示，可灰显 | 否                         |
 
 * 面板默认只显示当前宿主上真正可用的功能。「插件自身」页签的「显示不可用的设置」打开后，
-  `enabled: false`、平台不符、版本区间不符的功能会灰显在每个页签底部并注明原因（控件不可操作），
-  搜索时单独汇总到结果最末的「不可用」分组；机制见 [setting-panel.md](docs/setting-panel.md)。
+  `enabled: false`、平台不符、版本区间不符的功能会灰显在每个页签底部，命中的原因逐条列出
+  （控件不可操作），搜索时单独汇总到结果最末的「不可用」分组；
+  机制见 [setting-panel.md](docs/setting-panel.md)。
 
 * `enabled` 必须显式写 `true` / `false`，缺失由 `npm run check` 拦下。
 * 每个功能的第一个设置项是**默认关闭**的开关（`key: "enabled"`、`default: false`），后面的控件才是参数。
