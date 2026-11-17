@@ -13,6 +13,7 @@ import {
     expect,
     it,
 } from "vitest";
+import {SHOW_UNAVAILABLE_FEATURE_ID} from "../../src/core/availability";
 import {LOG_FEATURE_ID} from "../../src/core/log";
 import {
     activeFeatures,
@@ -44,6 +45,11 @@ describe("清单本身", () => {
     it("id 唯一", () => {
         const ids = FEATURES.map((feature) => feature.id);
         expect(new Set(ids).size).toBe(ids.length);
+    });
+
+    it("「显示不可用的设置」的 id 与面板读的那个常量一致", () => {
+        // 面板靠这个 id 订阅开关变化：写成别的值，开关翻了条目也不会显隐
+        expect(featureById(SHOW_UNAVAILABLE_FEATURE_ID)?.id).toBe(SHOW_UNAVAILABLE_FEATURE_ID);
     });
 
     it("id 只用小写字母、数字与连字符", () => {

@@ -15,8 +15,13 @@ import {
     it,
     vi,
 } from "vitest";
+import {setShowUnavailable} from "../../src/core/availability";
 import {ConfigStore} from "../../src/core/config";
 import {setDetailedLogging} from "../../src/core/log";
+import {
+    activeFeatures,
+    FEATURES,
+} from "../../src/core/registry";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import type {
     FeatureDefinition,
@@ -52,6 +57,9 @@ class FakeHost {
         "area.authors": "作者名单",
         "area.authors.desc": "一行一个作者",
         "area.authors.ph": "作者占位",
+        "beta.name": "不可用功能",
+        "beta.desc": "不可用功能的说明",
+        "toggle.name": "显示不可用的设置",
         "secondary.name": "乙功能",
         "switch-mode.name": "丙功能",
         "switch-mode.scope": "适用端",
@@ -61,7 +69,15 @@ class FakeHost {
         "category.appearance": "外观",
         "category.settings": "设置",
         "common.enabled": "启用",
+        "common.scope.desktop": "桌面端",
+        "common.scope.mobile": "移动端",
         "panel.empty": "本宿主没有可用的设置项",
+        "panel.categoryEmpty": "当前分类下没有可用的功能。",
+        "panel.unavailable.group": "不可用",
+        "panel.unavailable.disabled": "已被开发者禁用",
+        "panel.unavailable.frontend": "仅适用于{platform}",
+        "panel.unavailable.minVersion": "需要思源 {version} 或更高版本",
+        "panel.unavailable.maxVersion": "仅支持思源 {version} 及更低版本",
         "panel.search.placeholder": "搜索...",
         "panel.search.clear": "清空搜索",
         "panel.search.empty": "无结果",
@@ -135,6 +151,8 @@ const open = async (
     definitions: FeatureDefinition[] = [featureOf("alpha")],
     stored: Record<string, unknown> = {},
     existingHost?: FakeHost,
+    /** 注册表里的全部功能（含不可用的那些），不传就当没有不可用功能。 */
+    allFeatures?: FeatureDefinition[],
 ): Promise<Opened> => {
     const host = existingHost ?? new FakeHost();
     Object.entries(stored).forEach(([id, value]) => host.files.set(`feature-${id}`, value));
@@ -142,7 +160,7 @@ const open = async (
     for (const definition of definitions) {
         await store.register(definition);
     }
-    const panel = new SettingsPanel({plugin: host.asPlugin(), store, features: definitions});
+    const panel = new SettingsPanel({plugin: host.asPlugin(), store, features: definitions, allFeatures});
     panel.show();
     const root = mockState.settings[mockState.settings.length - 1]?.dialog?.element;
     if (!root) {
@@ -238,6 +256,8 @@ const nextFrame = (): Promise<void> =>
 beforeEach(() => {
     setViewport(1200);
     window.siyuan.config.system.kernelVersion = "3.8.7";
+    // 「显示不可用的设置」是模块级的标记（由那个功能挂载 / 卸载翻转）：测试之间必须复位。
+    setShowUnavailable(false);
     setDetailedLogging(true);
 });
 
@@ -2145,5 +2165,210 @@ describe("搜索", () => {
             await vi.waitFor(() => expect(host.files.get("feature-panel-state")).toEqual({tab: "editor"}));
             expect(q(`.${PANEL_CLASS}`)).not.toBeNull();
         });
+    });
+});
+
+describe("不可用的设置", () => {
+    /** 控制开关的那个功能：面板靠它的配置变化重画不可用条目。 */
+    const toggleOf = (): FeatureDefinition => ({
+        id: "show-unavailable-settings",
+        category: "plugin",
+        name: "toggle.name",
+        enabled: true,
+        settings: [{kind: "switch", key: "enabled", title: "common.enabled", default: false}],
+    });
+
+    /** 一个不可用的功能：默认是开发者禁用，可以换成别的原因。 */
+    const betaOf = (extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
+        id: "beta",
+        category: "editor",
+        name: "beta.name",
+        description: "beta.desc",
+        enabled: true,
+        settings: [
+            {kind: "switch", key: "enabled", title: "common.enabled", default: false},
+            {kind: "number", key: "size", title: "alpha.size", default: 12, min: 8, max: 24},
+        ],
+        ...extra,
+    });
+
+    const hiddenOf = (element: Element | null | undefined): boolean => Boolean(element?.classList.contains("fn__none"));
+
+    /** 某个页签里属于某个功能的行（不可用条目在分类页与汇总页各有一份，按页签分开看）。 */
+    const rowsIn = (
+        pane: Element | null,
+        featureId: string,
+    ): HTMLElement[] => [...(pane?.querySelectorAll<HTMLElement>(`[data-ss-feature="${featureId}"]`) ?? [])];
+
+    it("不可用条目平时收起；打开开关后灰显在页签最底部并注明原因", async () => {
+        const {q, store, panelElement} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {},
+            undefined,
+            [featureOf("alpha"), toggleOf(), betaOf({enabled: false})],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        const betaRows = rowsIn(pane, "beta");
+        expect(betaRows.length).toBeGreaterThan(0);
+        expect(betaRows.every(hiddenOf)).toBe(true);
+        expect(panelElement.classList.contains(`${PANEL_CLASS}--show-unavailable`)).toBe(false);
+
+        // 打开开关：功能被装载器挂载、标记翻转；面板收到配置变化后把条目露出来
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+
+        expect(panelElement.classList.contains(`${PANEL_CLASS}--show-unavailable`)).toBe(true);
+        expect(betaRows.every((row) => !hiddenOf(row))).toBe(true);
+        // 整块灰显，控件不可操作
+        expect(betaRows.every((row) => row.classList.contains(`${PANEL_CLASS}__unavailable`))).toBe(true);
+        expect(pane?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]')?.disabled).toBe(true);
+        expect(pane?.querySelector<HTMLInputElement>('[data-ss-switch="beta::enabled"]')?.disabled).toBe(true);
+        // 原因行排在这个功能的最后一行
+        expect(betaRows[betaRows.length - 1].textContent).toContain("已被开发者禁用");
+        // 排在可用功能之后（同一页里）
+        const alphaRows = rowsIn(pane, "alpha");
+        expect(
+            alphaRows[alphaRows.length - 1].compareDocumentPosition(betaRows[0]) &
+                Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+    });
+
+    it("四种原因各自写明：开发者禁用、平台不符、最低版本、最高版本", async () => {
+        setShowUnavailable(true);
+        const {q} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha"),
+                toggleOf(),
+                betaOf({id: "off-demo", enabled: false}),
+                betaOf({id: "mobile-demo", frontends: ["mobile"]}),
+                betaOf({id: "new-demo", minAppVersion: "9.0.0"}),
+                betaOf({id: "old-demo", maxAppVersion: "3.0.0"}),
+            ],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        const reasonOf = (id: string): string => rowsIn(pane, id).pop()?.textContent ?? "";
+        expect(reasonOf("off-demo")).toContain("已被开发者禁用");
+        expect(reasonOf("mobile-demo")).toContain("仅适用于移动端");
+        expect(reasonOf("new-demo")).toContain("需要思源 9.0.0 或更高版本");
+        expect(reasonOf("old-demo")).toContain("仅支持思源 3.0.0 及更低版本");
+    });
+
+    it("分类下没有可用功能时给出提示文案，打开开关后换成灰显条目", async () => {
+        const {q, store} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha"),
+                toggleOf(),
+                betaOf({id: "beta", category: "appearance", enabled: false}),
+            ],
+        );
+        // 「外观」分类只有不可用的功能：页签仍然出现
+        expect(q('[data-ss-tab="appearance"]')).not.toBeNull();
+        const pane = q('[data-ss-tab-panel="appearance"]');
+        const empty = pane?.querySelector(`.${PANEL_CLASS}__category-empty`);
+        expect(empty?.textContent).toBe("当前分类下没有可用的功能。");
+        expect(hiddenOf(empty)).toBe(false);
+        expect(rowsIn(pane, "beta").every(hiddenOf)).toBe(true);
+
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+
+        expect(hiddenOf(empty)).toBe(true);
+        expect(rowsIn(pane, "beta").every((row) => !hiddenOf(row))).toBe(true);
+    });
+
+    it("搜索时单独汇总在结果最底部；开关关着时搜不到", async () => {
+        const {q, root, store} = await open(
+            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha", {category: "editor"}),
+                toggleOf(),
+                betaOf({category: "appearance", enabled: false}),
+            ],
+        );
+        const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+        input.value = "不可用功能";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+
+        const dedicated = q('[data-ss-tab-panel="__unavailable"]');
+        expect(dedicated).not.toBeNull();
+        expect(hiddenOf(dedicated)).toBe(true);
+        expect(hiddenOf(q(`.${PANEL_CLASS}__search-empty`))).toBe(false);
+
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+
+        expect(hiddenOf(dedicated)).toBe(false);
+        const group = dedicated?.querySelector('[data-ss-search-group="__unavailable"]');
+        expect(group?.textContent).toBe("不可用");
+        expect(hiddenOf(group)).toBe(false);
+        // 汇总页排在所有分类页之后：结果最底部
+        const panes = [...root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]")];
+        expect(panes[panes.length - 1]).toBe(dedicated);
+        // 分类页里那一份在搜索期间收起
+        expect(hiddenOf(q('[data-ss-tab-panel="appearance"]'))).toBe(true);
+
+        // 搜「不可用」这三个字（分组名本身）同样能把这一组翻出来
+        input.value = "不可用";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
+
+        // 分类名命中时，该分类里不可用的功能也跟着进「不可用」分组
+        input.value = "外观";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
+
+        // 开关关掉后立刻收起，结果回到「无结果」
+        setShowUnavailable(false);
+        await store.patch("show-unavailable-settings", {enabled: false});
+        expect(hiddenOf(dedicated)).toBe(true);
+    });
+
+    it("真实注册表里的退役功能也画得出来：不抛错、带原因", async () => {
+        // 3.9.0 已超过几个「上游实现了就退场」功能的最高版本，它们会以不可用的形式出现
+        window.siyuan.config.system.kernelVersion = "3.9.0";
+        setShowUnavailable(true);
+        const {q, qa} = await open(activeFeatures(), {}, undefined, FEATURES);
+
+        const retired = q('[data-ss-tab-panel="doc-tree"] [data-ss-feature="doc-tree-title-markdown"]');
+        expect(retired).not.toBeNull();
+        expect(retired?.classList.contains(`${PANEL_CLASS}__unavailable`)).toBe(true);
+        expect(qa('[data-ss-tab-panel="doc-tree"] [data-ss-feature="doc-tree-title-markdown"]').pop()?.textContent)
+            .toContain("仅支持思源 3.8.10-alpha.1 及更低版本");
+        // 只在移动端存在的功能在桌面端也画得出来，原因是平台
+        expect(qa('[data-ss-tab-panel="appearance"] [data-ss-feature="mobile-dock-blur"]').pop()?.textContent)
+            .toContain("仅适用于移动端");
+    });
+
+    it("清空搜索后不可用条目回到分类页，显隐仍跟着开关", async () => {
+        setShowUnavailable(true);
+        const {q, root} = await open(
+            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha", {category: "editor"}),
+                toggleOf(),
+                betaOf({category: "editor", enabled: false}),
+            ],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        expect(rowsIn(pane, "beta").every((row) => !hiddenOf(row))).toBe(true);
+
+        const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+        input.value = "alpha";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(pane, "beta").every(hiddenOf)).toBe(true);
+
+        input.value = "";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(pane, "beta").every((row) => !hiddenOf(row))).toBe(true);
     });
 });

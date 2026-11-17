@@ -54,19 +54,20 @@ import outlineLevelFilter from "../features/outline-level-filter";
 import pluginReminder from "../features/plugin-reminder";
 import recordingWindow from "../features/recording-window";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
+import showUnavailableSettings from "../features/show-unavailable-settings";
 import tabTitleMarkdown from "../features/tab-title-markdown";
-import {supportsCurrentFrontend} from "./frontend";
+import {unavailableReason} from "./availability";
 import type {
     FeatureCategory,
     FeatureDefinition,
 } from "./types";
 import {FEATURE_CATEGORIES} from "./types";
-import {supportsCurrentHost} from "./version";
 
 export const FEATURES: FeatureDefinition[] = [
     // 第一个必须是「日志输出」：功能装载器按这个顺序挂载，它挂载时才打开详细日志，
     // 排在后面的话，它前面那些功能的装载日志会被开关吞掉。
     logOutput,
+    showUnavailableSettings,
     codeBlockLangEmpty,
     assetInfoMenu,
     assetsNewFile,
@@ -125,9 +126,11 @@ export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
  *
  * 配置装载与设置面板都只认这份清单 —— 判定必须只有一处，
  * 否则会出现「面板里显示了、但功能没挂载」这种两边不一致的状态。
+ * 所以这里直接用 `unavailableReason()` 的结论：设置面板灰显「不可用」的那些，
+ * 与这里筛掉的是同一批功能。
  */
 export const activeFeatures = (): FeatureDefinition[] =>
-    FEATURES.filter((feature) => feature.enabled && supportsCurrentFrontend(feature) && supportsCurrentHost(feature));
+    FEATURES.filter((feature) => unavailableReason(feature) === undefined);
 
 export const featureById = (id: string): FeatureDefinition | undefined => FEATURES.find((feature) => feature.id === id);
 
