@@ -45,7 +45,7 @@ import type {UnavailableReason} from "./availability";
 import {
     isShowUnavailable,
     SHOW_UNAVAILABLE_FEATURE_ID,
-    unavailableReason,
+    unavailableReasons,
 } from "./availability";
 import {bindPendingClick} from "./click";
 import type {ConfigStore} from "./config";
@@ -475,7 +475,7 @@ export class SettingsPanel {
      * 它们不参与配置装载（`activeFeatures()` 已经把它们筛掉了），所以控件只能按声明默认值显示。
      */
     private unavailableFeaturesAll(): FeatureDefinition[] {
-        return (this.options.allFeatures ?? []).filter((feature) => unavailableReason(feature) !== undefined);
+        return (this.options.allFeatures ?? []).filter((feature) => unavailableReasons(feature).length > 0);
     }
 
     /** 当前分类（页签）下不可用的功能，顺序与注册表一致。 */
@@ -835,13 +835,13 @@ export class SettingsPanel {
      * 一个功能在页签里的全部行：功能名那一行（带它自己的开关）+ 它下面的设置行。
      *
      * `disabled` 为真时所有控件都是 disabled（只读工作空间、或这个功能不可用）。
-     * `reason` 只给不可用条目：它作为这个功能的最后一行排在参数行之后，说明为什么用不了。
+     * `reasons` 只给不可用条目：它们作为这个功能的最后一行排在参数行之后，逐条说明为什么用不了。
      */
     private featureBlockHtml(
         feature: FeatureDefinition,
         config: FeatureConfig,
         disabled: boolean,
-        reason?: string,
+        reasons: string[] = [],
     ): string {
         // 功能自己的开关跟着功能名走，不单独占一行；剩下的才是它的参数
         const toggle = feature.settings.find(
@@ -882,8 +882,8 @@ export class SettingsPanel {
         feature.settings
             .filter((field) => field !== toggle && field !== inlineSelect)
             .forEach((field) => childRows.push(this.fieldHtml(feature, field, config, disabled)));
-        if (reason) {
-            childRows.push(unavailableReasonRowHtml(reason));
+        if (reasons.length > 0) {
+            childRows.push(unavailableReasonRowHtml(reasons));
         }
         return subtitleRowHtml(
             this.nameOf(feature),
@@ -899,21 +899,19 @@ export class SettingsPanel {
      * 灰显出来 —— 那不是用户存过的值，但「这个功能长什么样」仍然一眼看得出来。
      */
     private unavailableBlockHtml(feature: FeatureDefinition): string {
-        return this.featureBlockHtml(feature, defaultConfig(feature.settings), true, this.reasonTextOf(feature));
+        return this.featureBlockHtml(feature, defaultConfig(feature.settings), true, this.reasonTextsOf(feature));
     }
 
-    /** 一个不可用功能的原因文案：版本两种填版本号，平台那种填适用端的名字。 */
-    private reasonTextOf(feature: FeatureDefinition): string {
-        const reason = unavailableReason(feature);
-        if (!reason) {
-            return "";
-        }
-        const template = this.t(REASON_KEYS[reason]);
-        if (reason === "frontend") {
-            return template.replace("{platform}", this.platformLabelsOf(feature));
-        }
-        const version = reason === "minAppVersion" ? feature.minAppVersion : feature.maxAppVersion;
-        return version ? template.replace("{version}", version) : template;
+    /** 一个不可用功能的全部原因文案：命中的每一条各占一行，顺序与 `unavailableReasons()` 一致。 */
+    private reasonTextsOf(feature: FeatureDefinition): string[] {
+        return unavailableReasons(feature).map((reason) => {
+            const template = this.t(REASON_KEYS[reason]);
+            if (reason === "frontend") {
+                return template.replace("{platform}", this.platformLabelsOf(feature));
+            }
+            const version = reason === "minAppVersion" ? feature.minAppVersion : feature.maxAppVersion;
+            return version ? template.replace("{version}", version) : template;
+        });
     }
 
     /** 功能声明的适用端名字：`["mobile"]` → 「移动端」。 */

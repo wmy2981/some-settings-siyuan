@@ -2256,6 +2256,27 @@ describe("不可用的设置", () => {
         expect(reasonOf("old-demo")).toContain("仅支持思源 3.0.0 及更低版本");
     });
 
+    it("同时命中多个原因时逐条列出，而不是只显示一条", async () => {
+        // 只在移动端存在、又已经超出最高版本：桌面端这两条同时成立
+        window.siyuan.config.system.kernelVersion = "3.9.0";
+        setShowUnavailable(true);
+        const {q} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha"),
+                toggleOf(),
+                betaOf({id: "multi", frontends: ["mobile"], maxAppVersion: "3.8.10-alpha.1"}),
+            ],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        const reasonRow = rowsIn(pane, "multi").pop();
+        const lines = [...(reasonRow?.querySelectorAll(`.${PANEL_CLASS}__unavailable-reason-text`) ?? [])]
+            .map((line) => line.textContent);
+        expect(lines).toEqual(["仅适用于移动端", "仅支持思源 3.8.10-alpha.1 及更低版本"]);
+    });
+
     it("分类下没有可用功能时给出提示文案，打开开关后换成灰显条目", async () => {
         const {q, store} = await open(
             [featureOf("alpha"), toggleOf()],

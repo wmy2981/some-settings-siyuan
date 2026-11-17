@@ -104,9 +104,9 @@ plugin adds no top bar button, no status bar item and no dock item.
   `Ctrl/Cmd + F` or `/` focuses it, and `Esc` or the clear icon inside the box only empties it. The query is never
   saved, and searching neither mounts features nor writes configuration.
 * With **Show unavailable settings** on under **This plugin**, every tab lists the features that cannot run here
-  at the bottom in gray, with the reason (disabled by the developer, not available on this platform, or outside
-  the supported SiYuan version range); search collects them into a separate **Unavailable** group at the end.
-  Their controls show declaration defaults, cannot be operated, and their configuration is never loaded.
+  at the bottom in gray, with every matching reason (disabled by the developer, not available on this platform,
+  or outside the supported SiYuan version range); search collects them into a separate **Unavailable** group at
+  the end. Their controls show declaration defaults, cannot be operated, and their configuration is never loaded.
 * Detailed logging is off by default and leaves a single load hint in the console; once enabled under
   **This plugin**, every event is one INFO / WARN / ERROR line tagged with the feature id. The console log viewer
   only collects from the moment its own switch is on, so logs from plugin startup are never recorded.

@@ -35,19 +35,28 @@ export const SHOW_UNAVAILABLE_FEATURE_ID = "show-unavailable-settings";
 export type UnavailableReason = "disabled" | "frontend" | "minAppVersion" | "maxAppVersion";
 
 /**
- * 该功能此刻为什么不可用；可用时返回 undefined。
+ * 该功能此刻为什么不可用；可用时返回空数组。
  *
- * 判定顺序即原因的重要程度：先看这个功能还要不要（`enabled: false`），再看当前这台设备
- * 有没有这块界面，最后才看版本区间 —— 一个被撤下的功能，版本对不对都不再重要。
+ * 一个功能可能同时命中多个原因（例如一个只在移动端存在、又已经超出最高版本的功能，
+ * 在桌面端两条都成立），**命中的全部返回**，面板逐条列出来 —— 只挑一条会让人以为
+ * 换个平台或换个版本就能用，而实际上另一条依然拦着它。
+ *
+ * 顺序固定为「功能还要不要 → 这台设备有没有这块界面 → 版本区间」，与原因的重要程度一致。
  */
-export const unavailableReason = (definition: FeatureDefinition): UnavailableReason | undefined => {
+export const unavailableReasons = (definition: FeatureDefinition): UnavailableReason[] => {
+    const reasons: UnavailableReason[] = [];
     if (!definition.enabled) {
-        return "disabled";
+        reasons.push("disabled");
     }
     if (!supportsCurrentFrontend(definition)) {
-        return "frontend";
+        reasons.push("frontend");
     }
-    return hostRangeProblem(definition);
+    // 版本区间只有一侧会不成立（min 高于 max 的声明由 npm run check 拦下），所以最多加一条
+    const range = hostRangeProblem(definition);
+    if (range) {
+        reasons.push(range);
+    }
+    return reasons;
 };
 
 /** 面板此刻要不要显示不可用的设置；由「显示不可用的设置」功能挂载 / 卸载时翻转。 */

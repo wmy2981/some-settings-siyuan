@@ -206,14 +206,19 @@ export const categoryEmptyHtml = (message: string): string =>
     `<div class="${PANEL_CLASS}__category-empty">${escapeHtml(message)}</div>`;
 
 /**
- * 不可用条目的原因行：这个功能的最后一行，只有一小段文字。
+ * 不可用条目的原因行：这个功能的最后一行，一条原因一行。
  *
- * 与其它子行一样带 `CHILD_CLASS`，所以缩进与层级引导线照旧；
- * 灰显由面板给整块不可用行加的类负责（见 `setting-dialog.ts` 的 `markUnavailableRows()`）。
+ * 一个功能可能同时命中多个原因（既不在当前平台、又超出最高版本），所以这里收一组文案逐行排开：
+ * 挤成一行在窄屏上会折得很难看，也分不清哪段到哪段。与其它子行一样带 `CHILD_CLASS`，
+ * 缩进与层级引导线照旧；灰显由面板给整块不可用行加的类负责（见 `setting-dialog.ts` 的
+ * `markUnavailableRows()`）。
  */
-export const unavailableReasonRowHtml = (text: string): string =>
+export const unavailableReasonRowHtml = (reasons: string[]): string =>
     `<div class="b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__unavailable-reason">
-    <div class="${PANEL_CLASS}__unavailable-reason-text">${escapeHtml(text)}</div>
+    <div class="${PANEL_CLASS}__unavailable-reason-body">${
+        reasons.map((reason) => `<div class="${PANEL_CLASS}__unavailable-reason-text">${escapeHtml(reason)}</div>`)
+            .join("")
+    }</div>
 </div>`;
 
 /**
@@ -859,12 +864,18 @@ export const PANEL_CSS = `
     opacity: .5;
     pointer-events: none;
 }
-.${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-text {
+.${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-body {
     flex: 1 1 auto;
     min-width: 0;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-text {
     color: var(--b3-theme-on-surface);
     font-size: .85em;
     line-height: 1.6;
+}
+/* 多条原因各占一行：行距比正文紧一点，仍看得出是同一段说明 */
+.${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-text + .${PANEL_CLASS}__unavailable-reason-text {
+    margin-top: 2px;
 }
 /* 分类里一个可用的功能都没有时的提示；打开「显示不可用的设置」后由面板换成灰显条目 */
 .${PANEL_CLASS} .${PANEL_CLASS}__category-empty {
