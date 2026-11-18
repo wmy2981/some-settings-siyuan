@@ -23,6 +23,7 @@ import {
     featureById,
     featuresOf,
 } from "../../src/core/registry";
+import {SEARCH_FEATURE_ID} from "../../src/core/search";
 import {FEATURE_CATEGORIES} from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
 import {supportsCurrentHost} from "../../src/core/version";
@@ -50,6 +51,11 @@ describe("The registry itself", () => {
     it("The show-unavailable-settings id matches the constant the panel reads", () => {
         // 面板靠这个 id 订阅开关变化：写成别的值，开关翻了条目也不会显隐
         expect(featureById(SHOW_UNAVAILABLE_FEATURE_ID)?.id).toBe(SHOW_UNAVAILABLE_FEATURE_ID);
+    });
+
+    it("The settings-search id matches the constant the panel reads", () => {
+        // 面板靠这个 id 订阅开关变化：写成别的值，开关翻了搜索框也不会显隐
+        expect(featureById(SEARCH_FEATURE_ID)?.id).toBe(SEARCH_FEATURE_ID);
     });
 
     it("ids use only lowercase letters, digits and hyphens", () => {
@@ -94,11 +100,11 @@ describe("The registry itself", () => {
 });
 
 describe("Switch conventions", () => {
-    it("A feature without isEnabled must have an enabled switch that is off by default", () => {
+    it("A feature without isEnabled must have an enabled switch whose default follows its declaration", () => {
         FEATURES.filter((feature) => !feature.isEnabled).forEach((feature) => {
             const toggle = feature.settings.find((field) => field.kind === "switch" && field.key === "enabled");
             expect(toggle, `${feature.id} is missing an enabled switch`).toBeDefined();
-            expect(toggle).toMatchObject({kind: "switch", key: "enabled", default: false});
+            expect(toggle).toMatchObject({kind: "switch", key: "enabled", default: feature.defaultOn === true});
         });
     });
 

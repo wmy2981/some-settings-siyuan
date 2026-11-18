@@ -25,8 +25,10 @@
  * 之前，面板再把控件改回磁盘上的值并让错误可见。
  *
  * 搜索：面板内置全局搜索（分类名、功能、设置项一起搜），它只是面板的**过滤机制** ——
- * 不新增功能、不增加开关、不读写任何配置。命中时把原来那些页签里的行就地显隐、拼成一列结果
- * （分类名作为分组标题），**不重建面板**，所以输入框焦点、滚动位置与还在静默期里的输入都不受影响。
+ * 开关由 `settings-search` 这个功能承载（默认开启，保持它加入之前的行为），关闭时搜索框
+ * 整块收起、快捷键交还宿主，面板内容一点不变。命中时把原来那些页签里的行就地显隐、
+ * 拼成一列结果（分类名作为分组标题），**不重建面板**，所以输入框焦点、滚动位置与还在
+ * 静默期里的输入都不受影响。
  * 匹配、高亮分段的纯逻辑在 `core/search.ts`；这里只管 DOM 侧的显隐、分组与高亮写入。
  *
  * 生命周期同样只有显式入口：关面板、插件卸载（外加内核自己的 Esc）。关面板时补写待落地的改动。
@@ -70,8 +72,10 @@ import type {
 import {
     fieldOf,
     highlightSegments,
+    isSearchEnabled,
     matchIndex,
     parseQuery,
+    SEARCH_FEATURE_ID,
 } from "./search";
 import {
     readStoredFile,
@@ -411,6 +415,8 @@ export class SettingsPanel {
     private readonly unloadListeners = new Set<() => void>();
     /** 「显示不可用的设置」开关的订阅：开着面板时翻开关，不可用条目立刻显隐。 */
     private toggleUnsubscribe?: () => void;
+    /** 「设置面板搜索」开关的订阅：开着面板时翻开关，搜索框立刻显隐。 */
+    private searchToggleUnsubscribe?: () => void;
     /** 当前页签；内存里先更新，关闭面板时再落盘。 */
     private currentTab?: FeatureCategory;
     /** 上一次打开面板时从磁盘读到的状态，用来挡掉没有变化的重复写盘。 */
@@ -519,6 +525,8 @@ export class SettingsPanel {
                 this.disposeSearch();
                 this.toggleUnsubscribe?.();
                 this.toggleUnsubscribe = undefined;
+                this.searchToggleUnsubscribe?.();
+                this.searchToggleUnsubscribe = undefined;
             },
         }) as SettingWithDialog;
         this.setting = setting;
@@ -580,6 +588,11 @@ export class SettingsPanel {
         this.toggleUnsubscribe?.();
         this.toggleUnsubscribe = this.options.store.subscribe(SHOW_UNAVAILABLE_FEATURE_ID, () => {
             this.applyUnavailableVisibility();
+        });
+        // 「设置面板搜索」同理：功能会在配置落盘时当场挂载 / 卸载，面板再按标记显隐搜索框。
+        this.searchToggleUnsubscribe?.();
+        this.searchToggleUnsubscribe = this.options.store.subscribe(SEARCH_FEATURE_ID, () => {
+            this.applySearchAvailability();
         });
         void this.restoreTab(generation);
 
@@ -826,6 +839,8 @@ export class SettingsPanel {
         this.bindControls(panel);
         this.bindTabs(panel);
         this.bindSearch(panel);
+        // 搜索框的显隐跟着「设置面板搜索」这个功能走：关掉时整块收起，不占位。
+        this.applySearchAvailability();
         // 不可用条目默认收起，只有「显示不可用的设置」打开时才露出来。
         this.applyUnavailableVisibility();
         log.info(`panel rendered with ${tabs.length} tab(s)`, tabs.map((tab) => tab.id));
@@ -919,6 +934,30 @@ export class SettingsPanel {
         return (feature.frontends ?? []).map((frontend) =>
             this.t(frontend === "mobile" ? "common.scope.mobile" : "common.scope.desktop")
         ).join(" / ");
+    }
+
+    /**
+     * 按「设置面板搜索」此刻的状态把搜索框显隐掉。
+     *
+     * 搜索框始终留在 DOM 里，开关只切 `fn__none`：关掉时输入框不占位、也进不了 Tab 序，
+     * 打开时不必重建面板。关掉的那一刻如果正在搜索，先退回分类视图 —— 结果视图依赖搜索框，
+     * 留着会把分类导航一直收着。
+     */
+    private applySearchAvailability(): void {
+        const root = this.dialog?.element;
+        if (!root) {
+            return;
+        }
+        const enabled = isSearchEnabled();
+        root.querySelector<HTMLElement>(`.${PANEL_CLASS}__search`)?.classList.toggle("fn__none", !enabled);
+        if (!enabled) {
+            const input = root.querySelector<HTMLInputElement>("[data-ss-search]");
+            if (input) {
+                input.value = "";
+            }
+            this.updateSearch("");
+        }
+        log.info("search availability applied", {enabled});
     }
 
     /**
@@ -1640,7 +1679,8 @@ export class SettingsPanel {
     // ------------------------------------------------------------ 搜索
 
     /**
-     * 绑定搜索框与快捷键。搜索只是面板自己的过滤机制，不注册任何功能、不读写配置。
+     * 绑定搜索框与快捷键。搜索只是面板自己的过滤机制；开关由 `settings-search` 功能承载，
+     * 这里始终绑定，功能关着时由 `handleSearchKey()` 把快捷键交还宿主。
      *
      * 输入事件即时过滤，但**组合输入（中文输入法）期间什么都不做**：一个词还没上屏，
      * 过滤出来的是半成品，而且高亮会把正在拼的字拆散。
@@ -1688,6 +1728,10 @@ export class SettingsPanel {
     private handleSearchKey(event: KeyboardEvent): void {
         // 面板没开（或正在关闭）时这些键不属于我们
         if (!this.setting || !this.dialog) {
+            return;
+        }
+        // 搜索功能关着时一个键都不碰：`Ctrl/Cmd + F`、`/`、`Esc` 全部交还宿主。
+        if (!isSearchEnabled()) {
             return;
         }
         if (event.isComposing || event.keyCode === 229) {

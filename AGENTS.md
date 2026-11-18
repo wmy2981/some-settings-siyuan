@@ -37,8 +37,10 @@
   机制见 [setting-panel.md](docs/setting-panel.md)。
 
 * `enabled` 必须显式写 `true` / `false`，缺失由 `npm run check` 拦下。
-* 每个功能的第一个设置项是**默认关闭**的开关（`key: "enabled"`、`default: false`），后面的控件才是参数。
-  例外：需求本身就是「用一个 selector 当开关」的功能不额外加开关，改声明 `isEnabled(config)` 谓词。
+* 每个功能的第一个设置项是开关，**默认关闭**（`key: "enabled"`、`default: false`），后面的控件才是参数。
+  例外一：需求本身就是「用一个 selector 当开关」的功能不额外加开关，改声明 `isEnabled(config)` 谓词。
+  例外二：需求明确要求「保持加进来之前的行为」时（目前只有面板搜索），在声明里写 `defaultOn: true`，
+  开关同时写 `default: true`；两者不一致 `npm run check` 与声明测试都会拦下。
 * 保存开关后立即挂载或**完整卸载**该功能，不需要重载插件。
 * 上游自己实现了某个能力后，功能必须能退场：声明 `maxAppVersion: "<前一个思源版本>"`，
   宿主版本超过它就不再加载、不显示、不挂载。`minAppVersion` / `maxAppVersion` 都是**闭区间**，

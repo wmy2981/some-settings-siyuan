@@ -303,18 +303,25 @@ for (const dir of featureDirs) {
         }
     }
 
-    // 每个功能都必须能在面板里被打开：至少有一个设置行，且默认是关闭的。
-    // 默认关闭有两种合法写法——一个 default: false 的 enabled 开关，
-    // 或者自己声明 isEnabled 谓词（拿 select 的「禁用」选项当开关时走这条）。
+    // 每个功能都必须能在面板里被打开：至少有一个设置行，且默认状态与声明一致。
+    // 默认关闭是常规写法——一个 default: false 的 enabled 开关；需求明确要求保持原有行为时，
+    // 在声明里写 defaultOn: true，开关必须同时是 default: true（两者不一致会悄悄改掉用户的状态）。
+    // 另外，拿 select 的「禁用」选项当开关的功能自己声明 isEnabled 谓词，不必有 enabled 开关。
     if (/settings\s*:\s*\[\s*\]/.test(source)) {
         fail(`feature "${id}" has no settings rows; every feature needs at least one switch, select or text field`);
     }
-    const hasEnabledSwitch = /kind:\s*"switch",\s*\n\s*key:\s*"enabled",[\s\S]{0,240}?default:\s*false,/.test(
-        settingsSource,
-    );
+    const defaultOnMatch = /\bdefaultOn\s*:\s*([A-Za-z]+)\s*,/.exec(source);
+    if (defaultOnMatch && defaultOnMatch[1] !== "true" && defaultOnMatch[1] !== "false") {
+        fail(`feature "${id}" has defaultOn=${defaultOnMatch[1]}, which must be true or false`);
+    }
+    const defaultOn = defaultOnMatch?.[1] === "true";
+    const expectedDefault = defaultOn ? "true" : "false";
+    const hasEnabledSwitch = new RegExp(
+        `kind:\\s*"switch",\\s*\\n\\s*key:\\s*"enabled",[\\s\\S]{0,240}?default:\\s*${expectedDefault},`,
+    ).test(settingsSource);
     if (!hasEnabledSwitch && !/\bisEnabled\s*:/.test(source)) {
         fail(
-            `feature "${id}" has no switch that defaults to off: add a switch with key "enabled" and default: false, or declare isEnabled`,
+            `feature "${id}" has no switch that defaults to ${expectedDefault}: add a switch with key "enabled" and default: ${expectedDefault}, or declare isEnabled`,
         );
     }
 

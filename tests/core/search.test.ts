@@ -4,6 +4,7 @@
  * 搜什么、怎么算命中、命中的文字怎么切出来，都在这里定死 —— 面板只管把结果画到 DOM 上。
  */
 import {
+    afterEach,
     describe,
     expect,
     it,
@@ -11,9 +12,11 @@ import {
 import {
     fieldOf,
     highlightSegments,
+    isSearchEnabled,
     matchField,
     matchIndex,
     parseQuery,
+    setSearchEnabled,
 } from "../../src/core/search";
 import type {SearchIndex} from "../../src/core/search";
 
@@ -155,5 +158,17 @@ describe("highlightSegments", () => {
     it("Handles empty text and an empty query", () => {
         expect(highlightSegments("", parseQuery("图片"))).toEqual([{text: "", hit: false}]);
         expect(highlightSegments("图片", [])).toEqual([{text: "图片", hit: false}]);
+    });
+});
+
+describe("search availability", () => {
+    afterEach(() => setSearchEnabled(false));
+
+    it("Is off until the settings-search feature mounts", () => {
+        expect(isSearchEnabled()).toBe(false);
+        setSearchEnabled(true);
+        expect(isSearchEnabled()).toBe(true);
+        setSearchEnabled(false);
+        expect(isSearchEnabled()).toBe(false);
     });
 });

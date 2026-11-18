@@ -123,6 +123,7 @@ export interface PanelTab {
 /**
  * 面板搜索框。
  *
+ * 显隐跟着「设置面板搜索」这个功能走（关掉时由 `setting-dialog.ts` 整块加 `fn__none`）。
  * 两端各放在自己的位置上（由 `tabViewsHtml` 与 `setting-dialog.ts` 决定）：
  * 桌面端在内容区顶部、设置行上方（页签栏左侧那条不变）；移动端在面板标题下方、页签栏上方。
  * 刻意用 `type="text"` 而不是 `type="search"`：浏览器的原生清除按钮样式不受主题控制，

@@ -54,6 +54,7 @@ import outlineLevelFilter from "../features/outline-level-filter";
 import pluginReminder from "../features/plugin-reminder";
 import recordingWindow from "../features/recording-window";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
+import settingsSearch from "../features/settings-search";
 import showUnavailableSettings from "../features/show-unavailable-settings";
 import tabTitleMarkdown from "../features/tab-title-markdown";
 import {unavailableReasons} from "./availability";
@@ -68,6 +69,7 @@ export const FEATURES: FeatureDefinition[] = [
     // 排在后面的话，它前面那些功能的装载日志会被开关吞掉。
     logOutput,
     showUnavailableSettings,
+    settingsSearch,
     codeBlockLangEmpty,
     assetInfoMenu,
     assetsNewFile,

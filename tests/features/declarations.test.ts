@@ -4,7 +4,7 @@
  *
  * 这一份文件覆盖**全部**功能，不逐个功能重复：`scripts/check-features.mjs` 只在构建前
  * 拦「少写 enabled / 分类写错」这类问题，而运行期的约束（i18n key 有没有落地、
- * 默认是否真的关闭、有开关却没实现、只有动作行却声明了开关）只能在这里守。
+ * 开关默认值是否与声明一致、有开关却没实现、只有动作行却声明了开关）只能在这里守。
  *
  * 新增功能只要写进 `src/features/<id>/index.ts` 并在 `registry.ts` 登记，
  * 会自动被这里全部覆盖，不需要再加断言。
@@ -118,22 +118,25 @@ describe("feature declarations", () => {
         });
     });
 
-    it("the first setting row is an off-by-default switch, unless the feature declares an isEnabled predicate", () => {
+    it("the first setting row is an enabled switch whose default follows defaultOn, unless the feature declares an isEnabled predicate", () => {
         FEATURES.filter((feature) => !isActionOnly(feature)).forEach((feature) => {
             if (feature.isEnabled) {
                 expect(typeof feature.isEnabled, feature.id).toBe("function");
                 return;
             }
             expect(feature.settings[0].kind, feature.id).toBe("switch");
-            expect(feature.settings[0], feature.id).toMatchObject({key: "enabled", default: false});
+            expect(feature.settings[0], feature.id).toMatchObject({
+                key: "enabled",
+                default: feature.defaultOn === true,
+            });
         });
     });
 
-    it("no feature runs under the default config", () => {
+    it("a feature only runs under the default config when it explicitly declares defaultOn", () => {
         FEATURES.forEach((feature) => {
             const config = defaultConfig(feature.settings);
             const running = feature.isEnabled ? feature.isEnabled(config) : config.enabled === true;
-            expect(running, feature.id).toBe(false);
+            expect(running, feature.id).toBe(feature.defaultOn === true);
         });
     });
 

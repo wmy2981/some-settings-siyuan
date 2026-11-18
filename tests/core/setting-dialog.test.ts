@@ -22,6 +22,10 @@ import {
     activeFeatures,
     FEATURES,
 } from "../../src/core/registry";
+import {
+    SEARCH_FEATURE_ID,
+    setSearchEnabled,
+} from "../../src/core/search";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import type {
     FeatureDefinition,
@@ -258,10 +262,13 @@ beforeEach(() => {
     window.siyuan.config.system.kernelVersion = "3.8.7";
     // 「显示不可用的设置」是模块级的标记（由那个功能挂载 / 卸载翻转）：测试之间必须复位。
     setShowUnavailable(false);
+    // 「设置面板搜索」同样由功能挂载翻转；真实插件里它默认开启，测试按同一状态起步。
+    setSearchEnabled(true);
     setDetailedLogging(true);
 });
 
 afterEach(() => {
+    setSearchEnabled(false);
     setDetailedLogging(false);
 });
 
@@ -1550,7 +1557,7 @@ describe("close and dispose", () => {
 /**
  * 全局搜索（issue #119）。
  *
- * 搜索只是面板的过滤机制：不新增功能、不加开关、不读写配置。这里按三块验证：
+ * 搜索是面板的过滤机制，开关由 `settings-search` 功能承载（默认开启）。这里按三块验证：
  * - 索引与匹配：能搜到什么、关键词怎么算命中；
  * - 显隐与恢复：命中后隐藏分类导航、聚合结果，清空后原样退回；
  * - 期间的状态：控件照常可用、待写文本不丢、高亮与快捷键。
@@ -1660,6 +1667,44 @@ describe("search", () => {
             press({key: "Escape"});
             expect(input.value).toBe("");
             expect(hidden(clear)).toBe(true);
+        });
+    });
+
+    describe("the feature switch", () => {
+        /** 「设置面板搜索」本身也是一个功能：默认开启，面板靠它的配置变化显隐搜索框。 */
+        const searchFeature = (): FeatureDefinition =>
+            featureOf(SEARCH_FEATURE_ID, {
+                category: "plugin",
+                settings: [{kind: "switch", key: "enabled", title: "alpha.enabled", default: true}],
+            });
+
+        it("hides the search box and leaves every search shortcut to the host when it is off", async () => {
+            setSearchEnabled(false);
+            const {root, q} = await open(twoInEditor());
+
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(true);
+            expect(press({key: "f", ctrlKey: true}).defaultPrevented).toBe(false);
+            expect(press({key: "/"}).defaultPrevented).toBe(false);
+            expect(document.activeElement).not.toBe(searchBox(root));
+        });
+
+        it("turning it off while the panel is open hides the box and returns an active search to the category view", async () => {
+            const {q, panelElement, store} = await open([...twoInEditor(), searchFeature()]);
+            const input = q<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+            typeQuery(input, "Alpha");
+            expect(panelElement.classList.contains(`${PANEL_CLASS}--search`)).toBe(true);
+
+            setSearchEnabled(false);
+            await store.patch(SEARCH_FEATURE_ID, {enabled: false});
+
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(true);
+            expect(input.value).toBe("");
+            expect(panelElement.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
+            expect(hidden(q('[data-ss-feature="secondary"]'))).toBe(false);
+
+            setSearchEnabled(true);
+            await store.patch(SEARCH_FEATURE_ID, {enabled: true});
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(false);
         });
     });
 

@@ -60,9 +60,12 @@
   `core/frontend.ts` 的 `withoutMobileInputFocus()` 只包住**同步**的 `open()` 调用：
   期间临时接管 `HTMLElement.prototype.focus` 挡掉 `input` / `textarea`，`finally` 立刻还原，
   容器等非输入控件的聚焦照常放行；桌面端直接执行、不碰宿主行为。用户随后点输入框仍能正常编辑。
-* **面板内置全局搜索**（issue #119）：搜索只是面板自己的**过滤机制** —— 不新增 feature、不加启用开关、
-  不读写任何配置。匹配与高亮的纯逻辑在 `core/search.ts`，DOM 侧的显隐与高亮写入在 `setting-dialog.ts`，
+* **面板内置全局搜索**（issue #119）：搜索是面板自己的**过滤机制**，由一个功能（`settings-search`，
+  默认开启）承载开关 —— 开关只控制搜索框与快捷键在不在，不改变面板内容、也不新增页面。
+  匹配与高亮的纯逻辑在 `core/search.ts`，DOM 侧的显隐与高亮写入在 `setting-dialog.ts`，
   两者靠行上的私有元数据（`data-ss-tab-panel` / `data-ss-feature` / `data-ss-row`）对齐。
+  * **开关关着时**搜索框整块 `fn__none`、不进 Tab 序，`Ctrl/Cmd + F`、`/`、`Esc` 一概不拦、交还宿主；
+    重新打开不需要重建面板，面板只在开关翻动时按 `core/search.ts` 的标记切显隐。
   * **输入时不重建面板**：只切 `fn__none` 与局部文本，所以输入框焦点、滚动位置、静默期里待写的文本都不受影响；
     过滤后要重算 `config-item--last-visible`，否则下分割线会落在已经藏起来的行上。
   * **有查询后收起分类导航**（桌面端左侧栏、移动端页签栏），两端都是过渡而不是 `fn__none`：`display:none`
@@ -107,8 +110,8 @@
     「切显隐」，不用在进出搜索时搬运 DOM；开关关着时这一组不出现，命中也不计入结果。
 * 每个功能的名称与说明渲染成一行（`.some-settings-panel__sub`），它就是一行
   `b3-label config-item`，位置在该功能的参数行之前（一页里可以有多个功能）。
-  **功能自己那个默认关闭的开关就放在这一行**，不再单独占一行；功能还有参数时，
-  参数行排在它下面。
+  **功能自己那个开关就放在这一行**（常规默认关闭，需求要求保持原有行为时按
+  `defaultOn: true` 默认开启），不再单独占一行；功能还有参数时，参数行排在它下面。
   拿 selector 当开关的功能（声明了 `isEnabled`）同理：那个 select 也放这一行，
   **不再另起一行显示**——它就是开关，不是参数。
   带开关的功能行**整行可点**：这一行用 `<label>` 包住开关，点功能名或它的说明就等于点开关
@@ -193,7 +196,8 @@
     是这段说明配套的入口，比如「关于」里那颗点星与捐赠：桌面端整行变成「左文字 + 右按钮」，
     按钮竖着叠在右侧、每颗 200px，与「导出配置」那些行同一个位置和宽度；
     窄屏才改回文字在上、按钮整行在下。点击同样经 `bindPendingClick`，只读 / 发布模式下禁用
-* **每个功能的第一个设置行必须是默认关闭的开关**（或声明 `isEnabled`），见 [AGENTS.md](../AGENTS.md) 第 3 节。
+* **每个功能的第一个设置行必须是开关**（默认关闭；需求明确要求保持原有行为时写 `defaultOn: true`，
+  开关同时 `default: true`；或声明 `isEnabled`），见 [AGENTS.md](../AGENTS.md) 第 3 节。
 * **文案 key 的落点由功能 id 与设置项 `key` 决定，不另写一份清单**：功能名 / 说明是
   `feature.<功能 id 转驼峰>.title` / `.description`，设置行标题是 `feature.<camelId>.<key>`、
   说明是 `<key>Tip`、占位符是 `<key>Placeholder`，`select` 选项是 `<key>.<option.value>`；
