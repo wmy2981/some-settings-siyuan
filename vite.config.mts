@@ -33,7 +33,7 @@ function imageAssets(): {source: string; name: string;}[] {
         }
         const source = path.join(root, "assets", name);
         if (!fs.existsSync(source)) {
-            throw new Error(`plugin.json 的 ${field} 声明了 ${name}，但 ${source} 不存在`);
+            throw new Error(`plugin.json declares ${field} as ${name}, but ${source} does not exist`);
         }
         return [{source, name}];
     });
@@ -73,7 +73,9 @@ function writePackageZip(source: string, target: string): void {
  */
 function assertConsoleKept(bundle: string): void {
     if (!bundle.includes("console.")) {
-        throw new Error("压缩后的产物里没有 console 调用：minifier 把日志删了，先查构建配置");
+        throw new Error(
+            "the minified bundle has no console calls: the minifier dropped the logs, check the build config",
+        );
     }
 }
 

@@ -277,7 +277,7 @@ export const createHost = (definition: FeatureDefinition, options: HostOptions =
 export const mountFeature = (definition: FeatureDefinition, options: HostOptions = {}): HostHarness => {
     const harness = createHost(definition, options);
     if (!definition.mount) {
-        throw new Error(`feature "${definition.id}" 没有 mount，不能按挂载测试`);
+        throw new Error(`feature "${definition.id}" has no mount, so it cannot be tested as mounted`);
     }
     const instance = definition.mount(harness.host);
     (harness as unknown as {setInstance: (value: FeatureInstance | undefined) => void;}).setInstance(

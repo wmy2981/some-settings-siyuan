@@ -26,26 +26,26 @@ const definitionWith = (frontends?: FeatureDefinition["frontends"]): FeatureDefi
 });
 
 describe("currentFrontend", () => {
-    it("桌面端与桌面窗口都算 desktop", () => {
+    it("desktop and desktop window both count as desktop", () => {
         mockState.frontend = "desktop";
         expect(currentFrontend()).toBe("desktop");
         mockState.frontend = "desktop-window";
         expect(currentFrontend()).toBe("desktop");
     });
 
-    it("mobile 与 browser-mobile 都算 mobile", () => {
+    it("mobile and browser-mobile both count as mobile", () => {
         mockState.frontend = "mobile";
         expect(currentFrontend()).toBe("mobile");
         mockState.frontend = "browser-mobile";
         expect(currentFrontend()).toBe("mobile");
     });
 
-    it("认不出的前端按桌面端处理", () => {
+    it("an unknown frontend is treated as desktop", () => {
         mockState.frontend = "tablet";
         expect(currentFrontend()).toBe("desktop");
     });
 
-    it("isMobile 与 currentFrontend 一致", () => {
+    it("isMobile agrees with currentFrontend", () => {
         mockState.frontend = "mobile";
         expect(isMobile()).toBe(true);
         mockState.frontend = "desktop";
@@ -54,24 +54,24 @@ describe("currentFrontend", () => {
 });
 
 describe("supportsCurrentFrontend", () => {
-    it("没声明 frontends 时两端都适用", () => {
+    it("both frontends work when frontends is not declared", () => {
         mockState.frontend = "mobile";
         expect(supportsCurrentFrontend(definitionWith())).toBe(true);
         mockState.frontend = "desktop";
         expect(supportsCurrentFrontend(definitionWith())).toBe(true);
     });
 
-    it("声明了空数组等同于不限制", () => {
+    it("an empty array means no restriction", () => {
         expect(supportsCurrentFrontend(definitionWith([]))).toBe(true);
     });
 
-    it("只包含当前端时适用", () => {
+    it("applies when only the current frontend is listed", () => {
         mockState.frontend = "browser-mobile";
         expect(supportsCurrentFrontend(definitionWith(["mobile"]))).toBe(true);
         expect(supportsCurrentFrontend(definitionWith(["desktop"]))).toBe(false);
     });
 
-    it("两端都写上时永远适用", () => {
+    it("always applies when both frontends are listed", () => {
         mockState.frontend = "desktop";
         expect(supportsCurrentFrontend(definitionWith(["desktop", "mobile"]))).toBe(true);
         mockState.frontend = "mobile";
@@ -80,7 +80,7 @@ describe("supportsCurrentFrontend", () => {
 });
 
 describe("withoutMobileInputFocus", () => {
-    it("桌面端直接执行，不碰 focus", () => {
+    it("on desktop it runs the body untouched, without touching focus", () => {
         mockState.frontend = "desktop";
         const original = HTMLElement.prototype.focus;
         const seen: (() => boolean)[] = [];
@@ -92,7 +92,7 @@ describe("withoutMobileInputFocus", () => {
         expect(seen[0]()).toBe(true);
     });
 
-    it("移动端拦下 input / textarea 的聚焦，放行其他元素", () => {
+    it("on mobile input / textarea focusing is blocked while other elements pass", () => {
         mockState.frontend = "mobile";
         const input = document.createElement("input");
         const area = document.createElement("textarea");
@@ -110,7 +110,7 @@ describe("withoutMobileInputFocus", () => {
         });
     });
 
-    it("执行结束后还原 focus，用户随后仍能正常编辑", () => {
+    it("focus is restored afterwards so the user can still edit", () => {
         mockState.frontend = "mobile";
         const original = HTMLElement.prototype.focus;
         const input = document.createElement("input");
@@ -124,7 +124,7 @@ describe("withoutMobileInputFocus", () => {
         expect(document.activeElement).toBe(input);
     });
 
-    it("执行体抛错时同样还原 focus，并把异常抛给调用方", () => {
+    it("focus is restored on throw too, and the error reaches the caller", () => {
         mockState.frontend = "mobile";
         const original = HTMLElement.prototype.focus;
         expect(() =>
@@ -135,7 +135,7 @@ describe("withoutMobileInputFocus", () => {
         expect(HTMLElement.prototype.focus).toBe(original);
     });
 
-    it("嵌套调用时不会把宿主的方法还原成包装版", () => {
+    it("nested calls never restore the host method to the wrapper", () => {
         mockState.frontend = "mobile";
         const original = HTMLElement.prototype.focus;
         withoutMobileInputFocus(() => {

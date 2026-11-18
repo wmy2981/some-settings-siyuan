@@ -27,38 +27,38 @@ const featureOf = (extra: Partial<FeatureDefinition> = {}): FeatureDefinition =>
 });
 
 describe("unavailableReasons", () => {
-    it("可用时没有原因", () => {
+    it("no reasons when available", () => {
         mockState.frontend = "desktop";
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(unavailableReasons(featureOf())).toEqual([]);
     });
 
-    it("开发者禁用", () => {
+    it("disabled by the developer", () => {
         expect(unavailableReasons(featureOf({enabled: false}))).toEqual(["disabled"]);
     });
 
-    it("当前平台不适用", () => {
+    it("not available on the current platform", () => {
         mockState.frontend = "desktop";
         expect(unavailableReasons(featureOf({frontends: ["mobile"]}))).toEqual(["frontend"]);
         mockState.frontend = "mobile";
         expect(unavailableReasons(featureOf({frontends: ["desktop"]}))).toEqual(["frontend"]);
     });
 
-    it("宿主低于声明的最低版本", () => {
+    it("host below the declared minimum version", () => {
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(unavailableReasons(featureOf({minAppVersion: "3.8.10"}))).toEqual(["minAppVersion"]);
         window.siyuan.config.system.kernelVersion = "3.8.10";
         expect(unavailableReasons(featureOf({minAppVersion: "3.8.10"}))).toEqual([]);
     });
 
-    it("宿主高于声明的最高版本", () => {
+    it("host above the declared maximum version", () => {
         window.siyuan.config.system.kernelVersion = "3.9.0";
         expect(unavailableReasons(featureOf({maxAppVersion: "3.8.10-alpha.1"}))).toEqual(["maxAppVersion"]);
         window.siyuan.config.system.kernelVersion = "3.8.10-alpha.1";
         expect(unavailableReasons(featureOf({maxAppVersion: "3.8.10-alpha.1"}))).toEqual([]);
     });
 
-    it("命中的原因全部返回，顺序是 禁用 → 平台 → 版本", () => {
+    it("every matching reason is returned, in order disabled → platform → version", () => {
         mockState.frontend = "desktop";
         window.siyuan.config.system.kernelVersion = "3.9.0";
         expect(unavailableReasons(featureOf({
@@ -75,14 +75,14 @@ describe("unavailableReasons", () => {
         expect(unavailableReasons(featureOf({maxAppVersion: "3.8.10-alpha.1"}))).toEqual(["maxAppVersion"]);
     });
 
-    it("宿主版本读不到时按不限处理，不把功能判成不可用", () => {
+    it("an unreadable host version means no limit and never makes it unavailable", () => {
         window.siyuan.config.system.kernelVersion = "unreadable";
         expect(unavailableReasons(featureOf({maxAppVersion: "3.8.10"}))).toEqual([]);
     });
 });
 
-describe("显示不可用的设置标记", () => {
-    it("默认关闭，可以来回翻转", () => {
+describe("show-unavailable settings flag", () => {
+    it("off by default and toggles both ways", () => {
         expect(isShowUnavailable()).toBe(false);
         setShowUnavailable(true);
         expect(isShowUnavailable()).toBe(true);

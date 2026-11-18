@@ -88,13 +88,13 @@ const planRequest = (overrides: Record<string, unknown> = {}): RequestInit => ({
         contextID: CURRENT_DOC,
         purpose: "document",
         placement: "configured",
-        title: "笔记",
+        title: "Note",
         id: DOCUMENT_ID,
         ...overrides,
     }),
 });
 
-describe("新建文档到固定位置", () => {
+describe("new document to a fixed target", () => {
     beforeEach(() => {
         savedFetch = window.fetch;
         (window.siyuan as any).notebooks = [{id: NOTEBOOK, closed: false}];
@@ -105,8 +105,8 @@ describe("新建文档到固定位置", () => {
         window.fetch = savedFetch as typeof fetch;
     });
 
-    it("普通新建文档的计划请求改到指定父级，其余参数与响应原样保留", async () => {
-        const plan = {code: 0, data: {notebook: NOTEBOOK, title: "笔记", steps: []}};
+    it("the plan request of a normal new document goes to the configured parent, other parameters and the response stay unchanged", async () => {
+        const plan = {code: 0, data: {notebook: NOTEBOOK, title: "Note", steps: []}};
         const seen = installKernel(defaultRoutes({"/api/filetree/planDocCreate": () => plan}));
         mountForTest(hostOf());
 
@@ -119,14 +119,14 @@ describe("新建文档到固定位置", () => {
             contextID: TARGET,
             purpose: "document",
             placement: "child",
-            title: "笔记",
+            title: "Note",
             id: DOCUMENT_ID,
         });
         // 计划请求的响应原封不动交给宿主的 newFile 链路
         await expect(response.json()).resolves.toEqual(plan);
     });
 
-    it("笔记本 ID 建在根目录，不带父文档", async () => {
+    it("a notebook ID creates in the notebook root without a parent document", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf(NOTEBOOK));
 
@@ -136,7 +136,7 @@ describe("新建文档到固定位置", () => {
         expect(seen[0].body).toMatchObject({notebook: NOTEBOOK, contextID: null, placement: "child"});
     });
 
-    it("命令面板等入口用的相对地址与带查询参数的地址同样识别", async () => {
+    it("relative addresses from the command palette and addresses with query parameters are recognized as well", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
 
@@ -147,7 +147,7 @@ describe("新建文档到固定位置", () => {
         expect(seen[1].url).toBe(`${location.origin}/api/filetree/planDocCreate?app=window1`);
     });
 
-    it("不拦新建子文档、引用、日记与其它接口", async () => {
+    it("does not intercept child documents, references, daily notes or other endpoints", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
 
@@ -167,7 +167,7 @@ describe("新建文档到固定位置", () => {
         expect(seen[1].body).toMatchObject({purpose: "reference", contextID: CURRENT_DOC});
     });
 
-    it("目标留空时完全保留思源默认行为", async () => {
+    it("an empty target keeps the SiYuan default behavior untouched", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf(""));
 
@@ -177,7 +177,7 @@ describe("新建文档到固定位置", () => {
         expect(seen[0].body).toMatchObject({contextID: CURRENT_DOC, placement: "configured"});
     });
 
-    it("目标 ID 格式不对时只判本次失败，不发计划请求也不回落默认位置", async () => {
+    it("a malformed target ID fails this request only, with no plan request and no fallback to the default location", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf("not-an-id"));
 
@@ -191,7 +191,7 @@ describe("新建文档到固定位置", () => {
         });
     });
 
-    it("文档不存在时用内核的提示判失败", async () => {
+    it("a missing document fails with the kernel message", async () => {
         const seen = installKernel(defaultRoutes({
             "/api/block/getBlock": () => ({code: -1, msg: "block not found"}),
         }));
@@ -203,7 +203,7 @@ describe("新建文档到固定位置", () => {
         await expect(response.json()).resolves.toEqual({code: -1, msg: "block not found", data: null});
     });
 
-    it("普通正文块、已关闭的笔记本都不能当目标", async () => {
+    it("plain paragraph blocks and closed notebooks cannot be targets", async () => {
         const seen = installKernel(defaultRoutes({
             "/api/block/getBlock": (body: any) => ({
                 code: 0,
@@ -221,12 +221,12 @@ describe("新建文档到固定位置", () => {
         expect(seen).toHaveLength(2);
     });
 
-    it("斜杠菜单里的「新建文档（插入块引用）」保持宿主行为", async () => {
+    it("the slash menu entry for a new document with a block reference keeps the host behavior", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
         document.body.innerHTML = `<div class="protyle-hint b3-list">
-            <button class="b3-list-item" data-value="%E2%80%8B4"><span class="b3-list-item__text">新建文档</span></button>
-            <button class="b3-list-item" data-value="%E4%BB%A3%E7%A0%81"><span class="b3-list-item__text">代码块</span></button>
+            <button class="b3-list-item" data-value="%E2%80%8B4"><span class="b3-list-item__text">New Document</span></button>
+            <button class="b3-list-item" data-value="%E4%BB%A3%E7%A0%81"><span class="b3-list-item__text">Code Block</span></button>
         </div>`;
 
         document.querySelector(".protyle-hint .b3-list-item__text").dispatchEvent(
@@ -238,12 +238,12 @@ describe("新建文档到固定位置", () => {
         expect(seen[0].body).toMatchObject({contextID: CURRENT_DOC, placement: "configured"});
     });
 
-    it("键盘选中的「新建文档（插入块引用）」同样保持宿主行为", async () => {
+    it("the new document with a block reference picked by keyboard keeps the host behavior too", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
         document.body.innerHTML = `<div class="protyle-hint b3-list">
             <button class="b3-list-item b3-list-item--focus" data-value="%E2%80%8B4">
-                <span class="b3-list-item__text">新建文档</span>
+                <span class="b3-list-item__text">New Document</span>
             </button>
         </div>`;
 
@@ -254,11 +254,11 @@ describe("新建文档到固定位置", () => {
         expect(seen[0].body).toMatchObject({contextID: CURRENT_DOC, placement: "configured"});
     });
 
-    it("提示面板里点别的候选、或面板已收起时，普通新建仍走固定父级", async () => {
+    it("clicking another hint item, or a collapsed hint panel, still uses the fixed parent for a normal new document", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
         document.body.innerHTML = `<div class="protyle-hint b3-list">
-            <button class="b3-list-item" data-value="%E4%BB%A3%E7%A0%81"><span>代码块</span></button>
+            <button class="b3-list-item" data-value="%E4%BB%A3%E7%A0%81"><span>Code Block</span></button>
         </div>`;
 
         document.querySelector(".protyle-hint span").dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
@@ -277,11 +277,11 @@ describe("新建文档到固定位置", () => {
         expect(seen[3].body).toMatchObject({contextID: TARGET, placement: "child"});
     });
 
-    it("放行只作用于同一次交互，不会漏给之后的普通新建", async () => {
+    it("the pass-through applies to that one interaction and does not leak to later new documents", async () => {
         const seen = installKernel(defaultRoutes());
         mountForTest(hostOf());
         document.body.innerHTML = `<div class="protyle-hint b3-list">
-            <button class="b3-list-item" data-value="%E2%80%8B4"><span>新建文档</span></button>
+            <button class="b3-list-item" data-value="%E2%80%8B4"><span>New Document</span></button>
         </div>`;
 
         document.querySelector(".protyle-hint span").dispatchEvent(new MouseEvent("click", {bubbles: true, button: 0}));
@@ -292,7 +292,7 @@ describe("新建文档到固定位置", () => {
         expect(seen[1].body).toMatchObject({contextID: TARGET, placement: "child"});
     });
 
-    it("卸载后完全恢复原入口", async () => {
+    it("unmounting fully restores the original entry", async () => {
         installKernel(defaultRoutes());
         const patchedFetch = window.fetch;
         const instance = mountForTest(hostOf());
@@ -303,7 +303,7 @@ describe("新建文档到固定位置", () => {
         expect(window.fetch).toBe(patchedFetch);
     });
 
-    it("卸载时不动别人后来换上的 fetch", () => {
+    it("unmounting leaves a fetch installed by someone else untouched", () => {
         installKernel(defaultRoutes());
         const instance = mountForTest(hostOf());
         const other = vi.fn() as unknown as typeof fetch;

@@ -8,8 +8,8 @@ import definition from "../../src/features/hide-bazaar-downloaded-donate/index";
 import {mountHideBazaarDownloadedDonate} from "../../src/features/hide-bazaar-downloaded-donate/style";
 import {mountFeature} from "../helpers/feature-host";
 
-describe("隐藏集市已下载列表的捐赠按钮", () => {
-    it("注入只覆盖两种捐赠按钮的已下载卡片样式", () => {
+describe("hide donate buttons in the downloaded bazaar list", () => {
+    it("injects CSS covering only the two donate buttons on downloaded cards", () => {
         let css = "";
         const host = {addStyle: (value: string) => css = value} as unknown as FeatureHost;
 
@@ -22,7 +22,7 @@ describe("隐藏集市已下载列表的捐赠按钮", () => {
         expect(css).not.toContain("#configBazaarReadme");
     });
 
-    it("两条规则都锚在卡片自己的操作区上，不会连整块操作区一起藏掉", () => {
+    it("anchors both rules on the card's own action area instead of hiding the whole area", () => {
         const harness = mountFeature(definition);
         const css = harness.css();
 
@@ -45,7 +45,7 @@ describe("隐藏集市已下载列表的捐赠按钮", () => {
         expect(css).not.toMatch(/\.b3-card__actions\s*\{/);
     });
 
-    it("只作用于「已下载」列表，包详情页与其它分类不受影响", () => {
+    it("applies only to the downloaded list, leaving the package detail page and other tabs untouched", () => {
         const css = mountFeature(definition).css();
 
         // 捐赠按钮在集市详情页是主操作，藏掉会直接影响赞助链接的点击；
@@ -56,7 +56,7 @@ describe("隐藏集市已下载列表的捐赠按钮", () => {
         expect(css).not.toContain(".b3-card__actions {");
     });
 
-    it("卸载后样式元素从 <head> 里消失，不留任何监听", () => {
+    it("removes the style element from <head> on unmount and leaves no listeners", () => {
         const harness = mountFeature(definition);
         expect(harness.styleElement()).not.toBeNull();
         expect(harness.records.bus).toHaveLength(0);
@@ -67,7 +67,7 @@ describe("隐藏集市已下载列表的捐赠按钮", () => {
         expect(document.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
     });
 
-    it("声明里默认关闭、且不返回 destroy（纯样式功能没有运行期状态）", () => {
+    it("declares default-off and returns no destroy (a pure style feature has no runtime state)", () => {
         expect(definition.id).toBe("hide-bazaar-downloaded-donate");
         expect(definition.category).toBe("settings");
         expect(definition.enabled).toBe(true);

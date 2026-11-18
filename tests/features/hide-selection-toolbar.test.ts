@@ -28,7 +28,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的同名文字。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("隐藏选中文字工具条", () => {
+describe("hide selection toolbar", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -41,14 +41,14 @@ describe("隐藏选中文字工具条", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：编辑器分类、只适用桌面端、只有一个默认关闭的开关", () => {
+    it("declaration: editor category, desktop only, a single off-by-default switch", () => {
         expect(definition.category).toBe("editor");
         expect(definition.frontends).toEqual(["desktop"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("只隐藏 .protyle-toolbar：display: none !important，不碰二级面板与思维导图工具栏", () => {
+    it("hides only .protyle-toolbar with display: none !important, leaving the sub-panels and the mindmap toolbar alone", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain(".protyle-toolbar {");
@@ -60,7 +60,7 @@ describe("隐藏选中文字工具条", () => {
         expect(css.match(/display:\s*none/g)).toHaveLength(1);
     });
 
-    it("挂载注入一张样式表并记一条 INFO，不改任何 DOM", () => {
+    it("mounting injects one style sheet and logs one INFO line, without touching any DOM", () => {
         const before = document.body.innerHTML;
         const harness = mount();
 
@@ -71,7 +71,7 @@ describe("隐藏选中文字工具条", () => {
         expect(harness.records.logs.some((args) => String(args[0]).includes("mounted"))).toBe(true);
     });
 
-    it("静态 CSS 不订阅配置变化：广播保存不会重复注入", () => {
+    it("static CSS does not subscribe to config changes: a broadcast save injects nothing again", () => {
         const harness = mount();
         expect(harness.records.configListeners).toHaveLength(0);
 
@@ -83,14 +83,14 @@ describe("隐藏选中文字工具条", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("重复挂载共用同一个 <style>，不会堆出第二张样式表", () => {
+    it("mounting twice shares the same <style> and never stacks a second sheet", () => {
         mount();
         mount();
 
         expect(styleCount()).toBe(1);
     });
 
-    it("mount 只调一次 addStyle，并返回带 destroy 的实例", () => {
+    it("mount calls addStyle once and returns an instance with destroy", () => {
         const styles: string[] = [];
         const host = {
             addStyle: (css: string) => {
@@ -106,7 +106,7 @@ describe("隐藏选中文字工具条", () => {
         expect(typeof instance.destroy).toBe("function");
     });
 
-    it("dispose 移除样式、记一条卸载日志，且幂等", () => {
+    it("dispose removes the style, logs one unmount line and is idempotent", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 

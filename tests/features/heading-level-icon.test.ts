@@ -58,7 +58,7 @@ const buildHintItem = (id: string): HTMLElement => {
     container.className = "protyle-hint";
     const item = document.createElement("div");
     item.className = "b3-list-item";
-    item.innerHTML = `<span data-id="${id}">标题</span><svg><use href="${PLAIN}"></use></svg>`;
+    item.innerHTML = `<span data-id="${id}">Title</span><svg><use href="${PLAIN}"></use></svg>`;
     container.append(item);
     document.body.append(container);
     return item;
@@ -76,7 +76,7 @@ const bodyOfLastQuery = (): {stmt: string;} => {
     return JSON.parse((call?.[1] as {body: string;}).body) as {stmt: string;};
 };
 
-describe("标题图标显示层级", () => {
+describe("heading icons show their level", () => {
     const mounted: {dispose: () => void; records: {logs: unknown[][];};}[] = [];
 
     const mount = () => {
@@ -95,13 +95,13 @@ describe("标题图标显示层级", () => {
         vi.unstubAllGlobals();
     });
 
-    it("声明里默认关闭，两端都适用", () => {
+    it("the declaration is off by default and applies to both frontends", () => {
         expect(definition.frontends).toBeUndefined();
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         expect(definition.category).toBe("editor");
     });
 
-    it("标题块换成对应的 H1～H6 图标，href 与 xlink:href 一起改", () => {
+    it("a heading block switches to the matching H1-H6 icon, changing href and xlink:href together", () => {
         const item = buildSearchItem("block-1");
         respond([{id: "block-1", subtype: "h2"}]);
         mount();
@@ -114,7 +114,7 @@ describe("标题图标显示层级", () => {
         });
     });
 
-    it("一次性批量查询：POST /api/query/sql，IN 列表就是条目上的块 id", () => {
+    it("a single batched query: POST /api/query/sql with the items' block ids in the IN list", () => {
         buildSearchItem("a1");
         buildSearchItem("a2");
         respond([{id: "a1", subtype: "h1"}, {id: "a2", subtype: "h3"}]);
@@ -127,7 +127,7 @@ describe("标题图标显示层级", () => {
         expect(bodyOfLastQuery().stmt).toBe("SELECT id, subtype FROM blocks WHERE id IN ('a1','a2')");
     });
 
-    it("不是标题块也落缓存：标记为空串，图标保持纯 H", () => {
+    it("non-heading blocks are cached too: the marker is an empty string and the icon stays a plain H", () => {
         const item = buildSearchItem("para-1");
         respond([{id: "para-1", subtype: "p"}]);
         const harness = mount();
@@ -145,7 +145,7 @@ describe("标题图标显示层级", () => {
         });
     });
 
-    it("内核没返回的 id 也记成「查过了」，避免每次扫描重复问", () => {
+    it("ids the kernel did not return are still marked as asked, so scans do not ask again", () => {
         const item = buildSearchItem("gone-1");
         respond([]);
         mount();
@@ -159,7 +159,7 @@ describe("标题图标显示层级", () => {
         });
     });
 
-    it("单批最多 50 个 id，剩下的下一轮再问", async () => {
+    it("a batch holds at most 50 ids and the rest are asked in the next round", async () => {
         const items: HTMLElement[] = [];
         for (let index = 0; index < 60; index += 1) {
             items.push(buildSearchItem(`b${index.toString().padStart(2, "0")}`));
@@ -183,7 +183,7 @@ describe("标题图标显示层级", () => {
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it("「((」候选里的 id 在内层元素上也能取到", () => {
+    it("ids inside (( candidates are found on nested elements too", () => {
         const item = buildHintItem("hint-1");
         respond([{id: "hint-1", subtype: "h5"}]);
         mount();
@@ -194,7 +194,7 @@ describe("标题图标显示层级", () => {
         });
     });
 
-    it("id 不合规、或条目已带标记、或图标不是通用 H 时一律跳过", async () => {
+    it("invalid ids, already marked items and icons that are not a plain H are all skipped", async () => {
         const invalid = buildSearchItem("bad id");
         const noId = buildSearchItem(null);
         const marked = buildSearchItem("marked-1");
@@ -212,7 +212,7 @@ describe("标题图标显示层级", () => {
         expect(useOf(customIcon).getAttribute("href")).toBe("#iconH1");
     });
 
-    it("HTTP 非 2xx / code 非 0 / 网络失败都只记一条日志，不抛到宿主", async () => {
+    it("a non-2xx HTTP status / a non-zero code / a network failure logs once and never throws to the host", async () => {
         const cases: (() => void)[] = [
             () => respond([], {ok: false, status: 500}),
             () => respond([], {code: 3, msg: "permission denied"}),
@@ -230,7 +230,7 @@ describe("标题图标显示层级", () => {
         }
     });
 
-    it("失败后冷却 60 秒：期间不再查询，期满才重试，且不重复刷日志", async () => {
+    it("after a failure a 60 second cooldown applies: no queries during it, a retry afterwards, and no repeated logging", async () => {
         const now = vi.spyOn(Date, "now").mockReturnValue(1_000_000);
         buildSearchItem("c1");
         fetchMock.mockRejectedValue(new Error("offline"));
@@ -252,7 +252,7 @@ describe("标题图标显示层级", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("冷却只挡查询，不挡已缓存的层级落地", async () => {
+    it("the cooldown blocks queries only, not applying a cached level", async () => {
         const first = buildSearchItem("d1");
         respond([{id: "d1", subtype: "h4"}]);
         mount();
@@ -269,7 +269,7 @@ describe("标题图标显示层级", () => {
         expect(fetchMock).toHaveBeenCalledTimes(2);
     });
 
-    it("内核返回的行 id 畸形时跳过，不写进缓存也不影响同一批的其它行", () => {
+    it("malformed row ids from the kernel are skipped without caching or affecting the other rows in the batch", () => {
         const item = buildSearchItem("x1");
         respond([{id: "bad id", subtype: "h1"}, {id: "x1", subtype: "h2"}]);
         mount();
@@ -281,7 +281,7 @@ describe("标题图标显示层级", () => {
         });
     });
 
-    it("同一批 id 还在查询中时不会再发一次请求", async () => {
+    it("a batch of ids still in flight does not trigger a second request", async () => {
         let resolveFetch: (value: unknown) => void = () => undefined;
         fetchMock.mockReturnValueOnce(
             new Promise((resolve) => {
@@ -301,7 +301,7 @@ describe("标题图标显示层级", () => {
         await vi.waitFor(() => expect(useOf(item).getAttribute("href")).toBe("#iconH3"));
     });
 
-    it("一帧只扫一次：同一帧里的两批新增合并到同一次扫描与同一条查询", async () => {
+    it("one scan per frame: two batches of additions in the same frame merge into one scan and one query", async () => {
         mount();
 
         buildSearchItem("z1");
@@ -317,14 +317,14 @@ describe("标题图标显示层级", () => {
         expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
-    it("只有可能带着条目的新增子树才触发扫描", async () => {
+    it("only added subtrees that may hold items trigger a scan", async () => {
         mount();
 
         // 纯文本节点连 Element 都不是，观察者的第一条判断就该把它跳过
-        document.body.append(document.createTextNode("纯文本节点"));
+        document.body.append(document.createTextNode("plain text node"));
 
         const plain = document.createElement("div");
-        plain.innerHTML = "<span>正文里的普通节点</span>";
+        plain.innerHTML = "<span>an ordinary node in the body</span>";
         document.body.append(plain);
         await settle();
         expect(fetchMock).not.toHaveBeenCalled();
@@ -339,7 +339,7 @@ describe("标题图标显示层级", () => {
         expect(bodyOfLastQuery().stmt).toContain("'w1'");
     });
 
-    it("`.protyle-hint` 容器本身出现也算「可能带条目」", async () => {
+    it("the `.protyle-hint` container appearing by itself also counts as possibly holding items", async () => {
         mount();
         const container = document.createElement("div");
         container.className = "protyle-hint";
@@ -350,7 +350,7 @@ describe("标题图标显示层级", () => {
         expect(bodyOfLastQuery().stmt).toContain("'p1'");
     });
 
-    it("destroy 把图标还给内核并清掉标记", async () => {
+    it("destroy gives the icons back to the kernel and clears the marker", async () => {
         const heading = buildSearchItem("e1");
         const plain = buildSearchItem("e2");
         respond([{id: "e1", subtype: "h3"}, {id: "e2", subtype: "p"}]);
@@ -368,7 +368,7 @@ describe("标题图标显示层级", () => {
         expect(plain.hasAttribute("data-ss-heading-level")).toBe(false);
     });
 
-    it("destroy 之后新增条目不查询、不改写", async () => {
+    it("items added after destroy are neither queried nor rewritten", async () => {
         const harness = mount();
         harness.dispose();
 
@@ -379,7 +379,7 @@ describe("标题图标显示层级", () => {
         expect(item.hasAttribute("data-ss-heading-level")).toBe(false);
     });
 
-    it("destroy 取消已排上的那一帧，不再扫描", async () => {
+    it("destroy cancels the queued frame and stops scanning", async () => {
         const harness = mount();
         // 先让 MutationObserver 的回调跑完（它会把 rAF 排上），再在 rAF 之前卸载
         buildSearchItem("g1");
@@ -391,7 +391,7 @@ describe("标题图标显示层级", () => {
         expect(fetchMock).not.toHaveBeenCalled();
     });
 
-    it("挂载即扫描一次现有条目，destroy 后移除观察者", async () => {
+    it("mounting scans the existing items once, and destroy removes the observer", async () => {
         const item = buildSearchItem("i1");
         respond([{id: "i1", subtype: "h6"}]);
         const host = {

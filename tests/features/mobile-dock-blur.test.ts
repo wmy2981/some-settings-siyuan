@@ -20,7 +20,7 @@ import {mountFeature} from "../helpers/feature-host";
 const styleCount = (): number =>
     document.head.querySelectorAll('style[data-some-settings-style="mobile-dock-blur"]').length;
 
-describe("移动端悬浮 dock 栏高斯模糊", () => {
+describe("gaussian blur for the mobile floating dock", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -35,7 +35,7 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明里只在移动端交出，开关默认关闭，半径与不透明度带上下限", () => {
+    it("the declaration is mobile only, the switch defaults to off, and radius and opacity have bounds", () => {
         expect(definition.frontends).toEqual(["mobile"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         expect(definition.settings[1]).toMatchObject({
@@ -54,7 +54,7 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         });
     });
 
-    it("默认配置：胶囊底色 70% 不透明、14px 毛玻璃，且整段包在 @supports 里", () => {
+    it("defaults: capsule background at 70% opacity, 14px frosted blur, the whole block wrapped in @supports", () => {
         const harness = mount();
 
         const css = harness.css();
@@ -71,21 +71,21 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         expect(harness.styleElement()?.textContent).toBe(harness.records.styles.at(-1));
     });
 
-    it("半径与不透明度按配置取值", () => {
+    it("radius and opacity follow the config", () => {
         const harness = mount({radius: 24, opacity: 45});
 
         expect(harness.css()).toContain("backdrop-filter: blur(24px);");
         expect(harness.css()).toContain("var(--b3-theme-background) 45%, transparent");
     });
 
-    it("半径只接受正数：0、负数、NaN、Infinity 都回落 14", () => {
+    it("radius accepts positive numbers only: 0, negatives, NaN and Infinity fall back to 14", () => {
         [0, -6, Number.NaN, Number.POSITIVE_INFINITY, "abc"].forEach((radius) => {
             const harness = mount({radius});
             expect(harness.css()).toContain("backdrop-filter: blur(14px);");
         });
     });
 
-    it("不透明度钳到 0～100，非数字回落 70", () => {
+    it("opacity is clamped to 0-100 and non-numbers fall back to 70", () => {
         expect(mount({opacity: -20}).css()).toContain("var(--b3-theme-background) 0%, transparent");
         expect(mount({opacity: 150}).css()).toContain("var(--b3-theme-background) 100%, transparent");
         expect(mount({opacity: Number.NaN}).css()).toContain("var(--b3-theme-background) 70%, transparent");
@@ -96,7 +96,7 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         expect(mount({opacity: ""}).css()).toContain("var(--b3-theme-background) 0%, transparent");
     });
 
-    it("配置变更就地重写同一个 <style>，不叠加新样式表", () => {
+    it("a config change rewrites the same <style> in place instead of adding a stylesheet", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -111,7 +111,7 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         expect(css).not.toContain("blur(14px)");
     });
 
-    it("dispose 后样式、配置订阅与 <style> 元素全部收干净", () => {
+    it("dispose cleans up the styles, config subscriptions and the <style> element", () => {
         const harness = mount();
         const before = harness.records.styles.length;
 
@@ -124,7 +124,7 @@ describe("移动端悬浮 dock 栏高斯模糊", () => {
         expect(harness.records.styles).toHaveLength(before);
     });
 
-    it("挂载即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("applies once on mount and hooks later changes to onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {

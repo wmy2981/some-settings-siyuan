@@ -65,8 +65,8 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-describe("代码块语言不记忆", () => {
-    it("挂载后语言恒为空，且给内核准备了一个什么都不做的 setter", () => {
+describe("code block language is not remembered", () => {
+    it("keeps the language empty after mount and gives the kernel a no-op setter", () => {
         const storage = setStorage({[KEY]: "python"});
         mount();
 
@@ -89,7 +89,7 @@ describe("代码块语言不记忆", () => {
         expect(typeof descriptor?.set).toBe("function");
     });
 
-    it("卸载后把挂载前的值原样还回去", () => {
+    it("unmount restores the pre-mount value as-is", () => {
         const storage = setStorage({[KEY]: "python"});
         const harness = mount();
         expect(storage[KEY]).toBe("");
@@ -103,7 +103,7 @@ describe("代码块语言不记忆", () => {
         expect(descriptor?.writable).toBe(true);
     });
 
-    it("原本没有这个 key 时，卸载后是彻底删掉而不是留一个空串", () => {
+    it("when the key never existed, unmount deletes it instead of leaving an empty string", () => {
         const storage = setStorage({});
         const harness = mount();
         expect(KEY in storage).toBe(true);
@@ -116,7 +116,7 @@ describe("代码块语言不记忆", () => {
         expect(descriptorOf(storage)).toBeUndefined();
     });
 
-    it("重复补贴（事件总线）不会让还原值变成空串", () => {
+    it("repeated patching (event bus) never turns the restored value into an empty string", () => {
         const storage = setStorage({[KEY]: "python"});
         const harness = mount();
 
@@ -131,14 +131,14 @@ describe("代码块语言不记忆", () => {
         expect(storage[KEY]).toBe("python");
     });
 
-    it("只注册 ws-main 与 loaded-protyle-static 两条总线（都发生在创建代码块之前）", () => {
+    it("registers only the ws-main and loaded-protyle-static buses (both fire before a code block is created)", () => {
         setStorage({});
         const harness = mount();
 
         expect(harness.records.bus.map((item) => item.type)).toEqual(["ws-main", "loaded-protyle-static"]);
     });
 
-    it("storage 还不存在时挂载不抛，等它出现后由总线补贴生效", () => {
+    it("mounting does not throw while storage is absent and the bus patch applies once it appears", () => {
         setStorage(undefined);
 
         // 插件加载与内核初始化谁先谁后并不固定，这一顺序在真实启动里很常见
@@ -151,7 +151,7 @@ describe("代码块语言不记忆", () => {
         expect(storage[KEY]).toBe("");
     });
 
-    it("storage 被整体替换后，2 秒的兜底定时器会重新贴一次", () => {
+    it("after storage is replaced wholesale the 2-second fallback timer patches it again", () => {
         vi.useFakeTimers();
         setStorage({[KEY]: "python"});
         mount();
@@ -165,7 +165,7 @@ describe("代码块语言不记忆", () => {
         expect(replaced[KEY]).toBe("");
     });
 
-    it("destroy 会清掉兜底定时器，卸载后再换 storage 也不会被重新贴", () => {
+    it("destroy clears the fallback timer so a later storage swap is not patched again", () => {
         vi.useFakeTimers();
         setStorage({[KEY]: "python"});
         const harness = mount();
@@ -179,7 +179,7 @@ describe("代码块语言不记忆", () => {
         expect(descriptorOf(replaced)?.get).toBeUndefined();
     });
 
-    it("顶不动（属性不可配置）时只记一条日志，不冒泡到插件入口", () => {
+    it("when the property cannot be overridden (non-configurable) it logs once and does not bubble to the plugin entry", () => {
         const storage = setStorage({});
         Object.defineProperty(storage, KEY, {value: "rust", enumerable: true, configurable: false});
 
@@ -199,7 +199,7 @@ describe("代码块语言不记忆", () => {
         mounted.length = 0;
     });
 
-    it("destroy 幂等：重复卸载不抛，也不会把还原后的值再改一遍", () => {
+    it("destroy is idempotent: a repeated unmount neither throws nor rewrites the restored value", () => {
         const storage = setStorage({[KEY]: "python"});
         const harness = mount();
         const instance = harness.instance as {destroy: () => void;};
@@ -209,7 +209,7 @@ describe("代码块语言不记忆", () => {
         expect(storage[KEY]).toBe("python");
     });
 
-    it("声明：编辑器分类、默认关闭、只带一个 enabled 开关", () => {
+    it("declaration: editor category, off by default, a single enabled switch", () => {
         expect(definition.id).toBe("code-block-lang-empty");
         expect(definition.category).toBe("editor");
         expect(definition.enabled).toBe(true);

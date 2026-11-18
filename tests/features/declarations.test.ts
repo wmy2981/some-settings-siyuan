@@ -93,24 +93,24 @@ const i18nKeysOfFeature = (definition: FeatureDefinition): string[] => [
 const isActionOnly = (definition: FeatureDefinition): boolean =>
     definition.settings.every((field) => field.kind === "note" || field.kind === "button");
 
-describe("功能声明", () => {
-    it("注册表与文件夹一一对应，既没有漏登记的目录，也没有指向不存在目录的条目", () => {
+describe("feature declarations", () => {
+    it("the registry matches the folders one to one: no unregistered directory, no entry pointing at a missing one", () => {
         expect(FEATURES.map((feature) => feature.id).slice().sort()).toEqual(featureDirs);
     });
 
-    it("id 唯一", () => {
+    it("ids are unique", () => {
         const ids = FEATURES.map((feature) => feature.id);
         expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it("每个功能都声明了合法的分类与显式的 enabled", () => {
+    it("every feature declares a valid category and an explicit enabled", () => {
         FEATURES.forEach((feature) => {
             expect(FEATURE_CATEGORIES).toContain(feature.category as FeatureCategory);
             expect(typeof feature.enabled).toBe("boolean");
         });
     });
 
-    it("每个功能都至少有一个设置行，且 key 在功能内唯一", () => {
+    it("every feature has at least one setting row and its keys are unique within the feature", () => {
         FEATURES.forEach((feature) => {
             expect(feature.settings.length, feature.id).toBeGreaterThan(0);
             const keys = feature.settings.map((field) => field.key);
@@ -118,7 +118,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("首个设置行默认为关闭的开关，除非该功能声明了 isEnabled 谓词", () => {
+    it("the first setting row is an off-by-default switch, unless the feature declares an isEnabled predicate", () => {
         FEATURES.filter((feature) => !isActionOnly(feature)).forEach((feature) => {
             if (feature.isEnabled) {
                 expect(typeof feature.isEnabled, feature.id).toBe("function");
@@ -129,7 +129,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("默认配置下功能一律不运行", () => {
+    it("no feature runs under the default config", () => {
         FEATURES.forEach((feature) => {
             const config = defaultConfig(feature.settings);
             const running = feature.isEnabled ? feature.isEnabled(config) : config.enabled === true;
@@ -137,7 +137,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("有设置控件功能必须有 mount，纯动作行功能不许挂载", () => {
+    it("features with settings controls must have a mount, action-only features must not mount", () => {
         FEATURES.forEach((feature) => {
             if (isActionOnly(feature)) {
                 expect(feature.mount, feature.id).toBeUndefined();
@@ -154,7 +154,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("文案 key 在每个语言文件里都有非空译文", () => {
+    it("every i18n key has a non-empty translation in every locale file", () => {
         FEATURES.forEach((feature) => {
             i18nKeysOfFeature(feature).forEach((key) => {
                 locales.forEach((data, file) => {
@@ -164,18 +164,18 @@ describe("功能声明", () => {
         });
     });
 
-    it("i18n 的键集与顺序在每个语言文件里完全一致", () => {
+    it("the i18n key set and order are identical in every locale file", () => {
         const [referenceFile, reference] = [...locales.entries()][0];
         const referenceKeys = Object.keys(reference);
         locales.forEach((data, file) => {
             if (file === referenceFile) {
                 return;
             }
-            expect(Object.keys(data), `${file} 与 ${referenceFile} 的键顺序不一致`).toEqual(referenceKeys);
+            expect(Object.keys(data), `${file} and ${referenceFile} have different key orders`).toEqual(referenceKeys);
         });
     });
 
-    it("版本区间合法：能解析，且下限不高于上限", () => {
+    it("version ranges are valid: both bounds parse and the lower bound is not above the upper one", () => {
         FEATURES.forEach((feature) => {
             const min = feature.minAppVersion ? parseVersion(feature.minAppVersion) : undefined;
             const max = feature.maxAppVersion ? parseVersion(feature.maxAppVersion) : undefined;
@@ -191,7 +191,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("frontends 只写平台认识的两个值", () => {
+    it("frontends only contains the two values the platform knows", () => {
         FEATURES.forEach((feature) => {
             feature.frontends?.forEach((frontend) => {
                 expect(["desktop", "mobile"], `${feature.id}: ${frontend}`).toContain(frontend);
@@ -199,7 +199,7 @@ describe("功能声明", () => {
         });
     });
 
-    it("以 selector / 下拉值当开关的功能，isEnabled 必须能识别被禁用的取值", () => {
+    it("for features whose switch is a selector / option value, isEnabled must recognize the disabled value", () => {
         FEATURES.filter((feature) => feature.isEnabled).forEach((feature) => {
             const config = defaultConfig(feature.settings);
             const disabled = feature.isEnabled?.(config);

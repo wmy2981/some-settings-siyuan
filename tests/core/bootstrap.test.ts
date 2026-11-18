@@ -67,7 +67,7 @@ const TAG = "[some-settings-siyuan__";
 class FakePlugin {
     readonly name = "some-settings-siyuan";
     readonly displayName = "some settings";
-    i18n: Record<string, string> = {hello: "你好"};
+    i18n: Record<string, string> = {hello: "Hello"};
     readonly files = new Map<string, unknown>();
     readonly protyleSlash: unknown[] = [];
     readonly topBars: {id?: string; title: string;}[] = [];
@@ -177,7 +177,7 @@ afterEach(() => {
 });
 
 describe("load", () => {
-    it("只装载开关打开的功能", async () => {
+    it("loads only the features whose switch is on", async () => {
         const mountEnabled = vi.fn();
         const mountDisabled = vi.fn();
         const {host} = await start([
@@ -191,7 +191,7 @@ describe("load", () => {
         expect(() => host("beta")).toThrow("beta is not mounted");
     });
 
-    it("声明 isEnabled 的功能按谓词判定", async () => {
+    it("features declaring isEnabled are decided by the predicate", async () => {
         const mount = vi.fn();
         const {host} = await start([featureOf("alpha", {
             settings: [{kind: "select", key: "scope", title: "scope", default: "disabled"}],
@@ -202,12 +202,12 @@ describe("load", () => {
         expect(host("alpha").config.scope).toBe("both");
     });
 
-    it("没有 mount 的功能也能挂上 host", async () => {
+    it("a feature without mount still gets a host", async () => {
         const {host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         expect(host("alpha").config.enabled).toBe(true);
     });
 
-    it("构造时把生效功能交给设置面板", () => {
+    it("the constructor hands the active features to the settings panel", () => {
         hoisted.active = [featureOf("alpha")];
         const manager = new FeatureManager(new FakePlugin() as never);
         expect(hoisted.panels).toHaveLength(1);
@@ -215,8 +215,8 @@ describe("load", () => {
     });
 });
 
-describe("开关变化", () => {
-    it("保存开关后立即挂载", async () => {
+describe("switch changes", () => {
+    it("mounts immediately after the switch is saved", async () => {
         const mount = vi.fn();
         const {manager, host} = await start([featureOf("alpha", {mount})], {alpha: {enabled: false}});
         expect(mount).not.toHaveBeenCalled();
@@ -226,7 +226,7 @@ describe("开关变化", () => {
         expect(host("alpha").config.enabled).toBe(true);
     });
 
-    it("关掉开关后完整卸载：signal、teardown、destroy、样式全部收掉", async () => {
+    it("turning the switch off unmounts fully: signal, teardown, destroy and styles are all cleaned up", async () => {
         const destroy = vi.fn();
         const teardown = vi.fn();
         const {manager, plugin, host} = await start([featureOf("alpha", {
@@ -252,7 +252,7 @@ describe("开关变化", () => {
         expect(document.head.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
     });
 
-    it("反复开关不会重复挂载或留下残留", async () => {
+    it("repeated toggling neither mounts twice nor leaves anything behind", async () => {
         const destroy = vi.fn();
         const mount = vi.fn((h: FeatureHost) => {
             h.addStyle(".a{}");
@@ -270,8 +270,8 @@ describe("开关变化", () => {
     });
 });
 
-describe("异常隔离", () => {
-    it("mount 抛错时上报并回滚该功能已注册的 UI", async () => {
+describe("error isolation", () => {
+    it("a throwing mount is reported and rolls back the UI the feature registered", async () => {
         const {plugin} = await start([featureOf("alpha", {
             mount: (h) => {
                 h.addStyle(".a{}");
@@ -288,7 +288,7 @@ describe("异常隔离", () => {
         expect(document.head.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
     });
 
-    it("一个功能挂了不影响另一个功能", async () => {
+    it("one failing feature does not affect another", async () => {
         const ok = vi.fn();
         await start([
             featureOf("broken", {
@@ -301,7 +301,7 @@ describe("异常隔离", () => {
         expect(ok).toHaveBeenCalledTimes(1);
     });
 
-    it("一个功能的配置文件读不出来时回落默认值，其他功能照常装载", async () => {
+    it("an unreadable config file falls back to defaults and other features still load", async () => {
         const ok = vi.fn();
         hoisted.active = [featureOf("broken"), featureOf("fine", {mount: ok})];
         const plugin = new FakePlugin();
@@ -322,7 +322,7 @@ describe("异常隔离", () => {
         expect(ok).toHaveBeenCalledTimes(1);
     });
 
-    it("配置注册抛错时只跳过该功能，其余功能照常装载", async () => {
+    it("a throwing config registration skips only that feature and the rest still load", async () => {
         const ok = vi.fn();
         hoisted.active = [featureOf("broken"), featureOf("fine", {mount: ok})];
         const plugin = new FakePlugin();
@@ -344,7 +344,7 @@ describe("异常隔离", () => {
         expect(ok).toHaveBeenCalledTimes(1);
     });
 
-    it("teardown 与 destroy 里的异常不会冒泡，也不影响其余清理", async () => {
+    it("errors in teardown and destroy neither bubble nor block the rest of the cleanup", async () => {
         const {manager} = await start([featureOf("alpha", {
             mount: (h) => {
                 h.addStyle(".a{}");
@@ -367,7 +367,7 @@ describe("异常隔离", () => {
     });
 });
 
-describe("日志开关的时序", () => {
+describe("timing of the logging switch", () => {
     /** 一个行为与真实「日志输出」功能一致的替身：挂载开、卸载关。 */
     const loggingFeature = (): FeatureDefinition =>
         featureOf("log-output", {
@@ -383,7 +383,7 @@ describe("日志开关的时序", () => {
             },
         });
 
-    it("先挂载「日志输出」，装载概况与后续功能的日志才会出现", async () => {
+    it("mounting the log-output feature first makes the load summary and the later logs appear", async () => {
         setDetailedLogging(false);
         await start([
             loggingFeature(),
@@ -396,7 +396,7 @@ describe("日志开关的时序", () => {
         expect(vi.mocked(console.log)).toHaveBeenCalledWith(`${TAG}alpha] INFO mounted`);
     });
 
-    it("没有「日志输出」时，整个装载过程不写控制台", async () => {
+    it("without the log-output feature the whole load writes nothing to the console", async () => {
         setDetailedLogging(false);
         await start([featureOf("alpha", {mount: () => undefined})], {alpha: {enabled: true}});
 
@@ -405,7 +405,7 @@ describe("日志开关的时序", () => {
         expect(vi.mocked(console.error)).not.toHaveBeenCalled();
     });
 
-    it("中途关掉再打开后卸载，「日志输出」仍然最后收掉，其他功能的日志不丢", async () => {
+    it("after toggling mid-way, log-output is still disposed last and other features logs are not lost", async () => {
         setDetailedLogging(false);
         const {manager} = await start([
             loggingFeature(),
@@ -429,33 +429,33 @@ describe("日志开关的时序", () => {
 });
 
 describe("FeatureHost", () => {
-    it("i18n 命中时返回译文，缺失时回落到 key", async () => {
+    it("i18n returns the translation on a hit and falls back to the key on a miss", async () => {
         const {host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
-        expect(host("alpha").i18n("hello")).toBe("你好");
+        expect(host("alpha").i18n("hello")).toBe("Hello");
         expect(host("alpha").i18n("missing.key")).toBe("missing.key");
         expect(host("alpha").i18n("empty")).toBe("empty");
     });
 
-    it("config 是实时快照，setConfig 会落盘并通知", async () => {
+    it("config is a live snapshot and setConfig persists and notifies", async () => {
         const definitions = [featureOf("alpha", {
             settings: [
                 {kind: "switch", key: "enabled", title: "common.enabled", default: false},
-                {kind: "text", key: "label", title: "alpha.label", default: "默认"},
+                {kind: "text", key: "label", title: "alpha.label", default: "Default"},
             ],
         })];
         const {plugin, host} = await start(definitions, {alpha: {enabled: true}});
         const listener = vi.fn();
         host("alpha").onConfigChange(listener);
 
-        expect(host("alpha").config.label).toBe("默认");
-        await host("alpha").setConfig({label: "改过的"});
+        expect(host("alpha").config.label).toBe("Default");
+        await host("alpha").setConfig({label: "changed"});
 
         expect(listener).toHaveBeenCalledTimes(1);
-        expect(host("alpha").config.label).toBe("改过的");
-        expect(plugin.files.get("feature-alpha")).toMatchObject({enabled: true, label: "改过的"});
+        expect(host("alpha").config.label).toBe("changed");
+        expect(plugin.files.get("feature-alpha")).toMatchObject({enabled: true, label: "changed"});
     });
 
-    it("addStyle 返回撤销函数，且卸载时自动撤销", async () => {
+    it("addStyle returns an undo function and unmount undoes it automatically", async () => {
         let remove: () => void = () => undefined;
         const {manager} = await start([featureOf("alpha", {
             mount: (h) => {
@@ -470,7 +470,7 @@ describe("FeatureHost", () => {
         await expect(manager.store.patch("alpha", {enabled: false})).resolves.toBeUndefined();
     });
 
-    it("功能卸载后再注册 teardown 会立刻执行，不留残余", async () => {
+    it("a teardown registered after unmount runs immediately and leaves nothing behind", async () => {
         const {manager, host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         const featureHost = host("alpha");
         await manager.store.patch("alpha", {enabled: false});
@@ -481,7 +481,7 @@ describe("FeatureHost", () => {
         expect(document.head.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
     });
 
-    it("addTopBar 卸载时用 id 撤销，没有 id 时退回 title", async () => {
+    it("addTopBar is removed by id on unmount and falls back to title without one", async () => {
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
                 h.addTopBar({id: "with-id", icon: "a", title: "A", callback: () => undefined});
@@ -493,7 +493,7 @@ describe("FeatureHost", () => {
         expect(plugin.removedTopBars).toEqual(["B", "with-id"]);
     });
 
-    it("addCommand 原样交给宿主，且不做单条撤销", async () => {
+    it("addCommand is passed to the host as-is with no per-item undo", async () => {
         const command = {langKey: "x", hotkey: "", callback: () => undefined};
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
@@ -505,7 +505,7 @@ describe("FeatureHost", () => {
         expect(plugin.commands).toEqual([command]);
     });
 
-    it("addProtyleSlash 把条目塞进宿主数组，卸载时按对象移除自己那份", async () => {
+    it("addProtyleSlash pushes items into the host array and removes only its own on unmount", async () => {
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
                 h.addProtyleSlash({id: "ss-a", filter: ["abc"], html: "<div></div>", callback: () => undefined});
@@ -517,13 +517,13 @@ describe("FeatureHost", () => {
         expect(plugin.protyleSlash).toHaveLength(0);
     });
 
-    it("addIcons 转给宿主", async () => {
+    it("addIcons is forwarded to the host", async () => {
         const {host, plugin} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         host("alpha").addIcons('<symbol id="iconX"></symbol>');
         expect(plugin.icons).toEqual(['<symbol id="iconX"></symbol>']);
     });
 
-    it("addStatusBar 的元素随卸载一起移除", async () => {
+    it("the addStatusBar element is removed on unmount", async () => {
         const {manager, host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         const element = host("alpha").addStatusBar({element: document.createElement("div")});
         expect(document.body.contains(element as HTMLElement)).toBe(true);
@@ -532,7 +532,7 @@ describe("FeatureHost", () => {
         expect(element?.remove).toHaveBeenCalled();
     });
 
-    it("addProtyleSlash 的条目被别处先移除时，卸载不会误删别人的条目", async () => {
+    it("unmount does not delete other entries when its protyleSlash item was removed elsewhere", async () => {
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
                 h.addProtyleSlash({id: "ss-a", filter: ["a"], html: "<div></div>", callback: () => undefined});
@@ -547,7 +547,7 @@ describe("FeatureHost", () => {
         expect(plugin.protyleSlash.includes(mine)).toBe(false);
     });
 
-    it("addDock 用宿主给的 id 撤销，并且 init 拿到的是宿主的元素", async () => {
+    it("addDock is removed with the host-provided id and init receives the host element", async () => {
         const init = vi.fn();
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
@@ -564,7 +564,7 @@ describe("FeatureHost", () => {
         expect(plugin.removedDocks).toEqual(["dock-from-host"]);
     });
 
-    it("addDock 既没有返回 id 也没有声明 id 时退回 type", async () => {
+    it("addDock falls back to type when there is neither a returned nor a declared id", async () => {
         hoisted.active = [featureOf("alpha", {
             mount: (h) => {
                 h.addDock({config: {} as never, data: {}, type: "custom-dock", init: () => undefined});
@@ -580,7 +580,7 @@ describe("FeatureHost", () => {
         expect(plugin.removedDocks).toEqual(["custom-dock"]);
     });
 
-    it("addDock 没拿到返回 id 时退回功能声明的 id", async () => {
+    it("addDock falls back to the declared id when the host returns none", async () => {
         hoisted.active = [featureOf("alpha", {
             mount: (h) => {
                 h.addDock({id: "declared", config: {} as never, data: {}, type: "dock", init: () => undefined});
@@ -596,7 +596,7 @@ describe("FeatureHost", () => {
         expect(plugin.removedDocks).toEqual(["declared"]);
     });
 
-    it("addTab 的 destroy 与 init 都转给宿主", async () => {
+    it("addTab forwards both destroy and init to the host", async () => {
         const init = vi.fn();
         const destroy = vi.fn();
         const {host, plugin} = await start([featureOf("alpha")], {alpha: {enabled: true}});
@@ -614,7 +614,7 @@ describe("FeatureHost", () => {
         expect(init).toHaveBeenCalledWith(element);
     });
 
-    it("addEventBus 卸载时 off 掉同一个监听", async () => {
+    it("addEventBus turns off the same listener on unmount", async () => {
         const listener = vi.fn();
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
@@ -626,13 +626,13 @@ describe("FeatureHost", () => {
         expect(plugin.eventBus.off).toHaveBeenCalledWith("ws-main", listener);
     });
 
-    it("showMessage 按 4 秒提示", async () => {
+    it("showMessage shows for 4 seconds", async () => {
         const {host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
-        host("alpha").showMessage("完成");
-        expect(mockState.messages).toEqual([{text: "完成", timeout: 4000, type: undefined}]);
+        host("alpha").showMessage("Done");
+        expect(mockState.messages).toEqual([{text: "Done", timeout: 4000, type: undefined}]);
     });
 
-    it("log 带功能 id 头部与级别", async () => {
+    it("log carries the feature id prefix and the level", async () => {
         const {host} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         host("alpha").log.info("step", 1);
         host("alpha").log.warn("careful");
@@ -642,13 +642,13 @@ describe("FeatureHost", () => {
 });
 
 describe("openSettings / dispose", () => {
-    it("openSettings 打开设置面板", async () => {
+    it("openSettings opens the settings panel", async () => {
         const {manager} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         manager.openSettings();
         expect(hoisted.panels[0].shown).toBe(true);
     });
 
-    it("dispose 收掉面板、卸载全部功能、清掉订阅，且幂等", async () => {
+    it("dispose tears down the panel, unmounts every feature, clears subscriptions and is idempotent", async () => {
         const mount = vi.fn();
         const {manager} = await start([featureOf("alpha", {mount})], {alpha: {enabled: true}});
         const panel = hoisted.panels[0];
@@ -665,7 +665,7 @@ describe("openSettings / dispose", () => {
         expect(mount).not.toHaveBeenCalled();
     });
 
-    it("dispose 时对每个已挂载功能都做完整清理", async () => {
+    it("dispose fully cleans up every mounted feature", async () => {
         const destroy = vi.fn();
         const {manager, plugin} = await start([featureOf("alpha", {
             mount: (h) => {
@@ -681,8 +681,8 @@ describe("openSettings / dispose", () => {
     });
 });
 
-describe("load 的配置读取", () => {
-    it("并发读盘，但挂载顺序仍是注册表顺序", async () => {
+describe("config reading during load", () => {
+    it("reads concurrently but mounts in registry order", async () => {
         const ids = ["alpha", "beta", "gamma", "delta"];
         const mounted: string[] = [];
         hoisted.active = ids.map((id) =>

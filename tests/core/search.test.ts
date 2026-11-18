@@ -18,19 +18,19 @@ import {
 import type {SearchIndex} from "../../src/core/search";
 
 describe("parseQuery", () => {
-    it("去掉首尾空白并按空白拆词", () => {
+    it("Trims the query and splits it on whitespace", () => {
         expect(parseQuery("  图片  压缩 ")).toEqual(["图片", "压缩"]);
     });
 
-    it("全角空格与换行也算分隔", () => {
+    it("Counts the full-width space and newlines as separators", () => {
         expect(parseQuery("图片\u3000压缩\n尺寸")).toEqual(["图片", "压缩", "尺寸"]);
     });
 
-    it("统一转小写：英文忽略大小写", () => {
+    it("Lowercases everything, so English matching ignores case", () => {
         expect(parseQuery("Image PNG")).toEqual(["image", "png"]);
     });
 
-    it("只有空白等于没搜", () => {
+    it("Whitespace alone is an empty search", () => {
         expect(parseQuery("")).toEqual([]);
         expect(parseQuery("   ")).toEqual([]);
         expect(parseQuery("\u3000")).toEqual([]);
@@ -38,42 +38,42 @@ describe("parseQuery", () => {
 });
 
 describe("fieldOf", () => {
-    it("丢掉空值与重复的语言版本", () => {
+    it("Drops empty values and duplicate language versions", () => {
         expect(fieldOf("图片", undefined, "", "  ", "image", "图片")).toEqual(["图片", "image"]);
     });
 
-    it("去掉首尾空白", () => {
+    it("Trims the value", () => {
         expect(fieldOf("  压缩 ")).toEqual(["压缩"]);
     });
 });
 
 describe("matchField", () => {
-    it("单个关键词是连续子串匹配", () => {
+    it("Matches a single keyword as a contiguous substring", () => {
         expect(matchField(["图片压缩"], parseQuery("压缩"))).toBe(true);
         expect(matchField(["图片压缩"], parseQuery("图压"))).toBe(false);
     });
 
-    it("英文忽略大小写", () => {
+    it("Ignores case for English", () => {
         expect(matchField(["Compress images"], parseQuery("COMPRESS"))).toBe(true);
     });
 
-    it("多关键词 AND，顺序不限", () => {
+    it("Multiple keywords are ANDed in any order", () => {
         expect(matchField(["图片压缩"], parseQuery("压缩 图片"))).toBe(true);
         expect(matchField(["图片压缩"], parseQuery("图片 音频"))).toBe(false);
     });
 
-    it("同一个字段的中英文版本算一个匹配域：关键词可以分别落在两种语言上", () => {
+    it("Chinese and English versions of one field form a single match domain, so keywords can land on either", () => {
         const field = fieldOf("图片压缩", "compress images");
         expect(matchField(field, parseQuery("image 压缩"))).toBe(true);
     });
 
-    it("跨语言版本拼不出假命中", () => {
+    it("Concatenating language versions never fakes a hit", () => {
         // 拼起来的匹配域不能把「英文版结尾」和「中文版开头」连成一个词
         const field = fieldOf("abc", "def");
         expect(matchField(field, parseQuery("cd"))).toBe(false);
     });
 
-    it("空字段或空查询不算命中", () => {
+    it("An empty field or an empty query is not a hit", () => {
         expect(matchField([], parseQuery("图片"))).toBe(false);
         expect(matchField(["图片"], [])).toBe(false);
     });
@@ -92,30 +92,30 @@ describe("matchIndex", () => {
         ],
     };
 
-    it("字段命中只标出那个功能", () => {
+    it("A field hit marks only that feature", () => {
         const hits = matchIndex(index, parseQuery("压缩"));
         expect([...hits.features]).toEqual(["alpha"]);
         expect([...hits.categories]).toEqual([]);
     });
 
-    it("内部 id 也能搜", () => {
+    it("Internal ids are searchable too", () => {
         expect([...matchIndex(index, parseQuery("BETA")).features]).toEqual(["beta"]);
     });
 
-    it("分类名命中时标出分类，由调用方显示该分类全部功能", () => {
+    it("A category hit marks the category and leaves listing its features to the caller", () => {
         const hits = matchIndex(index, parseQuery("editor"));
         expect([...hits.categories]).toEqual(["editor"]);
         // 分类命中的分类不连带把每个功能都塞进 features —— 两件事分开表达
         expect([...hits.features]).toEqual([]);
     });
 
-    it("关键词必须落在同一个字段上：不能跨字段拼", () => {
+    it("Keywords must land on the same field and never combine across fields", () => {
         // 「压缩」在 alpha 的一个字段，「导出」在 beta 的另一个功能里
         const hits = matchIndex(index, parseQuery("压缩 导出"));
         expect([...hits.features]).toEqual([]);
     });
 
-    it("空查询没有命中", () => {
+    it("An empty query matches nothing", () => {
         const hits = matchIndex(index, []);
         expect(hits.features.size).toBe(0);
         expect(hits.categories.size).toBe(0);
@@ -123,11 +123,11 @@ describe("matchIndex", () => {
 });
 
 describe("highlightSegments", () => {
-    it("没有命中时原样返回一段", () => {
+    it("Returns the text as a single untouched segment without a hit", () => {
         expect(highlightSegments("图片压缩", parseQuery("音频"))).toEqual([{text: "图片压缩", hit: false}]);
     });
 
-    it("同一段文字里的多个关键词分别高亮", () => {
+    it("Highlights several keywords inside one text separately", () => {
         expect(highlightSegments("图片压缩，导出与图片", parseQuery("图片 导出"))).toEqual([
             {text: "图片", hit: true},
             {text: "压缩，", hit: false},
@@ -137,22 +137,22 @@ describe("highlightSegments", () => {
         ]);
     });
 
-    it("重叠与相邻的命中合并成一段", () => {
+    it("Merges overlapping and adjacent hits into one segment", () => {
         expect(highlightSegments("image", parseQuery("ima image"))).toEqual([{text: "image", hit: true}]);
     });
 
-    it("按小写定位、按原文切片：高亮不改文案的样子", () => {
+    it("Locates on the lowercase copy and slices the original, so highlighting keeps the text as written", () => {
         expect(highlightSegments("Compress Images", parseQuery("images"))).toEqual([
             {text: "Compress ", hit: false},
             {text: "Images", hit: true},
         ]);
     });
 
-    it("命中整段时只有一段", () => {
+    it("A hit covering everything yields a single segment", () => {
         expect(highlightSegments("图片压缩", parseQuery("图片压缩"))).toEqual([{text: "图片压缩", hit: true}]);
     });
 
-    it("空文案与空查询都能处理", () => {
+    it("Handles empty text and an empty query", () => {
         expect(highlightSegments("", parseQuery("图片"))).toEqual([{text: "", hit: false}]);
         expect(highlightSegments("图片", [])).toEqual([{text: "图片", hit: false}]);
     });

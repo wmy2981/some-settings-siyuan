@@ -50,15 +50,15 @@ const {setDetailedLogging} = await import("../../src/core/log");
 type Harness = ReturnType<typeof mountFeature>;
 
 const I18N: Record<string, string> = {
-    "feature.assetsNewFile.command": "新建文件到 assets",
-    "feature.assetsNewFile.dialogTitle": "新建文件到 assets",
-    "feature.assetsNewFile.tip": "输入文件名（可带任意后缀）。",
-    "feature.assetsNewFile.placeholder": "例如：清单.txt",
-    "feature.assetsNewFile.invalid": "文件名不能为空，也不能包含 / 或 \\",
-    "feature.assetsNewFile.creating": "正在创建…",
-    "feature.assetsNewFile.failed": "创建文件失败，请稍后再试",
-    "feature.assetsNewFile.confirm": "创建",
-    "common.cancel": "取消",
+    "feature.assetsNewFile.command": "New file in assets",
+    "feature.assetsNewFile.dialogTitle": "New file in assets",
+    "feature.assetsNewFile.tip": "Enter a file name (any extension).",
+    "feature.assetsNewFile.placeholder": "e.g. checklist.txt",
+    "feature.assetsNewFile.invalid": "The name must not be empty or contain / or \\",
+    "feature.assetsNewFile.creating": "Creating…",
+    "feature.assetsNewFile.failed": "Could not create the file. Please try again",
+    "feature.assetsNewFile.confirm": "Create",
+    "common.cancel": "Cancel",
 };
 
 const i18n = (key: string): string => I18N[key] ?? key;
@@ -123,7 +123,7 @@ const partsOf = (harness: Harness, protyle: ProtyleStub) => {
     };
 };
 
-describe("斜杠命令新建文件到 assets", () => {
+describe("Creating a file in assets from the slash command", () => {
     let harness: Harness;
 
     beforeEach(() => {
@@ -140,13 +140,13 @@ describe("斜杠命令新建文件到 assets", () => {
         document.body.innerHTML = "";
     });
 
-    it("注册一条斜杠命令：中英文与拼音首字母都能检索到，卸载时从宿主数组里摘掉", () => {
+    it("Registers one slash command, searchable by Chinese, English and pinyin initials, and drops it from the host array on dispose", () => {
         expect(harness.records.slashes).toHaveLength(1);
         const slash = harness.records.slashes[0];
         expect(slash.id).toBe("assets-new-file");
         expect(slash.filter).toEqual(expect.arrayContaining(["新建文件", "assets", "new file", "xjwj"]));
         // 命令文字与图标都在提示行里，用户能在候选里认出它
-        expect(slash.html).toContain("新建文件到 assets");
+        expect(slash.html).toContain("New file in assets");
         expect(slash.html).toContain("#iconFile");
 
         const plugin = harness.host.plugin as unknown as {protyleSlash: unknown[];};
@@ -156,15 +156,15 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(plugin.protyleSlash).toEqual([]);
     });
 
-    it("桌面端打开对话框：标题、提示、输入框与创建/取消按钮齐全，并自动聚焦输入框", () => {
+    it("Desktop opens the dialog with title, tip, input and Create/Cancel buttons, and focuses the input", () => {
         const protyle = createProtyle();
         const {dialog, input, confirm, cancel} = partsOf(harness, protyle);
 
         expect(lastDialog().options.width).toBe("440px");
-        expect((dialog.element as HTMLElement).textContent).toContain("输入文件名（可带任意后缀）。");
-        expect(input.placeholder).toBe("例如：清单.txt");
-        expect(confirm.textContent).toBe("创建");
-        expect(cancel.textContent).toBe("取消");
+        expect((dialog.element as HTMLElement).textContent).toContain("Enter a file name (any extension).");
+        expect(input.placeholder).toBe("e.g. checklist.txt");
+        expect(confirm.textContent).toBe("Create");
+        expect(cancel.textContent).toBe("Cancel");
         // 桌面端没有软键盘，直接聚焦省一步
         expect(document.activeElement).toBe(input);
         // 弹窗入场前先挂图层预热，避免移动端入场闪一帧旧画面
@@ -175,7 +175,7 @@ describe("斜杠命令新建文件到 assets", () => {
         ).toBe(true);
     });
 
-    it("移动端弹窗宽 92vw，且不程序性聚焦输入框（否则软键盘会让弹窗重排闪一下）", () => {
+    it("Mobile opens a 92vw dialog and never focuses the input, since the soft keyboard would reflow it", () => {
         mockState.frontend = "mobile";
         const protyle = createProtyle();
         const {input} = partsOf(harness, protyle);
@@ -184,7 +184,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(document.activeElement).not.toBe(input);
     });
 
-    it("文件名为空时只提示，不发请求也不关窗", async () => {
+    it("An empty name only shows a message: no request and no close", async () => {
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
 
@@ -192,14 +192,14 @@ describe("斜杠命令新建文件到 assets", () => {
         confirm.click();
         await flush();
 
-        expect(harness.records.messages).toEqual(["文件名不能为空，也不能包含 / 或 \\"]);
+        expect(harness.records.messages).toEqual(["The name must not be empty or contain / or \\"]);
         expect(mockState.fetchSyncPost).not.toHaveBeenCalled();
         expect(input.disabled).toBe(false);
         expect(document.activeElement).toBe(input);
         expect(lastDialog().dialog.destroyed).toBe(false);
     });
 
-    it("文件名带 / 或 \\ 一律拒绝（会被内核当目录，链接也会坏掉）", async () => {
+    it("A name containing / or \\ is always rejected, since the kernel would treat it as a directory", async () => {
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
 
@@ -213,17 +213,17 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(mockState.fetchSyncPost).not.toHaveBeenCalled();
     });
 
-    it("提交 0 字节文件到上传接口，成功后把命令文本换成指向新资源的链接并关窗", async () => {
+    it("Uploads a zero-byte file and on success swaps the command text for a link to the new asset", async () => {
         mockState.fetchSyncPost.mockResolvedValue({
             code: 0,
             data: {
-                succFiles: [{name: "清单-20241012123456-abcdefg.txt", path: "assets/清单-20241012123456-abcdefg.txt"}],
+                succFiles: [{name: "checklist-20241012-abcdefg.txt", path: "assets/checklist-20241012-abcdefg.txt"}],
             },
         });
         const protyle = createProtyle();
         const {input, confirm, dialog} = partsOf(harness, protyle);
 
-        input.value = "  清单.txt  ";
+        input.value = "  checklist.txt  ";
         confirm.click();
         await flush();
 
@@ -232,11 +232,11 @@ describe("斜杠命令新建文件到 assets", () => {
         const form = body as FormData;
         // 走内核导入流程：带上文档 id 让它选对 assets 目录，文件名按用户填的给
         expect(form.get("id")).toBe("doc-1");
-        expect((form.get("file[]") as File).name).toBe("清单.txt");
+        expect((form.get("file[]") as File).name).toBe("checklist.txt");
         expect((form.get("file[]") as File).size).toBe(0);
 
         expect(protyle.insert).toHaveBeenCalledWith(
-            '<span data-type="a" data-href="assets/清单-20241012123456-abcdefg.txt">清单.txt</span>',
+            '<span data-type="a" data-href="assets/checklist-20241012-abcdefg.txt">checklist.txt</span>',
             false,
             true,
         );
@@ -244,7 +244,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(harness.records.messages).toEqual([]);
     });
 
-    it("没有 rootID 时退回块的 id；两者都没有就不带 id", async () => {
+    it("Falls back to the block id without a rootID, and sends no id when both are missing", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/x.txt"}]}});
 
         const byId = createProtyle({rootID: ""});
@@ -262,7 +262,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect((mockState.fetchSyncPost.mock.calls[1][1] as FormData).get("id")).toBe(null);
     });
 
-    it("上传中禁用输入框与按钮并把按钮改成「正在创建…」，避免重复提交", async () => {
+    it("Disables the input and buttons while uploading and switches the button label to Creating… to block a second submit", async () => {
         const pending = pendingResponse();
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
@@ -273,13 +273,13 @@ describe("斜杠命令新建文件到 assets", () => {
 
         expect(input.disabled).toBe(true);
         expect(confirm.disabled).toBe(true);
-        expect(confirm.textContent).toBe("正在创建…");
+        expect(confirm.textContent).toBe("Creating…");
 
         pending.resolve({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         await flush();
     });
 
-    it("内核返回非 0 code 时提示失败并复原控件，对话框留着让用户重试", async () => {
+    it("A non-zero code reports the failure, restores the controls and keeps the dialog open for a retry", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 1, msg: "denied"});
         const protyle = createProtyle();
         const {input, confirm, dialog} = partsOf(harness, protyle);
@@ -288,16 +288,16 @@ describe("斜杠命令新建文件到 assets", () => {
         confirm.click();
         await flush();
 
-        expect(harness.records.messages).toEqual(["创建文件失败，请稍后再试"]);
+        expect(harness.records.messages).toEqual(["Could not create the file. Please try again"]);
         expect(input.disabled).toBe(false);
         expect(confirm.disabled).toBe(false);
-        expect(confirm.textContent).toBe("创建");
+        expect(confirm.textContent).toBe("Create");
         expect(dialog.destroyed).toBe(false);
         // 失败只记录日志、不再弹一次内核消息（已经给过用户提示）
         expect(console.error).toHaveBeenCalled();
     });
 
-    it("内核把文件名写进 failedFiles 时报错信息带内核给的原因", async () => {
+    it("A name reported in failedFiles carries the kernel reason into the error", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {failedFiles: [{error: "duplicated name"}]}});
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
@@ -306,7 +306,7 @@ describe("斜杠命令新建文件到 assets", () => {
         confirm.click();
         await flush();
 
-        expect(harness.records.messages).toEqual(["创建文件失败，请稍后再试"]);
+        expect(harness.records.messages).toEqual(["Could not create the file. Please try again"]);
         expect(console.error).toHaveBeenCalledWith(
             expect.stringContaining("assets-new-file.create"),
         );
@@ -315,7 +315,7 @@ describe("斜杠命令新建文件到 assets", () => {
         );
     });
 
-    it("响应里没有 succFiles[0].path 时按失败处理（不能插一个空链接）", async () => {
+    it("A response without succFiles[0].path counts as a failure, never an empty link", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: []}});
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
@@ -324,11 +324,11 @@ describe("斜杠命令新建文件到 assets", () => {
         confirm.click();
         await flush();
 
-        expect(harness.records.messages).toEqual(["创建文件失败，请稍后再试"]);
+        expect(harness.records.messages).toEqual(["Could not create the file. Please try again"]);
         expect(protyle.insert).not.toHaveBeenCalled();
     });
 
-    it("请求本身 reject 时同样只提示、不抛到调用方", async () => {
+    it("A rejected request only shows the message and never rethrows", async () => {
         mockState.fetchSyncPost.mockRejectedValue(new Error("kernel gone"));
         const protyle = createProtyle();
         const {input, confirm} = partsOf(harness, protyle);
@@ -337,11 +337,11 @@ describe("斜杠命令新建文件到 assets", () => {
         confirm.click();
         await flush();
 
-        expect(harness.records.messages).toEqual(["创建文件失败，请稍后再试"]);
+        expect(harness.records.messages).toEqual(["Could not create the file. Please try again"]);
         expect(input.disabled).toBe(false);
     });
 
-    it("回车等于点创建；输入法组字中的回车不算提交", async () => {
+    it("Enter equals clicking Create, but Enter during IME composition is not a submit", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         const protyle = createProtyle();
         const {input} = partsOf(harness, protyle);
@@ -367,7 +367,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(mockState.fetchSyncPost).toHaveBeenCalledTimes(1);
     });
 
-    it("取消按钮直接关窗，不发任何请求", async () => {
+    it("Cancel closes the dialog without any request", async () => {
         const protyle = createProtyle();
         const {cancel, dialog} = partsOf(harness, protyle);
 
@@ -378,7 +378,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(mockState.fetchSyncPost).not.toHaveBeenCalled();
     });
 
-    it("上传期间用户取消：文件已经建好但不往文档里插链接", async () => {
+    it("Cancelling mid-upload keeps the created file but inserts no link", async () => {
         const pending = pendingResponse();
         const protyle = createProtyle();
         const {input, confirm, cancel} = partsOf(harness, protyle);
@@ -393,7 +393,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(protyle.insert).not.toHaveBeenCalled();
     });
 
-    it("插入链接失败时只记日志（不提示用户「失败了」，文件其实已经建好），弹窗照常关闭", async () => {
+    it("A failed insert only logs, since the file really exists, and the dialog still closes", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         const protyle = createProtyle();
         protyle.insert.mockImplementation(() => {
@@ -413,7 +413,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(dialog.destroyed).toBe(true);
     });
 
-    it("命令范围向左扩到 / 的位置，链接替换掉整段命令文本", async () => {
+    it("Extends the range left to the slash so the link replaces the whole command text", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         document.body.innerHTML = '<div data-node-id="block-1">前文 abc /清单</div>';
         const block = document.querySelector<HTMLElement>("[data-node-id]")!;
@@ -439,9 +439,9 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(protyle.insert).toHaveBeenCalledTimes(1);
     });
 
-    it("URL 里的斜杠不算命令起点（不能把链接的一部分删掉）", async () => {
+    it("A slash inside a URL is not a command start, so no part of the link is deleted", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
-        document.body.innerHTML = '<div data-node-id="block-1">见 https://example.com/aa</div>';
+        document.body.innerHTML = '<div data-node-id="block-1">See https://example.com/aa</div>';
         const text = document.querySelector("[data-node-id]")!.firstChild as Text;
         const range = document.createRange();
         range.setStart(text, text.length);
@@ -462,7 +462,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(protyle.insert).toHaveBeenCalledTimes(1);
     });
 
-    it("起点在别的行内元素里时，往前一个文本节点继续找", async () => {
+    it("Walks back to the previous text node when the caret sits in another inline element", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         document.body.innerHTML = '<div data-node-id="block-1">aa /zz<i>y</i></div>';
         const italicText = document.querySelector("i")!.firstChild as Text;
@@ -482,8 +482,8 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(range.startOffset).toBe(3);
     });
 
-    it("取不到块（不在 data-node-id 里）时保留原光标，不越界删内容", () => {
-        document.body.innerHTML = "<div>没有块标记的文本</div>";
+    it("Keeps the caret when no block is found outside data-node-id and deletes nothing", () => {
+        document.body.innerHTML = "<div>text without a block marker</div>";
         const text = document.querySelector("div")!.firstChild as Text;
         const range = document.createRange();
         range.setStart(text, text.length);
@@ -498,7 +498,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(range.startOffset).toBe(text.length);
     });
 
-    it("没有可用 range 时退回宿主当前选区，仍然把链接插进去", async () => {
+    it("Falls back to the host selection without a usable range and still inserts the link", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         window.getSelection()?.removeAllRanges();
         const protyle = createProtyle({toolbar: false});
@@ -511,7 +511,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(protyle.insert).toHaveBeenCalledWith('<span data-type="a" data-href="assets/a.txt">a.txt</span>');
     });
 
-    it("宿主给的 range 指向已经离开文档的节点时，不硬塞选区，直接走宿主当前光标", async () => {
+    it("A range pointing at a node that left the document is never forced back, the host caret is used instead", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: {succFiles: [{path: "assets/a.txt"}]}});
         // 上传期间宿主重绘了正文：toolbar 手里的 range 还指着被拆掉的文本节点
         const detached = document.createElement("div");
@@ -533,7 +533,7 @@ describe("斜杠命令新建文件到 assets", () => {
         expect(protyle.insert).toHaveBeenCalledWith('<span data-type="a" data-href="assets/a.txt">a.txt</span>');
     });
 
-    it("对话框里的文案都经过转义：i18n 里带标记也不会变成 HTML", () => {
+    it("Dialog texts are escaped, so markup coming from i18n never turns into HTML", () => {
         harness.dispose();
         harness = mountFeature(assetsNewFile, {
             i18n: (key) => key === "feature.assetsNewFile.placeholder" ? "<b>x</b>" : key,

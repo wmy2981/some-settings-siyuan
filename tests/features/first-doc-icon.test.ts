@@ -99,7 +99,7 @@ const finishWrite = (response: IconResponse): void => {
 const click = (element: Element): boolean =>
     element.dispatchEvent(new MouseEvent("click", {bubbles: true, cancelable: true}));
 
-describe("固定首次添加的文档图标", () => {
+describe("pin the icon of a first-time-added document", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -117,13 +117,13 @@ describe("固定首次添加的文档图标", () => {
         editorState.editors = [];
     });
 
-    it("声明里默认关闭，图标默认是 📄", () => {
+    it("declares default-off with 📄 as the default icon", () => {
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         expect(definition.settings[1]).toMatchObject({kind: "text", key: "emoji", default: "📄"});
         expect(definition.category).toBe("doc-tree");
     });
 
-    it("首次点击：拦下点击、按码点写入配置的 emoji", () => {
+    it("first click: intercepts the click and writes the configured emoji as code points", () => {
         const {button} = buildBackground();
         mount();
 
@@ -136,7 +136,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost.mock.calls[0][1]).toEqual({id: "root-1", attrs: {icon: "1f4c4"}});
     });
 
-    it("点击被彻底吞掉：按钮自己的监听收不到，父级只见到随后那次「开面板」的合成点击", () => {
+    it("swallows the click entirely: the button's own listener never runs and the parent only sees the synthetic open-panel click", () => {
         const {button, background, icon} = buildBackground();
         const onButton = vi.fn();
         const onBackground = vi.fn();
@@ -154,7 +154,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost).toHaveBeenCalledTimes(1);
     });
 
-    it("多码点 emoji 逐码点转十六进制，用连字符拼接", () => {
+    it("converts multi-code-point emoji code point by code point, joined with hyphens", () => {
         [
             {emoji: "👍🏽", expected: "1f44d-1f3fd"},
             // 变体选择符与零宽连接符也要原样保留，否则内核还原出来的是另一个字形
@@ -171,7 +171,7 @@ describe("固定首次添加的文档图标", () => {
         });
     });
 
-    it("emoji 配成空白时回落到默认 📄（说明文案说「留空不写入」，实现是回落默认值）", () => {
+    it("falls back to the default 📄 when the emoji is blank (the tip says empty means no write, but the implementation falls back to the default)", () => {
         const {button} = buildBackground();
         mount({emoji: "   "});
 
@@ -180,7 +180,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost.mock.calls[0][1]).toEqual({id: "root-1", attrs: {icon: "1f4c4"}});
     });
 
-    it("写盘成功后立即就地更新文件树 / 大纲的图标，且只动这份文档", () => {
+    it("updates the file tree / outline icon in place right after a successful write, touching only this document", () => {
         const {button} = buildBackground();
         const row = buildListRow("root-1");
         const other = buildListRow("root-2", "📁");
@@ -194,7 +194,7 @@ describe("固定首次添加的文档图标", () => {
         expect(other.querySelector(".b3-list-item__icon")?.textContent).toBe("📁");
     });
 
-    it("写盘失败只记日志、不改列表图标（界面不能被改成没存住的图标）", () => {
+    it("only logs on a failed write without changing the list icon (the UI must not show an unsaved icon)", () => {
         const {button} = buildBackground();
         const row = buildListRow("root-1");
         const harness = mount();
@@ -206,7 +206,7 @@ describe("固定首次添加的文档图标", () => {
         expect(harness.records.logs.at(-1)?.[0]).toContain("failed to write the document icon: denied");
     });
 
-    it("图标已经显示时不拦截：只处理「首次」", () => {
+    it("does not intercept once an icon is already shown: only the first add", () => {
         const {button, icon} = buildBackground({iconHidden: false});
         mount();
 
@@ -216,7 +216,7 @@ describe("固定首次添加的文档图标", () => {
         expect(icon?.textContent).toBe("");
     });
 
-    it("没有图标容器、或按钮不在标题区里时不动手", () => {
+    it("does nothing without an icon container or when the button is outside the title area", () => {
         const {button} = buildBackground({withIconElement: false});
         mount();
         click(button);
@@ -233,7 +233,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost).not.toHaveBeenCalled();
     });
 
-    it("只读文档里跟着内核一起不动", () => {
+    it("stays passive in read-only documents, like the kernel does", () => {
         const {background, button} = buildBackground();
         editorState.editors = [{
             protyle: {element: background, disabled: true, block: {rootID: "root-1"}},
@@ -247,7 +247,7 @@ describe("固定首次添加的文档图标", () => {
         expect(button.classList.contains("fn__none")).toBe(false);
     });
 
-    it("文档 id 优先取编辑器外壳里的 rootID，退到标题区的 data-node-id", () => {
+    it("prefers the rootID on the editor shell and falls back to the title area's data-node-id", () => {
         const {background, button} = buildBackground({rootId: "from-dom"});
         editorState.editors = [{
             protyle: {element: background, disabled: false, block: {rootID: "from-editor"}},
@@ -268,7 +268,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost.mock.calls[0][1]).toEqual({id: "from-dom", attrs: {icon: "1f4c4"}});
     });
 
-    it("拿不到文档 id 时只记日志，不动点击的默认行为", () => {
+    it("only logs when no document ID is available, leaving the click default intact", () => {
         const {button} = buildBackground({rootId: null});
         const harness = mount();
 
@@ -278,7 +278,7 @@ describe("固定首次添加的文档图标", () => {
         expect(harness.records.logs.at(-1)?.[0]).toContain("no document ID available");
     });
 
-    it("写入后图标立刻显形、按钮隐藏，并打开内核自己的 emoji 面板", () => {
+    it("reveals the icon immediately after writing, hides the button and opens the kernel's own emoji panel", () => {
         const {button, icon} = buildBackground();
         const openPanel = vi.fn();
         icon?.addEventListener("click", openPanel);
@@ -295,7 +295,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost).toHaveBeenCalledTimes(1);
     });
 
-    it("点击目标不是元素（例如 document 自己派发的事件）时直接忽略", () => {
+    it("ignores clicks whose target is not an element (such as events dispatched on document itself)", () => {
         const {button} = buildBackground();
         mount();
 
@@ -308,7 +308,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost).toHaveBeenCalledTimes(1);
     });
 
-    it("dispose 之后不再拦截点击", () => {
+    it("stops intercepting clicks after dispose", () => {
         const {button} = buildBackground();
         const harness = mount();
 
@@ -318,7 +318,7 @@ describe("固定首次添加的文档图标", () => {
         expect(mockState.fetchPost).not.toHaveBeenCalled();
     });
 
-    it("挂载只加一个捕获期监听，destroy 后移除", () => {
+    it("mount adds a single capture-phase listener and destroy removes it", () => {
         const host = {
             config: {emoji: "📄"},
             log: noopLogger,

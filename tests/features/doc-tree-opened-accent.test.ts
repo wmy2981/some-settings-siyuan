@@ -30,7 +30,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查「有没有某条声明」，避免命中注释里的同名文字。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("文档树已打开笔记强调色", () => {
+describe("accent color for the opened note in the document tree", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -43,7 +43,7 @@ describe("文档树已打开笔记强调色", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：分类是文档树，开关默认关闭，颜色默认跟随思源，宽度默认 3px 且限制在 1～10", () => {
+    it("declaration: the category is the document tree, the switch defaults to off, the color follows SiYuan and the width defaults to 3px within 1-10", () => {
         expect(definition.category).toBe("doc-tree");
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["enabled", "color", "width"]);
@@ -58,7 +58,7 @@ describe("文档树已打开笔记强调色", () => {
         });
     });
 
-    it("默认配置：桌面与移动两条选择器都命中，颜色跟随主题主色、宽度 3px", () => {
+    it("default config: both the desktop and mobile selectors match, the color follows the theme primary and the width is 3px", () => {
         const harness = mount();
         const css = harness.css();
 
@@ -71,7 +71,7 @@ describe("文档树已打开笔记强调色", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("合法色值原样进样式表：十六进制、颜色函数、具名颜色、CSS 变量都要支持", () => {
+    it("valid colors go into the stylesheet as is: hex, color functions, named colors and CSS variables are all supported", () => {
         [
             "#fff",
             "#ff0000",
@@ -92,13 +92,13 @@ describe("文档树已打开笔记强调色", () => {
         });
     });
 
-    it("色值两端空白先 trim，再按白名单判断", () => {
+    it("surrounding whitespace is trimmed before the whitelist check", () => {
         expect(mount({color: "  #08f  "}).css()).toContain("box-shadow: inset 3px 0 0 0 #08f;");
         // 只有空白等同于空串，走「跟随思源」那条路
         expect(mount({color: "   "}).css()).toContain(`box-shadow: inset 3px 0 0 0 ${FALLBACK};`);
     });
 
-    it("非法色值一律回落主题主色，绝不让用户输入改写其它规则", () => {
+    it("an invalid color always falls back to the theme primary and user input never rewrites other rules", () => {
         [
             "red; background: url(x)",
             "url(x)",
@@ -116,7 +116,7 @@ describe("文档树已打开笔记强调色", () => {
         });
     });
 
-    it("宽度取整后钳到 1～10，非数字回落默认 3", () => {
+    it("the width is rounded and clamped to 1-10, non-numbers fall back to 3", () => {
         [
             [0, 1],
             [-5, 1],
@@ -133,7 +133,7 @@ describe("文档树已打开笔记强调色", () => {
         });
     });
 
-    it("配置变更重新注入同一张样式表，不堆叠第二张", () => {
+    it("a config change reinjects the same stylesheet without stacking a second one", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -149,7 +149,7 @@ describe("文档树已打开笔记强调色", () => {
         expect(css).not.toContain(FALLBACK);
     });
 
-    it("mount 即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("mount applies once and subscribes later changes to onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {
@@ -168,7 +168,7 @@ describe("文档树已打开笔记强调色", () => {
         expect(listeners).toHaveLength(1);
     });
 
-    it("dispose 之后 <head> 里的 <style> 与配置订阅一起收干净", () => {
+    it("dispose removes the <style> from <head> along with the config subscription", () => {
         const harness = mount();
         const injected = harness.records.styles.length;
 

@@ -39,8 +39,8 @@ afterEach(() => {
     vi.resetModules();
 });
 
-describe("关于本插件", () => {
-    it("说明块带版本号与仓库地址两个占位值，仓库显示成 owner/repo 短写", () => {
+describe("about this plugin", () => {
+    it("the note carries version and repository placeholders, with the repository shown in owner/repo short form", () => {
         // 版本与地址不写死在文案里，避免多出一份迟早会过期的副本
         const note = noteField();
         expect(note.kind).toBe("note");
@@ -50,7 +50,7 @@ describe("关于本插件", () => {
         expect(note.labels).toEqual({repo: "wmy2981/some-settings-siyuan"});
     });
 
-    it("两颗按钮：先去点星（主题色 + GitHub 图标），再去捐赠（粉色 + 官方 SVG）", () => {
+    it("two buttons: star first (theme colour + GitHub icon), then donate (pink + official SVG)", () => {
         const actions = actionsOf();
         expect(actions.map((action) => action.key)).toEqual(["star", "donate"]);
         expect(actions[0]).toMatchObject({
@@ -70,7 +70,7 @@ describe("关于本插件", () => {
         expect(actions[1].icon).toBeUndefined();
     });
 
-    it("捐赠图标就是思源「关于」页那张 32×32 的图", () => {
+    it("the donate icon is the 32×32 image from SiYuan's about page", () => {
         expect(DONATE_ICON).toContain('<svg version="1.1"');
         expect(DONATE_ICON).toContain('width="32" height="32"');
         expect(DONATE_ICON).toContain('viewBox="0 0 32 32"');
@@ -79,22 +79,22 @@ describe("关于本插件", () => {
         expect(DONATE_ICON.trimEnd().endsWith("</svg>")).toBe(true);
     });
 
-    it("清单里写了资助链接，捐赠按钮才出现", () => {
+    it("the donate button only appears when the manifest has a funding link", () => {
         expect(manifest.funding?.custom?.[0]).toBe("https://afdian.com/a/wmy2981");
         expect(hasDonateUrl()).toBe(true);
     });
 
-    it("点星打开清单里的仓库地址", () => {
+    it("star opens the repository URL from the manifest", () => {
         openRepository();
         expect(window.open).toHaveBeenCalledWith(manifest.url, "_blank");
     });
 
-    it("捐赠打开清单里第一个自定义资助链接", () => {
+    it("donate opens the first custom funding link in the manifest", () => {
         openDonate();
         expect(window.open).toHaveBeenCalledWith("https://afdian.com/a/wmy2981", "_blank");
     });
 
-    it("按钮的 onClick 真的接上了这两个入口（不是只画了按钮）", () => {
+    it("the buttons' onClick really calls these two entry points (the buttons are not just drawn)", () => {
         // 面板自己画的按钮走不到内核那条 openLink 路，接错函数就等于点不动
         const actions = actionsOf();
         actions[0].onClick(actionContext());
@@ -104,7 +104,7 @@ describe("关于本插件", () => {
         expect(window.open).toHaveBeenNthCalledWith(2, "https://afdian.com/a/wmy2981", "_blank");
     });
 
-    it("其它插件在 open-link 上否决时，一个窗口都不开", () => {
+    it("no window opens when another plugin vetoes open-link", () => {
         // 本插件自己的「外链跳转前确认」正是这样拦下外链的：面板入口必须同样经过它
         const emit = vi.fn(() => false);
         setPlugins([{eventBus: {emit}}]);
@@ -120,7 +120,7 @@ describe("关于本插件", () => {
         expect(window.open).not.toHaveBeenCalled();
     });
 
-    it("多个插件按注册顺序依次问，只要有一个否决就不打开", () => {
+    it("plugins are asked in registration order and a single veto stops the open", () => {
         const first = vi.fn(() => true);
         const second = vi.fn(() => false);
         const third = vi.fn(() => true);
@@ -135,20 +135,20 @@ describe("关于本插件", () => {
         expect(window.open).not.toHaveBeenCalled();
     });
 
-    it("没有插件否决时照常交给宿主打开", () => {
+    it("without a veto the host opens the link as usual", () => {
         setPlugins([{eventBus: {emit: () => true}}, {}]);
         openDonate();
         expect(window.open).toHaveBeenCalledWith("https://afdian.com/a/wmy2981", "_blank");
     });
 
-    it("永不挂载：只有说明块，没有运行期行为", () => {
+    it("never mounts: only a note block, no runtime behaviour", () => {
         expect(definition.enabled).toBe(true);
         expect(definition.isEnabled!({})).toBe(false);
         expect(definition.mount).toBeUndefined();
         expect(definition.category).toBe("plugin");
     });
 
-    it("清单没有资助链接时：按钮不出现，openDonate 是空操作", async () => {
+    it("without a funding link in the manifest the button is absent and openDonate is a no-op", async () => {
         // 换掉清单再重新导入：`hasDonateUrl` 与按钮列表都是模块加载时按清单算出来的
         vi.doMock("../../plugin.json", () => ({
             default: {
@@ -170,7 +170,7 @@ describe("关于本插件", () => {
         expect(window.open).not.toHaveBeenCalled();
     });
 
-    it("短写去掉 www.、.git 与结尾斜杠", async () => {
+    it("the short form strips www., .git and the trailing slash", async () => {
         const shortOf = async (url: string): Promise<string> => {
             vi.doMock("../../plugin.json", () => ({
                 default: {version: "1.0.0", url, funding: {custom: ["https://example.com/donate"]}},
@@ -188,7 +188,7 @@ describe("关于本插件", () => {
         expect(await shortOf("https://github.com/foo/bar.git/")).toBe("foo/bar.git");
     });
 
-    it("换一份清单：占位值跟着换，捐赠按钮按清单里的资助链接出现", async () => {
+    it("with another manifest the placeholders follow it and the donate button follows its funding link", async () => {
         vi.doMock("../../plugin.json", () => ({
             default: {
                 version: "1.0.0",

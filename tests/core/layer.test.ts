@@ -26,13 +26,13 @@ const LAYER_CSS_ID = `${LAYER_CLASS}-local-css`;
 const cssElement = (): HTMLStyleElement | null => document.getElementById(LAYER_CSS_ID) as HTMLStyleElement | null;
 
 describe("preheatDialogLayer", () => {
-    it("给动画容器挂上预热类", () => {
+    it("adds the preheat class to the animation container", () => {
         const target = dialog();
         preheatDialogLayer(target);
         expect(target.element.querySelector(".b3-dialog__container")?.classList.contains(LAYER_CLASS)).toBe(true);
     });
 
-    it("注入只含 will-change 的样式，不动宿主的过渡", () => {
+    it("injects styles with only will-change and leaves the host transitions alone", () => {
         preheatDialogLayer(dialog());
         const css = cssElement()?.textContent ?? "";
         expect(css).toContain("will-change: transform");
@@ -40,7 +40,7 @@ describe("preheatDialogLayer", () => {
         expect(css).not.toContain("opacity");
     });
 
-    it("预热范围是动画容器、内容区与桌面端真正滚动的页签内容", () => {
+    it("the preheat scope is the animation container, the content area and the scrollable tab content on desktop", () => {
         preheatDialogLayer(dialog());
         const css = cssElement()?.textContent ?? "";
         expect(css).toContain(`.${LAYER_CLASS}.b3-dialog__container`);
@@ -50,7 +50,7 @@ describe("preheatDialogLayer", () => {
         expect(css).toContain(`.${PANEL_CLASS}__view:not(.fn__none)`);
     });
 
-    it("重复调用只有一份样式表，且幂等", () => {
+    it("repeated calls keep a single stylesheet and stay idempotent", () => {
         const target = dialog();
         preheatDialogLayer(target);
         preheatDialogLayer(target);
@@ -58,16 +58,16 @@ describe("preheatDialogLayer", () => {
         expect(target.element.querySelectorAll(`.${LAYER_CLASS}`)).toHaveLength(1);
     });
 
-    it("样式内容被改过时重写成当前这份，不会配上旧样式表", () => {
+    it("tampered style content is rewritten to the current one instead of keeping the old stylesheet", () => {
         preheatDialogLayer(dialog());
         const element = cssElement();
-        element!.textContent = "/* 旧版本的样式 */";
+        element!.textContent = "/* old stylesheet */";
         preheatDialogLayer(dialog());
         expect(cssElement()?.textContent).toContain("will-change: transform");
         expect(document.querySelectorAll(`#${LAYER_CSS_ID}`)).toHaveLength(1);
     });
 
-    it("对话框里没有动画容器时不抛错，样式照常注入", () => {
+    it("a dialog without an animation container does not throw and the styles are still injected", () => {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = '<div class="b3-dialog"></div>';
         const broken = {element: wrapper.firstElementChild as HTMLElement} as unknown as Parameters<

@@ -65,7 +65,7 @@ const readJson = (file) => {
     try {
         return JSON.parse(fs.readFileSync(file, "utf8"));
     } catch (error) {
-        fail(`${path.relative(root, file)} 不是合法 JSON：${error.message}`);
+        fail(`${path.relative(root, file)} is not valid JSON: ${error.message}`);
         return null;
     }
 };
@@ -132,7 +132,7 @@ const found = new Map();
 for (const dir of featureDirs) {
     const indexPath = path.join(FEATURES_DIR, dir, "index.ts");
     if (!fs.existsSync(indexPath)) {
-        fail(`src/features/${dir} 缺少 index.ts`);
+        fail(`src/features/${dir} is missing index.ts`);
         continue;
     }
     const source = fs.readFileSync(indexPath, "utf8");
@@ -140,17 +140,17 @@ for (const dir of featureDirs) {
     const idMatch = /defineFeature\s*\(\s*\{[\s\S]*?\bid\s*:\s*"([^"]+)"/.exec(source);
     const categoryMatch = /\bcategory\s*:\s*"([^"]+)"/.exec(source);
     if (!idMatch) {
-        fail(`src/features/${dir}/index.ts 里没有找到 defineFeature({ id: "..." })`);
+        fail(`src/features/${dir}/index.ts has no defineFeature({ id: "..." })`);
         continue;
     }
     const id = idMatch[1];
     const category = categoryMatch ? categoryMatch[1] : "";
 
     if (id !== dir) {
-        fail(`功能 id "${id}" 与文件夹名 "${dir}" 不一致（两者必须相同）`);
+        fail(`feature id "${id}" does not match the folder name "${dir}" (they must be identical)`);
     }
     if (!VALID_CATEGORIES.includes(category)) {
-        fail(`功能 "${id}" 的 category="${category}" 非法，合法值为 ${VALID_CATEGORIES.join("/")}`);
+        fail(`feature "${id}" has an invalid category="${category}"; valid values are ${VALID_CATEGORIES.join("/")}`);
     }
 
     // -------------------------------------------------- 1. enabled 声明
@@ -158,9 +158,9 @@ for (const dir of featureDirs) {
     // 缺失或写成别的值都会让功能要么偷偷消失、要么在面板里露出来却没有实现。
     const enabledMatch = /\benabled\s*:\s*([A-Za-z]+)\s*,/.exec(source);
     if (!enabledMatch) {
-        fail(`功能 "${id}" 没有声明 enabled: true / false`);
+        fail(`feature "${id}" does not declare enabled: true / false`);
     } else if (enabledMatch[1] !== "true" && enabledMatch[1] !== "false") {
-        fail(`功能 "${id}" 的 enabled=${enabledMatch[1]} 非法，只能是 true 或 false`);
+        fail(`feature "${id}" has enabled=${enabledMatch[1]}, which must be true or false`);
     }
 
     // -------------------------------------------------- 2. 版本区间
@@ -170,7 +170,11 @@ for (const dir of featureDirs) {
             return null;
         }
         if (!parseVersion(match[1])) {
-            fail(`功能 "${id}" 的 ${field}="${match[1]}" 不是合法的思源版本号（形如 3.8.10-alpha.2）`);
+            fail(
+                `feature "${id}" has ${field}="${
+                    match[1]
+                }", which is not a valid SiYuan version (such as 3.8.10-alpha.2)`,
+            );
             return null;
         }
         return parseVersion(match[1]);
@@ -178,7 +182,7 @@ for (const dir of featureDirs) {
     const min = versionOf("minAppVersion");
     const max = versionOf("maxAppVersion");
     if (min && max && compareVersion(min, max) > 0) {
-        fail(`功能 "${id}" 的 minAppVersion 高于 maxAppVersion，区间为空`);
+        fail(`feature "${id}" has minAppVersion above maxAppVersion, so the range is empty`);
     }
 
     // -------------------------------------------------- 3. settings 静态检查
@@ -188,7 +192,7 @@ for (const dir of featureDirs) {
 
     const duplicates = keys.filter((key, index) => keys.indexOf(key) !== index);
     [...new Set(duplicates)].forEach((key) => {
-        fail(`功能 "${id}" 的 settings 里 key "${key}" 重复`);
+        fail(`feature "${id}" declares the setting key "${key}" twice`);
     });
 
     const i18nKeys = new Set();
@@ -207,12 +211,12 @@ for (const dir of featureDirs) {
     const declarationTitle = /\bname\s*:\s*"(feature\.[^"]+)"/.exec(source)?.[1];
     const declarationDescription = /\bdescription\s*:\s*"(feature\.[^"]+)"/.exec(source.slice(0, settingsIndex))?.[1];
     if (!declarationTitle) {
-        fail(`功能 "${id}" 缺少 name（必须是 i18n key "${namespace}title"）`);
+        fail(`feature "${id}" is missing name (it must be the i18n key "${namespace}title")`);
     } else if (declarationTitle !== `${namespace}title`) {
-        fail(`功能 "${id}" 的名称 key 必须是 "${namespace}title"，现在是 "${declarationTitle}"`);
+        fail(`feature "${id}" name key must be "${namespace}title", but is "${declarationTitle}"`);
     }
     if (declarationDescription && declarationDescription !== `${namespace}description`) {
-        fail(`功能 "${id}" 的说明 key 必须是 "${namespace}description"，现在是 "${declarationDescription}"`);
+        fail(`feature "${id}" description key must be "${namespace}description", but is "${declarationDescription}"`);
     }
     if (declarationTitle) {
         i18nKeys.add(declarationTitle);
@@ -245,7 +249,7 @@ for (const dir of featureDirs) {
 
     // settings 里不允许出现按钮型控件：面板只放设置项，不放自定义按钮
     if (/\bkind\s*:\s*"action"/.test(settingsSource)) {
-        fail(`功能 "${id}" 使用了已移除的 action 型设置项；设置面板不注册自定义按钮`);
+        fail(`feature "${id}" uses the removed "action" setting kind; the settings panel registers no custom buttons`);
     }
 
     // 逐行校验文案 key 的落点：值型控件跟着自己的 key、开关行统一 common.enabled、
@@ -254,38 +258,46 @@ for (const dir of featureDirs) {
         const expectedTitle = `${namespace}${row.key}`;
         const expectedTip = `${namespace}${row.key}Tip`;
         if (RESERVED_TAILS.includes(row.key)) {
-            fail(`功能 "${id}" 的设置项 key "${row.key}" 占用了声明专用的末段名`);
+            fail(`feature "${id}" setting key "${row.key}" takes a tail reserved for the declaration`);
         }
         // 「适用端」这类跨功能共用的下拉整体走 common.scope，标题与选项都不进功能命名空间
         const sharedScope = row.title === "common.scope";
         if (row.kind === "switch") {
             if (row.title !== "common.enabled") {
-                fail(`功能 "${id}" 的开关行文案必须是 "common.enabled"，现在是 "${row.title}"`);
+                fail(`feature "${id}" switch row must be titled "common.enabled", but is "${row.title}"`);
             }
         } else if (VALUE_KINDS.includes(row.kind)) {
             if (!sharedScope && row.title !== expectedTitle) {
-                fail(`功能 "${id}" 的设置行 "${row.key}" 标题 key 必须是 "${expectedTitle}"，现在是 "${row.title}"`);
+                fail(
+                    `feature "${id}" setting "${row.key}" title key must be "${expectedTitle}", but is "${row.title}"`,
+                );
             }
             if (row.placeholder && row.placeholder !== `${namespace}${row.key}Placeholder`) {
-                fail(`功能 "${id}" 的设置行 "${row.key}" 占位符 key 必须是 "${namespace}${row.key}Placeholder"`);
+                fail(
+                    `feature "${id}" setting "${row.key}" placeholder key must be "${namespace}${row.key}Placeholder"`,
+                );
             }
         } else if (row.title && !row.title.startsWith(namespace)) {
-            fail(`功能 "${id}" 的设置行 "${row.key}" 标题 key 必须落在 "${namespace}" 下，现在是 "${row.title}"`);
+            fail(
+                `feature "${id}" setting "${row.key}" title key must live under "${namespace}", but is "${row.title}"`,
+            );
         }
         if (row.description && VALUE_KINDS.includes(row.kind) && row.description !== expectedTip) {
-            fail(`功能 "${id}" 的设置行 "${row.key}" 说明 key 必须是 "${expectedTip}"，现在是 "${row.description}"`);
+            fail(
+                `feature "${id}" setting "${row.key}" description key must be "${expectedTip}", but is "${row.description}"`,
+            );
         }
         if (row.text && !row.text.startsWith(namespace)) {
-            fail(`功能 "${id}" 的说明块文案 key 必须落在 "${namespace}" 下，现在是 "${row.text}"`);
+            fail(`feature "${id}" note text key must live under "${namespace}", but is "${row.text}"`);
         }
         if (row.label && !row.label.startsWith(namespace)) {
-            fail(`功能 "${id}" 的按钮文案 key 必须落在 "${namespace}" 下，现在是 "${row.label}"`);
+            fail(`feature "${id}" button label key must live under "${namespace}", but is "${row.label}"`);
         }
         for (const option of row.options) {
             const expected = sharedScope ? `common.scope.${option.value}` : `${namespace}${row.key}.${option.value}`;
             if (option.label !== expected) {
                 fail(
-                    `功能 "${id}" 的选项 "${row.key}=${option.value}" 标签 key 必须是 "${expected}"，现在是 "${option.label}"`,
+                    `feature "${id}" option "${row.key}=${option.value}" label key must be "${expected}", but is "${option.label}"`,
                 );
             }
         }
@@ -295,14 +307,14 @@ for (const dir of featureDirs) {
     // 默认关闭有两种合法写法——一个 default: false 的 enabled 开关，
     // 或者自己声明 isEnabled 谓词（拿 select 的「禁用」选项当开关时走这条）。
     if (/settings\s*:\s*\[\s*\]/.test(source)) {
-        fail(`功能 "${id}" 没有任何设置行：每个功能都必须有开关 / 下拉 / 输入框`);
+        fail(`feature "${id}" has no settings rows; every feature needs at least one switch, select or text field`);
     }
     const hasEnabledSwitch = /kind:\s*"switch",\s*\n\s*key:\s*"enabled",[\s\S]{0,240}?default:\s*false,/.test(
         settingsSource,
     );
     if (!hasEnabledSwitch && !/\bisEnabled\s*:/.test(source)) {
         fail(
-            `功能 "${id}" 没有默认关闭的开关：要么加 key 为 "enabled" 且 default: false 的 switch，要么声明 isEnabled`,
+            `feature "${id}" has no switch that defaults to off: add a switch with key "enabled" and default: false, or declare isEnabled`,
         );
     }
 
@@ -311,7 +323,7 @@ for (const dir of featureDirs) {
     selectBlocks.forEach((block) => {
         const values = [...block.matchAll(/\bvalue\s*:\s*"([^"]+)"/g)].map((match) => match[1]);
         if (values.length === 0) {
-            fail(`功能 "${id}" 的某个 select 没有任何 options`);
+            fail(`a select in feature "${id}" has no options`);
         }
     });
 
@@ -320,18 +332,20 @@ for (const dir of featureDirs) {
         const root = key.split(".")[0];
         if (root === "feature") {
             if (!key.startsWith(namespace)) {
-                fail(`功能 "${id}" 用了别的命名空间："${key}"（自己的是 "${namespace}"）`);
+                fail(`feature "${id}" uses another namespace: "${key}" (its own is "${namespace}")`);
                 continue;
             }
             if (!KEY_PATTERN.test(key)) {
-                fail(`功能 "${id}" 的键 "${key}" 不符合 feature.<camelId>.<键名> 形式`);
+                fail(`feature "${id}" key "${key}" does not match feature.<camelId>.<name>`);
             }
             const tail = key.slice(namespace.length);
             if (RESERVED_TAILS.includes(tail) && key !== declarationTitle && key !== declarationDescription) {
-                fail(`功能 "${id}" 的键 "${key}" 占用了声明专用的末段 "${tail}"`);
+                fail(`feature "${id}" key "${key}" takes the tail "${tail}" reserved for the declaration`);
             }
         } else if (!GLOBAL_NAMESPACES.includes(root)) {
-            fail(`功能 "${id}" 的键 "${key}" 前缀非法：只允许 feature. 或 ${GLOBAL_NAMESPACES.join(" / ")}`);
+            fail(
+                `feature "${id}" key "${key}" has an invalid prefix: only feature. or ${GLOBAL_NAMESPACES.join(" / ")}`,
+            );
         }
     }
 
@@ -342,14 +356,14 @@ for (const dir of featureDirs) {
 // 顺带取出注册表数组的顺序：i18n 文件里每个功能必须按这个顺序各占一组。
 const registryOrder = [];
 if (!fs.existsSync(REGISTRY_FILE)) {
-    fail("找不到 src/core/registry.ts");
+    fail("src/core/registry.ts not found");
 } else {
     const registry = fs.readFileSync(REGISTRY_FILE, "utf8");
     for (const [, info] of found) {
         // registry.ts 通过 `import xx from "../features/<dir>"` 引入，且 FEATURES 数组里包含该变量
         const imported = registry.includes(`features/${info.dir}"`) || registry.includes(`features/${info.dir}'`);
         if (!imported) {
-            fail(`src/core/registry.ts 没有导入 src/features/${info.dir}`);
+            fail(`src/core/registry.ts does not import src/features/${info.dir}`);
         }
     }
     const imports = new Map(
@@ -366,7 +380,7 @@ if (!fs.existsSync(REGISTRY_FILE)) {
         }
     }
     if (registryOrder.length !== found.size) {
-        fail(`FEATURES 数组里的功能数量 ${registryOrder.length} 与 src/features 下的 ${found.size} 个不一致`);
+        fail(`FEATURES lists ${registryOrder.length} features but src/features has ${found.size}`);
     }
 }
 
@@ -375,7 +389,7 @@ const locales = fs.existsSync(I18N_DIR) ?
     fs.readdirSync(I18N_DIR).filter((name) => name.endsWith(".json")).sort() :
     [];
 if (locales.length === 0) {
-    fail("src/i18n 下没有任何语言文件");
+    fail("src/i18n has no locale files");
 }
 const localeData = new Map();
 for (const locale of locales) {
@@ -390,7 +404,7 @@ for (const [id, info] of found) {
     for (const key of info.i18nKeys) {
         for (const [locale, data] of localeData) {
             if (!(key in data)) {
-                fail(`功能 "${id}" 用到的 i18n key "${key}" 在 src/i18n/${locale} 中缺失`);
+                fail(`feature "${id}" uses the i18n key "${key}", which is missing from src/i18n/${locale}`);
             }
         }
     }
@@ -405,13 +419,13 @@ for (const locale of otherLocales) {
     const missing = referenceKeys.filter((key) => !keys.includes(key));
     const extra = keys.filter((key) => !(key in reference));
     if (missing.length > 0) {
-        fail(`${locale} 缺少 ${missing.length} 个键：${missing.join(", ")}`);
+        fail(`${locale} is missing ${missing.length} key(s): ${missing.join(", ")}`);
     }
     if (extra.length > 0) {
-        fail(`${locale} 多出 ${extra.length} 个键：${extra.join(", ")}`);
+        fail(`${locale} has ${extra.length} extra key(s): ${extra.join(", ")}`);
     }
     if (missing.length === 0 && extra.length === 0 && keys.join("\n") !== referenceKeys.join("\n")) {
-        fail(`${locale} 的键顺序与 ${referenceLocale} 不一致`);
+        fail(`${locale} orders its keys differently from ${referenceLocale}`);
     }
 }
 
@@ -422,23 +436,23 @@ for (const key of referenceKeys) {
     const root = key.split(".")[0];
     if (root === "category") {
         if (!categoryKeys.has(key)) {
-            fail(`分类键 "${key}" 不在 ${[...categoryKeys].join(" / ")} 之内`);
+            fail(`category key "${key}" is not one of ${[...categoryKeys].join(" / ")}`);
         }
         continue;
     }
     if (root === "feature") {
         if (!KEY_PATTERN.test(key)) {
-            fail(`键 "${key}" 不符合 feature.<camelId>.<键名>[.<选项值>] 形式`);
+            fail(`key "${key}" does not match feature.<camelId>.<name>[.<option value>]`);
         }
         if (!featureNamespaces.some((prefix) => key.startsWith(prefix))) {
-            fail(`键 "${key}" 不属于任何一个已登记的功能`);
+            fail(`key "${key}" belongs to no registered feature`);
         }
         continue;
     }
     if (!GLOBAL_NAMESPACES.includes(root)) {
-        fail(`键 "${key}" 前缀非法：只允许 feature / ${GLOBAL_NAMESPACES.join(" / ")}`);
+        fail(`key "${key}" has an invalid prefix: only feature / ${GLOBAL_NAMESPACES.join(" / ")}`);
     } else if (!KEY_PATTERN.test(key)) {
-        fail(`键 "${key}" 的段名不合法（只允许驼峰段）`);
+        fail(`key "${key}" has an invalid segment name (camelCase only)`);
     }
 }
 
@@ -447,12 +461,16 @@ const groupOf = (key) => key.startsWith("feature.") ? key.split(".").slice(0, 2)
 const collapsed = referenceKeys.map(groupOf).filter((group, index, all) => index === 0 || group !== all[index - 1]);
 const globalSequence = collapsed.filter((group) => GLOBAL_NAMESPACES.includes(group));
 if (globalSequence.join() !== GLOBAL_NAMESPACES.join()) {
-    fail(`全局键顺序必须是 ${GLOBAL_NAMESPACES.join(" → ")}，现在是 ${globalSequence.join(" → ") || "（缺失）"}`);
+    fail(
+        `global keys must be ordered ${GLOBAL_NAMESPACES.join(" → ")}, but are ${
+            globalSequence.join(" → ") || "(missing)"
+        }`,
+    );
 }
 const featureSequence = collapsed.filter((group) => group.startsWith("feature."));
 const expectedFeatureSequence = registryOrder.map((dir) => `feature.${camelId(dir)}`);
 if (featureSequence.join() !== expectedFeatureSequence.join()) {
-    fail(`功能键必须按注册表顺序各成一组：期望 ${expectedFeatureSequence.join(", ")}`);
+    fail(`each feature must own one key group in registry order: expected ${expectedFeatureSequence.join(", ")}`);
 }
 
 // 5.5 组内顺序：title 先、description 次之，其余按 settings 数组顺序
@@ -478,7 +496,7 @@ for (const [id, info] of found) {
     }
     const positions = present.map((key) => keys.indexOf(key));
     if (positions[0] !== 0 || positions.join() !== [...positions].sort((left, right) => left - right).join()) {
-        fail(`功能 "${id}" 的键组内顺序不对：应先 ${present.join(" → ")}`);
+        fail(`feature "${id}" keys are out of order inside their group: expected ${present.join(" → ")} first`);
     }
 }
 
@@ -507,24 +525,24 @@ for (const key of referenceKeys) {
     if (sourceText.includes(literal) || sourceText.includes(prefix + "${")) {
         continue;
     }
-    fail(`i18n key "${key}" 在 src/ 里没有任何引用（翻译会烂在文件里）`);
+    fail(`i18n key "${key}" is referenced nowhere in src/ (the translation would sit unused)`);
 }
 
 // ------------------------------------------------- 6. 分类文案
 for (const key of categoryKeys) {
     for (const [locale, data] of localeData) {
         if (!(key in data)) {
-            fail(`分类键 "${key}" 在 src/i18n/${locale} 中缺失`);
+            fail(`category key "${key}" is missing from src/i18n/${locale}`);
         }
     }
 }
 
 // ---------------------------------------------------------------- 输出
-const summary = `功能 ${found.size} 个，语言文件 ${locales.length} 个`;
+const summary = `${found.size} features, ${locales.length} locale files`;
 if (problems.length === 0) {
-    console.log(`✓ 功能声明校验通过（${summary}）`);
+    console.log(`✓ Feature declarations are consistent (${summary})`);
     process.exit(0);
 }
-console.error(`✗ 功能声明校验失败，共 ${problems.length} 个问题（${summary}）：`);
+console.error(`✗ Feature declaration check failed with ${problems.length} problem(s) (${summary}):`);
 problems.forEach((problem, index) => console.error(`  ${index + 1}. ${problem}`));
 process.exit(1);

@@ -42,25 +42,25 @@ const definitionWith = (range: {minAppVersion?: string; maxAppVersion?: string;}
 });
 
 describe("parseVersion", () => {
-    it("解析正式版", () => {
+    it("Parses a release version", () => {
         expect(parseVersion("3.8.7")).toEqual({major: 3, minor: 8, patch: 7, prerelease: []});
     });
 
-    it("接受前缀 v 与构建号", () => {
+    it("Accepts a leading v and a build number", () => {
         expect(parseVersion("v3.8.7")).toEqual({major: 3, minor: 8, patch: 7, prerelease: []});
         expect(parseVersion("3.8.7+build.5")).toEqual({major: 3, minor: 8, patch: 7, prerelease: []});
     });
 
-    it("解析预发布号", () => {
+    it("Parses a prerelease suffix", () => {
         expect(parseVersion("3.8.7-alpha.2")?.prerelease).toEqual(["alpha", "2"]);
         expect(parseVersion("3.8.7-rc.1+build")?.prerelease).toEqual(["rc", "1"]);
     });
 
-    it("忽略首尾空白", () => {
+    it("Ignores leading and trailing whitespace", () => {
         expect(parseVersion("  3.8.7  ")).toEqual({major: 3, minor: 8, patch: 7, prerelease: []});
     });
 
-    it("认不出时返回 undefined", () => {
+    it("Returns undefined when unrecognisable", () => {
         expect(parseVersion("")).toBeUndefined();
         expect(parseVersion("3.8")).toBeUndefined();
         expect(parseVersion("siyuan")).toBeUndefined();
@@ -78,49 +78,49 @@ describe("compareVersion", () => {
         return Math.sign(compareVersion(a, b));
     };
 
-    it("按 major / minor / patch 依次比较", () => {
+    it("Compares major, then minor, then patch", () => {
         expect(cmp("3.8.7", "3.8.7")).toBe(0);
         expect(cmp("4.0.0", "3.9.9")).toBe(1);
         expect(cmp("3.9.0", "3.8.9")).toBe(1);
         expect(cmp("3.8.6", "3.8.7")).toBe(-1);
     });
 
-    it("预发布版小于同号正式版", () => {
+    it("A prerelease sorts below the release with the same numbers", () => {
         expect(cmp("3.8.7-alpha.2", "3.8.7")).toBe(-1);
         expect(cmp("3.8.7", "3.8.7-alpha.2")).toBe(1);
         expect(cmp("3.8.7-alpha.2", "3.8.7-alpha.2")).toBe(0);
     });
 
-    it("按 alpha < beta < rc 的顺序比较预发布", () => {
+    it("Orders prereleases alpha < beta < rc", () => {
         expect(cmp("3.8.7-alpha.9", "3.8.7-beta.1")).toBe(-1);
         expect(cmp("3.8.7-beta.9", "3.8.7-rc.1")).toBe(-1);
         expect(cmp("3.8.7-rc.1", "3.8.7-rc.2")).toBe(-1);
         expect(cmp("3.8.7-rc.1", "3.8.7-alpha.1")).toBe(1);
     });
 
-    it("同一段预发布里的数字按数值比，不是按字符串比", () => {
+    it("Compares numbers inside a prerelease numerically, not as strings", () => {
         expect(cmp("3.8.7-alpha.2", "3.8.7-alpha.10")).toBe(-1);
         expect(cmp("3.8.7-alpha.10", "3.8.7-alpha.2")).toBe(1);
     });
 
-    it("数字段小于非数字段", () => {
+    it("A numeric segment sorts below a non-numeric one", () => {
         expect(cmp("3.8.7-1", "3.8.7-alpha")).toBe(-1);
         expect(cmp("3.8.7-alpha", "3.8.7-1")).toBe(1);
     });
 
-    it("前缀相同的预发布里，段数少的更小", () => {
+    it("Among prereleases with the same prefix, fewer segments sort lower", () => {
         expect(cmp("3.8.7-alpha", "3.8.7-alpha.1")).toBe(-1);
         expect(cmp("3.8.7-alpha.1", "3.8.7-alpha")).toBe(1);
     });
 });
 
 describe("hostVersion", () => {
-    it("读 window.siyuan.config.system.kernelVersion", () => {
+    it("Reads window.siyuan.config.system.kernelVersion", () => {
         window.siyuan.config.system.kernelVersion = "3.9.3";
         expect(hostVersion()).toEqual({major: 3, minor: 9, patch: 3, prerelease: []});
     });
 
-    it("读不到或认不出时返回 undefined", () => {
+    it("Returns undefined when the value is missing or unrecognisable", () => {
         window.siyuan.config.system.kernelVersion = "";
         expect(hostVersion()).toBeUndefined();
         window.siyuan.config.system.kernelVersion = "unknown";
@@ -133,12 +133,12 @@ describe("hostVersion", () => {
 });
 
 describe("supportsCurrentHost", () => {
-    it("没写区间时永远适用，且不读宿主版本", () => {
+    it("Always applies when no range is declared and never reads the host version", () => {
         window.siyuan.config.system = undefined as never;
         expect(supportsCurrentHost(definitionWith({}))).toBe(true);
     });
 
-    it("两端都是闭区间", () => {
+    it("Both bounds are inclusive", () => {
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(supportsCurrentHost(definitionWith({minAppVersion: "3.8.7"}))).toBe(true);
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "3.8.7"}))).toBe(true);
@@ -146,12 +146,12 @@ describe("supportsCurrentHost", () => {
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "3.8.6"}))).toBe(false);
     });
 
-    it("区间内部返回 true", () => {
+    it("Returns true inside the range", () => {
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(supportsCurrentHost(definitionWith({minAppVersion: "3.8.0", maxAppVersion: "3.9.0"}))).toBe(true);
     });
 
-    it("预发布宿主与正式版边界的比较", () => {
+    it("Compares a prerelease host against release bounds", () => {
         window.siyuan.config.system.kernelVersion = "3.8.10-alpha.1";
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "3.8.10-alpha.1"}))).toBe(true);
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "3.8.9"}))).toBe(false);
@@ -159,13 +159,13 @@ describe("supportsCurrentHost", () => {
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "3.8.10-alpha.1"}))).toBe(false);
     });
 
-    it("只给一侧时另一侧不限", () => {
+    it("A single bound leaves the other side open", () => {
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(supportsCurrentHost(definitionWith({minAppVersion: "3.0.0"}))).toBe(true);
         expect(supportsCurrentHost(definitionWith({maxAppVersion: "9.0.0"}))).toBe(true);
     });
 
-    it("宿主版本读不到时按「不限」处理，并只告警一次", async () => {
+    it("Treats an unreadable host version as unbounded and warns only once", async () => {
         const fresh = await freshVersion();
         window.siyuan.config.system = undefined as never;
         expect(fresh.supportsCurrentHost(definitionWith({minAppVersion: "9.9.9"}))).toBe(true);
@@ -174,7 +174,7 @@ describe("supportsCurrentHost", () => {
         expect(vi.mocked(console.warn).mock.calls[0][0]).toContain('cannot tell whether "demo" fits this host');
     });
 
-    it("边界写法认不出时忽略该侧，并只告警一次", async () => {
+    it("Ignores an unreadable lower bound and warns only once", async () => {
         const fresh = await freshVersion();
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(fresh.supportsCurrentHost(definitionWith({minAppVersion: "newest"}))).toBe(true);
@@ -183,7 +183,7 @@ describe("supportsCurrentHost", () => {
         expect(vi.mocked(console.warn).mock.calls[0][0]).toContain("unreadable minAppVersion");
     });
 
-    it("上限写法认不出时同样忽略，并只告警一次", async () => {
+    it("Ignores an unreadable upper bound and warns only once", async () => {
         const fresh = await freshVersion();
         window.siyuan.config.system.kernelVersion = "3.8.7";
         expect(fresh.supportsCurrentHost(definitionWith({maxAppVersion: "3.8.x"}))).toBe(true);
@@ -193,7 +193,7 @@ describe("supportsCurrentHost", () => {
     });
 });
 
-describe("告警去重表按功能隔离", () => {
+describe("The warn-once table is isolated per feature", () => {
     beforeEach(() => {
         vi.resetModules();
     });
@@ -202,7 +202,7 @@ describe("告警去重表按功能隔离", () => {
         vi.resetModules();
     });
 
-    it("两个功能各告警一次，互不影响", async () => {
+    it("Two features warn once each without interfering", async () => {
         const fresh = await freshVersion();
         window.siyuan.config.system = undefined as never;
         fresh.supportsCurrentHost({...definitionWith({minAppVersion: "9.9.9"}), id: "alpha"});

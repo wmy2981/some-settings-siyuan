@@ -35,9 +35,9 @@ const TARGET = "ref-crumbs-siyuan";
 const BAZAAR_URI = `siyuan://bazaar/plugins/${TARGET}/readme`;
 
 const TEXT: Record<string, string> = {
-    "feature.refCrumbsGuide.openAction": "打开设置",
-    "feature.refCrumbsGuide.installAction": "去集市页面",
-    "feature.refCrumbsGuide.bazaarUnavailable": "本设备已关闭集市，打不开它的集市页面",
+    "feature.refCrumbsGuide.openAction": "Open settings",
+    "feature.refCrumbsGuide.installAction": "Go to the Bazaar page",
+    "feature.refCrumbsGuide.bazaarUnavailable": "The Bazaar is disabled on this device, its page cannot be opened",
 };
 
 const translate = (key: string): string => TEXT[key] ?? key;
@@ -72,35 +72,35 @@ afterEach(() => {
     openByMobile.mockReset();
 });
 
-describe("「引用面包屑」插件引导", () => {
-    it("目标插件已启用时，按钮文字是「打开设置」", () => {
+describe("ref-crumbs plugin guide", () => {
+    it("the button reads open-settings when the target plugin is enabled", () => {
         setPlugins([{name: TARGET, openSetting: vi.fn()}]);
 
         // 文案是「这一行现在能做什么」，装了却还写「去集市安装」会把人引到错的地方
-        expect(refCrumbsActionLabel(context())).toBe("打开设置");
+        expect(refCrumbsActionLabel(context())).toBe("Open settings");
     });
 
-    it("目标插件没装时，按钮文字是「去集市页面」", () => {
+    it("the button reads go-to-bazaar when the target plugin is missing", () => {
         setPlugins([]);
 
-        expect(refCrumbsActionLabel(context())).toBe("去集市页面");
+        expect(refCrumbsActionLabel(context())).toBe("Go to the Bazaar page");
     });
 
-    it("只认目标包名：别的插件在场不算「装了」", () => {
+    it("only the target package name counts: other plugins present do not mean installed", () => {
         setPlugins([{name: "other-plugin", openSetting: vi.fn()}, {name: `${TARGET}-beta`}]);
 
         // 名字只是前缀相同也要当没装，否则会去调一个不存在的 openSetting
-        expect(refCrumbsActionLabel(context())).toBe("去集市页面");
+        expect(refCrumbsActionLabel(context())).toBe("Go to the Bazaar page");
     });
 
-    it("i18n 缺这个 key 时回落成 key 本身，不抛也不显示空白", () => {
+    it("a missing i18n key falls back to the key itself, neither throwing nor rendering blank", () => {
         setPlugins([]);
         const bare = createActionContext({featureId: "ref-crumbs-guide"}).context;
 
         expect(refCrumbsActionLabel(bare)).toBe("feature.refCrumbsGuide.installAction");
     });
 
-    it("已启用：直接调目标插件自己的 openSetting，不碰集市", () => {
+    it("enabled: calls the target plugin's own openSetting and never touches the Bazaar", () => {
         const openSetting = vi.fn();
         setPlugins([{name: TARGET, openSetting}]);
 
@@ -112,7 +112,7 @@ describe("「引用面包屑」插件引导", () => {
         expect(mockState.messages).toHaveLength(0);
     });
 
-    it("没装 + 桌面端：交给思源的 siyuan:// 协议，地址精确到包的 readme", () => {
+    it("not installed on desktop: hands over to the siyuan:// protocol, with the address pointing at the package readme", () => {
         setPlugins([]);
 
         openRefCrumbs(context());
@@ -123,7 +123,7 @@ describe("「引用面包屑」插件引导", () => {
         expect(mockState.messages).toHaveLength(0);
     });
 
-    it("没装 + 移动端且集市可用：同样走协议", () => {
+    it("not installed on mobile with the Bazaar available: uses the protocol too", () => {
         mockState.frontend = "mobile";
         setDisabledFeatures([]);
         setPlugins([]);
@@ -134,7 +134,7 @@ describe("「引用面包屑」插件引导", () => {
         expect(mockState.messages).toHaveLength(0);
     });
 
-    it("移动端关掉了集市：提前拦一句提示，不去发一个必然被拒的协议", () => {
+    it("Bazaar disabled on mobile: warns up front instead of firing a protocol call that must fail", () => {
         mockState.frontend = "mobile";
         setDisabledFeatures(["bazaar", "assets"]);
         setPlugins([]);
@@ -144,11 +144,11 @@ describe("「引用面包屑」插件引导", () => {
         // 不发提示的话用户点了什么都没发生，看起来就是按钮坏了
         expect(openByMobile).not.toHaveBeenCalled();
         expect(mockState.messages).toEqual([
-            {text: "本设备已关闭集市，打不开它的集市页面", timeout: 4000, type: undefined},
+            {text: "The Bazaar is disabled on this device, its page cannot be opened", timeout: 4000, type: undefined},
         ]);
     });
 
-    it("桌面端不看 disabledFeatures：那里的集市由内核自己处理", () => {
+    it("desktop ignores disabledFeatures: the Bazaar there is the kernel's own business", () => {
         mockState.frontend = "desktop";
         setDisabledFeatures(["bazaar"]);
         setPlugins([]);
@@ -159,21 +159,21 @@ describe("「引用面包屑」插件引导", () => {
         expect(openByMobile).toHaveBeenCalledWith(BAZAAR_URI);
     });
 
-    it("判定不缓存：先没装、后装上，同一份上下文立刻换行为", () => {
+    it("no caching: installed later, the same context changes behaviour at once", () => {
         setPlugins([]);
-        expect(refCrumbsActionLabel(context())).toBe("去集市页面");
+        expect(refCrumbsActionLabel(context())).toBe("Go to the Bazaar page");
 
         const openSetting = vi.fn();
         setPlugins([{name: TARGET, openSetting}]);
 
         // 各插件是逐条串行加载的，缓存 onload 那一刻的结论会让这一行永远停在旧文案
-        expect(refCrumbsActionLabel(context())).toBe("打开设置");
+        expect(refCrumbsActionLabel(context())).toBe("Open settings");
         openRefCrumbs(context());
         expect(openSetting).toHaveBeenCalledTimes(1);
         expect(openByMobile).not.toHaveBeenCalled();
     });
 
-    it("声明：永不挂载、没有配置项，只由说明块 + 一颗动作按钮组成", () => {
+    it("declaration: never mounts, has no config, and is a note plus one action button", () => {
         expect(definition.id).toBe("ref-crumbs-guide");
         expect(definition.category).toBe("editor");
         expect(definition.enabled).toBe(true);

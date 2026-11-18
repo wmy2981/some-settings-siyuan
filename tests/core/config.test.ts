@@ -115,13 +115,13 @@ const definitionOf = (id: string, extra: Partial<FeatureDefinition> = {}): Featu
 });
 
 describe("storageNameOf", () => {
-    it("一个功能一个文件名", () => {
+    it("one file per feature", () => {
         expect(storageNameOf("modal-blur")).toBe("feature-modal-blur");
     });
 });
 
 describe("attachProblems", () => {
-    it("把问题清单拼成消息并挂在 error 上", () => {
+    it("joins the problem list into a message and attaches it to the error", () => {
         const error = attachProblems(["a: bad", "b: worse"]);
         expect(error).toBeInstanceOf(Error);
         expect(error.message).toBe("a: bad; b: worse");
@@ -130,28 +130,28 @@ describe("attachProblems", () => {
 });
 
 describe("describeMismatch", () => {
-    it("一致时返回空串", () => {
+    it("returns an empty string when they match", () => {
         expect(describeMismatch({enabled: true, label: "x"}, {enabled: true, label: "x"})).toBe("");
     });
 
-    it("只比较写入时用到的键，宿主额外字段不算差异", () => {
+    it("compares only the keys that were written; extra host fields are not a difference", () => {
         expect(describeMismatch({enabled: true}, {enabled: true, extra: 1})).toBe("");
     });
 
-    it("值不同时给出两边的实际内容", () => {
+    it("reports the actual content on both sides when the values differ", () => {
         expect(describeMismatch({enabled: true}, {enabled: false})).toBe(
             "enabled: wrote true / read back false",
         );
     });
 
-    it("嵌套值按 JSON 比较，不是按引用比较", () => {
+    it("compares nested values by JSON, not by reference", () => {
         expect(describeMismatch({list: [1, {a: 2}]}, {list: [1, {a: 2}]})).toBe("");
         expect(describeMismatch({list: [1, {a: 2}]}, {list: [1, {a: 3}]})).toBe(
             'list: wrote [1,{"a":2}] / read back [1,{"a":3}]',
         );
     });
 
-    it("读回的不是对象时报同一个问题", () => {
+    it("reports the same problem when the read-back value is not an object", () => {
         expect(describeMismatch({}, null)).toBe("read back is not an object (null)");
         expect(describeMismatch({}, [])).toBe("read back is not an object ([])");
         expect(describeMismatch({}, "text")).toBe('read back is not an object ("text")');
@@ -159,7 +159,7 @@ describe("describeMismatch", () => {
 });
 
 describe("normalizeConfig", () => {
-    it("输入不是对象时全部回落默认值", () => {
+    it("falls back to the defaults entirely when the input is not an object", () => {
         expect(normalizeConfig(settings, null)).toEqual({
             enabled: false,
             label: "hi",
@@ -170,19 +170,19 @@ describe("normalizeConfig", () => {
         expect(normalizeConfig(settings, []).enabled).toBe(false);
     });
 
-    it("缺字段时用默认值，多出来的字段被丢掉", () => {
+    it("missing fields use the default and extra fields are dropped", () => {
         const config = normalizeConfig(settings, {enabled: true, unknown: "x"});
         expect(config).toEqual({enabled: true, label: "hi", size: 12, mode: "auto"});
         expect(config).not.toHaveProperty("unknown");
     });
 
-    it("说明块与动作行不参与配置", () => {
+    it("note blocks and action rows are not part of the config", () => {
         const config = normalizeConfig(settings, {about: "x", run: true});
         expect(config).not.toHaveProperty("about");
         expect(config).not.toHaveProperty("run");
     });
 
-    it("类型不符的字段回落默认值并给出警告", () => {
+    it("fields of the wrong type fall back to the default with a warning", () => {
         const warnings: string[] = [];
         const config = normalizeConfig(
             settings,
@@ -197,23 +197,23 @@ describe("normalizeConfig", () => {
         expect(warnings[3]).toBe('"mode" should be one of auto/manual, got "nope", falling back to the default');
     });
 
-    it("数字按 min / max 夹取", () => {
+    it("numbers are clamped to min / max", () => {
         expect(normalizeConfig(settings, {size: 4}).size).toBe(8);
         expect(normalizeConfig(settings, {size: 99}).size).toBe(24);
         expect(normalizeConfig(settings, {size: 10}).size).toBe(10);
     });
 
-    it("非有限数字（NaN / Infinity）回落默认值", () => {
+    it("non-finite numbers (NaN / Infinity) fall back to the default", () => {
         expect(normalizeConfig(settings, {size: Number.NaN}).size).toBe(12);
         expect(normalizeConfig(settings, {size: Number.POSITIVE_INFINITY}).size).toBe(12);
     });
 
-    it("下拉按白名单校验", () => {
+    it("select values are validated against the whitelist", () => {
         expect(normalizeConfig(settings, {mode: "manual"}).mode).toBe("manual");
         expect(normalizeConfig(settings, {mode: "other"}).mode).toBe("auto");
     });
 
-    it("只有 optionsProvider 的下拉不做白名单校验", () => {
+    it("selects with only an optionsProvider skip the whitelist check", () => {
         const fields: SettingField[] = [{
             kind: "select",
             key: "notebook",
@@ -221,20 +221,20 @@ describe("normalizeConfig", () => {
             default: "",
             optionsProvider: () => [{value: "a", label: "A"}],
         }];
-        expect(normalizeConfig(fields, {notebook: "外部值"}).notebook).toBe("外部值");
+        expect(normalizeConfig(fields, {notebook: "external value"}).notebook).toBe("external value");
         expect(normalizeConfig(fields, {notebook: 1}).notebook).toBe("");
     });
 
-    it("开关接受 false，不会被当成缺值", () => {
+    it("a switch accepts false and does not treat it as missing", () => {
         expect(normalizeConfig(settings, {enabled: false}).enabled).toBe(false);
     });
 
-    it("未知的控件类型既不写入也不报错", () => {
+    it("unknown control kinds are neither written nor reported", () => {
         const fields = [{kind: "mystery", key: "x", title: "x"} as unknown as SettingField];
         expect(normalizeConfig(fields, {x: 1})).toEqual({});
     });
 
-    it("只有 optionsProvider 的下拉收到非法值时，警告里没有白名单可列", () => {
+    it("when a select with only an optionsProvider gets an invalid value, the warning has no whitelist to list", () => {
         const warnings: string[] = [];
         const fields: SettingField[] = [{
             kind: "select",
@@ -247,11 +247,11 @@ describe("normalizeConfig", () => {
         expect(warnings[0]).toBe(String.raw`"notebook" should be one of , got 3, falling back to the default`);
     });
 
-    it("空字符串是合法文本", () => {
+    it("an empty string is valid text", () => {
         expect(normalizeConfig(settings, {label: ""}).label).toBe("");
     });
 
-    it("多行文本与单行文本同一套校验：存字符串，类型不符回落默认值", () => {
+    it("multiline and single-line text share one validation: store the string, fall back on a type mismatch", () => {
         const fields: SettingField[] = [{kind: "textarea", key: "authors", title: "s.authors", default: ""}];
         expect(normalizeConfig(fields, {authors: "a\nb"}).authors).toBe("a\nb");
         expect(normalizeConfig(fields, {authors: ""}).authors).toBe("");
@@ -262,29 +262,29 @@ describe("normalizeConfig", () => {
 });
 
 describe("sameConfig", () => {
-    it("键与值都相同时为真，顺序无关", () => {
+    it("true when keys and values match, regardless of order", () => {
         expect(sameConfig({enabled: true, size: 12}, {size: 12, enabled: true})).toBe(true);
     });
 
-    it("少一个键或多一个键都算不同", () => {
+    it("one missing or extra key already counts as different", () => {
         expect(sameConfig({enabled: true}, {enabled: true, size: 12})).toBe(false);
         expect(sameConfig({enabled: true, size: 12}, {enabled: true})).toBe(false);
     });
 
-    it("嵌套值按 JSON 比较", () => {
+    it("nested values are compared by JSON", () => {
         expect(sameConfig({list: [1, {a: 2}]}, {list: [1, {a: 2}]})).toBe(true);
         expect(sameConfig({list: [1, {a: 2}]}, {list: [1, {a: 3}]})).toBe(false);
     });
 });
 
 describe("defaultConfig", () => {
-    it("只取 schema 默认值，不读盘", () => {
+    it("uses only the schema defaults and does not touch the disk", () => {
         expect(defaultConfig(settings)).toEqual({enabled: false, label: "hi", size: 12, mode: "auto"});
     });
 });
 
 describe("ConfigStore.register / get / definitionOf", () => {
-    it("没有配置文件时用默认值", async () => {
+    it("uses the defaults when there is no config file", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         const config = await store.register(definitionOf("alpha"));
@@ -294,7 +294,7 @@ describe("ConfigStore.register / get / definitionOf", () => {
         expect(host.loadData).toHaveBeenCalledWith("feature-alpha");
     });
 
-    it("读回已有配置并与默认值合并", async () => {
+    it("reads back the existing config and merges it with the defaults", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "stored"});
         const store = new ConfigStore(host.asPlugin());
@@ -302,7 +302,7 @@ describe("ConfigStore.register / get / definitionOf", () => {
         expect(config).toEqual({enabled: true, label: "stored", size: 12, mode: "auto"});
     });
 
-    it("宿主兑现空串（文件不存在）时按没有配置处理", async () => {
+    it("treats an empty string from the host (file missing) as no config", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         host.loadData.mockResolvedValueOnce("");
@@ -310,7 +310,7 @@ describe("ConfigStore.register / get / definitionOf", () => {
         expect(config.enabled).toBe(false);
     });
 
-    it("读盘失败时回落默认值，不阻塞注册", async () => {
+    it("falls back to the defaults when reading fails, without blocking registration", async () => {
         const host = new FakeHost();
         host.loadData.mockRejectedValueOnce(new Error("io error"));
         const store = new ConfigStore(host.asPlugin());
@@ -320,7 +320,7 @@ describe("ConfigStore.register / get / definitionOf", () => {
         expect(vi.mocked(console.warn)).toHaveBeenCalled();
     });
 
-    it("配置文件里有坏字段时回落默认值并告警", async () => {
+    it("falls back to the defaults and warns when the config file has bad fields", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: "yes", size: 999});
         const store = new ConfigStore(host.asPlugin());
@@ -330,15 +330,15 @@ describe("ConfigStore.register / get / definitionOf", () => {
         expect(vi.mocked(console.warn).mock.calls.some((call) => String(call[0]).includes("field problem"))).toBe(true);
     });
 
-    it("没有注册过的 id 返回空对象", () => {
+    it("an unregistered id returns an empty object", () => {
         const store = new ConfigStore(new FakeHost().asPlugin());
         expect(store.get("nope")).toEqual({});
         expect(store.definitionOf("nope")).toBeUndefined();
     });
 });
 
-describe("ConfigStore 订阅", () => {
-    it("patch 之后通知订阅者，取消订阅后不再通知", async () => {
+describe("ConfigStore subscriptions", () => {
+    it("notifies subscribers after a patch and stops after unsubscribe", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -351,7 +351,7 @@ describe("ConfigStore 订阅", () => {
         expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it("只通知改动的那一个功能", async () => {
+    it("notifies only the feature that changed", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -365,7 +365,7 @@ describe("ConfigStore 订阅", () => {
         expect(beta).not.toHaveBeenCalled();
     });
 
-    it("dispose 之后不再通知", async () => {
+    it("notifies nothing after dispose", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -378,7 +378,7 @@ describe("ConfigStore 订阅", () => {
 });
 
 describe("ConfigStore.patch", () => {
-    it("patch 合并后写盘并按 schema 归一化", async () => {
+    it("patch merges, writes to disk and normalizes against the schema", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -387,7 +387,7 @@ describe("ConfigStore.patch", () => {
         expect(host.files.get("feature-alpha")).toEqual({enabled: false, label: "new", size: 12, mode: "auto"});
     });
 
-    it("patch 只写这一个功能的文件", async () => {
+    it("patch writes only that feature's file", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -398,7 +398,7 @@ describe("ConfigStore.patch", () => {
         expect(host.saveData).toHaveBeenCalledWith("feature-alpha", expect.any(Object));
     });
 
-    it("patch 里不合法的值会回落默认值并告警", async () => {
+    it("invalid values in a patch fall back to the defaults with a warning", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -407,7 +407,7 @@ describe("ConfigStore.patch", () => {
         expect(vi.mocked(console.warn)).toHaveBeenCalled();
     });
 
-    it("与磁盘相同的值不重复写盘", async () => {
+    it("values equal to the disk contents are not written again", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -418,7 +418,7 @@ describe("ConfigStore.patch", () => {
         expect(host.saveData).not.toHaveBeenCalled();
     });
 
-    it("写盘成功后立刻通知订阅者，不必等应用重载", async () => {
+    it("notifies subscribers right after a successful write, without waiting for an app reload", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -428,7 +428,7 @@ describe("ConfigStore.patch", () => {
         expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it("写盘失败时抛出，并把内存态退回改动之前", async () => {
+    it("throws when the write fails and rolls the in-memory state back", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -439,7 +439,7 @@ describe("ConfigStore.patch", () => {
         expect(store.get("alpha").label).toBe("keep");
     });
 
-    it("内核拒绝写入时抛出带问题的错误，内存态同样回退", async () => {
+    it("throws a problem-carrying error when the kernel rejects the write, and the in-memory state rolls back too", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -450,7 +450,7 @@ describe("ConfigStore.patch", () => {
         expect(store.get("alpha").enabled).toBe(false);
     });
 
-    it("写后读回不一致时抛出，并把内存态退回改动之前", async () => {
+    it("throws when the read-back does not match and rolls the in-memory state back", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -462,7 +462,7 @@ describe("ConfigStore.patch", () => {
         expect(store.get("alpha").enabled).toBe(false);
     });
 
-    it("同一功能的写入按调用顺序执行，旧写入不能覆盖新配置", async () => {
+    it("writes for one feature run in call order, so an old write cannot overwrite newer config", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -487,7 +487,7 @@ describe("ConfigStore.patch", () => {
         expect(host.files.get("feature-alpha")).toMatchObject({enabled: false});
     });
 
-    it("前一次写入失败不阻断后续写入，也不回滚后续配置", async () => {
+    it("a failed write neither blocks later writes nor rolls back their config", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -505,7 +505,7 @@ describe("ConfigStore.patch", () => {
         expect(host.files.get("feature-alpha")).toMatchObject({enabled: false, label: "latest"});
     });
 
-    it("没有注册过的 id 上的 patch 什么也不做", async () => {
+    it("a patch on an unregistered id does nothing", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await expect(store.patch("ghost", {enabled: true})).resolves.toBeUndefined();
@@ -514,7 +514,7 @@ describe("ConfigStore.patch", () => {
 });
 
 describe("ConfigStore.clearAll", () => {
-    it("删掉目录里的每个配置文件，并把内存态回落默认值", async () => {
+    it("deletes every config file in the directory and resets the in-memory state to the defaults", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "x", size: 16, mode: "auto"});
         host.files.set("feature-gone", {enabled: true});
@@ -531,7 +531,7 @@ describe("ConfigStore.clearAll", () => {
         expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it("清空先等在途写盘落地，删除之后不会被写回来", async () => {
+    it("clearing waits for pending writes to land, so nothing is written back after the deletion", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
         serveDirListing(host);
@@ -562,7 +562,7 @@ describe("ConfigStore.clearAll", () => {
         expect(store.get("alpha")).toMatchObject({label: "hi"});
     });
 
-    it("清空期间的新改动直接丢弃，不会把文件写回来", async () => {
+    it("changes made while clearing are dropped instead of writing the file back", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
         serveDirListing(host);
@@ -591,7 +591,7 @@ describe("ConfigStore.clearAll", () => {
         expect(store.get("alpha")).toMatchObject({label: "hi"});
     });
 
-    it("清空进行中再次调用跟随同一次，不重复删除", async () => {
+    it("a second call while clearing follows the same run and does not delete twice", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         serveDirListing(host);
@@ -604,7 +604,7 @@ describe("ConfigStore.clearAll", () => {
         expect(host.removeData).toHaveBeenCalledTimes(1);
     });
 
-    it("清空完成后新改动照常落盘", async () => {
+    it("new changes are persisted as usual once clearing is done", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "old", size: 12, mode: "auto"});
         serveDirListing(host);
@@ -616,7 +616,7 @@ describe("ConfigStore.clearAll", () => {
         expect(store.get("alpha")).toMatchObject({label: "after"});
     });
 
-    it("历史上带 .json 扩展名的配置文件也认", async () => {
+    it("config files with a legacy .json extension are recognized too", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha.json", {enabled: true});
         serveDirListing(host);
@@ -625,7 +625,7 @@ describe("ConfigStore.clearAll", () => {
         expect(host.files.size).toBe(0);
     });
 
-    it("已经不在代码里的功能留下的配置文件照样被删掉", async () => {
+    it("config files left behind by features no longer in the code are deleted as well", async () => {
         const host = new FakeHost();
         host.files.set("feature-retired", {enabled: true});
         serveDirListing(host);
@@ -634,7 +634,7 @@ describe("ConfigStore.clearAll", () => {
         expect(host.files.size).toBe(0);
     });
 
-    it("名字不合规的文件不碰，只告警", async () => {
+    it("files with invalid names are left alone, with only a warning", async () => {
         const host = new FakeHost();
         host.files.set("notes.txt", "keep me");
         host.files.set("feature-alpha", {enabled: true});
@@ -644,7 +644,7 @@ describe("ConfigStore.clearAll", () => {
         expect([...host.files.keys()]).toEqual(["notes.txt"]);
     });
 
-    it("有文件删不掉时抛出，并列出全部失败项", async () => {
+    it("throws and lists every failure when a file cannot be deleted", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         host.files.set("feature-beta", {enabled: true});
@@ -659,7 +659,7 @@ describe("ConfigStore.clearAll", () => {
         });
     });
 
-    it("列不出目录时抛出，绝不假装已经清干净", async () => {
+    it("throws when the directory cannot be listed instead of pretending it is clean", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: -1, msg: "kernel busy"});
         const store = new ConfigStore(new FakeHost().asPlugin());
         await expect(store.clearAll()).rejects.toThrow("cannot list");
@@ -667,7 +667,7 @@ describe("ConfigStore.clearAll", () => {
 });
 
 describe("ConfigStore.exportAll", () => {
-    it("按目录里的文件导出，键是功能 id", async () => {
+    it("exports the files in the directory, keyed by feature id", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true, label: "a"});
         host.files.set("feature-retired", {enabled: true});
@@ -679,7 +679,7 @@ describe("ConfigStore.exportAll", () => {
         });
     });
 
-    it("文件里不是对象时跳过它", async () => {
+    it("skips files whose content is not an object", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", "not an object");
         host.files.set("feature-beta", [1, 2]);
@@ -689,7 +689,7 @@ describe("ConfigStore.exportAll", () => {
         await expect(store.exportAll()).resolves.toEqual({gamma: {enabled: true}});
     });
 
-    it("读不到的文件不进导出结果", async () => {
+    it("files that cannot be read are left out of the export", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         serveDirListing(host);
@@ -698,7 +698,7 @@ describe("ConfigStore.exportAll", () => {
         await expect(store.exportAll()).resolves.toEqual({});
     });
 
-    it("列不出目录时抛出", async () => {
+    it("throws when the directory cannot be listed", async () => {
         mockState.fetchSyncPost.mockRejectedValue(new Error("offline"));
         const store = new ConfigStore(new FakeHost().asPlugin());
         await expect(store.exportAll()).rejects.toThrow("offline");
@@ -706,7 +706,7 @@ describe("ConfigStore.exportAll", () => {
 });
 
 describe("ConfigStore.importMany", () => {
-    it("认识的 id 按 schema 归一化后写入", async () => {
+    it("known ids are normalized against the schema and written", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -716,7 +716,7 @@ describe("ConfigStore.importMany", () => {
         expect(store.get("alpha").size).toBe(24);
     });
 
-    it("导入后立刻通知订阅者，不必等页面重载", async () => {
+    it("notifies subscribers right after an import, without waiting for a page reload", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -726,7 +726,7 @@ describe("ConfigStore.importMany", () => {
         expect(listener).toHaveBeenCalledTimes(1);
     });
 
-    it("不认识的 id 原样写回自己的文件", async () => {
+    it("unknown ids are written back to their own file as-is", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         const result = await store.importMany({retired: {anything: [1, 2]}});
@@ -734,7 +734,7 @@ describe("ConfigStore.importMany", () => {
         expect(host.files.get("feature-retired")).toEqual({anything: [1, 2]});
     });
 
-    it("注册表里有、但本宿主不加载的功能同样按它的 schema 校验", async () => {
+    it("a feature that is in the registry but not loaded on this host is still validated against its schema", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         // mobile-console-log 在注册表里；这里没有 register 它，模拟「本宿主不加载」
@@ -743,7 +743,7 @@ describe("ConfigStore.importMany", () => {
         });
     });
 
-    it("注册表里有、本宿主没注册的功能导入后不会凭空造出内存态", async () => {
+    it("importing a registry feature that was never registered here does not conjure in-memory state", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         const result = await store.importMany({"mobile-console-log": {enabled: true}});
@@ -753,7 +753,7 @@ describe("ConfigStore.importMany", () => {
         expect(store.get("mobile-console-log")).toEqual({});
     });
 
-    it("id 不合规或值不是对象的条目一律不写，交回调用方汇报", async () => {
+    it("entries with an invalid id or a non-object value are never written and go back to the caller to report", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         const result = await store.importMany({
@@ -766,7 +766,7 @@ describe("ConfigStore.importMany", () => {
         expect(host.saveData).not.toHaveBeenCalled();
     });
 
-    it("认识的 id 有坏字段时整体不写", async () => {
+    it("nothing is written when a known id has bad fields", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -776,7 +776,7 @@ describe("ConfigStore.importMany", () => {
         expect(host.files.size).toBe(0);
     });
 
-    it("导入先等在途写盘落地，旧写盘不会覆盖导入结果", async () => {
+    it("an import waits for pending writes to land, so old writes cannot overwrite its result", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: false, label: "old", size: 12, mode: "auto"});
         const store = new ConfigStore(host.asPlugin());
@@ -790,19 +790,19 @@ describe("ConfigStore.importMany", () => {
             host.files.set(name, JSON.parse(JSON.stringify(value)));
             return {code: 0};
         });
-        const patching = store.patch("alpha", {label: "patch 的旧值"});
+        const patching = store.patch("alpha", {label: "old patch value"});
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
 
-        const importing = store.importMany({alpha: {label: "导入值"}});
+        const importing = store.importMany({alpha: {label: "imported value"}});
         release();
         await patching;
         await importing;
 
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
-        expect(store.get("alpha")).toMatchObject({label: "导入值"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "imported value"});
+        expect(store.get("alpha")).toMatchObject({label: "imported value"});
     });
 
-    it("导入期间的新改动直接丢弃，不会在导入之后写回旧值", async () => {
+    it("changes made during an import are dropped instead of writing old values back afterwards", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -816,19 +816,19 @@ describe("ConfigStore.importMany", () => {
             return {code: 0};
         });
 
-        const importing = store.importMany({alpha: {label: "导入值"}});
+        const importing = store.importMany({alpha: {label: "imported value"}});
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
         // 导入写盘还没回来时来一次改动：丢弃，不写盘
-        await expect(store.patch("alpha", {label: "导入后的改动"})).resolves.toBeUndefined();
+        await expect(store.patch("alpha", {label: "change after import"})).resolves.toBeUndefined();
         expect(host.saveData).toHaveBeenCalledTimes(1);
 
         release();
         await importing;
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
-        expect(store.get("alpha")).toMatchObject({label: "导入值"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "imported value"});
+        expect(store.get("alpha")).toMatchObject({label: "imported value"});
     });
 
-    it("导入部分失败时把已经写进去的文件退回原样", async () => {
+    it("restores the files already written when an import fails partway", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: false, label: "a-old", size: 12, mode: "auto"});
         host.files.set("feature-beta", {enabled: false, label: "b-old"});
@@ -854,7 +854,7 @@ describe("ConfigStore.importMany", () => {
         expect(store.get("alpha")).toMatchObject({label: "a-old"});
     });
 
-    it("回滚也失败时把没能退回的文件报出来", async () => {
+    it("reports the files it could not restore when the rollback fails too", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: false, label: "a-old", size: 12, mode: "auto"});
         host.files.set("feature-beta", {enabled: false, label: "b-old"});
@@ -878,7 +878,7 @@ describe("ConfigStore.importMany", () => {
         expect(store.get("alpha")).toMatchObject({label: "a-old"});
     });
 
-    it("写盘失败时抛出带问题的错误", async () => {
+    it("throws a problem-carrying error when the write fails", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(definitionOf("alpha"));
@@ -890,9 +890,9 @@ describe("ConfigStore.importMany", () => {
 });
 
 describe("prefetch", () => {
-    it("并发读回配置文件，register 之后不再重复读盘", async () => {
+    it("reads config files concurrently and does not read again after register", async () => {
         const host = new FakeHost();
-        host.files.set("feature-alpha", {enabled: true, label: "已存"});
+        host.files.set("feature-alpha", {enabled: true, label: "stored"});
         host.files.set("feature-beta", {enabled: false});
         let running = 0;
         let peak = 0;
@@ -914,13 +914,13 @@ describe("prefetch", () => {
         expect(peak).toBe(2);
         const reads = host.loadData.mock.calls.length;
 
-        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: true, label: "已存"});
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: true, label: "stored"});
         await expect(store.register(definitionOf("beta"))).resolves.toMatchObject({enabled: false});
         // 预读过的文件不再读第二次
         expect(host.loadData.mock.calls.length).toBe(reads);
     });
 
-    it("预读失败的功能回落默认值并记一条告警", async () => {
+    it("a feature whose prefetch failed falls back to the defaults and logs a warning", async () => {
         const host = new FakeHost();
         host.loadData.mockRejectedValueOnce(new Error("offline"));
         const store = new ConfigStore(host.asPlugin());
@@ -930,7 +930,7 @@ describe("prefetch", () => {
         expect(vi.mocked(console.warn)).toHaveBeenCalled();
     });
 
-    it("某个文件读得慢只影响它自己的 register", async () => {
+    it("a slow file only delays its own register", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         host.files.set("feature-beta", {enabled: true});
@@ -962,7 +962,7 @@ describe("prefetch", () => {
         expect(resolved).toBe(true);
     });
 
-    it("没有预读过的功能仍然现场读盘", async () => {
+    it("a feature that was never prefetched still reads from disk on the spot", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         const store = new ConfigStore(host.asPlugin());
@@ -970,14 +970,17 @@ describe("prefetch", () => {
         expect(host.loadData).toHaveBeenCalledWith("feature-alpha");
     });
 
-    it("预读结果读完即用，不留在内存里覆盖之后的改动", async () => {
+    it("prefetch results are consumed once and never override later changes", async () => {
         const host = new FakeHost();
         host.files.set("feature-alpha", {enabled: true});
         const store = new ConfigStore(host.asPlugin());
         await store.prefetch([definitionOf("alpha")]);
         await store.register(definitionOf("alpha"));
         // 第二次注册（例如设置面板重建）必须重新读盘，拿到的是最新值
-        host.files.set("feature-alpha", {enabled: false, label: "新值"});
-        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({enabled: false, label: "新值"});
+        host.files.set("feature-alpha", {enabled: false, label: "new value"});
+        await expect(store.register(definitionOf("alpha"))).resolves.toMatchObject({
+            enabled: false,
+            label: "new value",
+        });
     });
 });

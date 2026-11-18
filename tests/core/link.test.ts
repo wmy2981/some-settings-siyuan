@@ -15,7 +15,7 @@ import {openExternalLink} from "../../src/core/link";
 const pluginWith = (emit: () => boolean | void): unknown => ({eventBus: {emit}});
 
 describe("openExternalLink", () => {
-    it("先发 open-link 事件，没人取消才打开", () => {
+    it("emits open-link first and opens only when nothing cancels", () => {
         const emit = vi.fn(() => undefined);
         window.siyuan.ws.app.plugins = [pluginWith(emit)] as never;
         openExternalLink("https://example.com");
@@ -24,13 +24,13 @@ describe("openExternalLink", () => {
         expect(window.open).toHaveBeenCalledWith("https://example.com", "_blank");
     });
 
-    it("任一插件取消时不打开", () => {
+    it("does not open when any plugin cancels", () => {
         window.siyuan.ws.app.plugins = [pluginWith(() => false)] as never;
         openExternalLink("https://example.com");
         expect(window.open).not.toHaveBeenCalled();
     });
 
-    it("把触发事件一并交给插件", () => {
+    it("passes the triggering event to plugins", () => {
         const emit = vi.fn(() => undefined);
         window.siyuan.ws.app.plugins = [pluginWith(emit)] as never;
         const event = new MouseEvent("click");
@@ -38,7 +38,7 @@ describe("openExternalLink", () => {
         expect(emit).toHaveBeenCalledWith("open-link", expect.objectContaining({event}));
     });
 
-    it("window.open 抛错时不冒泡到调用方", () => {
+    it("does not propagate window.open errors to the caller", () => {
         window.siyuan.ws.app.plugins = [] as never;
         const original = window.open;
         window.open = (() => {

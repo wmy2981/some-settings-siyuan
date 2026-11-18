@@ -65,7 +65,7 @@ const showErrorLog = (): HTMLElement => {
 
 const probes = (): number => mockState.fetchPost.mock.calls.length;
 
-describe("断连后自动重连", () => {
+describe("auto-reconnect after a disconnect", () => {
     let harness: HostHarness | undefined;
     let reload: ReturnType<typeof vi.fn>;
 
@@ -86,7 +86,7 @@ describe("断连后自动重连", () => {
         return harness;
     };
 
-    it("挂载时没有断连面板就什么都不做，面板自己等多久都不探", async () => {
+    it("nothing happens without a disconnect panel at mount, and no probe runs however long the wait", async () => {
         mount({attempts: 2, interval: 500});
 
         await vi.advanceTimersByTimeAsync(5000);
@@ -95,7 +95,7 @@ describe("断连后自动重连", () => {
         expect(reload).not.toHaveBeenCalled();
     });
 
-    it("挂载时已经断连：等满一个间隔才探第一次，探到就重载前端", async () => {
+    it("already disconnected at mount: the first probe waits a full interval, and a hit reloads the frontend", async () => {
         answerProbes(true);
         showErrorLog();
         const host = mount({attempts: 2, interval: 500});
@@ -112,7 +112,7 @@ describe("断连后自动重连", () => {
         expect(host.records.logs.flat().join("\n")).toContain("kernel is back on probe 1");
     });
 
-    it("探到之后不再继续重试", async () => {
+    it("retrying stops once a probe succeeds", async () => {
         answerProbes(true);
         showErrorLog();
         mount({attempts: 5, interval: 500});
@@ -124,7 +124,7 @@ describe("断连后自动重连", () => {
         expect(reload).toHaveBeenCalledTimes(1);
     });
 
-    it("前两次没恢复、第三次恢复：日志里是 probe 3", async () => {
+    it("two failures and then a recovery: the log reports probe 3", async () => {
         answerProbes(false, false, true);
         showErrorLog();
         const host = mount({attempts: 3, interval: 500});
@@ -139,7 +139,7 @@ describe("断连后自动重连", () => {
         expect(host.records.logs.flat().join("\n")).toContain("kernel is back on probe 3");
     });
 
-    it("一直探不到就按次数放弃，并交回思源自己的重连", async () => {
+    it("gives up after the configured attempts and hands reconnection back to SiYuan", async () => {
         answerProbes(false);
         showErrorLog();
         const host = mount({attempts: 2, interval: 500});
@@ -156,7 +156,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(2);
     });
 
-    it("次数设为 0 表示完全关闭自动重试", async () => {
+    it("0 attempts turns auto-retry off completely", async () => {
         answerProbes(true);
         showErrorLog();
         mount({attempts: 0, interval: 500});
@@ -167,7 +167,7 @@ describe("断连后自动重连", () => {
         expect(reload).not.toHaveBeenCalled();
     });
 
-    it("次数非法时回落到默认的 2 次，负数按 0 次处理", async () => {
+    it("an invalid attempt count falls back to the default of 2, and a negative count means 0", async () => {
         answerProbes(false);
         showErrorLog();
         mount({attempts: "abc", interval: 500});
@@ -184,7 +184,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(0);
     });
 
-    it("次数超过上限时按 20 次封顶", async () => {
+    it("an attempt count above the limit is capped at 20", async () => {
         answerProbes(false);
         showErrorLog();
         const host = mount({attempts: 999, interval: 500});
@@ -196,7 +196,7 @@ describe("断连后自动重连", () => {
             .toContain("kernel not detected after 20 auto-reconnect attempts");
     });
 
-    it("间隔过小时按 100ms 兜底，过大时按 10s 封顶", async () => {
+    it("a too-small interval falls back to 100ms and a too-large one is capped at 10s", async () => {
         answerProbes(true);
         showErrorLog();
         mount({attempts: 1, interval: 1});
@@ -219,7 +219,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(1);
     });
 
-    it("探活请求没有回应时按超时算失败，继续下一次", async () => {
+    it("a probe that never answers counts as a timeout and the next attempt follows", async () => {
         // 内核挂了就是这样：请求发出去石沉大海
         (mockState.fetchPost as unknown as {mockImplementation: (fn: unknown) => void;}).mockImplementation(
             () => new Promise(() => undefined),
@@ -234,7 +234,7 @@ describe("断连后自动重连", () => {
         expect(host.records.logs.flat().join("\n")).toContain("kernel not detected");
     });
 
-    it("探活请求同步抛错时按「没恢复」处理，不会中断整轮重试", async () => {
+    it("a probe that throws synchronously counts as not recovered and does not end the retry round", async () => {
         let calls = 0;
         (mockState.fetchPost as unknown as {mockImplementation: (fn: unknown) => void;}).mockImplementation(
             () => {
@@ -250,7 +250,7 @@ describe("断连后自动重连", () => {
         expect(calls).toBe(2);
     });
 
-    it("等待期间内核自己恢复了（面板消失）就不再探", async () => {
+    it("no probe once the kernel recovers on its own during the wait (the panel disappears)", async () => {
         answerProbes(false);
         const dialog = showErrorLog();
         const host = mount({attempts: 5, interval: 500});
@@ -264,7 +264,7 @@ describe("断连后自动重连", () => {
         expect(host.records.logs.flat().join("\n")).not.toContain("not detected");
     });
 
-    it("断开发生在挂载之后：面板被插入时才开始重试", async () => {
+    it("a disconnect after mount: retrying starts once the panel is inserted", async () => {
         answerProbes(true);
         const host = mount({attempts: 2, interval: 500});
 
@@ -279,7 +279,7 @@ describe("断连后自动重连", () => {
         expect(host.records.logs.flat().join("\n")).toContain("kernel is back on probe 1");
     });
 
-    it("重试进行中不会因为 body 的其它变动再起一轮", async () => {
+    it("other body mutations during a retry do not start another round", async () => {
         answerProbes(false);
         showErrorLog();
         mount({attempts: 2, interval: 500});
@@ -292,7 +292,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(2);
     });
 
-    it("放弃之后再次断连会重新开始一轮", async () => {
+    it("a new disconnect after giving up starts a fresh round", async () => {
         answerProbes(false);
         const first = showErrorLog();
         mount({attempts: 1, interval: 500});
@@ -309,7 +309,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(2);
     });
 
-    it("销毁时停在等待里，不再探也不再重载；观察器一并断开", async () => {
+    it("destroying during the wait stops probing and reloading, and disconnects the observer", async () => {
         answerProbes(true);
         const dialog = showErrorLog();
         const host = mount({attempts: 3, interval: 500});
@@ -331,7 +331,7 @@ describe("断连后自动重连", () => {
         expect(probes()).toBe(0);
     });
 
-    it("在两次尝试之间销毁时立即收手", async () => {
+    it("destroying between two attempts stops immediately", async () => {
         answerProbes(false);
         showErrorLog();
         const host = mount({attempts: 5, interval: 500});

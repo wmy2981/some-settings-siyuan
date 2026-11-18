@@ -40,7 +40,7 @@ const installElectron = (): ReturnType<typeof vi.fn> => {
 const press = (init: KeyboardEventInit): boolean =>
     document.dispatchEvent(new KeyboardEvent("keydown", {cancelable: true, ...init}));
 
-describe("桌面端 F12 开关开发者工具", () => {
+describe("F12 toggles the developer tools on desktop", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -55,14 +55,14 @@ describe("桌面端 F12 开关开发者工具", () => {
         delete (window as unknown as WindowWithRequire).require;
     });
 
-    it("声明里只在桌面端交出，开关默认关闭", () => {
+    it("the declaration ships desktop only and the switch defaults to off", () => {
         expect(definition.frontends).toEqual(["desktop"]);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},
         ]);
     });
 
-    it("没有 window.require（浏览器 / 移动端）时静默不做事，只留一条日志", () => {
+    it("without window.require (browser / mobile) it silently does nothing and leaves a single log line", () => {
         const harness = mount();
 
         // mount 返回 void 就代表没有监听可拆，属于「什么都不做」
@@ -73,7 +73,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(press({key: "F12"})).toBe(true);
     });
 
-    it("require 抛错或拿不到 ipcRenderer.send 时同样静默退场", () => {
+    it("a throwing require or a missing ipcRenderer.send also exits silently", () => {
         installRequire(() => {
             throw new Error("no electron here");
         });
@@ -87,7 +87,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(mount().records.logs).toHaveLength(1);
     });
 
-    it("按 F12 发送内核的 toggleDevTools 命令并取消默认行为", () => {
+    it("pressing F12 sends the kernel toggleDevTools command and cancels the default action", () => {
         const send = installElectron();
         const harness = mount();
 
@@ -98,7 +98,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("只认 code 也认：key 不是 F12 但 code 是 F12 依然触发", () => {
+    it("code is honored too: a non-F12 key with code F12 still triggers", () => {
         const send = installElectron();
         mount();
 
@@ -106,7 +106,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).toHaveBeenCalledWith("siyuan-cmd", "toggleDevTools");
     });
 
-    it("按住不放（repeat）不重复发，也不吃掉这一次按键", () => {
+    it("holding the key (repeat) does not resend and does not swallow the keystroke", () => {
         const send = installElectron();
         mount();
 
@@ -114,7 +114,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it("带 Ctrl / Meta / Alt / Shift 的一律不接管（留给宿主与系统的快捷键）", () => {
+    it("anything with Ctrl / Meta / Alt / Shift is left to the host and system shortcuts", () => {
         const send = installElectron();
         mount();
 
@@ -124,7 +124,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it("只给 key 不给 code（内嵌浏览器常见）时也认 F12", () => {
+    it("key without code, common in embedded browsers, still counts as F12", () => {
         const send = installElectron();
         mount();
 
@@ -132,7 +132,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).toHaveBeenCalledTimes(1);
     });
 
-    it("其它按键完全不碰", () => {
+    it("other keys are left completely alone", () => {
         const send = installElectron();
         mount();
 
@@ -141,7 +141,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it("监听挂在捕获阶段：比元素自己的冒泡监听先执行", () => {
+    it("the listener sits in the capture phase and runs before the element bubbling listener", () => {
         const send = installElectron();
         mount();
         const order: string[] = [];
@@ -156,7 +156,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(order).toEqual(["ipc", "bubble"]);
     });
 
-    it("连按多次就发多次（本功能不做去重，开与关都靠内核自己判断）", () => {
+    it("pressing repeatedly sends repeatedly, this feature does not dedupe and the kernel decides open or close", () => {
         const send = installElectron();
         mount();
 
@@ -166,7 +166,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).toHaveBeenCalledTimes(2);
     });
 
-    it("dispose 之后不再响应，且重复 dispose 不抛错", () => {
+    it("after dispose it stops responding and a repeated dispose does not throw", () => {
         const send = installElectron();
         const harness = mount();
 
@@ -177,7 +177,7 @@ describe("桌面端 F12 开关开发者工具", () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it("mount 只在装得上 Electron 时返回可拆的实例", () => {
+    it("mount returns a disposable instance only when Electron is available", () => {
         installElectron();
         const host = {
             config: {},

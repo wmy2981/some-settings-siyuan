@@ -133,9 +133,9 @@ afterEach(() => {
     delete (document as unknown as {hidden?: boolean;}).hidden;
 });
 
-describe("DeepSeek 余额显示", () => {
-    describe("注入与样式", () => {
-        it("注入布局样式：紧跟输入区、左右与输入框对齐、单行省略", () => {
+describe("DeepSeek balance display", () => {
+    describe("Injection and styles", () => {
+        it("Injects layout styles: right after the composer and aligned with it", () => {
             const harness = mount();
             const css = harness.css();
 
@@ -151,7 +151,7 @@ describe("DeepSeek 余额显示", () => {
             expect(harness.styleElement()).not.toBeNull();
         });
 
-        it("面板还没出现时什么都不显示，只留一条日志", () => {
+        it("Shows nothing while the panel is missing and only logs a line", () => {
             const harness = mount();
             expect(balanceNode()).toBeNull();
             expect(logsOf(harness)).toContain(
@@ -159,7 +159,7 @@ describe("DeepSeek 余额显示", () => {
             );
         });
 
-        it("余额节点插在输入区之后（输入框外面），不在输入区里面", () => {
+        it("Inserts the node after the input area, outside the composer", () => {
             mountPanel();
             mount();
 
@@ -175,7 +175,7 @@ describe("DeepSeek 余额显示", () => {
             expect(anchor.contains(node)).toBe(false);
         });
 
-        it("面板被移除后节点跟着收回，不留孤儿", async () => {
+        it("Withdraws the node when the panel is removed, no orphan left", async () => {
             vi.useFakeTimers();
             mountPanel();
             const harness = mount();
@@ -190,7 +190,7 @@ describe("DeepSeek 余额显示", () => {
             expect(logsOf(harness)).toContain("Balance node removed (the mount point is gone)");
         });
 
-        it("同一个功能重复 apply 不会插出第二个节点", async () => {
+        it("A repeated apply does not insert a second node", async () => {
             mountPanel();
             const harness = mount();
             await vi.waitFor(() => expect(balanceNode()).not.toBeNull());
@@ -203,8 +203,8 @@ describe("DeepSeek 余额显示", () => {
         });
     });
 
-    describe("查询目标解析", () => {
-        it("不在官方站点上就整行收起，且不发请求", async () => {
+    describe("Query target resolution", () => {
+        it("Hides the whole line off the official site and sends no request", async () => {
             const fetchMock = respondWith({body: balanceBody([])});
             mountPanel();
             setAi([provider({baseURL: "https://api.openai.com/v1"})]);
@@ -218,12 +218,12 @@ describe("DeepSeek 余额显示", () => {
         });
 
         it.each([
-            ["baseURL 不是合法地址", provider({baseURL: "not a url"})],
-            ["provider 没启用", provider({enabled: false})],
-            ["模型没启用", provider({models: [{id: "deepseek-chat", enabled: false}]})],
-            ["模型 id 对不上", provider({models: [{id: "deepseek-reasoner", enabled: true}]})],
-            ["API Key 是空白串", provider({apiKey: "   "})],
-        ])("%s时不查询", async (_label, candidate) => {
+            ["baseURL is not a valid address", provider({baseURL: "not a url"})],
+            ["provider is not enabled", provider({enabled: false})],
+            ["model is not enabled", provider({models: [{id: "deepseek-chat", enabled: false}]})],
+            ["model id does not match", provider({models: [{id: "deepseek-reasoner", enabled: true}]})],
+            ["API key is blank", provider({apiKey: "   "})],
+        ])("%s: no query is sent", async (_label, candidate) => {
             const fetchMock = respondWith({body: balanceBody([])});
             mountPanel();
             setAi([candidate]);
@@ -233,7 +233,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).not.toHaveBeenCalled();
         });
 
-        it("providers 不是数组时安静跳过（配置被别人改坏也不能抛）", async () => {
+        it("Skips quietly when providers is not an array, even if broken", async () => {
             const fetchMock = respondWith({body: balanceBody([])});
             mountPanel();
             setAi("oops");
@@ -243,7 +243,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).not.toHaveBeenCalled();
         });
 
-        it("面板里选中的模型优先于配置里的 modelId", async () => {
+        it("The model picked in the panel wins over the configured modelId", async () => {
             // 用户可以只给当前会话换模型，此时 config.ai.agent.modelId 还是旧值
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel({modelId: "deepseek-chat"});
@@ -253,7 +253,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
         });
 
-        it("协议切成 anthropic 后仍打到站点根上的 /user/balance", async () => {
+        it("Still hits /user/balance at the site root after switching to anthropic", async () => {
             // baseURL 会变成 https://api.deepseek.com/anthropic，直接拼路径会打到不存在的地址
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
@@ -264,7 +264,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock.mock.calls[0][0]).toBe("https://api.deepseek.com/user/balance");
         });
 
-        it("多个 provider 时用第一个命中的（前面的可能不是官网）", async () => {
+        it("Uses the first matching provider, earlier ones may be unofficial", async () => {
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([
@@ -280,8 +280,8 @@ describe("DeepSeek 余额显示", () => {
         });
     });
 
-    describe("查询与渲染", () => {
-        it("请求形状：GET + Bearer Key + JSON 接受类型", async () => {
+    describe("Query and render", () => {
+        it("Request shape: GET, Bearer key, JSON accept type", async () => {
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([provider()]);
@@ -298,7 +298,7 @@ describe("DeepSeek 余额显示", () => {
             expect(init.signal).toBeInstanceOf(AbortSignal);
         });
 
-        it("人民币余额：显示符号 + 两位小数，明细进 title", async () => {
+        it("CNY balance: symbol plus two decimals, details go into title", async () => {
             respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([provider()]);
@@ -312,7 +312,7 @@ describe("DeepSeek 余额显示", () => {
             expect(node.getAttribute("aria-label")).toBe(node.title);
         });
 
-        it("多条余额优先展示 CNY，其余折进明细", async () => {
+        it("Prefers CNY and folds the other balances into the details", async () => {
             // 官网充值以人民币计价，USD 一般只在赠金或海外结算时出现
             respondWith({
                 body: balanceBody([
@@ -328,7 +328,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.title.split("\n").at(-1)).toBe("USD 3.00");
         });
 
-        it("只有 USD 时用 $ 符号", async () => {
+        it("Uses the $ symbol when only USD is available", async () => {
             respondWith({
                 body: balanceBody([{
                     currency: "USD",
@@ -344,7 +344,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}$1.50`));
         });
 
-        it("未知币种没有符号，用币种代码顶上", async () => {
+        it("Falls back to the currency code when there is no symbol", async () => {
             respondWith({
                 body: balanceBody([{
                     currency: "EUR",
@@ -360,7 +360,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}EUR 3.00`));
         });
 
-        it("is_available 为 false：数字照旧显示，末尾加感叹号并在明细里说明", async () => {
+        it("is_available false: keeps the number, appends an exclamation mark", async () => {
             // is_available 只表示「不足以继续调用」，余额本身仍然有效，不能显示成 0 或 —
             respondWith({body: balanceBody([cny()], false)});
             mountPanel();
@@ -371,7 +371,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.title).toContain(t("feature.deepseekBalance.insufficient"));
         });
 
-        it("is_available 缺省时视为可用，不加感叹号", async () => {
+        it("Treats a missing is_available as available, no exclamation mark", async () => {
             respondWith({body: {balance_infos: [cny()]}});
             mountPanel();
             setAi([provider()]);
@@ -380,7 +380,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}¥12.50`));
         });
 
-        it("金额解析不出来时原样显示字符串，绝不显示 NaN", async () => {
+        it("Shows the raw string when the amount cannot be parsed, never NaN", async () => {
             // 注意不能拿 "12.3x" 当例子：parseFloat 会取到 12.3，那是「能解析」的一类
             respondWith({
                 body: balanceBody([cny({total_balance: "n/a", granted_balance: "", topped_up_balance: "0"})]),
@@ -393,7 +393,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.title).toContain("赠金 ");
         });
 
-        it("金额带尾巴时按数字解析并保留两位小数", async () => {
+        it("Parses an amount with a trailing tail, keeping two decimals", async () => {
             respondWith({
                 body: balanceBody([cny({total_balance: "12.3x", granted_balance: "5", topped_up_balance: "7.3"})]),
             });
@@ -404,7 +404,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(balanceNode()!.textContent).toBe(`${LABEL}¥12.30`));
         });
 
-        it("整数金额补两位小数", async () => {
+        it("Pads an integer amount to two decimals", async () => {
             respondWith({body: balanceBody([cny({total_balance: "0", granted_balance: "0", topped_up_balance: "0"})])});
             mountPanel();
             setAi([provider()]);
@@ -414,10 +414,10 @@ describe("DeepSeek 余额显示", () => {
         });
 
         it.each([
-            ["没有 balance_infos 字段", {is_available: true}],
-            ["balance_infos 是空数组", balanceBody([])],
-            ["balance_infos 不是数组", {is_available: true, balance_infos: "x"}],
-        ])("%s：说明「接口没有返回余额」，不伪装成 0 元", async (_label, body) => {
+            ["no balance_infos field", {is_available: true}],
+            ["balance_infos is an empty array", balanceBody([])],
+            ["balance_infos is not an array", {is_available: true, balance_infos: "x"}],
+        ])("%s: says the API returned no balance, never a fake 0", async (_label, body) => {
             respondWith({body});
             mountPanel();
             setAi([provider()]);
@@ -428,9 +428,9 @@ describe("DeepSeek 余额显示", () => {
         });
 
         it.each([
-            ["空响应体", {text: "   "}],
-            ["不是 JSON 的响应体", {text: "<html>bad gateway</html>"}],
-        ])("%s按「没有余额」处理", async (_label, init) => {
+            ["empty response body", {text: "   "}],
+            ["a response body that is not JSON", {text: "<html>bad gateway</html>"}],
+        ])("%s is treated as no balance", async (_label, init) => {
             respondWith(init);
             mountPanel();
             setAi([provider()]);
@@ -440,7 +440,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.title).toBe(t("feature.deepseekBalance.empty"));
         });
 
-        it("HTTP 报错时带上接口给的 message", async () => {
+        it("Carries the API error message on an HTTP failure", async () => {
             const harness = mount();
             respondWith({ok: false, status: 401, body: {error: {message: "Invalid API key"}}});
             mountPanel();
@@ -452,7 +452,7 @@ describe("DeepSeek 余额显示", () => {
             expect(logsOf(harness).some((line) => line.includes("Invalid API key"))).toBe(true);
         });
 
-        it("HTTP 报错且响应体不是预期的 error 形状时回落状态码", async () => {
+        it("Falls back to the status code when the error body has another shape", async () => {
             const harness = mount();
             respondWith({ok: false, status: 503, text: "Service Unavailable"});
             mountPanel();
@@ -463,7 +463,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.textContent).toBe(`${LABEL}—`);
         });
 
-        it("网络异常只降级这一行，不抛错也不弹提示", async () => {
+        it("Degrades only this line on a network failure, no throw, no toast", async () => {
             // 这个功能每 30 秒跑一次，一旦开始报错就会刷屏，所以失败只进日志
             const harness = mount();
             vi.stubGlobal(
@@ -481,7 +481,7 @@ describe("DeepSeek 余额显示", () => {
             expect(harness.records.messages).toEqual([]);
         });
 
-        it("切到非官网模型后整行收起，title / aria-label 换成「没有可用 provider」的说明", async () => {
+        it("Hides the line on a non-official model and swaps in the no-provider note", async () => {
             respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([provider()]);
@@ -499,7 +499,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()!.getAttribute("aria-label")).toBe(t("feature.deepseekBalance.noProvider"));
         });
 
-        it("请求超时 15 秒后按失败处理，请求被 abort", async () => {
+        it("Fails after the 15s request timeout and aborts the request", async () => {
             vi.useFakeTimers();
             let seenSignal: AbortSignal | undefined;
             vi.stubGlobal(
@@ -526,8 +526,8 @@ describe("DeepSeek 余额显示", () => {
         });
     });
 
-    describe("轮询与重入", () => {
-        it("周期取配置并夹在 1～3600 秒之间，日志带出实际秒数", () => {
+    describe("Polling and re-entrancy", () => {
+        it("Clamps the configured interval to 1-3600s and logs the seconds", () => {
             vi.useFakeTimers();
             expect(logsOf(mount({interval: 5}))).toContain("Mounted; polling every 5s");
             expect(logsOf(mount({interval: 0}))).toContain("Mounted; polling every 1s");
@@ -536,7 +536,7 @@ describe("DeepSeek 余额显示", () => {
             expect(logsOf(mount({interval: "abc"}))).toContain("Mounted; polling every 30s");
         });
 
-        it("到点再查一次", async () => {
+        it("Queries again when the interval elapses", async () => {
             vi.useFakeTimers();
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
@@ -549,7 +549,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(2);
         });
 
-        it("页面不可见时不发无意义的后台请求", async () => {
+        it("Sends no pointless background request while the page is hidden", async () => {
             vi.useFakeTimers();
             Object.defineProperty(document, "hidden", {configurable: true, get: () => true});
             const fetchMock = respondWith({body: balanceBody([cny()])});
@@ -563,7 +563,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it("上一拍还没回来时不会并发再发一次", async () => {
+        it("Does not fire a second request while one is still in flight", async () => {
             const fetchMock = vi.fn(() => new Promise(() => undefined));
             vi.stubGlobal("fetch", fetchMock);
             mountPanel();
@@ -579,7 +579,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it("配置保存后重置周期并立刻查一次", async () => {
+        it("Resets the interval and queries at once after the config is saved", async () => {
             vi.useFakeTimers();
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
@@ -598,7 +598,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(3);
         });
 
-        it("内核推送 setConf（其它设置保存）时补查一次", async () => {
+        it("Re-queries once when the kernel pushes setConf for another save", async () => {
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([provider()]);
@@ -615,7 +615,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(2);
         });
 
-        it("窗口重新获得焦点时补查一次", async () => {
+        it("Re-queries once when the window regains focus", async () => {
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
             setAi([provider()]);
@@ -627,7 +627,7 @@ describe("DeepSeek 余额显示", () => {
             await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
         });
 
-        it("面板从隐藏变为可见、手里又没有余额时立刻补查", async () => {
+        it("Re-queries when the panel turns visible without any balance", async () => {
             // 「打开面板却什么都不显示」最容易让人以为功能坏了，下一个周期可能还在几十秒后
             vi.useFakeTimers();
             const fetchMock = vi.fn(async () => {
@@ -649,7 +649,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(2);
         });
 
-        it("已经有余额时展开面板不重复查", async () => {
+        it("Does not re-query when a visible panel already has a balance", async () => {
             vi.useFakeTimers();
             const fetchMock = respondWith({body: balanceBody([cny()])});
             const panel = mountPanel();
@@ -664,7 +664,7 @@ describe("DeepSeek 余额显示", () => {
             expect(fetchMock).toHaveBeenCalledTimes(1);
         });
 
-        it("日志按主题去重：同一条不重复刷屏", async () => {
+        it("Deduplicates logs by topic: the same line is never repeated", async () => {
             const harness = mount();
             window.dispatchEvent(new Event("focus"));
             window.dispatchEvent(new Event("focus"));
@@ -675,8 +675,8 @@ describe("DeepSeek 余额显示", () => {
         });
     });
 
-    describe("卸载", () => {
-        it("destroy 收回节点、停掉轮询与全部监听", async () => {
+    describe("Unmount", () => {
+        it("destroy withdraws the node and stops polling plus every listener", async () => {
             vi.useFakeTimers();
             const fetchMock = respondWith({body: balanceBody([cny()])});
             mountPanel();
@@ -700,7 +700,7 @@ describe("DeepSeek 余额显示", () => {
             expect(balanceNode()).toBeNull();
         });
 
-        it("destroy 幂等", () => {
+        it("destroy is idempotent", () => {
             mountPanel();
             const harness = mount();
             const instance = harness.instance!;
@@ -708,7 +708,7 @@ describe("DeepSeek 余额显示", () => {
             expect(() => instance.destroy!()).not.toThrow();
         });
 
-        it("destroy 会中止进行中的请求", async () => {
+        it("destroy aborts the in-flight request", async () => {
             let seenSignal: AbortSignal | undefined;
             vi.stubGlobal(
                 "fetch",
@@ -728,7 +728,7 @@ describe("DeepSeek 余额显示", () => {
             expect(seenSignal!.aborted).toBe(true);
         });
 
-        it("插件卸载后样式表也一起撤走", async () => {
+        it("Removes the stylesheet together with the plugin unmount", async () => {
             const harness = mount();
             expect(harness.styleElement()).not.toBeNull();
 
@@ -739,8 +739,8 @@ describe("DeepSeek 余额显示", () => {
         });
     });
 
-    describe("声明", () => {
-        it("默认关闭，周期默认 30 秒并限定在 1～3600 之间", () => {
+    describe("Declaration", () => {
+        it("Is off by default, with a 30s interval clamped to 1-3600s", () => {
             expect(definition.enabled).toBe(true);
             expect(definition.category).toBe("ai");
             expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

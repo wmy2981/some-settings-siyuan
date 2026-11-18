@@ -103,7 +103,7 @@ const respond = (handler: (api: string) => unknown): void => {
     mockState.fetchSyncPost.mockImplementation(async (...args: unknown[]) => handler(String(args[0])));
 };
 
-describe("集市包自定义图标", () => {
+describe("Bazaar package custom icons", () => {
     afterEach(() => {
         // 管理窗口挂在模块级变量上，不主动收掉会把上一份 DOM 与监听带进下一个用例
         unloads.splice(0).forEach((listener) => listener());
@@ -111,7 +111,7 @@ describe("集市包自定义图标", () => {
     });
 
     describe("iconDirOf", () => {
-        it("指向插件存储目录下的 icons/，不带多余的斜杠", () => {
+        it("points into icons/ under the plugin storage directory without an extra slash", () => {
             expect(iconDirOf("some-settings-siyuan")).toBe("/data/storage/petal/some-settings-siyuan/icons");
             expect(iconDirOf("x")).toBe("/data/storage/petal/x/icons");
             expect(iconDirOf("x").endsWith("/")).toBe(false);
@@ -119,7 +119,7 @@ describe("集市包自定义图标", () => {
     });
 
     describe("parseIconFileName", () => {
-        it("拆出作者、包名、扩展名，并把工作区绝对路径拼好", () => {
+        it("splits author, package name and extension and builds the absolute workspace path", () => {
             expect(parseIconFileName(PLUGIN, "wmy2981__some-settings-siyuan.png")).toEqual({
                 fileName: "wmy2981__some-settings-siyuan.png",
                 owner: "wmy2981",
@@ -129,12 +129,12 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("扩展名统一转小写：目录里是 .PNG 时给 <img> 的 MIME 才不会落到 octet-stream", () => {
+        it("lowercases the extension so a .PNG on disk is not served to <img> as octet-stream", () => {
             expect(parseIconFileName(PLUGIN, "acme__pkg.PNG")?.ext).toBe("png");
             expect(parseIconFileName(PLUGIN, "acme__pkg.SvG")?.ext).toBe("svg");
         });
 
-        it("包名里可以有多个点与单个下划线：扩展名只取最后一个点", () => {
+        it("allows dots and single underscores in the package name: the extension is only the last dot", () => {
             const icon = parseIconFileName(PLUGIN, "acme__my.pkg_v2.name.webp");
             expect(icon).toEqual({
                 fileName: "acme__my.pkg_v2.name.webp",
@@ -145,14 +145,14 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("分隔符取第一个 `__`：包名里再出现 `__` 也只是包名的一部分", () => {
+        it("splits on the first `__`: a later `__` is just part of the package name", () => {
             const icon = parseIconFileName(PLUGIN, "acme__a__b.gif");
             expect(icon?.owner).toBe("acme");
             expect(icon?.name).toBe("a__b");
             expect(icon?.ext).toBe("gif");
         });
 
-        it("白名单里的九种扩展名都收", () => {
+        it("accepts all nine whitelisted extensions", () => {
             ["png", "jpg", "jpeg", "gif", "webp", "svg", "avif", "bmp", "ico"].forEach((ext) => {
                 const icon = parseIconFileName(PLUGIN, `acme__pkg.${ext}`);
                 expect(icon?.ext).toBe(ext);
@@ -160,13 +160,13 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("不是图片后缀的一律不收（文件里放着什么由读盘那一侧负责）", () => {
+        it("rejects every non-image extension (what the file holds is the reader's problem)", () => {
             ["txt", "exe", "json", "html", "zip", "js", "png.txt"].forEach((ext) => {
                 expect(parseIconFileName(PLUGIN, `acme__pkg.${ext}`)).toBeUndefined();
             });
         });
 
-        it("缺分隔符、缺包名、缺扩展名、扩展名为空都不收", () => {
+        it("rejects a missing separator, package name or extension, and an empty extension", () => {
             [
                 "acme.png",
                 "acmepkg",
@@ -180,7 +180,7 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("作者或包名含目录分隔符、点、空格等不安全字符时拒绝：不允许拼出目录穿越", () => {
+        it("rejects directory separators, dots, spaces and other unsafe characters in author or name: no path traversal", () => {
             [
                 "ac/me__pkg.png",
                 "acme__p/ kg.png",
@@ -194,18 +194,18 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("包名带点且最后一个点后面没有字符（以点结尾）不收", () => {
+        it("rejects a package name whose last dot ends the string", () => {
             expect(parseIconFileName(PLUGIN, "acme__my.pkg.")).toBeUndefined();
         });
 
-        it("文件名原样保留在 fileName 上：它就是这张图标的唯一标识", () => {
+        it("keeps the file name verbatim in fileName: it is the icon's only identity", () => {
             const icon = parseIconFileName(PLUGIN, "acme__Pkg.PNG");
             expect(icon?.fileName).toBe("acme__Pkg.PNG");
         });
     });
 
     describe("listIcons", () => {
-        it("列出目录并把不合规条目、子目录、缺名字的条目一并过滤掉", async () => {
+        it("lists the directory and filters out invalid entries, subdirectories and nameless entries", async () => {
             mockState.fetchSyncPost.mockResolvedValue({
                 code: 0,
                 data: [
@@ -226,7 +226,7 @@ describe("集市包自定义图标", () => {
             expect(icons[0].path).toBe(`${ICON_DIR}/acme__pkg.png`);
         });
 
-        it("请求参数：读图标目录、进程内直连、任何 code 都兑现（process=false）", async () => {
+        it("request arguments: read the icon directory in-process and always settle regardless of code (process=false)", async () => {
             await listIcons(PLUGIN);
 
             expect(mockState.fetchSyncPost).toHaveBeenCalledWith(
@@ -237,12 +237,12 @@ describe("集市包自定义图标", () => {
             );
         });
 
-        it("目录不存在（404）按「一张图标都没有」处理，不报错", async () => {
+        it("treats a missing directory (404) as no icons at all without throwing", async () => {
             mockState.fetchSyncPost.mockResolvedValue({code: 404, msg: "not found"});
             await expect(listIcons(PLUGIN)).resolves.toEqual([]);
         });
 
-        it("其它非 0 code 抛出并带上 code 与 msg：读不到目录不能退化成「没有图标」", async () => {
+        it("throws with the code and msg on any other non-zero code: a failed read is not an empty directory", async () => {
             mockState.fetchSyncPost.mockResolvedValue({code: 500, msg: "boom"});
             await expect(listIcons(PLUGIN)).rejects.toThrow(
                 `cannot list ${ICON_DIR}: code 500: boom`,
@@ -252,7 +252,7 @@ describe("集市包自定义图标", () => {
             await expect(listIcons(PLUGIN)).rejects.toThrow(`cannot list ${ICON_DIR}: code -1`);
         });
 
-        it("data 缺失或不是数组时按空目录处理", async () => {
+        it("treats missing or non-array data as an empty directory", async () => {
             mockState.fetchSyncPost.mockResolvedValue({code: 0});
             await expect(listIcons(PLUGIN)).resolves.toEqual([]);
 
@@ -262,7 +262,7 @@ describe("集市包自定义图标", () => {
     });
 
     describe("readIconDataUrl", () => {
-        it("把文件字节转成 data URL，并始终按扩展名写回 MIME", async () => {
+        it("turns the file bytes into a data URL and always writes the MIME from the extension", async () => {
             const fetchMock = vi.fn(async () =>
                 fakeResponse({contentType: "application/octet-stream", bytes: pngBytes()})
             );
@@ -280,7 +280,7 @@ describe("集市包自定义图标", () => {
             });
         });
 
-        it("SVG 的 MIME 由扩展名决定，不受内核给的 Content-Type 影响", async () => {
+        it("takes the SVG MIME from the extension, not from the kernel Content-Type", async () => {
             vi.stubGlobal(
                 "fetch",
                 vi.fn(async () =>
@@ -294,7 +294,7 @@ describe("集市包自定义图标", () => {
             expect(url.startsWith("data:image/svg+xml;base64,")).toBe(true);
         });
 
-        it("HTTP 失败直接抛出，不去解析响应体", async () => {
+        it("throws on an HTTP failure without parsing the response body", async () => {
             const json = vi.fn();
             vi.stubGlobal(
                 "fetch",
@@ -311,7 +311,7 @@ describe("集市包自定义图标", () => {
             expect(json).not.toHaveBeenCalled();
         });
 
-        it("内核用 JSON 错误体回复读不到文件时，抛出 code 与 msg 而不是把 JSON 当图", async () => {
+        it("throws the code and msg when the kernel answers an unreadable file with a JSON error body instead of treating JSON as an image", async () => {
             vi.stubGlobal(
                 "fetch",
                 vi.fn(async () =>
@@ -330,8 +330,8 @@ describe("集市包自定义图标", () => {
         });
     });
 
-    describe("功能声明", () => {
-        it("默认关闭的开关 + 管理入口 + 说明块，动作按钮打开管理窗口", async () => {
+    describe("feature declaration", () => {
+        it("a switch that is off by default, a manager entry and a notice block; the action button opens the manager", async () => {
             expect(definition.id).toBe("bazaar-custom-icon");
             expect(definition.category).toBe("settings");
             expect(definition.enabled).toBe(true);
@@ -356,7 +356,7 @@ describe("集市包自定义图标", () => {
             expect(document.body.textContent).toContain("feature.bazaarCustomIcon.tip");
         });
 
-        it("动作行保存图标后立刻打开功能，并把草稿同步成 enabled: true", async () => {
+        it("the action row enables the feature right after saving an icon and syncs the draft to enabled: true", async () => {
             const iconEntries: {name: string; isDir: boolean;}[] = [];
             respond((api) => {
                 if (api === "/api/file/readDir") {
@@ -406,8 +406,8 @@ describe("集市包自定义图标", () => {
         });
     });
 
-    describe("管理窗口", () => {
-        it("五类已安装集市包都取一次，按类型与名称排序后逐行渲染", async () => {
+    describe("manager window", () => {
+        it("fetches all five installed bazaar package types once and renders one row each, sorted by type and name", async () => {
             respond((api) => {
                 if (api === "/api/bazaar/getInstalledPlugin") {
                     return {
@@ -456,7 +456,7 @@ describe("集市包自定义图标", () => {
             expect(rows()[2].dataset.name).toBe("y");
         });
 
-        it("前端类型原样带进内核请求（移动端拿到的已安装列表可能不同）", async () => {
+        it("passes the frontend type into kernel requests verbatim (mobile may see a different installed list)", async () => {
             mockState.frontend = "mobile";
             openIconManager(makeOptions());
             await vi.waitFor(() => expect(mockState.fetchSyncPost).toHaveBeenCalled());
@@ -469,7 +469,7 @@ describe("集市包自定义图标", () => {
             );
         });
 
-        it("已经有自定义图标的行：预览用 data URL，并多出一个「恢复」按钮", async () => {
+        it("a row that already has a custom icon previews it as a data URL and gains a reset button", async () => {
             respond((api) => {
                 if (api === "/api/file/readDir") {
                     return {code: 0, data: [{name: "acme__pkg.png", isDir: false}]};
@@ -495,7 +495,7 @@ describe("集市包自定义图标", () => {
             expect(row.querySelector("img")?.getAttribute("src")?.startsWith("data:image/png;base64,")).toBe(true);
         });
 
-        it("读不出图标文件时退回集市包自带图标，窗口照样打得开", async () => {
+        it("falls back to the bundled bazaar icon when the icon file cannot be read and the window still opens", async () => {
             respond((api) => {
                 if (api === "/api/file/readDir") {
                     return {code: 0, data: [{name: "acme__pkg.png", isDir: false}]};
@@ -517,7 +517,7 @@ describe("集市包自定义图标", () => {
             expect(rows()[0].querySelector("img")?.getAttribute("src")).toBe("pkg.png");
         });
 
-        it("拉列表失败时显示失败提示与重试按钮，重试成功后渲染列表", async () => {
+        it("shows a failure notice and a retry button when listing fails, then renders the list after a successful retry", async () => {
             let failing = true;
             respond((api) => {
                 if (api === "/api/bazaar/getInstalledPlugin" && failing) {
@@ -543,13 +543,13 @@ describe("集市包自定义图标", () => {
             await vi.waitFor(() => expect(rows()).toHaveLength(1));
         });
 
-        it("一个包都没有时显示空提示", async () => {
+        it("shows the empty notice when there is no package at all", async () => {
             openIconManager(makeOptions());
             await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
             expect(rows()).toHaveLength(0);
         });
 
-        it("关闭按钮收掉窗口；再次打开只保留一个窗口", async () => {
+        it("the close button dismisses the window and reopening keeps a single window", async () => {
             openIconManager(makeOptions());
             await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
 
@@ -562,7 +562,7 @@ describe("集市包自定义图标", () => {
             expect(document.querySelectorAll(".ss-bazaar-icon-manager__list")).toHaveLength(1);
         });
 
-        it("插件卸载时通过 onUnload 收掉窗口", async () => {
+        it("dismisses the window through onUnload when the plugin unloads", async () => {
             openIconManager(makeOptions());
             await vi.waitFor(() => expect(document.body.textContent).toContain("feature.bazaarCustomIcon.empty"));
             expect(unloads).toHaveLength(1);
@@ -572,7 +572,7 @@ describe("集市包自定义图标", () => {
             expect(document.querySelector(".ss-bazaar-icon-manager__list")).toBeNull();
         });
 
-        it("「选择图片」把当前行记成待写入目标并打开文件选择器", async () => {
+        it("the pick-image action records the current row as the write target and opens the file picker", async () => {
             respond((api) => {
                 if (api === "/api/bazaar/getInstalledPlugin") {
                     return {
@@ -593,7 +593,7 @@ describe("集市包自定义图标", () => {
             expect(clickSpy).toHaveBeenCalledTimes(1);
         });
 
-        it("base64 贴错时提示并保留窗口，不写任何文件", async () => {
+        it("reports invalid base64, keeps the window open and writes no file", async () => {
             respond((api) => {
                 if (api === "/api/bazaar/getInstalledPlugin") {
                     return {
@@ -610,7 +610,7 @@ describe("集市包自定义图标", () => {
 
             document.querySelector<HTMLElement>("[data-action='base64']")?.click();
             const textarea = document.querySelector<HTMLTextAreaElement>("[data-text]")!;
-            textarea.value = "这不是 base64";
+            textarea.value = "this is not base64";
             document.querySelector<HTMLElement>("[data-confirm]")?.click();
 
             expect(mockState.messages.at(-1)?.text).toBe("feature.bazaarCustomIcon.invalid");
@@ -619,7 +619,7 @@ describe("集市包自定义图标", () => {
             expect(fetchMock).not.toHaveBeenCalled();
         });
 
-        it("保存成功但功能已经开着时只提示「已保存」，不重复落盘开关", async () => {
+        it("only reports saved when the feature is already on and does not persist the switch again", async () => {
             const iconEntries: {name: string; isDir: boolean;}[] = [];
             respond((api) => {
                 if (api === "/api/file/readDir") {
@@ -659,7 +659,7 @@ describe("集市包自定义图标", () => {
                 .toBe("feature.bazaarCustomIcon.customized");
         });
 
-        it("「恢复」删掉该包的图标文件，并广播目录变化", async () => {
+        it("the reset action deletes that package's icon file and broadcasts the directory change", async () => {
             const iconEntries: {name: string; isDir: boolean;}[] = [{name: "acme__pkg.png", isDir: false}];
             respond((api) => {
                 if (api === "/api/file/readDir") {
@@ -699,29 +699,29 @@ describe("集市包自定义图标", () => {
         });
     });
 
-    describe("用户提供的图片来源（文件选择 / 粘贴）", () => {
+    describe("user-supplied image sources (file picker / paste)", () => {
         /** 只认文件头：后缀可以随便写，甚至没有后缀。 */
-        it("选中的文件按文件头判定格式，不看后缀", async () => {
+        it("detects the format of a picked file from its header, not from the extension", async () => {
             const image = await imageFromFile(new File([pngBytes() as unknown as BlobPart], "whatever.txt"));
             expect(image.ext).toBe("png");
             // Blob 的 MIME 由扩展名给，内核偶尔会回 octet-stream，这里必须定死
             expect(image.blob.type).toBe("image/png");
         });
 
-        it("不是图片的文件一律拒绝（改名的文本文件不算图）", async () => {
+        it("rejects any file that is not an image (a renamed text file is not an image)", async () => {
             await expect(imageFromFile(new File(["hello"], "a.png"))).rejects.toThrow(
                 "the selected file is not a supported image",
             );
         });
 
-        it("空文件与超过 4 MiB 的文件都拒绝：后者会拖垮同步", async () => {
+        it("rejects empty files and files over 4 MiB: the latter would drag down sync", async () => {
             await expect(imageFromFile(new File([], "a.png"))).rejects.toThrow("the image file is empty");
             await expect(
                 imageFromFile(new File([new Uint8Array(4 * 1024 * 1024 + 1)], "big.png")),
             ).rejects.toThrow("the image file is larger than 4 MiB");
         });
 
-        it("直接粘贴 SVG 源码也收，但只有真的是 SVG 才收", () => {
+        it("accepts pasted SVG source, but only when it really is SVG", () => {
             const svg = imageFromBase64('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
             expect(svg.ext).toBe("svg");
             expect(svg.blob.type).toBe("image/svg+xml");
@@ -730,7 +730,7 @@ describe("集市包自定义图标", () => {
             );
         });
 
-        it("urlencoded 的 data URI 走解码分支，解不开就明确报错", () => {
+        it("decodes urlencoded data URIs and reports a clear error when decoding fails", () => {
             const svg = imageFromBase64(
                 "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3C%2Fsvg%3E",
             );
@@ -745,7 +745,7 @@ describe("集市包自定义图标", () => {
             );
         });
 
-        it("data URI 不完整、base64 内容非法、能解码但不是图片，分别给出对应错误", () => {
+        it("reports distinct errors for an incomplete data URI, invalid base64 and decodable non-image content", () => {
             expect(() => imageFromBase64("data:image/png;base64")).toThrow("the data URI is not complete");
             expect(() => imageFromBase64("!!!!not-base64!!!!")).toThrow("the base64 text is not valid");
             expect(() => imageFromBase64(btoa("hello"))).toThrow(
@@ -754,7 +754,7 @@ describe("集市包自定义图标", () => {
             expect(() => imageFromBase64("   ")).toThrow("the base64 text is empty");
         });
 
-        it("MIME 能认出扩展名时按 MIME 兜底（文件头认不出 ico）", () => {
+        it("falls back to the MIME when it identifies the extension (the header does not identify ico)", () => {
             const ico = new Uint8Array([0x00, 0x00, 0x01, 0x00, 0x01, 0x00]);
             const image = imageFromBase64(`data:image/x-icon;base64,${btoa(String.fromCharCode(...ico))}`);
             expect(image.ext).toBe("ico");
@@ -762,7 +762,7 @@ describe("集市包自定义图标", () => {
         });
     });
 
-    describe("mountBazaarCustomIcon：把图标贴回集市「已下载」列表", () => {
+    describe("mountBazaarCustomIcon: sticking icons back into the bazaar downloaded list", () => {
         const instances: {destroy?: () => void;}[] = [];
         let queue: FrameRequestCallback[] = [];
 
@@ -834,7 +834,7 @@ describe("集市包自定义图标", () => {
             queue = [];
         });
 
-        it("给有图标槽的卡片贴上 data URL，并记下原文地址与版本号", async () => {
+        it("applies a data URL to a card that has an icon slot and records the original source and version", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"));
@@ -852,7 +852,7 @@ describe("集市包自定义图标", () => {
             expect(holder.dataset.ssIcon).toBe("1:acme__pkg.png");
         });
 
-        it("卡片没有对应图标时把原图恢复回去，不留我们的标记", async () => {
+        it("restores the original image and leaves no marker when a card has no matching icon", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"));
@@ -871,7 +871,7 @@ describe("集市包自定义图标", () => {
             expect(holder.dataset.ssIcon).toBeUndefined();
         });
 
-        it("本来没有图标的卡片补一张图，并把占位符收起来；还原时再放出来", async () => {
+        it("adds an image to a card that had none and hides the placeholder, then restores it", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg", {withImage: false}));
@@ -895,7 +895,7 @@ describe("集市包自定义图标", () => {
             expect(holder.dataset.ssHidPlaceholder).toBeUndefined();
         });
 
-        it("同一个图标只读一次：同一包里多张卡片复用同一个 data URL", async () => {
+        it("reads each icon once: several cards of one package reuse the same data URL", async () => {
             const stub = stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"), cardMarkup("pkg"));
@@ -909,7 +909,7 @@ describe("集市包自定义图标", () => {
             expect(sources[0]).toBe(sources[1]);
         });
 
-        it("集市整块重绘（innerHTML 被替换）之后重新贴上", async () => {
+        it("re-applies after the bazaar re-renders its whole block (innerHTML replaced)", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"));
@@ -925,7 +925,7 @@ describe("集市包自定义图标", () => {
             ).toBe(true);
         });
 
-        it("换掉同名图标文件后按新版本重新贴（文件名不变，版本号变）", async () => {
+        it("re-applies from the new version after replacing a same-named icon file (same name, new version)", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"));
@@ -942,7 +942,7 @@ describe("集市包自定义图标", () => {
             expect(imageOf("pkg")?.getAttribute("src")?.startsWith("data:image/svg+xml;base64,")).toBe(true);
         });
 
-        it("读不出某一张图时只跳过它，其它卡片照常贴", async () => {
+        it("skips only the image that cannot be read and still applies the others", async () => {
             let call = 0;
             const stub = vi.fn(async () => {
                 call += 1;
@@ -961,7 +961,7 @@ describe("集市包自定义图标", () => {
             expect(imageOf("two")?.getAttribute("src")?.startsWith("data:image/png;base64,")).toBe(true);
         });
 
-        it("图标目录读不到（code≠0）时保留上一次贴好的图标，不把界面清空", async () => {
+        it("keeps the previously applied icons when the directory read fails (code≠0) instead of clearing the UI", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"));
@@ -979,7 +979,7 @@ describe("集市包自定义图标", () => {
             expect(holderOf("pkg").dataset.ssIcon).toBe("1:acme__pkg.png");
         });
 
-        it("图还没读完卡片就被移出文档时，旧结果不许再贴回去", async () => {
+        it("never applies a stale result when the card leaves the document before its image is read", async () => {
             let release: (() => void) | undefined;
             const stub = vi.fn(() =>
                 new Promise((resolve) => {
@@ -1001,7 +1001,7 @@ describe("集市包自定义图标", () => {
             expect(image.getAttribute("src")).toBe("assets/original.png");
         });
 
-        it("「已下载」容器还没出现时什么都不做，出现之后再贴上", async () => {
+        it("does nothing until the downloaded container appears, then applies the icons", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             document.body.innerHTML = "<div class='b3-dialog'></div>";
@@ -1023,7 +1023,7 @@ describe("集市包自定义图标", () => {
             expect(imageOf("pkg")?.getAttribute("src")?.startsWith("data:image/png;base64,")).toBe(true);
         });
 
-        it("卸载：还原所有贴过图的卡片、停掉观察器，且可以重复调用", async () => {
+        it("unmount restores every patched card, stops the observer and is safe to call twice", async () => {
             stubIconFetch();
             respond(() => dirWith("acme__pkg.png"));
             mountPanel(cardMarkup("pkg"), cardMarkup("pkg", {withImage: false}));

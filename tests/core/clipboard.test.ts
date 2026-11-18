@@ -46,68 +46,68 @@ beforeEach(() => {
 });
 
 describe("copyText", () => {
-    it("空文本直接返回 false，不做任何尝试", async () => {
+    it("returns false right away for empty text without trying anything", async () => {
         const writeText = vi.fn(async () => undefined);
         setClipboard({writeText});
         await expect(copyText("")).resolves.toBe(false);
         expect(writeText).not.toHaveBeenCalled();
     });
 
-    it("安卓容器走 App 注入的原生桥", async () => {
+    it("uses the native bridge injected by the Android app", async () => {
         setContainer("android");
         const bridge = vi.fn();
         host().JSAndroid = {writeClipboard: bridge};
         const writeText = vi.fn(async () => undefined);
         setClipboard({writeText});
 
-        await expect(copyText("文本")).resolves.toBe(true);
-        expect(bridge).toHaveBeenCalledWith("文本");
+        await expect(copyText("text")).resolves.toBe(true);
+        expect(bridge).toHaveBeenCalledWith("text");
         expect(writeText).not.toHaveBeenCalled();
     });
 
-    it("iOS 容器走 messageHandlers", async () => {
+    it("uses messageHandlers on the iOS container", async () => {
         setContainer("ios");
         const postMessage = vi.fn();
         host().webkit = {messageHandlers: {setClipboard: {postMessage}}};
 
-        await expect(copyText("文本")).resolves.toBe(true);
-        expect(postMessage).toHaveBeenCalledWith("文本");
+        await expect(copyText("text")).resolves.toBe(true);
+        expect(postMessage).toHaveBeenCalledWith("text");
     });
 
-    it("鸿蒙桥返回 false 表示没写进去", async () => {
+    it("reads a false from the HarmonyOS bridge as nothing written", async () => {
         setContainer("harmony");
         host().JSHarmony = {writeClipboard: () => false};
-        await expect(copyText("文本")).resolves.toBe(false);
+        await expect(copyText("text")).resolves.toBe(false);
     });
 
-    it("鸿蒙桥返回其它值时按成功处理", async () => {
+    it("treats any other HarmonyOS bridge value as success", async () => {
         setContainer("harmony");
         host().JSHarmony = {writeClipboard: () => undefined};
-        await expect(copyText("文本")).resolves.toBe(true);
+        await expect(copyText("text")).resolves.toBe(true);
     });
 
-    it("容器类型对不上时不用本地桥，继续往下走", async () => {
+    it("skips the native bridge on a container mismatch and falls through", async () => {
         setContainer("desktop");
         const bridge = vi.fn();
         host().JSAndroid = {writeClipboard: bridge};
         const writeText = vi.fn(async () => undefined);
         setClipboard({writeText});
 
-        await expect(copyText("文本")).resolves.toBe(true);
+        await expect(copyText("text")).resolves.toBe(true);
         expect(bridge).not.toHaveBeenCalled();
-        expect(writeText).toHaveBeenCalledWith("文本");
+        expect(writeText).toHaveBeenCalledWith("text");
     });
 
-    it("容器是安卓但桥不存在时继续往下走", async () => {
+    it("falls through on Android when the bridge is missing", async () => {
         setContainer("android");
         const writeText = vi.fn(async () => undefined);
         setClipboard({writeText});
 
-        await expect(copyText("文本")).resolves.toBe(true);
-        expect(writeText).toHaveBeenCalledWith("文本");
+        await expect(copyText("text")).resolves.toBe(true);
+        expect(writeText).toHaveBeenCalledWith("text");
     });
 
-    it("Clipboard API 被拒绝时退回 textarea + execCommand", async () => {
+    it("falls back to textarea + execCommand when the Clipboard API is rejected", async () => {
         setClipboard({
             writeText: vi.fn(async () => {
                 throw new Error("denied");
@@ -115,48 +115,48 @@ describe("copyText", () => {
         });
         const execCommand = setExecCommand(true);
 
-        await expect(copyText("文本")).resolves.toBe(true);
+        await expect(copyText("text")).resolves.toBe(true);
         expect(execCommand).toHaveBeenCalledWith("copy");
         // 兜底用的 textarea 必须收掉，不能留在页面里
         expect(document.querySelector("textarea")).toBeNull();
     });
 
-    it("Clipboard API 不存在时同样走兜底", async () => {
+    it("uses the same fallback when the Clipboard API is missing", async () => {
         const execCommand = setExecCommand(true);
-        await expect(copyText("文本")).resolves.toBe(true);
+        await expect(copyText("text")).resolves.toBe(true);
         expect(execCommand).toHaveBeenCalledWith("copy");
     });
 
-    it("连 window.siyuan 都不存在时按没有原生桥处理", async () => {
+    it("treats a missing window.siyuan as having no native bridge", async () => {
         (window as unknown as {siyuan?: unknown;}).siyuan = undefined;
         const execCommand = setExecCommand(true);
-        await expect(copyText("文本")).resolves.toBe(true);
+        await expect(copyText("text")).resolves.toBe(true);
         expect(execCommand).toHaveBeenCalledWith("copy");
     });
 
-    it("execCommand 返回 false 时如实回报失败", async () => {
+    it("reports failure honestly when execCommand returns false", async () => {
         setExecCommand(false);
-        await expect(copyText("文本")).resolves.toBe(false);
+        await expect(copyText("text")).resolves.toBe(false);
     });
 
-    it("execCommand 抛错时按失败处理，不把异常抛给调用方", async () => {
+    it("treats a throwing execCommand as failure and never rethrows to the caller", async () => {
         setExecCommand(() => {
             throw new Error("blocked");
         });
-        await expect(copyText("文本")).resolves.toBe(false);
+        await expect(copyText("text")).resolves.toBe(false);
     });
 
-    it("兜底的 textarea 不可见、只读、带选区，且复制内容正确", async () => {
+    it("makes the fallback textarea invisible, readonly and selected, holding the right text", async () => {
         setExecCommand(() => {
             const area = document.querySelector("textarea") as HTMLTextAreaElement;
-            expect(area.value).toBe("多行\n文本");
+            expect(area.value).toBe("line one\nline two");
             expect(area.getAttribute("readonly")).toBe("true");
             expect(area.style.opacity).toBe("0");
             expect(area.style.position).toBe("fixed");
             expect(area.selectionStart).toBe(0);
-            expect(area.selectionEnd).toBe("多行\n文本".length);
+            expect(area.selectionEnd).toBe("line one\nline two".length);
             return true;
         });
-        await expect(copyText("多行\n文本")).resolves.toBe(true);
+        await expect(copyText("line one\nline two")).resolves.toBe(true);
     });
 });

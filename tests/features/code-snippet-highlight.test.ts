@@ -117,7 +117,7 @@ const createSnippetDialog = (options: {value?: string; type?: string;} = {}): Sn
 
 const hostOf = (dialog: HTMLElement): HTMLElement | null => dialog.querySelector<HTMLElement>(`.${HOST_CLASS}`);
 
-describe("代码片段编辑区高亮", () => {
+describe("code snippet editor highlighting", () => {
     const mounted: HostHarness[] = [];
     let frames: ReturnType<typeof stubFrames>;
     let mountSnippetHighlight: HighlightModule["mountSnippetHighlight"];
@@ -145,7 +145,7 @@ describe("代码片段编辑区高亮", () => {
         return harness;
     };
 
-    it("声明：开关默认关闭，样式每次挂载都重写", () => {
+    it("declaration: the switch defaults to off and the stylesheet is rewritten on every mount", () => {
         expect(definition.id).toBe("code-snippet-highlight");
         expect(definition.category).toBe("settings");
         expect(definition.settings).toEqual([
@@ -175,7 +175,7 @@ describe("代码片段编辑区高亮", () => {
         expect(harness.styleElement()?.textContent).toBe(css);
     });
 
-    it("把 textarea 包进容器：高亮层在上、输入框在下，结构由内核 DOM 原样保留", () => {
+    it("wraps the textarea in a container: highlight layer above, input below, with the kernel DOM structure preserved", () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog({value: "body { color: red }"});
         // 内核的弹窗里 textarea 外面还有一层 holder（data-type 挂在它上面），
@@ -197,7 +197,7 @@ describe("代码片段编辑区高亮", () => {
         expect(code?.className).toBe("hljs");
     });
 
-    it("字体、内边距、边框与配色从 textarea 的计算样式抄过来（底色只在挂载时抄一次）", () => {
+    it("font, padding, border and colours are copied from the textarea computed style (the background only once at mount)", () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog();
         textarea.style.fontSize = "13px";
@@ -223,7 +223,7 @@ describe("代码片段编辑区高亮", () => {
         expect(host.style.getPropertyValue("--ss-snippet-color")).toBe("rgb(1, 2, 3)");
     });
 
-    it("data-type 决定语言：css / js / 其余回落到 plaintext", async () => {
+    it("data-type picks the language: css / js / everything else falls back to plaintext", async () => {
         const hljs = installHljs();
         const {textarea} = createSnippetDialog({value: "x", type: "css"});
 
@@ -234,7 +234,7 @@ describe("代码片段编辑区高亮", () => {
         expect(textarea.value).toBe("x");
     });
 
-    it("js 映射到 javascript", async () => {
+    it("js maps to javascript", async () => {
         const hljs = installHljs();
         createSnippetDialog({value: "let a = 1", type: "js"});
 
@@ -244,7 +244,7 @@ describe("代码片段编辑区高亮", () => {
         expect(hljs.highlight).toHaveBeenLastCalledWith("let a = 1", {language: "javascript", ignoreIllegals: true});
     });
 
-    it("不在映射表里的 data-type 走 plaintext", async () => {
+    it("a data-type outside the mapping uses plaintext", async () => {
         const hljs = installHljs();
         createSnippetDialog({value: "print(1)", type: "python"});
 
@@ -254,7 +254,7 @@ describe("代码片段编辑区高亮", () => {
         expect(hljs.highlight).toHaveBeenLastCalledWith("print(1)", {language: "plaintext", ignoreIllegals: true});
     });
 
-    it("highlight.js 没有该语言时自己转义，不调用 highlight()", async () => {
+    it("escapes on its own without calling highlight() when highlight.js lacks the language", async () => {
         const hljs = installHljs({supported: false});
         const {dialog} = createSnippetDialog({value: "a < b & c > d"});
 
@@ -267,7 +267,7 @@ describe("代码片段编辑区高亮", () => {
         expect(code.innerHTML).toBe("a &lt; b &amp; c &gt; d\n");
     });
 
-    it("highlight() 抛错时回落成纯文本，编辑框仍然可用", async () => {
+    it("falls back to plain text when highlight() throws and the editor stays usable", async () => {
         installHljs({throws: true});
         const {dialog} = createSnippetDialog({value: "boom"});
 
@@ -279,7 +279,7 @@ describe("代码片段编辑区高亮", () => {
         expect(host.classList.contains(ACTIVE_CLASS)).toBe(true);
     });
 
-    it("高亮结果末尾补一个换行，最后一行的行高才和输入框一致", async () => {
+    it("appends a trailing newline so the last line's height matches the input", async () => {
         installHljs({value: "<span>x</span>"});
         const {dialog} = createSnippetDialog({value: "x"});
 
@@ -291,7 +291,7 @@ describe("代码片段编辑区高亮", () => {
         expect(code.lastChild?.nodeType).toBe(Node.TEXT_NODE);
     });
 
-    it("渲染成功之后才把输入框文字变透明（--active）", async () => {
+    it("makes the input text transparent only after a successful render (--active)", async () => {
         installHljs();
         const {dialog} = createSnippetDialog();
 
@@ -304,7 +304,7 @@ describe("代码片段编辑区高亮", () => {
         expect(host.classList.contains(ACTIVE_CLASS)).toBe(true);
     });
 
-    it("输入事件按帧重渲染", async () => {
+    it("input events re-render per frame", async () => {
         const hljs = installHljs();
         const {textarea} = createSnippetDialog({value: "old"});
         mount();
@@ -321,7 +321,7 @@ describe("代码片段编辑区高亮", () => {
         expect(hljs.highlight).toHaveBeenLastCalledWith("new value", {language: "plaintext", ignoreIllegals: true});
     });
 
-    it("组字期间交还可见性，组字结束后重渲染", async () => {
+    it("restores visibility during composition and re-renders once it ends", async () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog({value: "ni"});
         mount();
@@ -341,7 +341,7 @@ describe("代码片段编辑区高亮", () => {
         expect(host.querySelector("code.hljs")?.textContent).toBe("你\n");
     });
 
-    it("滚动位置同步给高亮层（两层是同一个滚动视口）", async () => {
+    it("syncs the scroll position to the highlight layer (both share one scroll viewport)", async () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog();
         mount();
@@ -355,7 +355,7 @@ describe("代码片段编辑区高亮", () => {
         expect(pre.scrollLeft).toBe(7);
     });
 
-    it("window 上没有 hljs 时按内核同一个地址补两份脚本，加载完成才渲染", async () => {
+    it("injects the same two scripts the kernel uses when window lacks hljs, rendering only after they load", async () => {
         const {dialog} = createSnippetDialog({value: "x"});
         mount();
 
@@ -375,7 +375,7 @@ describe("代码片段编辑区高亮", () => {
         expect(hostOf(dialog)?.querySelector("code.hljs")?.textContent).toBe("x\n");
     });
 
-    it("内核已经插过脚本时不重复插入", async () => {
+    it("does not re-insert scripts the kernel already added", async () => {
         const pre = document.createElement("script");
         pre.id = "protyleHljsScript";
         const third = document.createElement("script");
@@ -390,7 +390,7 @@ describe("代码片段编辑区高亮", () => {
         expect(document.querySelectorAll("#protyleHljsThirdScript")).toHaveLength(1);
     });
 
-    it("等不到 highlight.js（10s）就整体拆掉，并留下一条日志", async () => {
+    it("tears everything down when highlight.js does not arrive within 10s and logs it", async () => {
         vi.useFakeTimers();
         const {dialog, textarea} = createSnippetDialog();
         const harness = mount();
@@ -405,7 +405,7 @@ describe("代码片段编辑区高亮", () => {
         expect(harness.records.logs.some((args) => String(args[0]).includes("not ready in time"))).toBe(true);
     });
 
-    it("10s 内渲染成功就不会被超时拆掉", async () => {
+    it("a successful render within 10s is not torn down by the timeout", async () => {
         vi.useFakeTimers();
         installHljs();
         const {dialog} = createSnippetDialog();
@@ -419,7 +419,7 @@ describe("代码片段编辑区高亮", () => {
         expect(hostOf(dialog)).not.toBeNull();
     });
 
-    it("暗色配色取 codeBlockThemeDark，缺失时回落 github-dark", async () => {
+    it("the dark theme comes from codeBlockThemeDark, falling back to github-dark", async () => {
         installHljs();
         (window.siyuan.config as unknown as {appearance: unknown;}).appearance = {mode: 1};
         createSnippetDialog();
@@ -430,7 +430,7 @@ describe("代码片段编辑区高亮", () => {
         expect(link.getAttribute("href")).toBe("/stage/protyle/js/highlight.js/styles/github-dark.min.css?v=11.12.0");
     });
 
-    it("亮色配色取 codeBlockThemeLight，缺失时回落 default", async () => {
+    it("the light theme comes from codeBlockThemeLight, falling back to default", async () => {
         installHljs();
         (window.siyuan.config as unknown as {appearance: unknown;}).appearance = {mode: 0};
         createSnippetDialog();
@@ -441,11 +441,11 @@ describe("代码片段编辑区高亮", () => {
         expect(link.getAttribute("href")).toBe("/stage/protyle/js/highlight.js/styles/default.min.css?v=11.12.0");
     });
 
-    it("主题名非法时退回内核默认主题，而不是一直空着", async () => {
+    it("an invalid theme name falls back to the kernel default instead of staying empty", async () => {
         installHljs();
         (window.siyuan.config as unknown as {appearance: unknown;}).appearance = {
             mode: 0,
-            codeBlockThemeLight: "不存在的主题",
+            codeBlockThemeLight: "missing-theme",
         };
         createSnippetDialog();
         mount();
@@ -453,13 +453,13 @@ describe("代码片段编辑区高亮", () => {
 
         const link = document.getElementById("protyleHljsStyle") as HTMLLinkElement;
         // 配置里给的名字会先按原样挂上去（内核的白名单校验在宿主侧，这里不做二次判断）
-        expect(link.getAttribute("href")).toContain("/styles/不存在的主题.min.css");
+        expect(link.getAttribute("href")).toContain("/styles/missing-theme.min.css");
         // 加载失败后必须退到内核默认主题，而不是一直空着
         link.dispatchEvent(new Event("error"));
         expect(link.getAttribute("href")).toContain("/styles/default.min.css");
     });
 
-    it("内核已经挂好主题样式表时直接复用（同一个元素 id）", async () => {
+    it("reuses the kernel theme stylesheet when already present (same element id)", async () => {
         installHljs();
         const existing = document.createElement("link");
         existing.id = "protyleHljsStyle";
@@ -475,7 +475,7 @@ describe("代码片段编辑区高亮", () => {
         expect(existing.getAttribute("href")).toBe("/kernel/hljs.css");
     });
 
-    it("重复扫描不会给同一个输入框再包一层", async () => {
+    it("repeated scans do not wrap the same input twice", async () => {
         installHljs();
         const {dialog} = createSnippetDialog();
         mount();
@@ -488,7 +488,7 @@ describe("代码片段编辑区高亮", () => {
         expect(dialog.querySelectorAll(`.${HOST_CLASS}`)).toHaveLength(1);
     });
 
-    it("同一个弹窗里的多个代码片段各自独立处理", async () => {
+    it("multiple snippets in one dialog are handled independently", async () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog();
         const second = document.createElement("textarea");
@@ -501,7 +501,7 @@ describe("代码片段编辑区高亮", () => {
         expect(second.classList.contains(INPUT_CLASS)).toBe(true);
     });
 
-    it("弹窗里的其它 textarea（非代码片段）不处理", () => {
+    it("other textareas in the dialog (non-snippets) are left alone", () => {
         installHljs();
         const textarea = document.createElement("textarea");
         document.body.append(textarea);
@@ -512,7 +512,7 @@ describe("代码片段编辑区高亮", () => {
         expect(textarea.classList.contains(INPUT_CLASS)).toBe(false);
     });
 
-    it("输入框被移出文档后拆掉容器，重新插回会重新挂上", async () => {
+    it("removes the container when the input leaves the document and remounts it when re-inserted", async () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog();
         mount();
@@ -533,7 +533,7 @@ describe("代码片段编辑区高亮", () => {
         expect(textarea.parentElement?.classList.contains(HOST_CLASS)).toBe(true);
     });
 
-    it("卸载把输入框放回原位、移除容器，之后的突变不再重挂", async () => {
+    it("unmount puts the input back, removes the container and ignores later mutations", async () => {
         installHljs();
         const {dialog, textarea} = createSnippetDialog();
         const harness = mount();
@@ -553,7 +553,7 @@ describe("代码片段编辑区高亮", () => {
         expect(dialog.querySelector(`.${HOST_CLASS}`)).toBeNull();
     });
 
-    it("destroy 幂等：连调两次不抛错，也不会重复拆", () => {
+    it("destroy is idempotent: calling it twice neither throws nor tears down twice", () => {
         installHljs();
         createSnippetDialog();
         const harness = mount();

@@ -143,8 +143,8 @@ afterEach(() => {
     delete (document as unknown as {execCommand?: unknown;}).execCommand;
 });
 
-describe("行内代码复制按钮", () => {
-    it("声明：分类是编辑器，开关由 mode 自己表达（没有独立的 enabled 开关）", () => {
+describe("inline code copy button", () => {
+    it("declaration: category is editor, the switch is mode itself (no separate enabled switch)", () => {
         expect(definition.id).toBe("inline-code-copy");
         expect(definition.category).toBe("editor");
         expect(definition.name).toBe("feature.inlineCodeCopy.title");
@@ -159,7 +159,7 @@ describe("行内代码复制按钮", () => {
         expect(definition.isEnabled?.({mode: "always"})).toBe(true);
     });
 
-    it("注入的样式是 body 上的固定定位小按钮，两个端尺寸一致", () => {
+    it("the injected style is a small fixed-position button on body, the same size on both frontends", () => {
         const harness = mount({config: {mode: "always"}});
         const css = harness.css();
 
@@ -172,7 +172,7 @@ describe("行内代码复制按钮", () => {
         expect(harness.styleElement()).not.toBeNull();
     });
 
-    it("默认关闭：mode 为 off 或非法值时一个按钮都不建", async () => {
+    it("off by default: no button is created for mode off or an invalid value", async () => {
         const frames = stubFrames();
         codeSpan("a");
         codeSpan("b");
@@ -188,7 +188,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("总是显示：每段可见行内代码一个按钮，贴在它右上角", async () => {
+    it("always visible: one button per visible inline code, pinned to its top-right corner", async () => {
         const frames = stubFrames();
         codeSpan("a", {left: 100, top: 100, width: 60, height: 20});
         codeSpan("b", {left: 300, top: 200, width: 40, height: 18});
@@ -205,7 +205,7 @@ describe("行内代码复制按钮", () => {
         expect(buttons[1].style.top).toBe("186px");
     });
 
-    it("贴边时把按钮压回视口内：右侧不越界，顶部不跑到负坐标", async () => {
+    it("buttons are clamped into the viewport at the edges: no overflow on the right, no negative y", async () => {
         const frames = stubFrames();
         codeSpan("wide", {left: 1000, top: 100, width: 100, height: 20});
         codeSpan("top", {left: 100, top: 5, width: 20, height: 18});
@@ -219,7 +219,7 @@ describe("行内代码复制按钮", () => {
         expect(buttons[1].style.top).toBe("2px");
     });
 
-    it("视口外与没有高度盒的行内代码不建按钮", async () => {
+    it("no button for inline code outside the viewport or without a height box", async () => {
         const frames = stubFrames();
         // 整段都在视口上方：bottom <= 0
         codeSpan("above", {left: 10, top: -40, width: 30, height: 20});
@@ -233,7 +233,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("流式输出与富标题预览里的行内代码不建按钮", async () => {
+    it("no button for inline code in streaming output or the rich title preview", async () => {
         const frames = stubFrames();
         const streaming = document.createElement("div");
         streaming.className = "agent-chat__body--streaming";
@@ -243,10 +243,10 @@ describe("行内代码复制按钮", () => {
         // 富标题是宿主投影出来的标题 AST，按钮是 fixed 的，会飘在文档树的文字上
         const title = document.createElement("div");
         title.className = "document-title-preview";
-        title.append(codeSpan("标题"));
+        title.append(codeSpan("title"));
         document.body.append(title);
 
-        const normal = codeSpan("正文");
+        const normal = codeSpan("body");
         expect(normal.isConnected).toBe(true);
 
         mount({config: {mode: "always"}});
@@ -254,7 +254,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(1);
     });
 
-    it("只认正文行内代码：代码块、带 hljs 的 code、正文之外的裸 code 都不算", async () => {
+    it("only body inline code counts: code blocks, hljs code and bare code outside the body do not", async () => {
         const frames = stubFrames();
         const typography = document.createElement("div");
         typography.className = "b3-typography";
@@ -292,7 +292,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(1);
     });
 
-    it("按钮挂在 body 上、标题与 aria-label 走 i18n，图标是 #iconCopy", async () => {
+    it("the button lives on body, title and aria-label come from i18n, the icon is #iconCopy", async () => {
         const frames = stubFrames();
         codeSpan("x");
         mount({config: {mode: "always"}, i18n: (key) => `[${key}]`});
@@ -308,7 +308,7 @@ describe("行内代码复制按钮", () => {
         expect(button.innerHTML).toContain("#iconCopy");
     });
 
-    it("同一段行内代码只对应一个按钮，它被宿主摘掉后按钮跟着收", async () => {
+    it("one button per inline code run, and the button goes away once the host removes it", async () => {
         const frames = stubFrames();
         const span = codeSpan("x");
         mount({config: {mode: "always"}});
@@ -328,10 +328,10 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("按下即复制（鼠标路径），并提示「已复制」", async () => {
+    it("pointerdown copies (mouse path) and shows the copied toast", async () => {
         const frames = stubFrames();
         const writeText = clipboardWriter();
-        codeSpan("值");
+        codeSpan("value");
         const harness = mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -343,14 +343,14 @@ describe("行内代码复制按钮", () => {
         // preventDefault 是为了别让点击把焦点 / 光标从编辑区带走
         expect(event.defaultPrevented).toBe(true);
         expect(writeText).toHaveBeenCalledTimes(1);
-        expect(writeText).toHaveBeenCalledWith("值");
+        expect(writeText).toHaveBeenCalledWith("value");
         expect(harness.records.messages).toEqual(["common.copied"]);
     });
 
-    it("非左键按下不触发复制", async () => {
+    it("a non-primary button does not copy", async () => {
         const frames = stubFrames();
         const writeText = clipboardWriter();
-        codeSpan("值");
+        codeSpan("value");
         const harness = mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -364,10 +364,10 @@ describe("行内代码复制按钮", () => {
         expect(harness.records.messages).toEqual([]);
     });
 
-    it("键盘 / 无障碍的 click（detail 为 0）也复制，鼠标那次不重复", async () => {
+    it("keyboard / accessibility clicks (detail 0) also copy, the mouse press does not copy twice", async () => {
         const frames = stubFrames();
         const writeText = clipboardWriter();
-        codeSpan("值");
+        codeSpan("value");
         const harness = mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -386,7 +386,7 @@ describe("行内代码复制按钮", () => {
         expect(harness.records.messages).toEqual(["common.copied", "common.copied"]);
     });
 
-    it("复制失败时提示「复制失败」，不把异常抛给调用方", async () => {
+    it("a failed copy shows the copy-failed toast and does not throw to the caller", async () => {
         const frames = stubFrames();
         // Clipboard API 被拒 + execCommand 兜底也失败 = 真的没写进去
         setClipboard({
@@ -396,7 +396,7 @@ describe("行内代码复制按钮", () => {
         });
         (document as unknown as {execCommand: () => boolean;}).execCommand = () => false;
 
-        codeSpan("值");
+        codeSpan("value");
         const harness = mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -407,7 +407,7 @@ describe("行内代码复制按钮", () => {
         expect(harness.records.messages).toEqual(["common.copyFailed"]);
     });
 
-    it("复制的是可见文本：零宽标记被剥掉、NBSP 变空格、emoji 的 ZWJ 保留", async () => {
+    it("the visible text is copied: zero-width marks stripped, NBSP turned into a space, the emoji ZWJ kept", async () => {
         const frames = stubFrames();
         const writeText = clipboardWriter();
         // 首尾是内核塞的排版标记，中间有 NBSP；\u200d 是 emoji 的连字，不能一起删掉
@@ -420,7 +420,7 @@ describe("行内代码复制按钮", () => {
         expect(writeText).toHaveBeenCalledWith("严格值 x\u200d😀");
     });
 
-    it("悬浮模式（桌面端）：指到行内代码上才建按钮，离开就收掉", async () => {
+    it("hover mode (desktop): the button exists while pointing at the inline code and is removed on leave", async () => {
         const frames = stubFrames();
         const span = codeSpan("x");
         mount({config: {mode: "hover"}});
@@ -436,7 +436,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("悬浮模式：从代码滑向按钮时穿过的那段空隙不算离开", async () => {
+    it("hover mode: the gap crossed when sliding from the code to the button does not count as leaving", async () => {
         const frames = stubFrames();
         const span = codeSpan("x");
         mount({config: {mode: "hover"}});
@@ -458,7 +458,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("悬浮模式：指针落在按钮自身上仍算在这一段行内代码里", async () => {
+    it("hover mode: a pointer on the button itself still belongs to that inline code", async () => {
         const frames = stubFrames();
         const span = codeSpan("x");
         mount({config: {mode: "hover"}});
@@ -478,7 +478,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(1);
     });
 
-    it("移动端悬浮模式：光标（selectionchange）落在行内代码上才显示", async () => {
+    it("mobile hover mode: shown only when the caret (selectionchange) lands on the inline code", async () => {
         mockState.frontend = "mobile";
         const frames = stubFrames();
         const span = codeSpan("x");
@@ -502,7 +502,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("桌面端不听 selectionchange（光标进去不该弹按钮）", async () => {
+    it("desktop ignores selectionchange (a caret inside must not pop the button)", async () => {
         const frames = stubFrames();
         const span = codeSpan("x");
         mount({config: {mode: "hover"}});
@@ -517,11 +517,11 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(0);
     });
 
-    it("移动端：按钮上的按下在 window 捕获阶段就被拦下，宿主收不到这次 pointerdown", async () => {
+    it("mobile: a press on the button is intercepted in the window capture phase, so the host never sees that pointerdown", async () => {
         mockState.frontend = "mobile";
         const frames = stubFrames();
         const writeText = clipboardWriter();
-        codeSpan("值");
+        codeSpan("value");
         const harness = mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -542,10 +542,10 @@ describe("行内代码复制按钮", () => {
         expect(harness.records.messages).toEqual(["common.copied"]);
     });
 
-    it("移动端：按钮之外的按下照旧冒泡给宿主，只用来重新对账", async () => {
+    it("mobile: presses outside the button still bubble to the host, only to resync", async () => {
         mockState.frontend = "mobile";
         const frames = stubFrames();
-        const span = codeSpan("值");
+        const span = codeSpan("value");
         mount({config: {mode: "always"}});
         await drain(frames);
 
@@ -559,7 +559,7 @@ describe("行内代码复制按钮", () => {
         expect(event.defaultPrevented).toBe(false);
     });
 
-    it("配置变更：切到 off 立刻收掉按钮，切回 always 重新建出来", async () => {
+    it("config change: switching to off removes the button at once, switching back to always builds it again", async () => {
         const frames = stubFrames();
         codeSpan("x");
         const harness = mount({config: {mode: "always"}});
@@ -578,7 +578,7 @@ describe("行内代码复制按钮", () => {
         expect(copyButtons()).toHaveLength(1);
     });
 
-    it("destroy 取消还没执行的那一帧", () => {
+    it("destroy cancels the frame that has not run yet", () => {
         const frames = stubFrames();
         codeSpan("x");
         const harness = mount({config: {mode: "always"}});
@@ -589,7 +589,7 @@ describe("行内代码复制按钮", () => {
         expect(frames.pendingCount()).toBe(0);
     });
 
-    it("dispose 之后按钮、样式、监听与观察者都不再响应", async () => {
+    it("after dispose the button, style, listeners and observers no longer react", async () => {
         const frames = stubFrames();
         codeSpan("x");
         const harness = mount({config: {mode: "always"}});

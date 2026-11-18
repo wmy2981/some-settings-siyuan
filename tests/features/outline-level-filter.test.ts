@@ -65,7 +65,7 @@ const typeInto = (input: HTMLInputElement, value: string): void => {
     input.dispatchEvent(new Event("input", {bubbles: true}));
 };
 
-describe("大纲显示层级", () => {
+describe("Outline heading levels", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -79,7 +79,7 @@ describe("大纲显示层级", () => {
         document.body.replaceChildren();
     });
 
-    it("声明：分类是文档树，下拉当开关，默认「全部」", () => {
+    it("declaration: doc tree category, select as the switch, all by default", () => {
         expect(definition.category).toBe("doc-tree");
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["level"]);
@@ -90,7 +90,7 @@ describe("大纲显示层级", () => {
         });
     });
 
-    it("选 H1–H3：隐藏 H4/H5/H6 的行、子标题列表与子块列表，两套面板根都覆盖", () => {
+    it("H1–H3 hides H4/H5/H6 rows, child heading lists and child block lists on both panel roots", () => {
         const css = rulesOf(mount({level: "h3"}).css());
 
         [".sy__outline", '[data-type="sidebar-outline"]'].forEach((root) => {
@@ -109,7 +109,7 @@ describe("大纲显示层级", () => {
         expect(css).toContain("display: none;");
     });
 
-    it("每个选项隐藏的层级依次变浅，H1–H5 只隐藏 H6", () => {
+    it("hides shallower levels for each option, so H1–H5 hides only H6", () => {
         expect(rulesOf(mount({level: "h2"}).css())).toContain('li[data-subtype="h3"]');
         const h4 = rulesOf(mount({level: "h4"}).css());
         expect(h4).toContain('li[data-subtype="h5"]');
@@ -119,13 +119,13 @@ describe("大纲显示层级", () => {
         expect(h5).not.toContain('li[data-subtype="h5"]');
     });
 
-    it("「全部」不注入任何隐藏规则，只留一段注释把旧规则冲掉", () => {
+    it("all injects no hiding rule and only a comment that flushes the old ones", () => {
         const css = mount({level: "all"}).css();
         expect(rulesOf(css)).not.toContain("display: none");
         expect(styleCount()).toBe(1);
     });
 
-    it("配置变更重新注入同一张样式表，不堆叠第二张", () => {
+    it("reinjects the same stylesheet on a config change instead of stacking a second one", () => {
         const harness = mount({level: "h3"});
         expect(styleCount()).toBe(1);
 
@@ -138,29 +138,29 @@ describe("大纲显示层级", () => {
         expect(rulesOf(harness.records.styles.at(-1) ?? "")).not.toContain('li[data-subtype="h4"]');
     });
 
-    it("桌面端大纲搜索时临时放行，清空后恢复层级限制", () => {
+    it("temporarily lifts the limit while searching on the desktop outline and restores it when cleared", () => {
         mount({level: "h3"});
         const {root, input} = desktopOutline();
 
-        typeInto(input, "章节");
+        typeInto(input, "chapter");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(true);
 
         typeInto(input, "");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(false);
     });
 
-    it("移动端侧栏大纲同样生效", () => {
+    it("works the same on the mobile sidebar outline", () => {
         mount({level: "h3"});
         const {root, input} = mobileOutline();
 
-        typeInto(input, "章节");
+        typeInto(input, "chapter");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(true);
 
         typeInto(input, "");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(false);
     });
 
-    it("只有空白也算在搜索：宿主用 trim: false，空白是合法查询", () => {
+    it("counts whitespace alone as searching: the host uses trim: false, so it is a valid query", () => {
         mount({level: "h3"});
         const {root, input} = desktopOutline();
 
@@ -168,26 +168,26 @@ describe("大纲显示层级", () => {
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(true);
     });
 
-    it("别的面板的搜索框不受影响", () => {
+    it("leaves search boxes of other panels unaffected", () => {
         mount({level: "h3"});
         const bookmark = document.createElement("div");
         bookmark.className = "sy__bookmark";
         bookmark.innerHTML = '<input class="b3-text-field search__label" />';
         document.body.append(bookmark);
 
-        typeInto(bookmark.querySelector("input") as HTMLInputElement, "章节");
+        typeInto(bookmark.querySelector("input") as HTMLInputElement, "chapter");
         expect(bookmark.classList.contains(SEARCHING_CLASS)).toBe(false);
     });
 
-    it("挂载时已有的搜索内容先补一次同步", () => {
+    it("syncs an existing search value once on mount", () => {
         const {root, input} = desktopOutline();
-        input.value = "章节";
+        input.value = "chapter";
 
         mount({level: "h3"});
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(true);
     });
 
-    it("同一状态不重复写日志", () => {
+    it("does not log the same state twice", () => {
         const harness = mount({level: "h3"});
         const {input} = desktopOutline();
 
@@ -197,10 +197,10 @@ describe("大纲显示层级", () => {
         expect(harness.records.logs.length).toBe(first);
     });
 
-    it("dispose 之后监听、类名与样式表一起收干净", () => {
+    it("dispose cleans up the listeners, class names and stylesheet together", () => {
         const harness = mount({level: "h3"});
         const {root, input} = desktopOutline();
-        typeInto(input, "章节");
+        typeInto(input, "chapter");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(true);
 
         harness.dispose();
@@ -208,11 +208,11 @@ describe("大纲显示层级", () => {
         expect(styleCount()).toBe(0);
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(false);
         // 监听也拆了：再输入不会再挂类
-        typeInto(input, "章节");
+        typeInto(input, "chapter");
         expect(root.classList.contains(SEARCHING_CLASS)).toBe(false);
     });
 
-    it("mount 即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("applies once on mount and hooks later changes to onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {
