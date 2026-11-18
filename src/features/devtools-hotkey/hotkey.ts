@@ -30,7 +30,7 @@ interface IpcSender {
 }
 
 /**
- * 桌面端才有的 `window.require`。插件代码由 webpack 打成 commonjs，
+ * 桌面端才有的 `window.require`。插件代码由构建打成 commonjs，
  * 直接写 `require("electron")` 会被打进包里，所以这里从 window 上取。
  */
 const nodeRequire = (): NodeRequire | undefined => {

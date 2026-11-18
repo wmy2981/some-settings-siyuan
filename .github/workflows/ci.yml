@@ -28,8 +28,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # package.json 的 engines 要求 node >= 24，测试链路（vitest / jsdom）也是；
-      # 这里不能用 cd.yml 的 20——那是只跑构建的老版本。
+      # package.json 的 engines 要求 node >= 24，测试链路（vitest / jsdom）与构建（vite）都是，
+      # 两个 workflow 因此用同一个版本。
       - name: Setup Node.js
         uses: actions/setup-node@v7
         with:
