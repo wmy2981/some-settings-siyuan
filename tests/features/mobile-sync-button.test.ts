@@ -34,7 +34,7 @@ const buildTopBar = (): {topBar: HTMLElement; button: HTMLElement;} => {
     return {topBar, button: topBar.querySelector<HTMLElement>("#toolbarSync")!};
 };
 
-describe("移动端常显立即同步", () => {
+describe("always show sync-now on mobile", () => {
     let harness: HostHarness | undefined;
 
     beforeEach(() => {
@@ -47,7 +47,7 @@ describe("移动端常显立即同步", () => {
         harness = undefined;
     });
 
-    it("挂载时按钮已经存在：立刻摘掉 fn__none，其它类一个不动", () => {
+    it("button already present at mount: fn__none is removed at once and no other class changes", () => {
         const {button} = buildTopBar();
         button.classList.add(HIDDEN, "mobile-topbar__item");
 
@@ -61,7 +61,7 @@ describe("移动端常显立即同步", () => {
         expect(button.querySelector("svg")).not.toBe(null);
     });
 
-    it("按钮本来就没被隐藏时什么也不改", () => {
+    it("nothing changes when the button was not hidden in the first place", () => {
         const {button} = buildTopBar();
         button.classList.add("mobile-topbar__item");
         const before = button.className;
@@ -72,7 +72,7 @@ describe("移动端常显立即同步", () => {
         expect(button.className).toBe(before);
     });
 
-    it("内核又把 fn__none 加回来时再摘一次（这就是不能用纯 CSS 的原因）", async () => {
+    it("removed again when the kernel adds fn__none back (this is why plain CSS cannot do it)", async () => {
         const {button} = buildTopBar();
 
         harness?.dispose();
@@ -88,7 +88,7 @@ describe("移动端常显立即同步", () => {
         expect(button.classList.contains(HIDDEN)).toBe(false);
     });
 
-    it("挂载时顶栏还没建出来：等按钮被插入后再接管", async () => {
+    it("top bar not built at mount: take over once the button is inserted", async () => {
         // 先确保没有按钮
         expect(document.getElementById("toolbarSync")).toBe(null);
 
@@ -105,7 +105,7 @@ describe("移动端常显立即同步", () => {
         expect(button.classList.contains(HIDDEN)).toBe(false);
     });
 
-    it("接管之后继续盯着这颗按钮，再加 fn__none 仍然会被摘掉", async () => {
+    it("the button stays watched after takeover, so a later fn__none is still removed", async () => {
         const topBar = document.createElement("div");
         document.body.append(topBar);
         topBar.innerHTML = '<div id="toolbarSync" class="fn__none"></div>';
@@ -118,7 +118,7 @@ describe("移动端常显立即同步", () => {
         expect(button.classList.contains(HIDDEN)).toBe(false);
     });
 
-    it("找到按钮后停止定位观察：不会再对后来新建的按钮动手", async () => {
+    it("the locating observer stops once the button is found: later buttons are not touched", async () => {
         const {button} = buildTopBar();
         await tick();
         expect(button.classList.contains(HIDDEN)).toBe(false);
@@ -136,7 +136,7 @@ describe("移动端常显立即同步", () => {
         expect(replacement.classList.contains(HIDDEN)).toBe(true);
     });
 
-    it("卸载后不再干预：把 fn__none 加回去就保持隐藏", async () => {
+    it("no interference after unmount: adding fn__none back keeps the button hidden", async () => {
         const {button} = buildTopBar();
         await tick();
 
@@ -148,7 +148,7 @@ describe("移动端常显立即同步", () => {
         expect(button.classList.contains(HIDDEN)).toBe(true);
     });
 
-    it("还没找到按钮就卸载：之后按钮出现也不会被揭示（定位观察器随卸载断开）", async () => {
+    it("unmounted before the button is found: a later button is not revealed (the locating observer disconnects on unmount)", async () => {
         harness?.dispose();
         harness = undefined;
 
@@ -160,7 +160,7 @@ describe("移动端常显立即同步", () => {
         expect(document.getElementById("toolbarSync")!.classList.contains(HIDDEN)).toBe(true);
     });
 
-    it("destroy() 幂等：重复调用不抛错，也不会把观察器重新挂上", async () => {
+    it("destroy() is idempotent: repeated calls neither throw nor reattach the observer", async () => {
         const {button} = buildTopBar();
         await tick();
 

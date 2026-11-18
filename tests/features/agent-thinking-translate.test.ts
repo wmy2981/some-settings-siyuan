@@ -82,7 +82,7 @@ const stubTranslation = (
         if (result.code !== undefined && result.code !== 0) {
             return {code: result.code, msg: "proxy failed", data: null};
         }
-        const translated = result.translated ?? `译:${text}`;
+        const translated = result.translated ?? `tr:${text}`;
         return {
             code: 0,
             data: {
@@ -114,7 +114,7 @@ const buildCard = (options: CardOptions = {}) => {
     card.innerHTML = '<div class="agent-chat__thinking-card">' +
         '<div class="agent-chat__thinking-header">' +
         '<span class="agent-chat__thinking-arrow"></span>' +
-        '<span class="agent-chat__thinking-text">思考中</span>' +
+        '<span class="agent-chat__thinking-text">Thinking</span>' +
         '<span class="agent-chat__thinking-latest"></span>' +
         "</div>" +
         '<div class="agent-chat__thinking-body"></div>' +
@@ -145,11 +145,11 @@ const toggleOf = (card: HTMLElement): HTMLButtonElement =>
 
 /** 测试里只关心这几条文案，其余 key 原样返回。 */
 const LABELS: Record<string, string> = {
-    "feature.agentThinkingTranslate.originalAction": "查看原文",
-    "feature.agentThinkingTranslate.translationAction": "查看译文",
-    "feature.agentThinkingTranslate.loading": "正在翻译",
-    "feature.agentThinkingTranslate.failed": "翻译失败",
-    "common.retry": "重试",
+    "feature.agentThinkingTranslate.originalAction": "View original",
+    "feature.agentThinkingTranslate.translationAction": "View translation",
+    "feature.agentThinkingTranslate.loading": "Translating",
+    "feature.agentThinkingTranslate.failed": "Translation failed",
+    "common.retry": "Retry",
 };
 
 /** 挂载过的宿主，测试结束统一卸载：失败的用例也要把观察者收干净。 */
@@ -185,7 +185,7 @@ const createTranslation = (
     return {translation, states, cache};
 };
 
-describe("智能体思考翻译", () => {
+describe("agent thinking translation", () => {
     beforeEach(() => {
         // 目标语言固定成简体中文，测试不依赖运行环境的界面语言
         (window.siyuan.config as unknown as {lang: string;}).lang = "zh_CN";
@@ -195,26 +195,26 @@ describe("智能体思考翻译", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    describe("splitFragments（分段）", () => {
-        it("空文本没有任何可翻译片段", () => {
+    describe("splitFragments (fragmentation)", () => {
+        it("empty text has no translatable fragment", () => {
             expect(splitFragments("", false)).toEqual([{text: "", suffix: "", complete: true}]);
         });
 
-        it("空行分隔的完整段落各自独立，分隔空白跟着前一段", () => {
+        it("blank-line separated paragraphs are independent, separating whitespace stays with the earlier one", () => {
             expect(splitFragments("A\n\nB", false)).toEqual([
                 {text: "A", suffix: "\n\n", complete: true},
                 {text: "B", suffix: "", complete: true},
             ]);
         });
 
-        it("流式时最后一段不算完整，前面的段落照常完整", () => {
+        it("the last fragment is incomplete while streaming, earlier paragraphs stay complete", () => {
             expect(splitFragments("A\n\nB", true)).toEqual([
                 {text: "A", suffix: "\n\n", complete: true},
                 {text: "B", suffix: "", complete: false},
             ]);
         });
 
-        it("超长段落按上限切开，优先切在空白处", () => {
+        it("oversized paragraphs are cut at the limit, preferring whitespace", () => {
             const text = `${"word ".repeat(10)}end`;
             const fragments = splitFragments(text, false, 12);
             expect(fragments.length).toBeGreaterThan(1);
@@ -226,7 +226,7 @@ describe("智能体思考翻译", () => {
             });
         });
 
-        it("不把代理对劈成两半", () => {
+        it("never splits a surrogate pair", () => {
             const fragments = splitFragments("😀😀😀", false, 3);
             const pieces = fragments.map((fragment) => fragment.text);
             expect(pieces.join("")).toBe("😀😀😀");
@@ -237,8 +237,8 @@ describe("智能体思考翻译", () => {
         });
     });
 
-    describe("provider（服务与语言）", () => {
-        it("配置值写坏时退回默认：微软 + 跟随界面语言", () => {
+    describe("provider (service and language)", () => {
+        it("invalid config falls back to the defaults: Bing + follow UI language", () => {
             expect(providerOf("bing")).toBe("bing");
             expect(providerOf("google")).toBe("google");
             expect(providerOf("deepseek")).toBe("bing");
@@ -246,7 +246,7 @@ describe("智能体思考翻译", () => {
             expect(targetPreferenceOf("ja")).toBe("auto");
         });
 
-        it("简体 / 繁体按服务分别归一化", () => {
+        it("simplified / traditional are normalized per service", () => {
             expect(resolveTargetLanguage("auto", "zh_CN", "google")).toBe("zh-CN");
             expect(resolveTargetLanguage("auto", "zh_TW", "google")).toBe("zh-TW");
             expect(resolveTargetLanguage("auto", "zh_TW", "bing")).toBe("zh-Hant");
@@ -257,7 +257,7 @@ describe("智能体思考翻译", () => {
             expect(resolveTargetLanguage("auto", "", "bing")).toBe("en");
         });
 
-        it("谷歌请求：客户端、源语言、目标语言与表单体", () => {
+        it("google request: client, source language, target language and form body", () => {
             const request = buildRequest({provider: "google", text: "hello world", target: "zh-CN"});
             const url = new URL(request.url);
             expect(url.origin + url.pathname).toBe("https://translate.googleapis.com/translate_a/single");
@@ -269,7 +269,7 @@ describe("智能体思考翻译", () => {
             expect(new URLSearchParams(request.payload).get("q")).toBe("hello world");
         });
 
-        it("微软请求：目标语言、企业客户端标记与 JSON 数组体", () => {
+        it("bing request: target language, enterprise client flag and JSON array body", () => {
             const request = buildRequest({provider: "bing", text: "hello world", target: "zh-Hans"});
             const url = new URL(request.url);
             expect(url.origin + url.pathname).toBe("https://edge.microsoft.com/translate/translatetext");
@@ -279,14 +279,12 @@ describe("智能体思考翻译", () => {
             expect(JSON.parse(request.payload)).toEqual(["hello world"]);
         });
 
-        it("谷歌响应按段拼接，微软响应取第一条译文", () => {
-            expect(parseTranslation("google", [[["第一段。", "First."], ["第二段。", "Second."]]])).toBe(
-                "第一段。第二段。",
-            );
-            expect(parseTranslation("bing", [{translations: [{text: "第一段。"}]}])).toBe("第一段。");
+        it("google responses are joined per segment, bing takes the first translation", () => {
+            expect(parseTranslation("google", [[["First.", "One."], ["Second.", "Two."]]])).toBe("First.Second.");
+            expect(parseTranslation("bing", [{translations: [{text: "First."}]}])).toBe("First.");
         });
 
-        it("响应形状不对时抛错，不把半截内容当译文", () => {
+        it("throws on a malformed response instead of using a partial translation", () => {
             expect(() => parseTranslation("google", {})).toThrow();
             expect(() => parseTranslation("google", [[]])).toThrow();
             expect(() => parseTranslation("google", [[[1]]])).toThrow();
@@ -296,32 +294,32 @@ describe("智能体思考翻译", () => {
         });
     });
 
-    describe("ReasoningTranslation（状态机）", () => {
-        it("只翻完整段落，流式尾巴保留原文；结束后补翻尾巴", async () => {
+    describe("ReasoningTranslation (state machine)", () => {
+        it("translates only complete paragraphs and keeps the streaming tail as-is, then translates it once finished", async () => {
             const calls: string[] = [];
             const {translation, states} = createTranslation(async (text) => {
                 calls.push(text);
-                return `译:${text}`;
+                return `tr:${text}`;
             });
             translation.update("A\n\nB", true);
             await Promise.resolve();
             await Promise.resolve();
             expect(calls).toEqual(["A"]);
-            expect(states[states.length - 1].text).toBe("译:A\n\nB");
+            expect(states[states.length - 1].text).toBe("tr:A\n\nB");
 
             translation.update("A\n\nB", false);
             await Promise.resolve();
             await Promise.resolve();
             expect(calls).toEqual(["A", "B"]);
-            expect(states[states.length - 1].text).toBe("译:A\n\n译:B");
+            expect(states[states.length - 1].text).toBe("tr:A\n\ntr:B");
         });
 
-        it("同一片段命中缓存时不再请求", async () => {
+        it("does not request a fragment that hits the cache", async () => {
             const calls: string[] = [];
             const cache = new Map<string, string>();
             const translate = async (text: string) => {
                 calls.push(text);
-                return `译:${text}`;
+                return `tr:${text}`;
             };
             const first = createTranslation(translate, cache);
             first.translation.update("A", false);
@@ -332,10 +330,10 @@ describe("智能体思考翻译", () => {
             await Promise.resolve();
             await Promise.resolve();
             expect(calls).toEqual(["A"]);
-            expect(second.states[second.states.length - 1].text).toBe("译:A");
+            expect(second.states[second.states.length - 1].text).toBe("tr:A");
         });
 
-        it("失败后保留原文并停下，重试成功后继续", async () => {
+        it("keeps the original text and stops after a failure, continues after a successful retry", async () => {
             let fail = true;
             const calls: string[] = [];
             const {translation, states} = createTranslation(async (text) => {
@@ -343,7 +341,7 @@ describe("智能体思考翻译", () => {
                 if (fail) {
                     throw new Error("boom");
                 }
-                return `译:${text}`;
+                return `tr:${text}`;
             });
             translation.update("A", false);
             await Promise.resolve();
@@ -357,11 +355,11 @@ describe("智能体思考翻译", () => {
             await Promise.resolve();
             await Promise.resolve();
             expect(states[states.length - 1].failed).toBe(false);
-            expect(states[states.length - 1].text).toBe("译:A");
+            expect(states[states.length - 1].text).toBe("tr:A");
             expect(calls).toEqual(["A", "A"]);
         });
 
-        it("取消后不再发布结果", async () => {
+        it("publishes nothing after cancellation", async () => {
             let release: (value: string) => void = () => undefined;
             const pending = new Promise<string>((resolve) => {
                 release = resolve;
@@ -371,19 +369,19 @@ describe("智能体思考翻译", () => {
             await Promise.resolve();
             const count = states.length;
             translation.dispose();
-            release("译:A");
+            release("tr:A");
             await Promise.resolve();
             await Promise.resolve();
             expect(states.length).toBe(count);
         });
     });
 
-    describe("retryPolicyOf（重试策略）", () => {
-        it("缺省值就是默认策略", () => {
+    describe("retryPolicyOf (retry policy)", () => {
+        it("missing values fall back to the default policy", () => {
             expect(retryPolicyOf(undefined, undefined)).toEqual({retries: 2, interval: 1000});
         });
 
-        it("越界与写坏的值都收进合法区间", () => {
+        it("out-of-range and malformed values are clamped into the valid range", () => {
             expect(retryPolicyOf(-3, 5)).toEqual({retries: 0, interval: 200});
             expect(retryPolicyOf(99, 999999)).toEqual({retries: 5, interval: 10000});
             expect(retryPolicyOf("3", null)).toEqual({retries: 2, interval: 1000});
@@ -391,12 +389,12 @@ describe("智能体思考翻译", () => {
         });
     });
 
-    describe("自动重试", () => {
+    describe("automatic retry", () => {
         afterEach(() => {
             vi.useRealTimers();
         });
 
-        it("失败后按策略重试，成功后继续翻下一段", async () => {
+        it("retries per policy after a failure, then continues with the next paragraph", async () => {
             vi.useFakeTimers();
             const calls: string[] = [];
             let failures = 1;
@@ -407,7 +405,7 @@ describe("智能体思考翻译", () => {
                         failures -= 1;
                         throw new Error("boom");
                     }
-                    return `译:${text}`;
+                    return `tr:${text}`;
                 },
                 new Map(),
                 {retries: 2, interval: 500},
@@ -418,10 +416,10 @@ describe("智能体思考翻译", () => {
             await vi.advanceTimersByTimeAsync(500);
             expect(calls).toEqual(["A", "A", "B"]);
             expect(states[states.length - 1].failed).toBe(false);
-            expect(states[states.length - 1].text).toBe("译:A\n\n译:B");
+            expect(states[states.length - 1].text).toBe("tr:A\n\ntr:B");
         });
 
-        it("重试期间保持 pending，次数用完才切成失败态", async () => {
+        it("stays pending while retrying and fails only after retries run out", async () => {
             vi.useFakeTimers();
             let calls = 0;
             const {translation, states} = createTranslation(
@@ -444,7 +442,7 @@ describe("智能体思考翻译", () => {
             expect(calls).toBe(2);
         });
 
-        it("手动重试会重新给一轮自动重试机会", async () => {
+        it("a manual retry grants another round of automatic retries", async () => {
             vi.useFakeTimers();
             let calls = 0;
             const {translation, states} = createTranslation(
@@ -464,7 +462,7 @@ describe("智能体思考翻译", () => {
             expect(states[states.length - 1].failed).toBe(true);
         });
 
-        it("重试次数为 0 时只发一次请求", async () => {
+        it("sends a single request when retries are 0", async () => {
             let calls = 0;
             const {translation, states} = createTranslation(
                 async () => {
@@ -482,7 +480,7 @@ describe("智能体思考翻译", () => {
             expect(states[states.length - 1].failed).toBe(true);
         });
 
-        it("退避等待中取消后不再重试，也不发布失败态", async () => {
+        it("cancelling during backoff stops retrying and publishes no failure state", async () => {
             vi.useFakeTimers();
             let calls = 0;
             const {translation, states} = createTranslation(
@@ -504,8 +502,8 @@ describe("智能体思考翻译", () => {
         });
     });
 
-    describe("界面", () => {
-        it("折叠时完全不翻译，也不注入工具条", async () => {
+    describe("UI", () => {
+        it("does not translate and injects no toolbar while collapsed", async () => {
             const calls = stubTranslation();
             const {card} = buildCard({expanded: false, texts: ["A\n\nB"]});
             const harness = mount();
@@ -516,14 +514,14 @@ describe("智能体思考翻译", () => {
             harness.dispose();
         });
 
-        it("展开后按段翻译：完整段落显示译文，流式尾巴保留原文", async () => {
+        it("translates per paragraph once expanded: complete paragraphs show the translation, the streaming tail stays original", async () => {
             const calls = stubTranslation();
             const {card, reasoning} = buildCard({expanded: true, texts: ["First paragraph.\n\nSecond paragraph"]});
             const harness = mount();
             await settle();
             await expect
                 .poll(() => outputOf(card)?.textContent)
-                .toBe("译:First paragraph.\n\nSecond paragraph");
+                .toBe("tr:First paragraph.\n\nSecond paragraph");
             expect(calls).toHaveLength(1);
             // 原文节点只被加了隐藏类，内容仍是宿主写的那份
             expect(reasoning[0].textContent).toBe("First paragraph.\n\nSecond paragraph");
@@ -533,23 +531,23 @@ describe("智能体思考翻译", () => {
             await settle();
             await expect
                 .poll(() => outputOf(card)?.textContent)
-                .toBe("译:First paragraph.\n\n译:Second paragraph.\n\nThird paragraph");
+                .toBe("tr:First paragraph.\n\ntr:Second paragraph.\n\nThird paragraph");
             expect(calls).toHaveLength(2);
 
             card.classList.add(DONE_CLASS);
             await settle();
             await expect
                 .poll(() => outputOf(card)?.textContent)
-                .toBe("译:First paragraph.\n\n译:Second paragraph.\n\n译:Third paragraph");
+                .toBe("tr:First paragraph.\n\ntr:Second paragraph.\n\ntr:Third paragraph");
             harness.dispose();
         });
 
-        it("点标题行里的翻译入口不会折叠卡片，原文 / 译文可以来回切", async () => {
+        it("clicking the translate entry in the header does not collapse the card and toggles between original and translation", async () => {
             stubTranslation();
             const {card, reasoning} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount();
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
 
             let headerClicks = 0;
             const header = card.querySelector(".agent-chat__thinking-header") as HTMLElement;
@@ -558,21 +556,21 @@ describe("智能体思考翻译", () => {
             });
 
             const toggle = toggleOf(card);
-            expect(toggle.textContent).toBe("查看原文");
+            expect(toggle.textContent).toBe("View original");
             toggle.click();
             expect(headerClicks).toBe(0);
             expect(outputOf(card)?.hidden).toBe(true);
             expect(reasoning[0].classList.contains(HIDDEN_CLASS)).toBe(false);
-            expect(toggle.textContent).toBe("查看译文");
+            expect(toggle.textContent).toBe("View translation");
 
             toggle.click();
             expect(outputOf(card)?.hidden).toBe(false);
             expect(reasoning[0].classList.contains(HIDDEN_CLASS)).toBe(true);
-            expect(toggle.textContent).toBe("查看原文");
+            expect(toggle.textContent).toBe("View original");
             harness.dispose();
         });
 
-        it("请求失败时显示原文、提示失败并提供重试", async () => {
+        it("shows the original text, reports the failure and offers a retry when the request fails", async () => {
             let fail = true;
             stubTranslation(() => (fail ? {code: 1} : {}));
             const {card, reasoning} = buildCard({expanded: true, done: true, texts: ["Hello"]});
@@ -584,18 +582,18 @@ describe("智能体思考翻译", () => {
             expect(reasoning[0].classList.contains(HIDDEN_CLASS)).toBe(false);
             expect(toggleOf(card).disabled).toBe(true);
             // 已经退回原文，按钮文字指向「查看译文」，但重试成功前不可点
-            expect(toggleOf(card).textContent).toBe("查看译文");
+            expect(toggleOf(card).textContent).toBe("View translation");
 
             fail = false;
             (card.querySelector(`.${RETRY_CLASS}`) as HTMLButtonElement).click();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
             expect(outputOf(card)?.hidden).toBe(false);
             expect(card.querySelector<HTMLElement>(`.${FAILURE_CLASS}`)?.hidden).toBe(true);
             expect(toggleOf(card).disabled).toBe(false);
             harness.dispose();
         });
 
-        it("偶发失败时自动重试，成功后显示译文并留下 warn 日志", async () => {
+        it("retries automatically on a transient failure, then shows the translation and logs a warning", async () => {
             let fail = true;
             const calls = stubTranslation(() => {
                 if (!fail) {
@@ -607,7 +605,7 @@ describe("智能体思考翻译", () => {
             const {card} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount({retries: 1, retryInterval: 200});
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent, {timeout: 2000}).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent, {timeout: 2000}).toBe("tr:Hello");
             expect(calls).toHaveLength(2);
             expect(card.querySelector<HTMLElement>(`.${FAILURE_CLASS}`)?.hidden).toBe(true);
             expect(harness.records.logLevels).toContain("warn");
@@ -616,26 +614,26 @@ describe("智能体思考翻译", () => {
             harness.dispose();
         });
 
-        it("只改重试设置时保留缓存，不重翻已翻好的段落", async () => {
+        it("keeps the cache when only the retry settings change and does not retranslate finished paragraphs", async () => {
             const calls = stubTranslation();
             const {card} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount();
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
             harness.config.retries = 4;
             harness.notifyConfigChange();
             await settle();
             expect(calls).toHaveLength(1);
-            expect(outputOf(card)?.textContent).toBe("译:Hello");
+            expect(outputOf(card)?.textContent).toBe("tr:Hello");
             harness.dispose();
         });
 
-        it("折叠时撤掉译文节点与工具条，并取消后续请求", async () => {
+        it("removes the translation node and toolbar when collapsed and cancels later requests", async () => {
             const calls = stubTranslation();
             const {card, body, reasoning} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount();
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
 
             body.classList.remove(EXPANDED_CLASS);
             await settle();
@@ -649,7 +647,7 @@ describe("智能体思考翻译", () => {
             harness.dispose();
         });
 
-        it("只接管智能体面板，不动编辑器里的 AI 面板", async () => {
+        it("only takes over the agent panel, leaving the editor AI panel alone", async () => {
             const calls = stubTranslation();
             const {card} = buildCard({expanded: true, texts: ["Hello"], inAgentChat: false});
             const harness = mount();
@@ -659,12 +657,12 @@ describe("智能体思考翻译", () => {
             harness.dispose();
         });
 
-        it("卸载后不留下任何节点或类名", async () => {
+        it("leaves no node or class name behind after unmounting", async () => {
             stubTranslation();
             const {card, reasoning} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount();
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
 
             harness.dispose();
             expect(outputOf(card)).toBeNull();
@@ -672,12 +670,12 @@ describe("智能体思考翻译", () => {
             expect(reasoning[0].classList.contains(HIDDEN_CLASS)).toBe(false);
         });
 
-        it("换服务或目标语言后清空缓存并重新翻译", async () => {
+        it("clears the cache and retranslates after switching the service or target language", async () => {
             const calls = stubTranslation();
             const {card} = buildCard({expanded: true, done: true, texts: ["Hello"]});
             const harness = mount();
             await settle();
-            await expect.poll(() => outputOf(card)?.textContent).toBe("译:Hello");
+            await expect.poll(() => outputOf(card)?.textContent).toBe("tr:Hello");
             expect(new URL(calls[0].body.url ?? "").searchParams.get("to")).toBe("zh-Hans");
 
             harness.config.target = "en";

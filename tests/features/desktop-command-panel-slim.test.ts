@@ -22,7 +22,7 @@ const styleCount = (): number =>
 /** 从注入的 CSS 里取出宽度声明，省得每个用例都拼一遍上下文。 */
 const widthOf = (css: string): string | undefined => /width: ([^;]+);/.exec(css)?.[1];
 
-describe("桌面端命令面板瘦身", () => {
+describe("desktop command panel slimming", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -35,7 +35,7 @@ describe("桌面端命令面板瘦身", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明里只在桌面端交出，宽度默认 50%、范围 20%～100%", () => {
+    it("declares desktop-only delivery with width defaulting to 50% and ranging 20%-100%", () => {
         expect(definition.frontends).toEqual(["desktop"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         expect(definition.settings[1]).toMatchObject({
@@ -48,7 +48,7 @@ describe("桌面端命令面板瘦身", () => {
         });
     });
 
-    it("默认 50%：40vw，并且必须带 !important 才能压过内核的内联 width", () => {
+    it("default 50%: 40vw, and !important is required to beat the kernel inline width", () => {
         const harness = mount();
 
         const css = harness.css();
@@ -61,13 +61,13 @@ describe("桌面端命令面板瘦身", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("宽度按思源原生 80vw 等比缩放，永远不超过原生尺寸", () => {
+    it("width scales proportionally to the native 80vw and never exceeds the native size", () => {
         expect(widthOf(mount({width: 20}).css())).toBe("16vw !important");
         expect(widthOf(mount({width: 60}).css())).toBe("48vw !important");
         expect(widthOf(mount({width: 100}).css())).toBe("80vw !important");
     });
 
-    it("数值先四舍五入再钳到 20～100：22.5% 进位到 23% 即 18.4vw", () => {
+    it("values are rounded first then clamped to 20-100: 22.5% becomes 23%, i.e. 18.4vw", () => {
         expect(widthOf(mount({width: 22.5}).css())).toBe("18.4vw !important");
         // 22.4 舍到 22% → 17.6vw，说明取的是整数百分比而不是原始小数
         expect(widthOf(mount({width: 22.4}).css())).toBe("17.6vw !important");
@@ -78,13 +78,13 @@ describe("桌面端命令面板瘦身", () => {
         expect(widthOf(mount({width: 5}).css())).toBe("16vw !important");
     });
 
-    it("非法值回落 50%", () => {
+    it("invalid values fall back to 50%", () => {
         [Number.NaN, Number.POSITIVE_INFINITY, undefined, "abc"].forEach((width) => {
             expect(widthOf(mount({width}).css())).toBe("40vw !important");
         });
     });
 
-    it("配置变更就地重写同一个 <style>，不叠加新样式表", () => {
+    it("a config change rewrites the same <style> in place without stacking a new sheet", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -95,7 +95,7 @@ describe("桌面端命令面板瘦身", () => {
         expect(widthOf(harness.styleElement()?.textContent ?? "")).toBe("60vw !important");
     });
 
-    it("dispose 后样式与配置订阅一并移除", () => {
+    it("dispose removes the style and the config subscription", () => {
         const harness = mount();
 
         harness.dispose();
@@ -104,7 +104,7 @@ describe("桌面端命令面板瘦身", () => {
         expect(harness.records.configListeners).toHaveLength(0);
     });
 
-    it("挂载即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("applies once on mount and wires later changes to onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {

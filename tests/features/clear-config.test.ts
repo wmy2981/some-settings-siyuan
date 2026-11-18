@@ -85,8 +85,8 @@ const addConfirmDialog = (): HTMLElement => {
     return element;
 };
 
-describe("清除本插件配置", () => {
-    it("先问一句：标题、说明、确定回调、没有取消回调，并且是删除型按钮", () => {
+describe("clear this plugin's config", () => {
+    it("asks first: title, text, confirm callback, no cancel callback, and a delete-style button", () => {
         // isDelete 为 true 时内核把按钮画成红色线框、文案换成「删除」；
         // 清除配置不可撤销，不能显示成默认的蓝色文字按钮
         const {context} = action();
@@ -103,7 +103,7 @@ describe("清除本插件配置", () => {
         expect(confirmArgs[0][4]).toBe(true);
     });
 
-    it("取消时什么都不做：不清除、不提示、不重载", async () => {
+    it("cancelling does nothing: no clearing, no message, no reload", async () => {
         // 取消分支最容易写成「反正用户会再点」，一旦漏判就是直接删掉全部配置
         mockState.confirmAnswer = false;
         const timers = captureTimeouts();
@@ -117,7 +117,7 @@ describe("清除本插件配置", () => {
         expect(timers).toEqual([]);
     });
 
-    it("确认后清除一次、提示 3 秒，并排一次 600ms 后的重新载入", async () => {
+    it("confirming clears once, shows a message for 3s and schedules a reload 600ms later", async () => {
         const timers = captureTimeouts();
         const {context, calls} = action();
 
@@ -131,7 +131,7 @@ describe("清除本插件配置", () => {
         expect(typeof timers[0].handler).toBe("function");
     });
 
-    it("有文件删不掉时不留「已清除」的假象：报错、不提示完成、不重载", async () => {
+    it("when a file cannot be deleted it leaves no fake cleared state: it reports an error, shows no completion message and does not reload", async () => {
         // 重新载入会把没删掉的那份配置又读回来，用户以为清干净了其实没有
         const timers = captureTimeouts();
         const failure = new Error("feature-alpha: permission denied");
@@ -151,7 +151,7 @@ describe("清除本插件配置", () => {
         expect(timers).toEqual([]);
     });
 
-    it("把「已聚焦但指针不在上面」的删除按钮底色压平到最后一个确认弹窗里", () => {
+    it("flattens the background of the focused-but-not-hovered delete button inside the last confirm dialog", () => {
         // confirm 一打开就把焦点放到确认按钮上，红色线框会被 :focus 的浅红底色填成实心；
         // 规则只能塞进弹窗元素本身，弹窗销毁时一起消失，不影响别的确认框
         const first = addConfirmDialog();
@@ -170,7 +170,7 @@ describe("清除本插件配置", () => {
         expect(style.parentElement).toBe(last);
     });
 
-    it("确认框还没进 DOM 时静默跳过补样式，主流程照常执行", () => {
+    it("style patching is skipped silently while the dialog is not in the DOM yet and the main flow still runs", () => {
         // 某些宿主版本建窗是异步的；这里少一段样式顶多是按钮看着偏实心，
         // 绝不能因此让清除流程抛错
         const {context, calls} = action();
@@ -179,7 +179,7 @@ describe("清除本插件配置", () => {
         expect(calls.clear).toBe(1);
     });
 
-    it("声明为永不挂载的动作按钮", async () => {
+    it("declared as an action button that never mounts", async () => {
         const {default: definition} = await import("../../src/features/clear-config/index");
         expect(definition.mount).toBeUndefined();
         expect(definition.isEnabled!({})).toBe(false);

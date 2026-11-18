@@ -23,6 +23,7 @@ import {
     featureById,
     featuresOf,
 } from "../../src/core/registry";
+import {SEARCH_FEATURE_ID} from "../../src/core/search";
 import {FEATURE_CATEGORIES} from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
 import {supportsCurrentHost} from "../../src/core/version";
@@ -35,90 +36,95 @@ const LOCALE_FILES = fs.readdirSync(LOCALE_DIR).filter((file) => file.endsWith("
 const readI18n = (file: string): Record<string, string> =>
     JSON.parse(fs.readFileSync(path.join(LOCALE_DIR, file), "utf8")) as Record<string, string>;
 
-describe("清单本身", () => {
-    it("「日志输出」排在第一位：装载器靠它先把详细日志开关打开", () => {
+describe("The registry itself", () => {
+    it("Log output comes first: the loader relies on it to turn detailed logging on early", () => {
         // 装载器按数组顺序注册 / 挂载，排在后面的话它前面那些功能的装载日志会被开关吞掉
         expect(FEATURES[0].id).toBe(LOG_FEATURE_ID);
         expect(FEATURES[0].enabled).toBe(true);
     });
 
-    it("id 唯一", () => {
+    it("ids are unique", () => {
         const ids = FEATURES.map((feature) => feature.id);
         expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it("「显示不可用的设置」的 id 与面板读的那个常量一致", () => {
+    it("The show-unavailable-settings id matches the constant the panel reads", () => {
         // 面板靠这个 id 订阅开关变化：写成别的值，开关翻了条目也不会显隐
         expect(featureById(SHOW_UNAVAILABLE_FEATURE_ID)?.id).toBe(SHOW_UNAVAILABLE_FEATURE_ID);
     });
 
-    it("id 只用小写字母、数字与连字符", () => {
+    it("The settings-search id matches the constant the panel reads", () => {
+        // 面板靠这个 id 订阅开关变化：写成别的值，开关翻了搜索框也不会显隐
+        expect(featureById(SEARCH_FEATURE_ID)?.id).toBe(SEARCH_FEATURE_ID);
+    });
+
+    it("ids use only lowercase letters, digits and hyphens", () => {
         FEATURES.forEach((feature) => {
             expect(feature.id).toMatch(/^[a-z0-9-]+$/);
         });
     });
 
-    it("每个 id 都有同名功能目录", () => {
+    it("Every id has a matching feature directory", () => {
         FEATURES.forEach((feature) => {
             const entry = path.join(ROOT, "src", "features", feature.id, "index.ts");
             expect(fs.existsSync(entry), `missing ${entry}`).toBe(true);
         });
     });
 
-    it("ALL_FEATURE_IDS 与 FEATURES 同序同内容", () => {
+    it("ALL_FEATURE_IDS matches FEATURES in order and content", () => {
         expect(ALL_FEATURE_IDS).toEqual(FEATURES.map((feature) => feature.id));
     });
 
-    it("enabled 必须显式写 true / false", () => {
+    it("enabled must be an explicit true or false", () => {
         FEATURES.forEach((feature) => {
-            expect(typeof feature.enabled, `${feature.id} 的 enabled`).toBe("boolean");
+            expect(typeof feature.enabled, `${feature.id} enabled`).toBe("boolean");
         });
     });
 
-    it("分类必须是文档列出的原生功能区", () => {
+    it("The category must be a native category listed in the docs", () => {
         FEATURES.forEach((feature) => {
             expect(FEATURE_CATEGORIES).toContain(feature.category);
         });
     });
 
-    it("name / description 是 i18n key，每个语言文件都有", () => {
+    it("name and description are i18n keys present in every locale file", () => {
         const locales = LOCALE_FILES.map((file) => [file, readI18n(file)] as const);
         FEATURES.forEach((feature) => {
             [feature.name, feature.description].filter(Boolean).forEach((key) => {
                 locales.forEach(([file, data]) => {
-                    expect(data[key as string], `${feature.id} 缺 ${file} 里的 ${key}`).toBeTruthy();
+                    expect(data[key as string], `${feature.id} is missing ${key} in ${file}`).toBeTruthy();
                 });
             });
         });
     });
 });
 
-describe("开关约定", () => {
-    it("没有 isEnabled 的功能必须有一个默认关闭的 enabled 开关", () => {
+describe("Switch conventions", () => {
+    it("A feature without isEnabled must have an enabled switch whose default follows its declaration", () => {
         FEATURES.filter((feature) => !feature.isEnabled).forEach((feature) => {
             const toggle = feature.settings.find((field) => field.kind === "switch" && field.key === "enabled");
-            expect(toggle, `${feature.id} 缺 enabled 开关`).toBeDefined();
-            expect(toggle).toMatchObject({kind: "switch", key: "enabled", default: false});
+            expect(toggle, `${feature.id} is missing an enabled switch`).toBeDefined();
+            expect(toggle).toMatchObject({kind: "switch", key: "enabled", default: feature.defaultOn === true});
         });
     });
 
-    it("声明了 isEnabled 的必须是函数", () => {
+    it("A declared isEnabled must be a function", () => {
         FEATURES.filter((feature) => feature.isEnabled).forEach((feature) => {
             expect(typeof feature.isEnabled).toBe("function");
         });
     });
 
-    it("每个功能都至少有一个设置项", () => {
+    it("Every feature has at least one setting", () => {
         FEATURES.forEach((feature) => {
-            expect(feature.settings.length, `${feature.id} 没有设置项`).toBeGreaterThan(0);
+            expect(feature.settings.length, `${feature.id} has no settings`).toBeGreaterThan(0);
         });
     });
 
-    it("设置项的 key 不重复，控件类型是已知的", () => {
+    it("Setting keys are unique and every control kind is known", () => {
         const kinds = ["switch", "text", "textarea", "number", "select", "note", "button"];
         FEATURES.forEach((feature) => {
             const keys = feature.settings.map((field) => field.key);
-            expect(new Set(keys).size, `${feature.id} 的 key 有重复`).toBe(keys.length);
+            expect(new Set(keys).size, `${feature.id} has duplicate keys`).toBe(keys.length);
             feature.settings.forEach((field) => {
                 expect(kinds).toContain(field.kind);
             });
@@ -126,17 +132,17 @@ describe("开关约定", () => {
     });
 });
 
-describe("查询", () => {
-    it("featureById 找到已有功能", () => {
+describe("Lookups", () => {
+    it("featureById finds an existing feature", () => {
         const first = FEATURES[0];
         expect(featureById(first.id)).toBe(first);
     });
 
-    it("featureById 找不到时返回 undefined", () => {
+    it("featureById returns undefined when nothing matches", () => {
         expect(featureById("no-such-feature")).toBeUndefined();
     });
 
-    it("featuresOf 只返回该分类，且保持注册顺序", () => {
+    it("featuresOf returns only that category, in registration order", () => {
         const editor = featuresOf("editor");
         expect(editor.length).toBeGreaterThan(0);
         editor.forEach((feature) => {
@@ -146,33 +152,33 @@ describe("查询", () => {
         expect(editor).toEqual(expected);
     });
 
-    it("各分类加起来正好是全部功能", () => {
+    it("All categories together cover every feature", () => {
         const collected = FEATURE_CATEGORIES.flatMap((category) => featuresOf(category));
         expect(collected).toHaveLength(FEATURES.length);
         expect(collected.map((feature) => feature.id).sort()).toEqual(FEATURES.map((feature) => feature.id).sort());
     });
 
-    it("页签顺序直接用 FEATURE_CATEGORIES", () => {
+    it("Tab order is FEATURE_CATEGORIES itself", () => {
         expect(categoryOrder).toBe(FEATURE_CATEGORIES);
     });
 });
 
 describe("activeFeatures", () => {
-    it("桌面端不包含只在移动端的功能", () => {
+    it("Desktop excludes mobile-only features", () => {
         mockState.frontend = "desktop";
         const ids = activeFeatures().map((feature) => feature.id);
         expect(ids).toContain("modal-blur");
         expect(ids).not.toContain("mobile-sync-button");
     });
 
-    it("移动端不包含只在桌面端的功能", () => {
+    it("Mobile excludes desktop-only features", () => {
         mockState.frontend = "mobile";
         const ids = activeFeatures().map((feature) => feature.id);
         expect(ids).toContain("mobile-sync-button");
         expect(ids).not.toContain("devtools-hotkey");
     });
 
-    it("宿主版本超出支持区间时该功能不再生效", () => {
+    it("A feature drops out once the host version leaves its range", () => {
         // mobile-select-native 声明了 maxAppVersion: "3.8.7-alpha.2"
         mockState.frontend = "mobile";
         window.siyuan.config.system.kernelVersion = "3.8.7-alpha.1";
@@ -182,7 +188,7 @@ describe("activeFeatures", () => {
         expect(activeFeatures().map((feature) => feature.id)).not.toContain("mobile-select-native");
     });
 
-    it("声明 enabled: false 的功能不生效（前端与版本都符合也不行）", () => {
+    it("A feature declared enabled: false never takes effect, even with a matching frontend and version", () => {
         const retired: FeatureDefinition = {
             id: "retired-demo",
             category: "editor",
@@ -199,7 +205,7 @@ describe("activeFeatures", () => {
         }
     });
 
-    it("生效的功能一定是 enabled、适用于当前前端且在支持区间内的", () => {
+    it("Active features are enabled, fit the current frontend and stay inside their version range", () => {
         mockState.frontend = "desktop";
         window.siyuan.config.system.kernelVersion = "3.8.7";
         const active = new Set(activeFeatures().map((feature) => feature.id));

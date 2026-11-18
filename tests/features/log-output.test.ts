@@ -24,12 +24,12 @@ afterEach(() => {
     mounted.splice(0).forEach((harness) => harness.dispose());
 });
 
-describe("详细日志输出", () => {
-    it("默认关闭", () => {
+describe("Detailed log output", () => {
+    it("Off by default", () => {
         expect(isDetailedLogging()).toBe(false);
     });
 
-    it("挂载即打开详细日志，卸载后关回去", () => {
+    it("Mounting turns detailed logging on, unmounting turns it back off", () => {
         const harness = mountFeature(definition, {config: {enabled: true}});
         mounted.push(harness);
 
@@ -39,7 +39,7 @@ describe("详细日志输出", () => {
         expect(isDetailedLogging()).toBe(false);
     });
 
-    it("挂载与卸载各留一条自己的日志", () => {
+    it("Mount and unmount each leave one log line", () => {
         const harness = mountFeature(definition, {config: {enabled: true}});
         mounted.push(harness);
         harness.dispose();

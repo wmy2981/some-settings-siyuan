@@ -88,15 +88,15 @@ const stubListFetch = (payload: unknown) => {
     return stub;
 };
 
-describe("作者名单", () => {
-    it("按行切分、去掉首尾空白与空行、大小写归一后去重", () => {
+describe("author list", () => {
+    it("splits by line, trims whitespace and blank lines, normalises case and dedupes", () => {
         expect([...parseAuthorList(" Acme \r\n\r\nacme\nfoo")]).toEqual(["acme", "foo"]);
         expect([...parseAuthorList("   \n\n  ")]).toEqual([]);
         expect([...parseAuthorList(undefined)]).toEqual([]);
         expect([...parseAuthorList(42)]).toEqual([]);
     });
 
-    it("完全匹配：不做子串，大小写不敏感，空作者不命中", () => {
+    it("matches exactly: no substring matching, case-insensitive, no hit for an empty author", () => {
         const authors = parseAuthorList("AcMe");
         expect(isAuthorBlocked("acme", authors)).toBe(true);
         expect(isAuthorBlocked("ACME", authors)).toBe(true);
@@ -109,8 +109,8 @@ describe("作者名单", () => {
     });
 });
 
-describe("列表数据", () => {
-    it("接口地址映射到五种在线列表，其它地址不认", () => {
+describe("list data", () => {
+    it("maps API URLs to the five online lists and rejects every other URL", () => {
         expect(bazaarTypeOfUrl("/api/bazaar/getBazaarPlugin")).toBe("plugins");
         expect(bazaarTypeOfUrl("http://127.0.0.1:6806/api/bazaar/getBazaarTheme")).toBe("themes");
         expect(bazaarTypeOfUrl("/api/bazaar/getBazaarIcon")).toBe("icons");
@@ -120,7 +120,7 @@ describe("列表数据", () => {
         expect(bazaarTypeOfUrl("/api/file/readDir")).toBeUndefined();
     });
 
-    it("只认 code=0 且带 packages 数组的应答", () => {
+    it("accepts only responses with code=0 and a packages array", () => {
         expect(packagesOfResponse(packagesPayload({author: "a", name: "p"}))).toEqual([{author: "a", name: "p"}]);
         expect(packagesOfResponse({code: 1, data: {packages: []}})).toBeUndefined();
         expect(packagesOfResponse({code: 0, data: null})).toBeUndefined();
@@ -128,7 +128,7 @@ describe("列表数据", () => {
         expect(packagesOfResponse(null)).toBeUndefined();
     });
 
-    it("可见性过滤照抄宿主：先兼容性、再主题明暗", () => {
+    it("copies the host visibility filter: compatibility first, then theme mode", () => {
         const packages = [
             {author: "a", name: "ok"},
             {author: "a", name: "old", bazaarVersionUnsupported: true},
@@ -148,7 +148,7 @@ describe("列表数据", () => {
             .toEqual(["ok", "old", "platform", "dark", "any"]);
     });
 
-    it("响应观察者只读在线列表接口，读不出时交给调用方报错", async () => {
+    it("the response tap only reads online list endpoints and reports failures to the caller", async () => {
         const received: string[] = [];
         const errors: unknown[] = [];
         const good = fakeResponse(packagesPayload({author: "a", name: "p"}));
@@ -181,7 +181,7 @@ describe("列表数据", () => {
     });
 });
 
-describe("挂载到在线集市列表", () => {
+describe("mounting into the online bazaar list", () => {
     const instances: HostHarness[] = [];
 
     /** 让出几轮任务：对账在微任务里，响应观察者与兜底请求还各要走一次异步。 */
@@ -204,7 +204,7 @@ describe("挂载到在线集市列表", () => {
         instances.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("只收在线列表里命中作者的卡片，其它卡片与已下载列表不动", async () => {
+    it("hides only cards in the online list whose author matches, leaving other cards and the downloaded list alone", async () => {
         document.body.innerHTML = `
             ${panelMarkup("plugin", [cardMarkup("acme", "pkg"), cardMarkup("other", "keep")], 2)}
             <div class="config-bazaar__panel" data-type="downloaded">
@@ -220,7 +220,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("installed")).toBe(false);
     });
 
-    it("详细日志记下挂载、接管列表、计数修正与卸载", async () => {
+    it("verbose logs record mounting, taking over the list, counter corrections and unmounting", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "a"), cardMarkup("other", "b")], 2);
         stubListFetch(packagesPayload({author: "acme", name: "a"}, {author: "other", name: "b"}));
         const harness = mount();
@@ -238,7 +238,7 @@ describe("挂载到在线集市列表", () => {
         expect(harness.records.logLevels).not.toContain("warn");
     });
 
-    it("忽略大小写，不做子串匹配", async () => {
+    it("ignores case and does no substring matching", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("ACME", "upper"),
             cardMarkup("acme2", "suffix"),
@@ -252,7 +252,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("mixed")).toBe(true);
     });
 
-    it("宿主整块重绘（排序 / 筛选）之后，新卡片同样被收掉", async () => {
+    it("hides new cards after the host re-renders the whole block (sorting / filtering)", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "pkg")], 1);
         mount();
         await flushFrames();
@@ -265,7 +265,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("pkg")).toBe(true);
     });
 
-    it("虚拟化补卡：占位卡换成真卡之后也收掉", async () => {
+    it("virtualisation backfill: hides a real card that replaces a placeholder", async () => {
         document.body.innerHTML = panelMarkup("plugin", [placeholderMarkup(24)], 1);
         mount();
         await flushFrames();
@@ -278,7 +278,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("pkg")).toBe(true);
     });
 
-    it("集市页签重新挂载（容器被替换）后重新对账", async () => {
+    it("reconciles again after the bazaar tab remounts with a replaced container", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "pkg")], 1);
         mount();
         await flushFrames();
@@ -291,7 +291,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("pkg")).toBe(true);
     });
 
-    it("改名单立刻生效，不用等列表重绘", async () => {
+    it("applies a changed list immediately without waiting for a redraw", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "pkg"), cardMarkup("other", "keep")], 2);
         const harness = mount();
         await flushFrames();
@@ -310,7 +310,7 @@ describe("挂载到在线集市列表", () => {
         expect(isHidden("keep")).toBe(false);
     });
 
-    it("按响应里拿到的列表把计数改成屏蔽后的数量", async () => {
+    it("rewrites the counter to the blocked count using the list from the response", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("acme", "pkg"),
             cardMarkup("other", "keep"),
@@ -330,7 +330,7 @@ describe("挂载到在线集市列表", () => {
         expect(counterOf().textContent).toBe("2");
     });
 
-    it("功能在列表渲染完之后才启用时，自己补一次请求拿到计数要用的数据", async () => {
+    it("issues its own request for counter data when enabled after the list has rendered", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("acme", "pkg"),
             cardMarkup("other", "keep"),
@@ -345,7 +345,7 @@ describe("挂载到在线集市列表", () => {
         expect(counterOf().textContent).toBe("1");
     });
 
-    it("先启用、后补名单：列表已经渲染时也能补上计数", async () => {
+    it("enabled first, authors later: still fixes the counter once the list is already rendered", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("acme", "pkg"),
             cardMarkup("other", "keep"),
@@ -367,7 +367,7 @@ describe("挂载到在线集市列表", () => {
         expect(counterOf().textContent).toBe("1");
     });
 
-    it("全部被屏蔽时收起卡片网格并补一行说明，计数归零", async () => {
+    it("collapses the card grid, adds an explanatory line and zeroes the counter when everything is blocked", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "a"), cardMarkup("acme", "b")], 2);
         stubListFetch(packagesPayload({author: "acme", name: "a"}, {author: "acme", name: "b"}));
         const harness = mount();
@@ -389,7 +389,7 @@ describe("挂载到在线集市列表", () => {
         expect(counterOf().textContent).toBe("2");
     });
 
-    it("手里的列表与宿主计数器对不上时不动计数（等新响应）", async () => {
+    it("leaves the counter alone when its list disagrees with the host counter (waits for a new response)", async () => {
         document.body.innerHTML = panelMarkup("plugin", [
             cardMarkup("acme", "pkg"),
             cardMarkup("other", "keep"),
@@ -409,7 +409,7 @@ describe("挂载到在线集市列表", () => {
         expect(counterOf().textContent).toBe("5");
     });
 
-    it("卸载后把计数、卡片标记与提示都交还宿主", async () => {
+    it("returns the counter, card markers and hint to the host on unmount", async () => {
         document.body.innerHTML = panelMarkup("plugin", [cardMarkup("acme", "a"), cardMarkup("acme", "b")], 2);
         stubListFetch(packagesPayload({author: "acme", name: "a"}, {author: "acme", name: "b"}));
         const harness = mount();
@@ -427,8 +427,8 @@ describe("挂载到在线集市列表", () => {
     });
 });
 
-describe("功能声明", () => {
-    it("默认关闭，第一个设置行是开关，作者名单是多行文本", () => {
+describe("feature declaration", () => {
+    it("defaults to off, with a switch as the first setting row and the author list as a textarea", () => {
         expect(definition.id).toBe("bazaar-author-blocklist");
         expect(definition.category).toBe("settings");
         expect(definition.enabled).toBe(true);
@@ -437,7 +437,7 @@ describe("功能声明", () => {
         expect(authors).toMatchObject({kind: "textarea", default: "", rows: 6});
     });
 
-    it("挂载返回的清理函数幂等", () => {
+    it("the cleanup function returned by mount is idempotent", () => {
         const harness = mountFeature(definition, {config: {enabled: true, authors: ""}});
         const instance = harness.instance as FeatureInstance;
         expect(typeof instance.destroy).toBe("function");

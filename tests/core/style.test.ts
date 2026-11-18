@@ -20,14 +20,14 @@ const stylesOf = (
 ): HTMLStyleElement[] => [...document.head.querySelectorAll<HTMLStyleElement>(`style[${ATTR}="${owner}"]`)];
 
 describe("addStyle", () => {
-    it("往 head 追加一份带 owner 标记的样式表", () => {
+    it("appends a stylesheet tagged with the owner to head", () => {
         addStyle("demo", ".a{color:red}");
         const styles = stylesOf("demo");
         expect(styles).toHaveLength(1);
         expect(styles[0].textContent).toBe(".a{color:red}");
     });
 
-    it("空白 CSS 不建元素，返回幂等的空撤销函数", () => {
+    it("blank CSS creates no element and returns an idempotent no-op undo function", () => {
         const remove = addStyle("demo", "   \n\t ");
         expect(stylesOf("demo")).toHaveLength(0);
         expect(() => {
@@ -36,7 +36,7 @@ describe("addStyle", () => {
         }).not.toThrow();
     });
 
-    it("同一个 owner 重复调用只更新内容，不堆叠样式表", () => {
+    it("calling again for the same owner only updates the content instead of stacking stylesheets", () => {
         const remove = addStyle("demo", ".a{color:red}");
         addStyle("demo", ".a{color:blue}");
         const styles = stylesOf("demo");
@@ -46,14 +46,14 @@ describe("addStyle", () => {
         expect(stylesOf("demo")).toHaveLength(0);
     });
 
-    it("不同功能各有自己的样式表", () => {
+    it("different features get their own stylesheets", () => {
         addStyle("alpha", ".a{}");
         addStyle("beta", ".b{}");
         expect(stylesOf("alpha")).toHaveLength(1);
         expect(stylesOf("beta")).toHaveLength(1);
     });
 
-    it("页面里已有同一份样式表时复用，不重复注入", () => {
+    it("an existing stylesheet in the page is reused instead of injected again", () => {
         // 模拟「模块缓存是空的，但上次插件实例留下的样式表还在页面里」
         const existing = document.createElement("style");
         existing.setAttribute(ATTR, "demo");
@@ -67,7 +67,7 @@ describe("addStyle", () => {
         expect(styles[0].textContent).toBe(".a{color:blue}");
     });
 
-    it("页面里残留多份同一 owner 的样式表时只留最后一份并改写它", () => {
+    it("leftover stylesheets of the same owner collapse to the last one, which is rewritten", () => {
         const first = document.createElement("style");
         first.setAttribute(ATTR, "demo");
         first.textContent = ".a{color:red}";
@@ -83,7 +83,7 @@ describe("addStyle", () => {
         expect(styles[0].textContent).toBe(".a{color:blue}");
     });
 
-    it("宿主清掉 head 之后重新注入会新建一份样式表", () => {
+    it("injecting again after the host clears head creates a new stylesheet", () => {
         addStyle("demo", ".a{color:red}");
         document.head.innerHTML = "";
         addStyle("demo", ".a{color:blue}");
@@ -92,7 +92,7 @@ describe("addStyle", () => {
         expect(styles[0].textContent).toBe(".a{color:blue}");
     });
 
-    it("撤销函数可以安全调用多次", () => {
+    it("the undo function can be called repeatedly", () => {
         const remove = addStyle("demo", ".a{}");
         remove();
         expect(() => remove()).not.toThrow();
@@ -101,7 +101,7 @@ describe("addStyle", () => {
 });
 
 describe("removeStylesOf", () => {
-    it("清掉该功能残留的全部样式表，别的功能不受影响", () => {
+    it("removes every leftover stylesheet of that feature without touching others", () => {
         addStyle("alpha", ".a{}");
         addStyle("alpha", ".a{}");
         addStyle("beta", ".b{}");
@@ -110,7 +110,7 @@ describe("removeStylesOf", () => {
         expect(stylesOf("beta")).toHaveLength(1);
     });
 
-    it("没有残留时也不报错", () => {
+    it("does not throw when nothing is left", () => {
         expect(() => removeStylesOf("ghost")).not.toThrow();
     });
 });

@@ -27,16 +27,16 @@ const DIALOG_KEY = "dialog-dialynote";
 /** 与宿主一致的日记弹窗标记：下拉框 + 动作区里那颗正文按钮。 */
 const dialogMarkup = (options: {withSelect?: boolean; withConfirm?: boolean;} = {}): string => {
     const select = options.withSelect === false ? "" : `<select class="b3-select">
-        <option value="nb-1">笔记本一</option>
-        <option value="nb-2">笔记本二</option>
+        <option value="nb-1">Notebook 1</option>
+        <option value="nb-2">Notebook 2</option>
     </select>`;
-    const confirm = options.withConfirm === false ? "" : '<button class="b3-button b3-button--text">确定</button>';
+    const confirm = options.withConfirm === false ? "" : '<button class="b3-button b3-button--text">Confirm</button>';
     return `<div data-key="${DIALOG_KEY}" class="b3-dialog">
         <div class="b3-dialog__container">
             <div class="b3-dialog__body">
                 <div class="b3-dialog__content">${select}</div>
                 <div class="b3-dialog__action">
-                    <button class="b3-button b3-button--cancel">取消</button>
+                    <button class="b3-button b3-button--cancel">Cancel</button>
                     ${confirm}
                 </div>
             </div>
@@ -80,8 +80,8 @@ const findDialog = (): HTMLElement | null => document.querySelector<HTMLElement>
 beforeEach(() => {
     mounted.length = 0;
     setNotebooks([
-        {id: "nb-1", name: "笔记本一"},
-        {id: "nb-2", name: "笔记本二"},
+        {id: "nb-1", name: "Notebook 1"},
+        {id: "nb-2", name: "Notebook 2"},
     ]);
 });
 
@@ -90,12 +90,12 @@ afterEach(() => {
     mounted.splice(0).forEach((harness) => harness.dispose());
 });
 
-describe("日记直接创建", () => {
-    it("候选项：「不指定」排第一，其余按当前已打开的笔记本列出", () => {
+describe("direct daily note creation", () => {
+    it("options: the not-specified entry comes first, the rest are the currently open notebooks", () => {
         setNotebooks([
-            {id: "nb-1", name: "笔记本一"},
-            {id: "nb-2", name: "笔记本二", closed: true},
-            {id: "", name: "没有 id"},
+            {id: "nb-1", name: "Notebook 1"},
+            {id: "nb-2", name: "Notebook 2", closed: true},
+            {id: "", name: "no id"},
             {id: "nb-3", name: ""},
         ]);
 
@@ -107,12 +107,12 @@ describe("日记直接创建", () => {
         // 已关闭的笔记本列出来会让用户选中一个必然失败的项；
         // 没有名字时回落 id，至少还能认出来是哪一个
         expect(options.slice(1)).toEqual([
-            {value: "nb-1", label: "笔记本一"},
+            {value: "nb-1", label: "Notebook 1"},
             {value: "nb-3", label: "nb-3"},
         ]);
     });
 
-    it("宿主还没给出笔记本列表时，候选项只剩「不指定」", () => {
+    it("when the host has no notebook list, only the not-specified entry remains", () => {
         setNotebooks(undefined);
         expect(dailyNoteNotebookOptions()).toEqual([{value: "", label: "feature.dailyNoteDirect.notebookUnset"}]);
 
@@ -121,7 +121,7 @@ describe("日记直接创建", () => {
         expect(dailyNoteNotebookOptions()).toHaveLength(1);
     });
 
-    it("配置了笔记本：设好下拉框、替用户点「确定」，并同步摘掉弹窗", async () => {
+    it("notebook configured: sets the select, confirms for the user and drops the dialog synchronously", async () => {
         mount({notebook: "nb-2"});
         const dialog = appendDialog();
         const select = dialog.querySelector("select") as HTMLSelectElement;
@@ -141,7 +141,7 @@ describe("日记直接创建", () => {
         expect(findDialog()).toBeNull();
     });
 
-    it("配置为空时不插手，弹窗原样留给思源自己的询问流程", async () => {
+    it("an empty config stays out of the way and leaves the dialog to SiYuan's own prompt", async () => {
         mount();
         const dialog = appendDialog();
         const select = dialog.querySelector("select") as HTMLSelectElement;
@@ -157,10 +157,10 @@ describe("日记直接创建", () => {
         expect(findDialog()).toBe(dialog);
     });
 
-    it("配置的笔记本已关闭 / 已不存在时放行，并留一条日志说明为什么没接手", async () => {
+    it("a closed / missing configured notebook is let through, with a log line saying why nothing was taken over", async () => {
         setNotebooks([
-            {id: "nb-1", name: "笔记本一"},
-            {id: "nb-2", name: "笔记本二", closed: true},
+            {id: "nb-1", name: "Notebook 1"},
+            {id: "nb-2", name: "Notebook 2", closed: true},
         ]);
         const harness = mount({notebook: "nb-2"});
         const dialog = appendDialog();
@@ -182,7 +182,7 @@ describe("日记直接创建", () => {
         expect(String(harness.records.logs[1]?.[0])).toContain("nb-404 is unavailable");
     });
 
-    it("弹窗结构不符（缺下拉框或缺确认按钮）时不插手，只记日志", async () => {
+    it("an unexpected dialog shape (no select or no confirm button) is left alone and only logged", async () => {
         const harness = mount({notebook: "nb-2"});
         const noSelect = appendDialog(dialogMarkup({withSelect: false}));
         await flush();
@@ -196,7 +196,7 @@ describe("日记直接创建", () => {
         expect(harness.records.logs).toHaveLength(2);
     });
 
-    it("弹窗作为嵌套节点进来时也能认出来（内层结构与外层 wrapper 两种形态）", async () => {
+    it("the dialog is recognized when it arrives nested (both the inner node and the outer wrapper)", async () => {
         mount({notebook: "nb-1"});
 
         // 内核只是 `body.append(element)`，但别的代码可能先包一层；
@@ -212,13 +212,13 @@ describe("日记直接创建", () => {
         expect(wrapper.children).toHaveLength(0);
     });
 
-    it("别的弹窗与文本节点都不触碰", async () => {
+    it("other dialogs and text nodes are never touched", async () => {
         const harness = mount({notebook: "nb-2"});
 
         // 不是日记弹窗（导出、确认框等都是同一个 Dialog 实现）
         const other = appendDialog(dialogMarkup().replace(DIALOG_KEY, "dialog-export"));
         // 文本节点也会出现在 addedNodes 里，`instanceof HTMLElement` 的守卫为它而写
-        document.body.append(document.createTextNode("随便一段文字"));
+        document.body.append(document.createTextNode("just some text"));
 
         await flush();
 
@@ -227,7 +227,7 @@ describe("日记直接创建", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("只看 body 的直接子节点变化：已有容器内部怎么变都不空转", async () => {
+    it("only direct children of body are watched: changes inside an existing container cost nothing", async () => {
         const harness = mount({notebook: "nb-2"});
 
         // 观察器只注册 `childList`（不写 subtree）：编辑器正文就在已有容器里不断变化，
@@ -245,7 +245,7 @@ describe("日记直接创建", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("destroy 之后不再处理新弹窗", async () => {
+    it("no new dialog is handled after destroy", async () => {
         const harness = mount({notebook: "nb-2"});
         harness.dispose();
 
@@ -257,7 +257,7 @@ describe("日记直接创建", () => {
         expect(findDialog()).toBe(dialog);
     });
 
-    it("配置改动后立刻按新值接手（弹窗读到的是当下这份配置）", async () => {
+    it("a config change is honoured at once (the dialog reads the config as it is now)", async () => {
         const harness = mount();
         const first = appendDialog();
         await flush();
@@ -273,7 +273,7 @@ describe("日记直接创建", () => {
         expect(findDialog()).toBeNull();
     });
 
-    it("声明：编辑器分类、默认关闭、笔记本下拉走 optionsProvider", () => {
+    it("declaration: editor category, off by default, the notebook select comes from optionsProvider", () => {
         expect(definition.id).toBe("daily-note-direct");
         expect(definition.category).toBe("editor");
         expect(definition.enabled).toBe(true);

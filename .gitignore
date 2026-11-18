@@ -2,7 +2,7 @@ node_modules
 dist
 package.zip
 
-# webpack 在仓库根目录的开发产物
+# vite 在仓库根目录的开发产物
 index.js
 index.css
 kernel.js

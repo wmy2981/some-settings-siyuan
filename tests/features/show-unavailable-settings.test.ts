@@ -28,12 +28,12 @@ afterEach(() => {
     setShowUnavailable(false);
 });
 
-describe("显示不可用的设置", () => {
-    it("默认关闭", () => {
+describe("show unavailable settings", () => {
+    it("off by default", () => {
         expect(isShowUnavailable()).toBe(false);
     });
 
-    it("挂载即打开，卸载后关回去", () => {
+    it("mounting turns it on and unmounting turns it back off", () => {
         const harness = mountFeature(definition, {config: {enabled: true}});
         mounted.push(harness);
 
@@ -43,7 +43,7 @@ describe("显示不可用的设置", () => {
         expect(isShowUnavailable()).toBe(false);
     });
 
-    it("挂载与卸载各留一条自己的日志", () => {
+    it("mount and unmount each leave one log entry of their own", () => {
         const harness = mountFeature(definition, {config: {enabled: true}});
         mounted.push(harness);
         harness.dispose();

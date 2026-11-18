@@ -59,7 +59,7 @@ const makePlugin = (): FakePlugin => ({
 const asPlugin = (plugin: FakePlugin): Plugin => plugin as unknown as Plugin;
 
 describe("listStoredFiles", () => {
-    it("用内核的 /api/file/readDir 列插件自己的目录，并关掉宿主报错", async () => {
+    it("lists the plugin own directory via the kernel /api/file/readDir and silences host errors", async () => {
         const plugin = makePlugin();
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: [{name: "feature-a", isDir: false}]});
         await expect(listStoredFiles(asPlugin(plugin))).resolves.toEqual(["feature-a"]);
@@ -71,25 +71,25 @@ describe("listStoredFiles", () => {
         );
     });
 
-    it("目录不存在（404）时返回空数组", async () => {
+    it("returns an empty array when the directory is missing (404)", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 404, msg: "not found"});
         await expect(listStoredFiles(asPlugin(makePlugin()))).resolves.toEqual([]);
     });
 
-    it("其他失败一律抛出，绝不假装目录是空的", async () => {
+    it("throws on any other failure instead of pretending the directory is empty", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: -1, msg: "kernel busy"});
         await expect(listStoredFiles(asPlugin(makePlugin()))).rejects.toThrow(
             `cannot list ${STORAGE_DIR}: code -1: kernel busy`,
         );
     });
 
-    it("内核回负数时不会一直悬着（走 fetchSyncPost 而不是 fetchPost）", async () => {
+    it("does not hang on a negative kernel code (uses fetchSyncPost, not fetchPost)", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: -1});
         await expect(listStoredFiles(asPlugin(makePlugin()))).rejects.toThrow("code -1");
         expect(mockState.fetchPost).not.toHaveBeenCalled();
     });
 
-    it("只收文件名，跳过子目录与非字符串名字", async () => {
+    it("collects file names only, skipping subdirectories and non-string names", async () => {
         mockState.fetchSyncPost.mockResolvedValue({
             code: 0,
             data: [
@@ -103,31 +103,31 @@ describe("listStoredFiles", () => {
         await expect(listStoredFiles(asPlugin(makePlugin()))).resolves.toEqual(["feature-a", "feature-b"]);
     });
 
-    it("data 不是数组时按空处理", async () => {
+    it("treats a non-array data as empty", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0, data: null});
         await expect(listStoredFiles(asPlugin(makePlugin()))).resolves.toEqual([]);
     });
 
-    it("网络层异常向上抛给调用方", async () => {
+    it("network errors propagate to the caller", async () => {
         mockState.fetchSyncPost.mockRejectedValue(new Error("offline"));
         await expect(listStoredFiles(asPlugin(makePlugin()))).rejects.toThrow("offline");
     });
 });
 
 describe("readStoredFile", () => {
-    it("读到内容时原样返回", async () => {
+    it("returns the content as-is when it can be read", async () => {
         const plugin = makePlugin();
         plugin.loadData = vi.fn(async () => ({enabled: true}));
         await expect(readStoredFile(asPlugin(plugin), "feature-a")).resolves.toEqual({enabled: true});
     });
 
-    it("文件不存在时宿主兑现空串，按 null 处理", async () => {
+    it("an empty string resolved for a missing file is treated as null", async () => {
         const plugin = makePlugin();
         plugin.loadData = vi.fn(async () => "");
         await expect(readStoredFile(asPlugin(plugin), "feature-a")).resolves.toBeNull();
     });
 
-    it("读失败时告警并返回 null", async () => {
+    it("warns and returns null when reading fails", async () => {
         const plugin = makePlugin();
         plugin.loadData = vi.fn(async () => {
             throw new Error("gone");
@@ -138,7 +138,7 @@ describe("readStoredFile", () => {
 });
 
 describe("writeStoredFile", () => {
-    it("内核收下时 ok 为真并带上 code", async () => {
+    it("ok is true with the code when the kernel accepts it", async () => {
         const plugin = makePlugin();
         await expect(writeStoredFile(asPlugin(plugin), "feature-a", {enabled: true})).resolves.toEqual({
             ok: true,
@@ -148,7 +148,7 @@ describe("writeStoredFile", () => {
         expect(plugin.saveData).toHaveBeenCalledWith("feature-a", {enabled: true});
     });
 
-    it("code 非 0 时判为失败，detail 带内核 code 与 msg", async () => {
+    it("a non-zero code counts as a failure and detail carries the kernel code and msg", async () => {
         const plugin = makePlugin();
         plugin.saveData = vi.fn(async () => ({code: 1, msg: "denied"}));
         await expect(writeStoredFile(asPlugin(plugin), "feature-a", {})).resolves.toEqual({
@@ -158,7 +158,7 @@ describe("writeStoredFile", () => {
         });
     });
 
-    it("宿主没有兑现结构化响应时也判为失败", async () => {
+    it("a host that resolves no structured response also counts as a failure", async () => {
         const plugin = makePlugin();
         plugin.saveData = vi.fn(async () => undefined);
         const status = await writeStoredFile(asPlugin(plugin), "feature-a", {});
@@ -166,7 +166,7 @@ describe("writeStoredFile", () => {
         expect(status.detail).toContain("unexpected kernel response");
     });
 
-    it("宿主直接抛错时判为失败并告警", async () => {
+    it("a host that throws counts as a failure and warns", async () => {
         const plugin = makePlugin();
         plugin.saveData = vi.fn(async () => {
             throw new Error("disk full");
@@ -179,7 +179,7 @@ describe("writeStoredFile", () => {
 });
 
 describe("removeStoredFile", () => {
-    it("删成功，以及文件本来就不在（404）都算达成目标", async () => {
+    it("a successful delete and an already-missing file (404) both reach the goal", async () => {
         const plugin = makePlugin();
         await expect(removeStoredFile(asPlugin(plugin), "feature-a")).resolves.toEqual({
             ok: true,
@@ -194,7 +194,7 @@ describe("removeStoredFile", () => {
         });
     });
 
-    it("其他 code 判为失败", async () => {
+    it("any other code counts as a failure", async () => {
         const plugin = makePlugin();
         plugin.removeData = vi.fn(async () => ({code: 500, msg: "io error"}));
         await expect(removeStoredFile(asPlugin(plugin), "feature-a")).resolves.toEqual({
@@ -204,7 +204,7 @@ describe("removeStoredFile", () => {
         });
     });
 
-    it("宿主抛错时判为失败并告警", async () => {
+    it("a host that throws counts as a failure and warns", async () => {
         const plugin = makePlugin();
         plugin.removeData = vi.fn(async () => {
             throw new Error("no permission");
@@ -217,7 +217,7 @@ describe("removeStoredFile", () => {
 });
 
 describe("removeStorageDir", () => {
-    it("删的是整个存储目录", async () => {
+    it("removes the whole storage directory", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 0});
         await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({ok: true, code: 0, detail: "code 0"});
         expect(mockState.fetchSyncPost).toHaveBeenCalledWith(
@@ -228,7 +228,7 @@ describe("removeStorageDir", () => {
         );
     });
 
-    it("目录本来就不在也算成功", async () => {
+    it("an already-missing directory also counts as success", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 404});
         await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({
             ok: true,
@@ -237,7 +237,7 @@ describe("removeStorageDir", () => {
         });
     });
 
-    it("其他 code 判为失败", async () => {
+    it("any other code counts as a failure", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 403, msg: "readonly"});
         await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({
             ok: false,
@@ -246,7 +246,7 @@ describe("removeStorageDir", () => {
         });
     });
 
-    it("请求抛错时判为失败并告警", async () => {
+    it("a throwing request counts as a failure and warns", async () => {
         mockState.fetchSyncPost.mockRejectedValue(new Error("offline"));
         const status = await removeStorageDir(asPlugin(makePlugin()));
         expect(status.ok).toBe(false);
@@ -256,7 +256,7 @@ describe("removeStorageDir", () => {
 });
 
 describe("mapLimit", () => {
-    it("结果按输入顺序返回，与完成顺序无关", async () => {
+    it("results keep the input order regardless of completion order", async () => {
         const delays = [30, 5, 20, 1];
         const results = await mapLimit(delays, 4, async (delay, index) => {
             await new Promise((resolve) => setTimeout(resolve, delay));
@@ -265,7 +265,7 @@ describe("mapLimit", () => {
         expect(results).toEqual([0, 1, 2, 3]);
     });
 
-    it("同时运行的任务不超过上限", async () => {
+    it("concurrent tasks never exceed the limit", async () => {
         let running = 0;
         let peak = 0;
         await mapLimit(Array.from({length: 12}, (_, index) => index), CONFIG_IO_CONCURRENCY, async () => {
@@ -278,13 +278,13 @@ describe("mapLimit", () => {
         expect(peak).toBe(CONFIG_IO_CONCURRENCY);
     });
 
-    it("空清单直接把空数组交回去", async () => {
+    it("an empty list resolves to an empty array", async () => {
         const run = vi.fn();
         await expect(mapLimit([], 4, run)).resolves.toEqual([]);
         expect(run).not.toHaveBeenCalled();
     });
 
-    it("并发度按上限切分，不会把整批同时压出去", async () => {
+    it("concurrency is sliced by the limit rather than firing the whole batch at once", async () => {
         let running = 0;
         let peak = 0;
         const results = await mapLimit([1, 2, 3, 4, 5], 2, async (value) => {
@@ -298,13 +298,13 @@ describe("mapLimit", () => {
         expect(peak).toBe(2);
     });
 
-    it("上限为 0 时至少跑一个，不会卡死", async () => {
+    it("a limit of 0 still runs at least one task without hanging", async () => {
         const run = vi.fn(async (value: number) => value);
         await expect(mapLimit([1, 2, 3], 0, run)).resolves.toEqual([1, 2, 3]);
         expect(run).toHaveBeenCalledTimes(3);
     });
 
-    it("任务抛错后，其余的仍会被存活的 worker 跑完", async () => {
+    it("after a task throws the surviving workers still finish the rest", async () => {
         const ran: number[] = [];
         void mapLimit([1, 2, 3, 4], 2, async (value) => {
             ran.push(value);
@@ -318,7 +318,7 @@ describe("mapLimit", () => {
         expect([...ran].sort()).toEqual([1, 2, 3, 4]);
     });
 
-    it("任务抛错时整体拒绝", async () => {
+    it("rejects as a whole when a task throws", async () => {
         await expect(mapLimit([1, 2, 3], 2, async (value) => {
             if (value === 2) {
                 throw new Error("boom");

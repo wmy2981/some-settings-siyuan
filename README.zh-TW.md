@@ -75,6 +75,7 @@
 
 * 詳細日誌輸出
 * 顯示不可用的設定
+* 設定面板搜尋
 * 清除此外掛設定
 * 關於此外掛
 * 外掛設定匯入匯出
@@ -98,7 +99,8 @@
 * 面板會記住上次關閉時的頁籤，下次開啟回到那一頁；該頁籤已不可用時回到第一個頁籤。
 * 搜尋框（桌面端在內容區頂部、行動端在標題下方）同時搜尋分類、功能與設定項目，命中的功能連同它的全部設定
   一起顯示並突顯；`Ctrl/Cmd + F` 或 `/` 聚焦，`Esc` 或輸入框裡的清除圖示只清空搜尋、不關面板。
-  搜尋詞不儲存，搜尋本身也不掛載功能或寫入設定。
+  它預設開啟，可在「外掛本身」頁籤關掉；關掉後搜尋框不再出現，這兩個快速鍵也交還思源。
+  搜尋詞不儲存，搜尋本身也不寫入設定。
 * 「外掛本身」頁籤的「顯示不可用的設定」開啟後，每個頁籤底部會灰顯目前用不了的功能並逐條註明原因
   （開發者停用、平台不符、思源版本低於下限或高於上限）；搜尋時它們單獨彙整到結果最底部的「不可用」
   分組。不可用條目的控制項依宣告預設值灰顯、無法操作，它們的設定也不會被載入。
@@ -122,6 +124,21 @@
 ## 市集趨勢圖表
 
 ![市集趨勢圖表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
+
+## 開發
+
+需要 Node.js 24 以上，複製倉庫後按需執行：
+
+```bash
+npm ci              # 安裝依賴
+npm run dev         # 監看原始碼，把 index.js / index.css / i18n 直接寫到倉庫根目錄
+npm run build       # 校驗功能宣告後打包出 dist/ 與 package.zip
+npm run check       # 只校驗功能宣告與三份語言檔
+npm run typecheck   # TypeScript 型別檢查
+npm run lint        # ESLint
+npm run format      # dprint 格式化（format:check 只檢查不寫入）
+npm test            # 單元測試（vitest）
+```
 
 ## 授權條款
 

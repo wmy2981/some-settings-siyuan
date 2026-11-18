@@ -34,7 +34,7 @@ const styleCount = (): number => document.head.querySelectorAll('style[data-some
  */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("Modal 遮罩模糊", () => {
+describe("Modal scrim blur", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -49,7 +49,7 @@ describe("Modal 遮罩模糊", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：两端都适用，只有开关与半径两项，半径默认 10 且限制在 1～40", () => {
+    it("Declaration: both frontends, only a switch and a radius, radius defaults to 10 and is capped at 1-40", () => {
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["enabled", "radius"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
@@ -64,7 +64,7 @@ describe("Modal 遮罩模糊", () => {
         });
     });
 
-    it("默认配置：只给遮罩本体加 10px 模糊，弹窗自身不受影响", () => {
+    it("Default config: blurs the scrim itself by 10px and leaves the dialog alone", () => {
         const harness = mount();
 
         const css = harness.css();
@@ -82,7 +82,7 @@ describe("Modal 遮罩模糊", () => {
         expect(harness.styleElement()?.textContent).toBe(harness.records.styles.at(-1));
     });
 
-    it("排除三类宿主自己处理过的遮罩，且不靠 revert 交还样式", () => {
+    it("Excludes the three scrims the host already handles and never hands styling back via revert", () => {
         const css = mount().css();
 
         // 属性视图面板复用了同一个遮罩类名，但它不是 modal
@@ -95,14 +95,14 @@ describe("Modal 遮罩模糊", () => {
         expect(rulesOf(css)).not.toContain("revert");
     });
 
-    it("半径按配置取值，数字字符串也能用（mount 层只做 Number 转换）", () => {
+    it("Uses the configured radius and accepts numeric strings (the mount layer only does Number())", () => {
         expect(mount({radius: 24}).css()).toContain("backdrop-filter: blur(24px);");
         expect(mount({radius: "18"}).css()).toContain("backdrop-filter: blur(18px);");
         // 不取整：小数原样交给 CSS，行为上等同于 CSS 自己处理
         expect(mount({radius: 12.5}).css()).toContain("backdrop-filter: blur(12.5px);");
     });
 
-    it("半径只接受正有限数：0、负数、NaN、Infinity、字符串噪音、空值都回落 10", () => {
+    it("Accepts only positive finite radii: 0, negatives, NaN, Infinity, string noise and empty values fall back to 10", () => {
         [0, -3, -0.5, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, "abc", "", null, undefined]
             .forEach((radius) => {
                 const css = mount({radius}).css();
@@ -113,7 +113,7 @@ describe("Modal 遮罩模糊", () => {
             });
     });
 
-    it("任何半径下生成的 CSS 都非空：空串会让 addStyle 直接返回，旧样式表清不掉", () => {
+    it("Generated CSS is never empty for any radius: an empty string makes addStyle return and keeps the old sheet", () => {
         // 这条是核心守则：一旦某个非法值生成空串，`<head>` 里会继续留着上一份样式，
         // 用户看到的就是「改了没反应」，而且重载插件也无效（只有整页刷新才恢复）
         [0, -1, Number.NaN, Number.POSITIVE_INFINITY, "abc"].forEach((radius) => {
@@ -124,7 +124,7 @@ describe("Modal 遮罩模糊", () => {
         });
     });
 
-    it("从大半径改回非法值时就地重写，旧的大半径不会留在样式表里", () => {
+    it("Rewrites in place when a large radius turns invalid and keeps the old radius out of the sheet", () => {
         const harness = mount({radius: 30});
         expect(harness.styleElement()?.textContent).toContain("blur(30px)");
 
@@ -137,7 +137,7 @@ describe("Modal 遮罩模糊", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("配置变更重新注入同一张样式表，不堆叠第二张", () => {
+    it("A config change reinjects the same stylesheet instead of stacking a second one", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -151,7 +151,7 @@ describe("Modal 遮罩模糊", () => {
         expect(harness.styleElement()?.textContent).not.toContain("blur(10px)");
     });
 
-    it("mount 即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("mount applies once and wires later changes to onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {
@@ -170,7 +170,7 @@ describe("Modal 遮罩模糊", () => {
         expect(listeners).toHaveLength(1);
     });
 
-    it("dispose 之后 <head> 里的 <style> 与配置订阅一起收干净", () => {
+    it("dispose removes the <style> from <head> together with the config subscription", () => {
         const harness = mount();
         const injected = harness.records.styles.length;
         expect(styleCount()).toBe(1);

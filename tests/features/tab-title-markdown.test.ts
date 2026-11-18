@@ -109,7 +109,7 @@ const addMobileItem = (tabs: HTMLElement, text: string): HTMLElement => {
     return title;
 };
 
-describe("页签标题渲染行级 Markdown", () => {
+describe("tab title renders inline Markdown", () => {
     const mounted: HostHarness[] = [];
     let frames: ReturnType<typeof stubFrames>;
 
@@ -124,7 +124,7 @@ describe("页签标题渲染行级 Markdown", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：用 scope 选项当开关，默认「禁用」，版本上限与文档树那份一致", () => {
+    it("declaration: the scope option is the switch, disabled by default, version cap matches the doc-tree one", () => {
         expect(definition.id).toBe("tab-title-markdown");
         expect(definition.category).toBe("doc-tree");
         expect(definition.enabled).toBe(true);
@@ -138,13 +138,13 @@ describe("页签标题渲染行级 Markdown", () => {
         expect(definition.settings[0]).toMatchObject({kind: "select", key: "scope", default: "disabled"});
     });
 
-    it("默认（禁用）时三处文字层都不碰", () => {
+    it("leaves all three text layers alone when disabled by default", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const menu = createTabList();
-        const label = addTabListItem(menu, "**粗体**");
+        const label = addTabListItem(menu, "**bold**");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "**粗体**");
+        const mobile = addMobileItem(tabs, "**bold**");
 
         const harness = mount({});
 
@@ -154,70 +154,70 @@ describe("页签标题渲染行级 Markdown", () => {
         expect(mobile.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("scope=desktop 只渲染页签条与页签下拉列表", () => {
+    it("scope=desktop renders only the tab bar and the tab dropdown list", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const menu = createTabList();
-        const label = addTabListItem(menu, "==高亮==");
+        const label = addTabListItem(menu, "==highlight==");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "**粗体**");
+        const mobile = addMobileItem(tabs, "**bold**");
 
         mount({scope: "desktop"});
 
-        expect(desktop.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("粗体");
-        expect(label.querySelector(`[${MARK_ATTR}="mark"]`)?.textContent).toBe("高亮");
+        expect(desktop.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("bold");
+        expect(label.querySelector(`[${MARK_ATTR}="mark"]`)?.textContent).toBe("highlight");
         expect(mobile.querySelector(`[${MARK_ATTR}]`)).toBeNull();
         // textContent 仍是原文：document.title、拖拽载荷都从这里取
-        expect(desktop.textContent).toBe("**粗体**");
-        expect(label.textContent).toBe("==高亮==");
+        expect(desktop.textContent).toBe("**bold**");
+        expect(label.textContent).toBe("==highlight==");
     });
 
-    it("scope=mobile 只渲染移动端页签概览", () => {
+    it("scope=mobile renders only the mobile tab overview", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "^上标^");
+        const mobile = addMobileItem(tabs, "^superscript^");
 
         mount({scope: "mobile"});
 
-        expect(mobile.querySelector(`[${MARK_ATTR}="sup"]`)?.textContent).toBe("上标");
+        expect(mobile.querySelector(`[${MARK_ATTR}="sup"]`)?.textContent).toBe("superscript");
         expect(desktop.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("scope=both 三处都渲染", () => {
+    it("scope=both renders all three places", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "*斜体*");
+        const desktop = addDesktopTab(bar, "*italic*");
         const menu = createTabList();
-        const label = addTabListItem(menu, "*斜体*");
+        const label = addTabListItem(menu, "*italic*");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "*斜体*");
+        const mobile = addMobileItem(tabs, "*italic*");
 
         mount({scope: "both"});
 
         for (const element of [desktop, label, mobile]) {
-            expect(element.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("斜体");
+            expect(element.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("italic");
         }
     });
 
-    it("非法 scope 值按「禁用」处理，不会退化成随便渲染", () => {
+    it("an invalid scope value is treated as disabled and never falls back to rendering anywhere", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
 
         mount({scope: "weird"});
 
         expect(desktop.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("没有语法字符的页签标题不动", () => {
+    it("a tab title without syntax characters is left untouched", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "普通笔记");
+        const desktop = addDesktopTab(bar, "Plain note");
         mount({scope: "desktop"});
 
         expect(desktop.childNodes).toHaveLength(1);
-        expect(desktop.textContent).toBe("普通笔记");
+        expect(desktop.textContent).toBe("Plain note");
     });
 
-    it("宿主投影的富标题整块跳过", () => {
+    it("the host-projected rich title is skipped entirely", () => {
         const bar = createBar();
         const li = document.createElement("li");
         li.className = "item";
@@ -234,21 +234,21 @@ describe("页签标题渲染行级 Markdown", () => {
         expect(title.innerHTML).toBe('a_b<span data-type="code">1*2</span>');
     });
 
-    it("设置 / 数据历史 / 集市里同样类名的小页签不受影响", () => {
+    it("small tabs with the same class in settings / data history / bazaar are unaffected", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         // 结构不同（缺 data-type），不是页签条
         const otherLi = document.createElement("li");
         otherLi.className = "item";
         const otherTitle = document.createElement("div");
         otherTitle.className = "item__text";
-        otherTitle.textContent = "**粗体**";
+        otherTitle.textContent = "**bold**";
         otherLi.append(otherTitle);
         bar.append(otherLi);
         // 连容器都不是 ul.layout-tab-bar
         const fakeBar = document.createElement("div");
         fakeBar.className = "layout-tab-bar";
-        fakeBar.innerHTML = '<div class="item__text">**粗体**</div>';
+        fakeBar.innerHTML = '<div class="item__text">**bold**</div>';
         document.body.append(fakeBar);
 
         mount({scope: "desktop"});
@@ -258,30 +258,30 @@ describe("页签标题渲染行级 Markdown", () => {
         expect(fakeBar.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("宿主用同一份原文重写 innerHTML 之后必须重新渲染", async () => {
+    it("must re-render after the host rewrites innerHTML with the same source text", async () => {
         const bar = createBar();
-        const title = addDesktopTab(bar, "**粗体**");
+        const title = addDesktopTab(bar, "**bold**");
         mount({scope: "desktop"});
         expect(title.querySelector(`[${MARK_ATTR}="strong"]`)).not.toBeNull();
 
         // 内核打开文档时再写一次 Tab.updateTitle：节点被整片冲掉，原文没变
-        title.innerHTML = "**粗体**";
+        title.innerHTML = "**bold**";
         await settle();
         await frames.flush();
 
-        expect(title.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("粗体");
-        expect(title.textContent).toBe("**粗体**");
+        expect(title.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("bold");
+        expect(title.textContent).toBe("**bold**");
     });
 
-    it("原文与标记都还在时不重复包装", async () => {
+    it("does not wrap twice while both the source text and the marks remain", async () => {
         const bar = createBar();
-        const title = addDesktopTab(bar, "**粗体**");
+        const title = addDesktopTab(bar, "**bold**");
         mount({scope: "desktop"});
         const before = title.innerHTML;
         const markCount = title.querySelectorAll(`[${MARK_ATTR}]`).length;
 
         // 页签条里多一个页签 → 重扫
-        addDesktopTab(bar, "另一个");
+        addDesktopTab(bar, "another one");
         await settle();
         await frames.flush();
 
@@ -289,11 +289,11 @@ describe("页签标题渲染行级 Markdown", () => {
         expect(title.querySelectorAll(`[${MARK_ATTR}]`).length).toBe(markCount);
     });
 
-    it("切换 scope：旧位置还原成纯文本，新位置开始渲染", async () => {
+    it("switching scope: the old position reverts to plain text and the new one starts rendering", async () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "**粗体**");
+        const mobile = addMobileItem(tabs, "**bold**");
 
         const harness = mount({scope: "desktop"});
         expect(desktop.querySelector(`[${MARK_ATTR}="strong"]`)).not.toBeNull();
@@ -303,16 +303,16 @@ describe("页签标题渲染行级 Markdown", () => {
         await settle();
         await frames.flush();
 
-        expect(desktop.textContent).toBe("**粗体**");
+        expect(desktop.textContent).toBe("**bold**");
         expect(desktop.querySelector(`[${MARK_ATTR}]`)).toBeNull();
-        expect(mobile.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("粗体");
+        expect(mobile.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("bold");
     });
 
-    it("切回原 scope 时能重新渲染（还原时一并清掉「已渲染」记录）", async () => {
+    it("re-renders when switching back to the original scope (reverting also clears the rendered record)", async () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const tabs = createMobileTabs();
-        addMobileItem(tabs, "**粗体**");
+        addMobileItem(tabs, "**bold**");
 
         const harness = mount({scope: "desktop"});
 
@@ -327,61 +327,61 @@ describe("页签标题渲染行级 Markdown", () => {
         await settle();
         await frames.flush();
 
-        expect(desktop.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("粗体");
+        expect(desktop.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("bold");
     });
 
-    it("无关突变不触发扫描", async () => {
+    it("unrelated mutations do not trigger a scan", async () => {
         createBar();
         mount({scope: "desktop"});
         expect(frames.pendingCount()).toBe(0);
 
         const editor = document.createElement("div");
         editor.className = "protyle-wysiwyg";
-        editor.innerHTML = "<div>**正文**</div>";
+        editor.innerHTML = "<div>**body**</div>";
         document.body.append(editor);
         await settle();
 
         expect(frames.pendingCount()).toBe(0);
     });
 
-    it("卸载把三处都还原成纯文本并撤掉样式", () => {
+    it("unmount reverts all three places to plain text and removes the style", () => {
         const bar = createBar();
-        const desktop = addDesktopTab(bar, "**粗体**");
+        const desktop = addDesktopTab(bar, "**bold**");
         const menu = createTabList();
-        const label = addTabListItem(menu, "**粗体**");
+        const label = addTabListItem(menu, "**bold**");
         const tabs = createMobileTabs();
-        const mobile = addMobileItem(tabs, "**粗体**");
+        const mobile = addMobileItem(tabs, "**bold**");
 
         const harness = mount({scope: "both"});
 
         harness.dispose();
 
         for (const element of [desktop, label, mobile]) {
-            expect(element.textContent).toBe("**粗体**");
+            expect(element.textContent).toBe("**bold**");
             expect(element.querySelector(`[${MARK_ATTR}]`)).toBeNull();
         }
         expect(harness.styleElement()).toBeNull();
     });
 
-    it("卸载会取消已排队的帧，之后的突变不再渲染", async () => {
+    it("unmount cancels queued frames and later mutations no longer render", async () => {
         const bar = createBar();
         const harness = mount({scope: "desktop"});
 
-        addDesktopTab(bar, "**粗体**");
+        addDesktopTab(bar, "**bold**");
         await settle();
         expect(frames.pendingCount()).toBe(1);
 
         harness.dispose();
         expect(frames.pendingCount()).toBe(0);
 
-        const later = addDesktopTab(bar, "*斜体*");
+        const later = addDesktopTab(bar, "*italic*");
         await settle();
         await frames.flush();
 
         expect(later.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("destroy 幂等：连调两次不抛错", () => {
+    it("destroy is idempotent: calling it twice does not throw", () => {
         createBar();
         const harness = mount({scope: "desktop"});
 

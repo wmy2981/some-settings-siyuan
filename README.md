@@ -75,6 +75,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 
 * Detailed log output
 * Show unavailable settings
+* Settings panel search
 * Clear this plugin's configuration
 * About this plugin
 * Import and export this plugin's configuration
@@ -101,8 +102,9 @@ plugin adds no top bar button, no status bar item and no dock item.
 * The panel restores the tab that was open when it last closed, and falls back to the first tab if that one is gone.
 * The search box (top of the settings area on desktop, below the panel title on mobile) filters categories, features
   and setting items at once, showing each matched feature with all of its settings and highlighting the match;
-  `Ctrl/Cmd + F` or `/` focuses it, and `Esc` or the clear icon inside the box only empties it. The query is never
-  saved, and searching neither mounts features nor writes configuration.
+  `Ctrl/Cmd + F` or `/` focuses it, and `Esc` or the clear icon inside the box only empties it. It is on by default
+  and can be turned off under **This plugin**; once off the box disappears and both shortcuts go back to SiYuan.
+  The query is never saved, and searching writes no configuration.
 * With **Show unavailable settings** on under **This plugin**, every tab lists the features that cannot run here
   at the bottom in gray, with every matching reason (disabled by the developer, not available on this platform,
   or outside the supported SiYuan version range); search collects them into a separate **Unavailable** group at
@@ -135,6 +137,21 @@ plugin adds no top bar button, no status bar item and no dock item.
 ## Bazaar Stats Graph
 
 ![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
+
+## Development
+
+Requires Node.js 24 or newer. After cloning the repository:
+
+```bash
+npm ci              # install dependencies
+npm run dev         # watch sources, write index.js / index.css / i18n into the repository root
+npm run build       # check the feature declarations, then build dist/ and package.zip
+npm run check       # check the feature declarations and the three language files only
+npm run typecheck   # TypeScript typecheck
+npm run lint        # ESLint
+npm run format      # format with dprint (format:check only verifies)
+npm test            # unit tests (vitest)
+```
 
 ## License
 

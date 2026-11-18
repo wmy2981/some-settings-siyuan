@@ -30,7 +30,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的 14px / 16px。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("移动端文档树标题字号回归 3.8.9", () => {
+describe("mobile doc tree title font-size regression 3.8.9", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -43,14 +43,14 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：属于文档树分类，只在移动端交出，只有一个默认关闭的开关", () => {
+    it("declaration: doc-tree category, mobile only, a single default-off switch", () => {
         expect(definition.category).toBe("doc-tree");
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("两条选择器都带 body 前缀：靠特异性压过内核那条，不靠样式表顺序", () => {
+    it("both selectors carry a body prefix so specificity beats the kernel rule, not stylesheet order", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain("body #sidebar .b3-list--mobile .b3-list-item,");
@@ -60,7 +60,7 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         expect(css).not.toContain("!important");
     });
 
-    it("字号是 0.875 倍（默认 16px 即 3.8.9 的 14px），并跟随思源字号设置", () => {
+    it("font size is 0.875x (16px default yields the 3.8.9 14px) and follows the SiYuan font-size setting", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain("font-size: calc(var(--b3-font-size-editor, 16px) * 0.875);");
@@ -71,7 +71,7 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         expect(css).not.toContain("font-size: 16px");
     });
 
-    it("除了 font-size 一条声明，其它尺寸一律不碰", () => {
+    it("touches no other size declaration besides the single font-size", () => {
         const css = rulesOf(mount().css());
 
         // 数声明而不是数「font-size」这个词：变量名 --b3-font-size-editor 里也有它
@@ -81,7 +81,7 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         });
     });
 
-    it("静态 CSS 不订阅配置变化：广播保存不会重复注入", () => {
+    it("static CSS does not subscribe to config changes: a broadcast save does not re-inject", () => {
         const harness = mount();
         expect(harness.records.styles).toHaveLength(1);
         expect(harness.records.configListeners).toHaveLength(0);
@@ -92,14 +92,14 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("重复挂载共用同一个 <style>", () => {
+    it("mounting twice shares a single <style>", () => {
         mount();
         mount();
 
         expect(styleCount()).toBe(1);
     });
 
-    it("mount 只调一次 addStyle，不改 DOM", () => {
+    it("mount calls addStyle once and leaves the DOM untouched", () => {
         const styles: string[] = [];
         const host = {
             addStyle: (css: string) => {
@@ -114,7 +114,7 @@ describe("移动端文档树标题字号回归 3.8.9", () => {
         expect(document.body.innerHTML).toBe(before);
     });
 
-    it("dispose 之后 <head> 里的 <style> 被移除", () => {
+    it("removes the <style> from <head> after dispose", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 

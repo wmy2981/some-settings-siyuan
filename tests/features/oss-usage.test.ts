@@ -62,15 +62,15 @@ const defaultS3 = (patch: Record<string, unknown> = {}): Record<string, unknown>
 const settingsRowHtml = (): string =>
     `<div id="syncProviderConfigRow">
     <div class="fn__size200">
-        <button type="button">配置</button>
+        <button type="button">Config</button>
         <div class="fn__hr"></div>
-        <button type="button">导入</button>
+        <button type="button">Import</button>
         <div class="fn__hr"></div>
-        <button type="button">导出</button>
+        <button type="button">Export</button>
     </div>
 </div>
 <div id="syncProviderConfig">
-    <div class="b3-label--inner"><button type="button">测试连接</button></div>
+    <div class="b3-label--inner"><button type="button">Test connection</button></div>
 </div>`;
 
 const mounted: HostHarness[] = [];
@@ -167,8 +167,8 @@ afterEach(() => {
     mounted.splice(0).forEach((harness) => harness.dispose());
 });
 
-describe("阿里云 OSS 存储桶使用数据", () => {
-    it("声明里只有开关一项、默认关闭", () => {
+describe("Aliyun OSS bucket usage data", () => {
+    it("the declaration has a single switch, off by default", () => {
         expect(definition.id).toBe("oss-usage");
         expect(definition.category).toBe("settings");
         expect(definition.enabled).toBe(true);
@@ -178,7 +178,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(definition.mount).toBe(mountOssUsage);
     });
 
-    it("按钮落在同步服务那行的操作列里，形态与相邻按钮一致", () => {
+    it("the button sits in the sync service row's action column and matches its neighbours", () => {
         mount();
         const button = usageButton();
 
@@ -194,7 +194,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(document.querySelector("#syncProviderConfig [data-ss-oss-usage]")).toBeNull();
     });
 
-    it("Endpoint 不是阿里云、或当前服务商不是 S3 时都不出现按钮", () => {
+    it("no button when the endpoint is not Aliyun or the provider is not S3", () => {
         mount({s3: defaultS3({endpoint: "https://s3.amazonaws.com"})});
         expect(usageButton()).toBeNull();
         mounted.splice(0).forEach((harness) => harness.dispose());
@@ -209,7 +209,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(usageButton()).not.toBeNull();
     });
 
-    it("配置不完整时只提示缺哪几项，不去发请求", () => {
+    it("an incomplete config reports the missing fields and sends no request", () => {
         const harness = mount({s3: defaultS3({bucket: "", accessKey: "  ", secretKey: ""})});
         usageButton()?.click();
 
@@ -221,7 +221,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(document.querySelector(".ss-oss-usage__head")).toBeNull();
     });
 
-    it("成功时按 1024 进制渲染总量、对象数、明细与统计时间", async () => {
+    it("on success it renders the total, object count, breakdown and stat time in base 1024", async () => {
         mount();
         await openAndWait();
 
@@ -241,7 +241,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(document.querySelector(".ss-oss-usage__body")?.textContent).not.toContain("归档");
     });
 
-    it("空响应只显示三个 0，不渲染统计时间那一行", async () => {
+    it("an empty response shows three zeros and no stat time row", async () => {
         respondWith(statXml({Storage: 0, ObjectCount: 0, MultipartUploadCount: 0, LastModifiedTime: 0}));
         mount();
         await openAndWait();
@@ -254,7 +254,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         ]);
     });
 
-    it("请求头、签名与转发参数符合 OSS 的 V1 方案", async () => {
+    it("headers, signature and forwarding parameters follow the OSS V1 scheme", async () => {
         mount();
         usageButton()?.click();
         await vi.waitFor(() => expect(mockState.fetchSyncPost).toHaveBeenCalledTimes(1));
@@ -287,7 +287,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(authorization).toBe(`OSS AK:${expectedSignature}`);
     });
 
-    it("path 风格把桶放进路径，超时按内核的范围夹取", async () => {
+    it("path style puts the bucket in the path and the timeout is clamped to the kernel range", async () => {
         mount({s3: defaultS3({pathStyle: true, timeout: 1})});
         usageButton()?.click();
         await vi.waitFor(() => expect(mockState.fetchSyncPost).toHaveBeenCalledTimes(1));
@@ -305,7 +305,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(authorization).toBe(`OSS AK:${expected}`);
     });
 
-    it("内核返回非 0 code 时算「请求没送出去」，带上网络提示与日志", async () => {
+    it("a non-zero kernel code means the request never left, with the network tip and a log", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 502, msg: "proxy failed"});
         const harness = mount();
         await openAndWait();
@@ -318,21 +318,21 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(harness.records.logs).toContainEqual(["GetBucketStat failed: proxy failed"]);
     });
 
-    it("内核非 0 code 且没有 msg 时给出 code 号", async () => {
+    it("a non-zero kernel code without msg reports the code number", async () => {
         mockState.fetchSyncPost.mockResolvedValue({code: 500});
         mount();
         await openAndWait();
         expect(rowPairs()).toEqual([{key: "查询失败", value: "forwardProxy code 500"}]);
     });
 
-    it("OSS 明确报错时取 <Error> 里的 Code 与 Message，没有就退回 HTTP 状态码", async () => {
+    it("an explicit OSS error takes Code and Message from <Error> and falls back to the HTTP status", async () => {
         respondWith(
-            "<Error><Code>NoSuchBucket</Code><Message>桶不存在</Message></Error>",
+            "<Error><Code>NoSuchBucket</Code><Message>Bucket not found</Message></Error>",
             403,
         );
         mount();
         await openAndWait();
-        expect(rowPairs()).toEqual([{key: "查询失败", value: "NoSuchBucket: 桶不存在"}]);
+        expect(rowPairs()).toEqual([{key: "查询失败", value: "NoSuchBucket: Bucket not found"}]);
         // 服务端明确回了错误，就不是「网络没通」那一类
         expect(document.querySelector(".ss-oss-usage__tip")).toBeNull();
         mounted.splice(0).forEach((harness) => harness.dispose());
@@ -343,7 +343,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(rowPairs()).toEqual([{key: "查询失败", value: "HTTP 403"}]);
     });
 
-    it("响应体不是合法 XML 时按解析失败处理", async () => {
+    it("a response body that is not valid XML counts as a parse failure", async () => {
         // 未闭合的标签：DOMParser 会产出 parsererror，而不是一个空 BucketStat
         respondWith("<BucketStat><Storage>12");
         mount();
@@ -351,7 +351,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(rowPairs()).toEqual([{key: "查询失败", value: "unexpected response body"}]);
     });
 
-    it("关窗收掉弹窗，卸载时中断仍在飞的请求", async () => {
+    it("closing removes the dialog and unmounting aborts an in-flight request", async () => {
         mockState.fetchSyncPost.mockImplementation(() => new Promise(() => undefined));
         const harness = mount();
         usageButton()?.click();
@@ -368,7 +368,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(signal.aborted).toBe(true);
     });
 
-    it("destroy 收掉按钮与弹窗，之后重写设置行也不会把按钮插回来", async () => {
+    it("destroy removes the button and dialog, and rewriting the settings row does not bring it back", async () => {
         const frames = stubFrames();
         const harness = mount();
         expect(usageButton()).not.toBeNull();
@@ -390,7 +390,7 @@ describe("阿里云 OSS 存储桶使用数据", () => {
         expect(() => harness.instance?.destroy?.()).not.toThrow();
     });
 
-    it("Endpoint 改回阿里云后，不用重载就能把按钮补回来", async () => {
+    it("switching the endpoint back to Aliyun brings the button back without a reload", async () => {
         const frames = stubFrames();
         const harness = mount({s3: defaultS3({endpoint: "https://s3.amazonaws.com"})});
         expect(usageButton()).toBeNull();

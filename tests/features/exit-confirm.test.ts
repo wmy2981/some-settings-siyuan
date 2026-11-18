@@ -92,9 +92,9 @@ afterEach(() => {
     delete (document as unknown as Record<string, unknown>).visibilityState;
 });
 
-describe("退出应用前弹窗确认", () => {
-    describe("认不认这次请求", () => {
-        it("退出请求会先问一句，确认后把原来那次请求原样放行", async () => {
+describe("Confirmation dialog before exiting the app", () => {
+    describe("whether the request is recognised", () => {
+        it("asks first for an exit request and lets the original request through unchanged once confirmed", async () => {
             const original = stubFetch();
             mount();
 
@@ -109,19 +109,22 @@ describe("退出应用前弹窗确认", () => {
             expect(await response).toEqual({ok: true});
         });
 
-        it("确认框的标题与正文取自宿主的 i18n", async () => {
+        it("takes the dialog title and text from the host i18n", async () => {
             stubFetch();
-            mount({i18n: (key) => key === "feature.exitConfirm.dialogTitle" ? "退出思源" : "确定要退出思源吗？"});
+            mount({
+                i18n: (key) =>
+                    key === "feature.exitConfirm.dialogTitle" ? "Exit SiYuan" : "Are you sure you want to exit SiYuan?",
+            });
 
             await window.fetch(EXIT_PATH, {method: "POST", body: exitBody()});
 
             expect(mockState.confirms[0]).toMatchObject({
-                title: "退出思源",
-                text: "确定要退出思源吗？",
+                title: "Exit SiYuan",
+                text: "Are you sure you want to exit SiYuan?",
             });
         });
 
-        it("取消时以 AbortError 结束这次请求，内核的退出不会发生", async () => {
+        it("ends the request with an AbortError on cancel so the kernel never exits", async () => {
             const original = stubFetch();
             mockState.confirmAnswer = false;
             mount();
@@ -133,7 +136,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).not.toHaveBeenCalled();
         });
 
-        it("带 force 的退出不问：用户已经在内核同步失败之后点过「强制退出」", async () => {
+        it("does not ask for a forced exit: the user already clicked force quit after a kernel sync failure", async () => {
             const original = stubFetch();
             mount();
 
@@ -143,7 +146,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).toHaveBeenCalledTimes(1);
         });
 
-        it("setCurrentWorkspace 不为 true 的不问：那是切换工作空间 / 重启这类应用内动作", async () => {
+        it("does not ask when setCurrentWorkspace is not true: that is a workspace switch or a restart", async () => {
             const original = stubFetch();
             mount();
 
@@ -154,7 +157,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).toHaveBeenCalledTimes(2);
         });
 
-        it("路径不合、方法不是 POST、请求体不是 JSON 字符串时都直接放行", async () => {
+        it("passes through when the path, the method or the JSON body does not match", async () => {
             const original = stubFetch();
             mount();
 
@@ -169,7 +172,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).toHaveBeenCalledTimes(5);
         });
 
-        it("路径按后缀比对：URL 对象与 Request 形状的入参都能认出来", async () => {
+        it("matches the path by suffix so URL objects and request-shaped arguments are both recognised", async () => {
             stubFetch();
             mount();
 
@@ -186,8 +189,8 @@ describe("退出应用前弹窗确认", () => {
         });
     });
 
-    describe("什么时候问", () => {
-        it("桌面端窗口不在前台时不问：点托盘菜单退出会先让窗口失焦", async () => {
+    describe("when it asks", () => {
+        it("does not ask when the desktop window is not focused: exiting from the tray blurs it first", async () => {
             const original = stubFetch();
             vi.spyOn(document, "hasFocus").mockReturnValue(false);
             mount();
@@ -198,7 +201,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).toHaveBeenCalledTimes(1);
         });
 
-        it("桌面端窗口被隐藏（已收进托盘）时不问", async () => {
+        it("does not ask when the desktop window is hidden (moved to the tray)", async () => {
             const original = stubFetch();
             Object.defineProperty(document, "visibilityState", {value: "hidden", configurable: true});
             mount();
@@ -209,7 +212,7 @@ describe("退出应用前弹窗确认", () => {
             expect(original).toHaveBeenCalledTimes(1);
         });
 
-        it("移动端没有托盘，窗口状态不参与判断，照常发问", async () => {
+        it("always asks on mobile, where there is no tray and window state does not matter", async () => {
             stubFetch();
             mockState.frontend = "mobile";
             Object.defineProperty(document, "visibilityState", {value: "hidden", configurable: true});
@@ -221,7 +224,7 @@ describe("退出应用前弹窗确认", () => {
             expect(mockState.confirms).toHaveLength(1);
         });
 
-        it("已经有一个确认框在等答复时不叠加第二个，这一次按取消处理", async () => {
+        it("does not stack a second dialog while one is pending and treats this request as cancelled", async () => {
             const original = stubFetch();
             mount();
 
@@ -236,8 +239,8 @@ describe("退出应用前弹窗确认", () => {
         });
     });
 
-    describe("宿主的「正在退出」遮罩与失败窗口", () => {
-        it("问话之前先收掉宿主的退出遮罩：否则用户是在「正在退出」上面被提问", async () => {
+    describe("the host exiting overlay and failure dialog", () => {
+        it("dismisses the host exit overlay before asking, so the user is not asked on top of an exiting screen", async () => {
             stubFetch();
             const overlay = document.createElement("div");
             overlay.id = "exitProgress";
@@ -259,11 +262,11 @@ describe("退出应用前弹窗确认", () => {
             expect(document.getElementById("exitProgress")).toBeNull();
         });
 
-        it("取消之后点掉宿主新加的「退出等待失败」窗口", async () => {
+        it("clicks away the host exit-wait-failed dialog added after a cancel", async () => {
             stubFetch();
             mockState.confirmAnswer = false;
             const siyuan = window.siyuan as unknown as {languages: Record<string, string>;};
-            siyuan.languages.exitWaitFailed = "退出等待失败";
+            siyuan.languages.exitWaitFailed = "exit wait failed";
             mount();
 
             await expect(window.fetch(EXIT_PATH, {method: "POST", body: exitBody()}))
@@ -272,8 +275,8 @@ describe("退出应用前弹窗确认", () => {
 
             const failed = document.createElement("div");
             failed.className = "b3-dialog";
-            failed.innerHTML = `<div class="b3-dialog__content" role="alert">退出等待失败</div>
-                <div class="b3-dialog__action"><button type="button">关闭</button></div>`;
+            failed.innerHTML = `<div class="b3-dialog__content" role="alert">exit wait failed</div>
+                <div class="b3-dialog__action"><button type="button">close</button></div>`;
             const close = vi.fn();
             failed.querySelector("button")?.addEventListener("click", close);
             document.body.append(failed);
@@ -282,11 +285,11 @@ describe("退出应用前弹窗确认", () => {
             await vi.waitFor(() => expect(close).toHaveBeenCalledTimes(1));
         });
 
-        it("文案不匹配的窗口不点：真正的退出失败发生在确认之后，不该被顺手关掉", async () => {
+        it("does not click a dialog with different text: a real exit failure happens after confirmation", async () => {
             stubFetch();
             mockState.confirmAnswer = false;
             const siyuan = window.siyuan as unknown as {languages: Record<string, string>;};
-            siyuan.languages.exitWaitFailed = "退出等待失败";
+            siyuan.languages.exitWaitFailed = "exit wait failed";
             mount();
 
             await expect(window.fetch(EXIT_PATH, {method: "POST", body: exitBody()}))
@@ -295,8 +298,8 @@ describe("退出应用前弹窗确认", () => {
 
             const other = document.createElement("div");
             other.className = "b3-dialog";
-            other.innerHTML = `<div class="b3-dialog__content" role="alert">导出失败</div>
-                <div class="b3-dialog__action"><button type="button">关闭</button></div>`;
+            other.innerHTML = `<div class="b3-dialog__content" role="alert">export failed</div>
+                <div class="b3-dialog__action"><button type="button">close</button></div>`;
             const close = vi.fn();
             other.querySelector("button")?.addEventListener("click", close);
             document.body.append(other);
@@ -306,7 +309,7 @@ describe("退出应用前弹窗确认", () => {
             expect(close).not.toHaveBeenCalled();
         });
 
-        it("宿主没有提供失败文案时完全不插手", async () => {
+        it("does not interfere at all when the host provides no failure text", async () => {
             stubFetch();
             mockState.confirmAnswer = false;
             mount();
@@ -317,8 +320,8 @@ describe("退出应用前弹窗确认", () => {
 
             const failed = document.createElement("div");
             failed.className = "b3-dialog";
-            failed.innerHTML = `<div class="b3-dialog__content" role="alert">退出等待失败</div>
-                <div class="b3-dialog__action"><button type="button">关闭</button></div>`;
+            failed.innerHTML = `<div class="b3-dialog__content" role="alert">exit wait failed</div>
+                <div class="b3-dialog__action"><button type="button">close</button></div>`;
             const close = vi.fn();
             failed.querySelector("button")?.addEventListener("click", close);
             document.body.append(failed);
@@ -328,12 +331,12 @@ describe("退出应用前弹窗确认", () => {
             expect(close).not.toHaveBeenCalled();
         });
 
-        it("只在这个 1 秒窗口内认这个窗口，之后不再碰", async () => {
+        it("only recognises that dialog during the 1 second window and never afterwards", async () => {
             vi.useFakeTimers();
             stubFetch();
             mockState.confirmAnswer = false;
             const siyuan = window.siyuan as unknown as {languages: Record<string, string>;};
-            siyuan.languages.exitWaitFailed = "退出等待失败";
+            siyuan.languages.exitWaitFailed = "exit wait failed";
             mount();
 
             await expect(window.fetch(EXIT_PATH, {method: "POST", body: exitBody()}))
@@ -343,8 +346,8 @@ describe("退出应用前弹窗确认", () => {
             vi.advanceTimersByTime(1001);
             const late = document.createElement("div");
             late.className = "b3-dialog";
-            late.innerHTML = `<div class="b3-dialog__content" role="alert">退出等待失败</div>
-                <div class="b3-dialog__action"><button type="button">关闭</button></div>`;
+            late.innerHTML = `<div class="b3-dialog__content" role="alert">exit wait failed</div>
+                <div class="b3-dialog__action"><button type="button">close</button></div>`;
             const close = vi.fn();
             late.querySelector("button")?.addEventListener("click", close);
             document.body.append(late);
@@ -355,8 +358,8 @@ describe("退出应用前弹窗确认", () => {
         });
     });
 
-    describe("宿主的键盘封锁", () => {
-        it("Enter 交给确认框的「确定」按钮，并吃掉这次按键", async () => {
+    describe("the host keyboard lock", () => {
+        it("hands Enter to the dialog confirm button and swallows the keypress", async () => {
             stubFetch();
             const {yesClick} = confirmDialog();
             mount();
@@ -375,7 +378,7 @@ describe("退出应用前弹窗确认", () => {
             await pending;
         });
 
-        it("Escape 交给「取消」按钮", async () => {
+        it("hands Escape to the cancel button", async () => {
             stubFetch();
             const {noClick} = confirmDialog();
             mount();
@@ -389,7 +392,7 @@ describe("退出应用前弹窗确认", () => {
             await pending;
         });
 
-        it("没有在等答复时，Enter / Escape 一律不碰（宿主那批封锁照旧生效）", () => {
+        it("never touches Enter or Escape while nothing is pending (the host lock still applies)", () => {
             const {yesClick, noClick} = confirmDialog();
             mount();
 
@@ -401,7 +404,7 @@ describe("退出应用前弹窗确认", () => {
             expect(enter.defaultPrevented).toBe(false);
         });
 
-        it("其余按键原样留给宿主的封锁：遮罩下面本来就不该能编辑", () => {
+        it("leaves other keys to the host lock: nothing under the overlay should be editable anyway", () => {
             stubFetch();
             const {yesClick} = confirmDialog();
             mount();
@@ -414,7 +417,7 @@ describe("退出应用前弹窗确认", () => {
             expect(tab.defaultPrevented).toBe(false);
         });
 
-        it("输入法组字期间的 Enter 不碰：那是用户在选词，不是确认", () => {
+        it("leaves Enter alone during IME composition: that is word selection, not confirmation", () => {
             stubFetch();
             const {yesClick} = confirmDialog();
             mount();
@@ -427,7 +430,7 @@ describe("退出应用前弹窗确认", () => {
             expect(composing.defaultPrevented).toBe(false);
         });
 
-        it("确认框还没进 DOM 时不拦按键（否则 Enter 会被无谓地吞掉）", () => {
+        it("does not intercept keys before the dialog is in the DOM (Enter would be swallowed for nothing)", () => {
             stubFetch();
             mount();
             void window.fetch(EXIT_PATH, {method: "POST", body: exitBody()});
@@ -439,8 +442,8 @@ describe("退出应用前弹窗确认", () => {
         });
     });
 
-    describe("卸载", () => {
-        it("卸载后还原自己装上的 fetch，并且在途的按键不再被转交", () => {
+    describe("unmount", () => {
+        it("restores the fetch it installed and stops forwarding in-flight keys after unmount", () => {
             const original = stubFetch();
             const {yesClick} = confirmDialog();
             const current = mount();
@@ -455,7 +458,7 @@ describe("退出应用前弹窗确认", () => {
             return pending;
         });
 
-        it("期间已有别的代码换了 fetch 时不动它", () => {
+        it("leaves a fetch replaced by other code alone", () => {
             stubFetch();
             const current = mount();
             const other = vi.fn();
@@ -466,7 +469,7 @@ describe("退出应用前弹窗确认", () => {
             expect(window.fetch).toBe(other);
         });
 
-        it("卸载两次是幂等的", () => {
+        it("unmounting twice is idempotent", () => {
             const original = stubFetch();
             const current = mount();
 
@@ -477,13 +480,13 @@ describe("退出应用前弹窗确认", () => {
         });
     });
 
-    describe("开关（适用端）", () => {
-        it("默认「禁用」时不生效", () => {
+    describe("switch (target frontend)", () => {
+        it("does nothing with the default disabled scope", () => {
             expect(exitConfirm.isEnabled?.({scope: "disabled"})).toBe(false);
             expect(exitConfirm.isEnabled?.({})).toBe(false);
         });
 
-        it("选了只适用另一端的选项时，这一端不生效", () => {
+        it("does nothing on one frontend when the option targets the other one", () => {
             mockState.frontend = "desktop";
             expect(exitConfirm.isEnabled?.({scope: "desktop"})).toBe(true);
             expect(exitConfirm.isEnabled?.({scope: "mobile"})).toBe(false);
@@ -493,7 +496,7 @@ describe("退出应用前弹窗确认", () => {
             expect(exitConfirm.isEnabled?.({scope: "desktop"})).toBe(false);
         });
 
-        it("选「两端」时两端都生效", () => {
+        it("applies on both frontends with the both option", () => {
             for (const frontend of ["desktop", "desktop-window", "mobile", "browser-mobile"]) {
                 mockState.frontend = frontend;
                 expect(exitConfirm.isEnabled?.({scope: "both"})).toBe(true);

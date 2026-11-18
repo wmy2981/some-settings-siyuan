@@ -12,6 +12,7 @@ import {
 import {ConfigStore} from "../../src/core/config";
 import {setDetailedLogging} from "../../src/core/log";
 import {activeFeatures} from "../../src/core/registry";
+import {setSearchEnabled} from "../../src/core/search";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import enLocale from "../../src/i18n/en.json";
 import zhLocale from "../../src/i18n/zh-CN.json";
@@ -75,6 +76,8 @@ const type = (input: HTMLInputElement, value: string): void => {
 describe("settings panel", () => {
     it("prints the benchmark table", async () => {
         setDetailedLogging(false);
+        // 基准直接建面板、不经过功能装载器：把搜索按默认开启的状态打开，量的才是真实面板
+        setSearchEnabled(true);
         const rows: BenchRow[] = [];
 
         // 打开 / 关闭一次面板：包含拼行、innerHTML、绑定控件、恢复页签

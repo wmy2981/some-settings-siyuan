@@ -78,53 +78,53 @@ const render = (source: string) => {
     };
 };
 
-describe("行级 Markdown 渲染器", () => {
-    it("没有语法字符时只产出一个文本节点，不做任何包装", () => {
-        const result = render("普通标题 2024");
+describe("inline Markdown renderer", () => {
+    it("produces a single text node with no wrapper when there are no syntax characters", () => {
+        const result = render("plain title 2024");
 
         expect(result.nodes).toHaveLength(1);
         expect(result.nodes[0].nodeType).toBe(Node.TEXT_NODE);
         expect(result.styled()).toHaveLength(0);
         expect(result.markers()).toBe(0);
-        expect(result.text()).toBe("普通标题 2024");
+        expect(result.text()).toBe("plain title 2024");
     });
 
-    it("空字符串产出空节点列表（不是空文本节点）", () => {
+    it("an empty string produces an empty node list (not an empty text node)", () => {
         expect(renderInlineMarkdown("")).toEqual([]);
     });
 
-    it("MARKDOWN_CHARS 只把这七种语法字符当成「值得渲染」的信号", () => {
+    it("MARKDOWN_CHARS treats only these seven syntax characters as a render signal", () => {
         for (const char of ["*", "_", "~", "^", "=", "`", "\\"]) {
             expect(MARKDOWN_CHARS.test(char)).toBe(true);
         }
         // 常见标题里的符号不能触发渲染，否则每一条笔记都要被 replaceChildren 一遍
-        for (const source of ["普通标题", "a b", "-", "!", "[链接](https://x.y)"]) {
+        for (const source of ["plain title", "a b", "-", "!", "[link](https://x.y)"]) {
             expect(MARKDOWN_CHARS.test(source)).toBe(false);
         }
     });
 
-    it("加粗：strong 元素 + 两个隐藏定界符，textContent 仍是原文", () => {
-        const result = render("**粗体**");
+    it("bold: a strong element plus two hidden delimiters, textContent still matches the source", () => {
+        const result = render("**bold**");
 
         expect(result.styled()).toHaveLength(1);
         expect(result.styled()[0].tagName).toBe("SPAN");
         expect(result.styled()[0].getAttribute(MARK_ATTR)).toBe("strong");
         // 沿用思源自己的行级标记写法，样式变量才生效
         expect(result.styled()[0].getAttribute("data-type")).toBe("strong");
-        expect(result.styled()[0].textContent).toBe("粗体");
+        expect(result.styled()[0].textContent).toBe("bold");
         expect(result.markers()).toBe(2);
-        expect(result.text()).toBe("**粗体**");
+        expect(result.text()).toBe("**bold**");
     });
 
     const INLINE_CASES: [string, string, string][] = [
-        ["*斜体*", "em", "斜体"],
-        ["_斜体_", "em", "斜体"],
-        ["~~删除~~", "s", "删除"],
-        ["~下标~", "sub", "下标"],
-        ["==高亮==", "mark", "高亮"],
-        ["^上标^", "sup", "上标"],
+        ["*italic*", "em", "italic"],
+        ["_italic_", "em", "italic"],
+        ["~~deleted~~", "s", "deleted"],
+        ["~subscript~", "sub", "subscript"],
+        ["==highlight==", "mark", "highlight"],
+        ["^superscript^", "sup", "superscript"],
     ];
-    it.each(INLINE_CASES)("%s 渲染成 %s", (source, kind, content) => {
+    it.each(INLINE_CASES)("%s renders as %s", (source, kind, content) => {
         const result = render(source);
 
         expect(result.styled()).toHaveLength(1);
@@ -134,19 +134,19 @@ describe("行级 Markdown 渲染器", () => {
         expect(result.text()).toBe(source);
     });
 
-    it("三星号是「粗 + 斜」两层，strong 在外、em 在内", () => {
-        const result = render("***粗斜***");
+    it("three asterisks produce two layers, strong outside and em inside", () => {
+        const result = render("***bold italic***");
         const [strong, em] = result.styled();
 
         expect(result.styled()).toHaveLength(2);
         expect(strong.getAttribute("data-type")).toBe("strong");
         expect(em.getAttribute("data-type")).toBe("em");
         expect(strong.contains(em)).toBe(true);
-        expect(strong.textContent).toBe("粗斜");
-        expect(result.text()).toBe("***粗斜***");
+        expect(strong.textContent).toBe("bold italic");
+        expect(result.text()).toBe("***bold italic***");
     });
 
-    it("词内下划线不当语法：snake_case / a_b_c / 2024_01_01", () => {
+    it("underscores inside a word are not syntax: snake_case / a_b_c / 2024_01_01", () => {
         for (const source of ["snake_case", "a_b_c", "2024_01_01"]) {
             const result = render(source);
 
@@ -155,7 +155,7 @@ describe("行级 Markdown 渲染器", () => {
         }
     });
 
-    it("不支持的定界符长度按字面输出（四个星号、三个波浪线、单个等号）", () => {
+    it("unsupported delimiter lengths are emitted literally (four asterisks, three tildes, a single equals sign)", () => {
         for (const source of ["****x****", "~~~x~~~", "a = b"]) {
             const result = render(source);
 
@@ -165,8 +165,8 @@ describe("行级 Markdown 渲染器", () => {
         }
     });
 
-    it("未闭合的定界符整段回落成原文，不产生空元素", () => {
-        for (const source of ["**未闭合", "~~也没闭合", "*单独一个星号"]) {
+    it("an unclosed delimiter falls back to the raw text without producing empty elements", () => {
+        for (const source of ["**unclosed", "~~also unclosed", "*single asterisk"]) {
             const result = render(source);
 
             expect(result.styled()).toHaveLength(0);
@@ -175,22 +175,22 @@ describe("行级 Markdown 渲染器", () => {
         }
     });
 
-    it("开定界符后紧跟空白不算语法（`** 前面有空格`）", () => {
-        const result = render("** 空格开头**");
+    it("whitespace right after an opening delimiter is not syntax (`** leading space`)", () => {
+        const result = render("** leading space**");
 
         expect(result.styled()).toHaveLength(0);
-        expect(result.text()).toBe("** 空格开头**");
+        expect(result.text()).toBe("** leading space**");
     });
 
-    it("反斜杠转义下一个字符：不再参与配对，反斜杠本身被隐藏", () => {
-        const result = render("\\*不是斜体\\*");
+    it("a backslash escapes the next character: it no longer pairs, and the backslash itself is hidden", () => {
+        const result = render("\\*not italic\\*");
 
         expect(result.styled()).toHaveLength(0);
         expect(result.markers()).toBe(2);
-        expect(result.text()).toBe("\\*不是斜体\\*");
+        expect(result.text()).toBe("\\*not italic\\*");
     });
 
-    it("结尾单独一个反斜杠输出字面反斜杠（后面没有字符可转义）", () => {
+    it("a trailing backslash is emitted literally (there is no following character to escape)", () => {
         const result = render("abc\\");
 
         expect(result.styled()).toHaveLength(0);
@@ -198,7 +198,7 @@ describe("行级 Markdown 渲染器", () => {
         expect(result.text()).toBe("abc\\");
     });
 
-    it("行级代码：内容原样、内部不再解析，挂思源自己的 fn__code", () => {
+    it("inline code: content kept as-is, no parsing inside, using SiYuan's own fn__code", () => {
         const result = render("`a*b*`");
 
         expect(result.styled()).toHaveLength(1);
@@ -209,7 +209,7 @@ describe("行级 Markdown 渲染器", () => {
         expect(result.text()).toBe("`a*b*`");
     });
 
-    it("空行级代码 / 未闭合反引号按字面输出", () => {
+    it("empty inline code / an unclosed backtick is emitted literally", () => {
         for (const source of ["``", "`", "a`b"]) {
             const result = render(source);
 
@@ -218,27 +218,27 @@ describe("行级 Markdown 渲染器", () => {
         }
     });
 
-    it("斜体里的粗体照常配对：*斜 **粗** 斜*", () => {
-        const result = render("*斜 **粗** 斜*");
+    it("bold inside italic still pairs: *italic **bold** italic*", () => {
+        const result = render("*italic **bold** italic*");
 
         expect(result.styled().map((element) => element.getAttribute("data-type"))).toEqual(["em", "strong"]);
-        expect(result.text()).toBe("*斜 **粗** 斜*");
+        expect(result.text()).toBe("*italic **bold** italic*");
     });
 
-    it("textContent 不变量：任何输入的渲染结果都与原文逐字相同", () => {
+    it("textContent invariant: any input renders back to exactly the same text", () => {
         const sources = [
-            "普通标题",
-            "**粗体**",
-            "*斜*与_斜_",
-            "***粗斜***",
-            "~~删除~~ ~下标~ ^上标^ ==高亮==",
-            "`行级代码`",
-            "`含 **星号** 的代码`",
-            "**未闭合",
-            "\\*转义\\*",
+            "plain title",
+            "**bold**",
+            "*italic* and _italic_",
+            "***bold italic***",
+            "~~deleted~~ ~subscript~ ^superscript^ ==highlight==",
+            "`inline code`",
+            "`code with **asterisks**`",
+            "**unclosed",
+            "\\*escaped\\*",
             "2*3*4",
             "a = b",
-            "中文 **粗体** 混排 🎉",
+            "mixed **bold** text 🎉",
         ];
 
         for (const source of sources) {
@@ -246,7 +246,7 @@ describe("行级 Markdown 渲染器", () => {
         }
     });
 
-    it("注入的样式只隐藏定界符，强调样式全部取思源自己的主题变量", () => {
+    it("the injected CSS only hides delimiters; emphasis styles all use SiYuan's own theme variables", () => {
         expect(INLINE_MARKDOWN_CSS).toContain(`[${MARK_ATTR}="marker"] {`);
         expect(INLINE_MARKDOWN_CSS).toContain("display: none;");
         // .fn__code 自带 white-space: pre-wrap，会把单行标题折成多行，必须还原成继承
@@ -259,7 +259,7 @@ describe("行级 Markdown 渲染器", () => {
     });
 });
 
-describe("文档树标题渲染行级 Markdown", () => {
+describe("doc tree titles render inline Markdown", () => {
     const mounted: HostHarness[] = [];
     let frames: ReturnType<typeof stubFrames>;
 
@@ -299,7 +299,7 @@ describe("文档树标题渲染行级 Markdown", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：版本上限卡在宿主自己投影富标题之前，开关默认关闭", () => {
+    it("declaration: the version cap lands before the host projects rich titles, and the switch is off by default", () => {
         expect(definition.id).toBe("doc-tree-title-markdown");
         expect(definition.category).toBe("doc-tree");
         expect(definition.enabled).toBe(true);
@@ -310,44 +310,44 @@ describe("文档树标题渲染行级 Markdown", () => {
         ]);
     });
 
-    it("挂载时注入共用样式，并先把树里已有的标题渲染一遍", () => {
+    it("mounting injects the shared CSS and renders the titles already in the tree", () => {
         const tree = createTree();
-        const title = appendTitle(tree, "**粗体** 与 `code`");
+        const title = appendTitle(tree, "**bold** and `code`");
         document.body.append(tree);
 
         const harness = mount();
 
         expect(harness.records.styles[0]).toBe(INLINE_MARKDOWN_CSS);
         expect(harness.styleElement()?.textContent).toBe(INLINE_MARKDOWN_CSS);
-        expect(title.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("粗体");
+        expect(title.querySelector(`[${MARK_ATTR}="strong"]`)?.textContent).toBe("bold");
         expect(title.querySelector(".fn__code")?.textContent).toBe("code");
         // 宿主读 textContent 的地方（拖拽载荷、下拉文字）看到的仍是原文
-        expect(title.textContent).toBe("**粗体** 与 `code`");
+        expect(title.textContent).toBe("**bold** and `code`");
     });
 
-    it("没有语法字符的标题一个节点都不碰", () => {
+    it("a title without syntax characters is left untouched", () => {
         const tree = createTree();
-        const title = appendTitle(tree, "普通笔记 2024");
+        const title = appendTitle(tree, "plain note 2024");
         document.body.append(tree);
 
         mount();
 
         expect(title.childNodes).toHaveLength(1);
         expect(title.firstChild?.nodeType).toBe(Node.TEXT_NODE);
-        expect(title.textContent).toBe("普通笔记 2024");
+        expect(title.textContent).toBe("plain note 2024");
     });
 
-    it("移动端侧栏（[data-type=sidebar-file]）同样是作用域", () => {
+    it("the mobile sidebar ([data-type=sidebar-file]) is in scope too", () => {
         const tree = createTree(true);
-        const title = appendTitle(tree, "==高亮==");
+        const title = appendTitle(tree, "==highlight==");
         document.body.append(tree);
 
         mount();
 
-        expect(title.querySelector(`[${MARK_ATTR}="mark"]`)?.textContent).toBe("高亮");
+        expect(title.querySelector(`[${MARK_ATTR}="mark"]`)?.textContent).toBe("highlight");
     });
 
-    it("宿主投影的富标题（.document-title-preview）整块跳过，不 replaceChildren", () => {
+    it("a host-projected rich title (.document-title-preview) is skipped entirely, with no replaceChildren", () => {
         const tree = createTree();
         const title = document.createElement("span");
         title.className = "b3-list-item__text document-title-preview b3-typography";
@@ -362,23 +362,23 @@ describe("文档树标题渲染行级 Markdown", () => {
         expect(title.innerHTML).toBe('<span data-type="strong">a_b</span>1*2');
     });
 
-    it("只读 / 发布模式下照常渲染：它们只拦设置保存，不拦显示", () => {
+    it("renders as usual in read-only / publish mode: those only block saving settings, not display", () => {
         const config = window.siyuan.config as unknown as {readonly: boolean;};
         config.readonly = true;
         window.siyuan.isPublish = true;
 
         const tree = createTree();
-        const title = appendTitle(tree, "^上标^");
+        const title = appendTitle(tree, "^superscript^");
         document.body.append(tree);
 
         mount();
 
-        expect(title.querySelector(`[${MARK_ATTR}="sup"]`)?.textContent).toBe("上标");
+        expect(title.querySelector(`[${MARK_ATTR}="sup"]`)?.textContent).toBe("superscript");
     });
 
-    it("重复扫描不会给同一份原文再包一层", async () => {
+    it("rescanning does not wrap the same source twice", async () => {
         const tree = createTree();
-        const title = appendTitle(tree, "**粗体**");
+        const title = appendTitle(tree, "**bold**");
         document.body.append(tree);
 
         mount();
@@ -387,7 +387,7 @@ describe("文档树标题渲染行级 Markdown", () => {
         const styled = title.querySelectorAll(`[${MARK_ATTR}="strong"]`).length;
 
         // 树里多一条笔记：这是「值得扫描」的突变，会重扫整棵树
-        appendTitle(tree, "新笔记");
+        appendTitle(tree, "new note");
         await settle();
         await frames.flush();
 
@@ -396,56 +396,56 @@ describe("文档树标题渲染行级 Markdown", () => {
         expect(title.querySelectorAll(`[${MARK_ATTR}="strong"]`).length).toBe(styled);
     });
 
-    it("重命名后按新原文重渲染（只有原文变化才重建节点）", async () => {
+    it("a rename re-renders from the new source (nodes are rebuilt only when the source changes)", async () => {
         const tree = createTree();
-        const title = appendTitle(tree, "**粗体**");
+        const title = appendTitle(tree, "**bold**");
         document.body.append(tree);
 
         mount();
 
-        title.textContent = "*斜体*";
+        title.textContent = "*italic*";
         await settle();
         await frames.flush();
 
-        expect(title.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("斜体");
+        expect(title.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("italic");
         expect(title.querySelector(`[${MARK_ATTR}="strong"]`)).toBeNull();
-        expect(title.textContent).toBe("*斜体*");
+        expect(title.textContent).toBe("*italic*");
     });
 
-    it("树里新增笔记的标题同样会被渲染", async () => {
+    it("titles of notes added to the tree are rendered too", async () => {
         const tree = createTree();
         document.body.append(tree);
         mount();
 
-        const title = appendTitle(tree, "~~删除~~");
+        const title = appendTitle(tree, "~~deleted~~");
         await settle();
         await frames.flush();
 
-        expect(title.querySelector(`[${MARK_ATTR}="s"]`)?.textContent).toBe("删除");
+        expect(title.querySelector(`[${MARK_ATTR}="s"]`)?.textContent).toBe("deleted");
     });
 
-    it("文档树面板在功能挂载之后才创建也能渲染（靠 addedNodes 判定）", async () => {
+    it("a doc tree panel created after the feature mounts is rendered too (decided by addedNodes)", async () => {
         mount();
 
         const tree = createTree();
-        const title = appendTitle(tree, "*斜体*");
+        const title = appendTitle(tree, "*italic*");
         document.body.append(tree);
         await settle();
         await frames.flush();
 
-        expect(title.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("斜体");
+        expect(title.querySelector(`[${MARK_ATTR}="em"]`)?.textContent).toBe("italic");
     });
 
-    it("树外的正文突变不触发扫描（正文输入的海量 childList 必须第一次就被挡掉）", async () => {
+    it("mutations outside the tree do not trigger a scan (the childList flood from typing must be rejected first)", async () => {
         const tree = createTree();
-        appendTitle(tree, "**粗体**");
+        appendTitle(tree, "**bold**");
         document.body.append(tree);
         mount();
         expect(frames.pendingCount()).toBe(0);
 
         const editor = document.createElement("div");
         editor.className = "protyle-wysiwyg";
-        editor.innerHTML = "<div>正文里的 **星号** 不是标题</div>";
+        editor.innerHTML = "<div>an **asterisk** in the body is not a title</div>";
         document.body.append(editor);
         await settle();
 
@@ -453,10 +453,10 @@ describe("文档树标题渲染行级 Markdown", () => {
         expect(editor.querySelector(`[${MARK_ATTR}]`)).toBeNull();
     });
 
-    it("卸载后标题还原成纯文本，注入的样式一起撤掉", () => {
+    it("disposing restores the plain text of titles and removes the injected CSS", () => {
         const tree = createTree();
-        const title = appendTitle(tree, "**粗体**");
-        const plain = appendTitle(tree, "普通标题");
+        const title = appendTitle(tree, "**bold**");
+        const plain = appendTitle(tree, "plain title");
         document.body.append(tree);
 
         const harness = mount();
@@ -464,36 +464,36 @@ describe("文档树标题渲染行级 Markdown", () => {
 
         harness.dispose();
 
-        expect(title.textContent).toBe("**粗体**");
+        expect(title.textContent).toBe("**bold**");
         expect(title.querySelector(`[${MARK_ATTR}]`)).toBeNull();
         // 没渲染过的标题完全不受影响
-        expect(plain.textContent).toBe("普通标题");
+        expect(plain.textContent).toBe("plain title");
         expect(harness.styleElement()).toBeNull();
     });
 
-    it("卸载会取消已经排队的帧，卸载之后到达的突变不再渲染", async () => {
+    it("disposing cancels the queued frame, and mutations arriving afterwards are not rendered", async () => {
         const tree = createTree();
         document.body.append(tree);
         const harness = mount();
 
-        appendTitle(tree, "**粗体**");
+        appendTitle(tree, "**bold**");
         await settle();
         expect(frames.pendingCount()).toBe(1);
 
         harness.dispose();
         expect(frames.pendingCount()).toBe(0);
 
-        const later = appendTitle(tree, "*斜体*");
+        const later = appendTitle(tree, "*italic*");
         await settle();
         await frames.flush();
 
         expect(later.querySelector(`[${MARK_ATTR}]`)).toBeNull();
-        expect(later.textContent).toBe("*斜体*");
+        expect(later.textContent).toBe("*italic*");
     });
 
-    it("destroy 幂等：连调两次不抛错", () => {
+    it("destroy is idempotent: calling it twice does not throw", () => {
         const tree = createTree();
-        appendTitle(tree, "**粗体**");
+        appendTitle(tree, "**bold**");
         document.body.append(tree);
         const harness = mount();
 

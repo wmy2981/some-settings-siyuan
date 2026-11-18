@@ -131,8 +131,9 @@ API 签名、样式类名、文件布局，以及每个功能**为什么**这么
 ## 构建与测试
 
 * **压缩会吃掉 `console.log`。** minimizer 默认移除 console 调用，于是「出问题但控制台全空」。
-  构建配置里 `drop: []` / `pure: []` 是**显式钉住这一条**，防止换 minimizer 或有人加 `drop_console`
-  之后日志悄悄消失，不要删。
+  但插件出问题时就靠控制台说话，所以 `vite.config.mts` 在产物落盘后校验 `index.js` 里还有没有
+  `console.`，没有就直接让构建失败（`assertConsoleKept`）。换 minimizer 或加 `drop_console`
+  之后日志会悄悄消失，这条校验不要删。
 * **测试分 `vm` / `forks` 两个 project**：绝大多数文件走 `vmThreads`；只有整块替换 `window.location`
   的那两个文件留在默认进程池（VM 上下文里连 `Object.defineProperty` 都拒绝）。**VM 不是完整 Node**：
   `ReadableStream`、Web Crypto 要在 `tests/setup.ts` 里补，`crypto.subtle` 还得同时挂到 `window.crypto`；

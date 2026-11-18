@@ -339,6 +339,14 @@ export interface FeatureDefinition {
      * 想要彻底退场（上游已原生实现）不要用它，用 `maxAppVersion`。
      */
     enabled: boolean;
+    /**
+     * 这个功能的开关是否默认打开。
+     *
+     * 不写表示默认关闭：插件里的功能默认都不替用户做主。只有需求本身要求「保持加进来之前
+     * 的行为」时才写 `true`（例如面板搜索），此时它的 `enabled` 开关必须同时写
+     * `default: true`，两者不一致由 `npm run check` 与声明测试拦下。
+     */
+    defaultOn?: boolean;
     /** 不写表示桌面端与移动端都适用。 */
     frontends?: FeatureFrontend[];
     /**

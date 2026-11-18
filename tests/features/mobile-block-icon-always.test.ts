@@ -76,7 +76,7 @@ const pointerDownOn = (target: Element): void => {
     target.dispatchEvent(new Event("pointerdown", {bubbles: true}));
 };
 
-describe("移动端块标保持显示", () => {
+describe("keep the block icon visible on mobile", () => {
     const mounted: {dispose: () => void; records: {logs: unknown[][];};}[] = [];
 
     const mount = () => {
@@ -90,12 +90,12 @@ describe("移动端块标保持显示", () => {
         vi.useRealTimers();
     });
 
-    it("声明里只在移动端交出，开关默认关闭", () => {
+    it("the declaration hands it only to mobile, off by default", () => {
         expect(definition.frontends).toEqual(["mobile"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("内核清空块标后把内容与内联定位原样搬回去", async () => {
+    it("restores the content and inline position after the kernel clears the gutter", async () => {
         buildBlock("block-a");
         const gutter = buildGutter(["block-a"]);
         const originalHtml = gutter.innerHTML;
@@ -111,7 +111,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs[0][0]).toBe("restored the block icon (restore 1, block block-a)");
     });
 
-    it("取最后一个按钮当「正在操作的块」：完整块标模式外层容器在前", async () => {
+    it("the last button is the pinned block: full icon mode puts the outer container first", async () => {
         buildBlock("parent-block");
         buildBlock("current-block");
         const gutter = buildGutter(["parent-block", "current-block"]);
@@ -122,7 +122,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs[0][0]).toBe("restored the block icon (restore 1, block current-block)");
     });
 
-    it("块已经从文档里消失就不再搬回（搬回一个不存在的块的块标没有意义）", async () => {
+    it("nothing is restored once the block left the document, restoring a missing block is pointless", async () => {
         const block = buildBlock("block-b");
         const gutter = buildGutter(["block-b"]);
         const harness = mount();
@@ -134,7 +134,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("点到别的块就结束这次操作，之后内核清空不再搬回", async () => {
+    it("pointing at another block ends the operation, so later clears restore nothing", async () => {
         buildBlock("block-c");
         const other = buildBlock("block-d");
         const gutter = buildGutter(["block-c"]);
@@ -147,10 +147,10 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("点到编辑器以外（没有 data-node-id 的元素）同样结束操作", async () => {
+    it("pointing outside the editor, at an element without data-node-id, also ends it", async () => {
         buildBlock("block-e");
         const outside = document.createElement("div");
-        outside.textContent = "正文以外的区域";
+        outside.textContent = "area outside the editor";
         document.body.append(outside);
         const gutter = buildGutter(["block-e"]);
         const harness = mount();
@@ -162,7 +162,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("点在块标自己身上不算结束：那正是要持续操作的入口", async () => {
+    it("pointing at the icon itself does not end it: that is the handle for continued work", async () => {
         buildBlock("block-f");
         const gutter = buildGutter(["block-f"]);
         const harness = mount();
@@ -174,7 +174,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("重复点同一个块不算结束（连续操作同一个块是最常见的场景）", async () => {
+    it("pointing at the same block again does not end it, repeated work on one block is the common case", async () => {
         const block = buildBlock("block-g");
         const gutter = buildGutter(["block-g"]);
         const harness = mount();
@@ -187,7 +187,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("内核改画另一个块的块标时，pin 跟着换成新块", async () => {
+    it("the pin follows the new block when the kernel re-renders a different one", async () => {
         buildBlock("block-h");
         buildBlock("block-i");
         const gutter = buildGutter(["block-h"]);
@@ -201,7 +201,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs.at(-1)?.[0]).toBe("restored the block icon (restore 1, block block-i)");
     });
 
-    it("同一个块最多搬回 40 次，之后交回内核自己的显隐", async () => {
+    it("one block is restored at most 40 times, then the kernel visibility wins", async () => {
         buildBlock("block-j");
         const gutter = buildGutter(["block-j"]);
         const harness = mount();
@@ -217,7 +217,7 @@ describe("移动端块标保持显示", () => {
         expect(gutter.classList.contains("fn__none")).toBe(true);
     });
 
-    it("挂载后新出现的编辑器靠 2 秒兜底扫描接管", async () => {
+    it("editors appearing after mount are picked up by the 2 second fallback sweep", async () => {
         vi.useFakeTimers({toFake: ["setInterval", "clearInterval"]});
         buildBlock("block-k");
         const harness = mount();
@@ -231,7 +231,7 @@ describe("移动端块标保持显示", () => {
         expect(gutter.innerHTML).not.toBe("");
     });
 
-    it("loaded-protyle-static 事件会立刻扫描一次", async () => {
+    it("the loaded-protyle-static event triggers an immediate scan", async () => {
         buildBlock("block-l");
         const harness = mount();
 
@@ -243,7 +243,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("内核把容器隐藏但保留内容时同样按「被收起来」处理", async () => {
+    it("a container the kernel only hides, keeping its content, also counts as collapsed", async () => {
         buildBlock("block-m");
         const gutter = buildGutter(["block-m"]);
         const harness = mount();
@@ -255,7 +255,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("空容器、或容器里没有带 id 的按钮时什么都不做", async () => {
+    it("does nothing for an empty container or one without buttons carrying an id", async () => {
         const empty = buildGutter([], {hidden: true});
         const noButtons = buildGutter([], {html: '<div class="protyle-gutters__item"></div>'});
         const harness = mount();
@@ -268,7 +268,7 @@ describe("移动端块标保持显示", () => {
         expect(noButtons.innerHTML).toBe("");
     });
 
-    it("pointerdown 的目标不是元素时不算「点了别处」", async () => {
+    it("a pointerdown whose target is not an element does not count as pointing elsewhere", async () => {
         buildBlock("block-p");
         const gutter = buildGutter(["block-p"]);
         const harness = mount();
@@ -279,7 +279,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(1);
     });
 
-    it("块 id 拼不出合法选择器时安静放弃，不把异常抛给宿主", async () => {
+    it("gives up quietly when the block id cannot form a valid selector", async () => {
         buildBlock("block-q");
         const gutter = buildGutter(["block-q"]);
         const harness = mount();
@@ -294,7 +294,7 @@ describe("移动端块标保持显示", () => {
         escapeSpy.mockRestore();
     });
 
-    it("destroy 之后不再观察、不再响应 pointerdown、也不再搬回", async () => {
+    it("after destroy nothing is observed, pointerdown is ignored and nothing is restored", async () => {
         vi.useFakeTimers({toFake: ["setInterval", "clearInterval"]});
         buildBlock("block-n");
         const gutter = buildGutter(["block-n"]);
@@ -318,7 +318,7 @@ describe("移动端块标保持显示", () => {
         expect(harness.records.logs).toHaveLength(0);
     });
 
-    it("事件总线订阅随卸载一并退掉（dispose 之后再来事件也不会扫描）", async () => {
+    it("the event bus subscription leaves with the unmount, so later events do not scan", async () => {
         buildBlock("block-o");
         const harness = mount();
         harness.dispose();
@@ -331,7 +331,7 @@ describe("移动端块标保持显示", () => {
         expect(gutter.innerHTML).toBe("");
     });
 
-    it("挂载只登记一次事件总线 / 一个定时器，destroy 后定时器被清掉", () => {
+    it("mounting registers one bus listener and one timer, and destroy clears the timer", () => {
         const setIntervalSpy = vi.spyOn(window, "setInterval");
         const clearIntervalSpy = vi.spyOn(window, "clearInterval");
         const host = {

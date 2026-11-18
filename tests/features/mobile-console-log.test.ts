@@ -39,13 +39,13 @@ const nativeConsole = {
 
 /** 让 i18n 返回可断言的文案；计数那条必须保留 `${count}` 占位符，功能就是靠它替换的。 */
 const messages: Record<string, string> = {
-    "feature.mobileConsoleLog.dialogTitle": "控制台日志",
-    "feature.mobileConsoleLog.count": "共 ${count} 条",
-    "feature.mobileConsoleLog.copy": "复制全部",
-    "feature.mobileConsoleLog.clear": "清空",
-    "common.copied": "已复制全部日志",
-    "common.copyFailed": "复制失败",
-    "feature.mobileConsoleLog.empty": "还没有日志",
+    "feature.mobileConsoleLog.dialogTitle": "Console log",
+    "feature.mobileConsoleLog.count": "Total ${count} entries",
+    "feature.mobileConsoleLog.copy": "Copy all",
+    "feature.mobileConsoleLog.clear": "Clear",
+    "common.copied": "All logs copied",
+    "common.copyFailed": "Copy failed",
+    "feature.mobileConsoleLog.empty": "No logs yet",
 };
 const i18n = (key: string): string => messages[key] ?? key;
 
@@ -123,8 +123,8 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-describe("控制台日志查看器", () => {
-    it("声明里只在移动端出现、默认关闭，容量与入口的默认值固定", () => {
+describe("console log viewer", () => {
+    it("declaration is mobile-only and off by default, with fixed defaults for capacity and the entry", () => {
         expect(definition.id).toBe("mobile-console-log");
         expect(definition.category).toBe("settings");
         expect(definition.enabled).toBe(true);
@@ -148,7 +148,7 @@ describe("控制台日志查看器", () => {
         expect(definition.mount).toBe(mountConsoleLog);
     });
 
-    it("挂载后包住五个 console 方法，原方法仍然照常被调用", () => {
+    it("mounting wraps the five console methods while the originals are still called", () => {
         const passthrough = console.log as unknown as ReturnType<typeof vi.fn>;
         const harness = mount();
 
@@ -166,7 +166,7 @@ describe("控制台日志查看器", () => {
         expect(textsOf(".ss-console-log__text")).toEqual(["hello"]);
     });
 
-    it("逐条渲染时间、级别与文本，并把 HTML 转义掉", () => {
+    it("renders time, level and text per entry, with the HTML escaped", () => {
         mount();
         console.log("hello");
         console.log({a: 1});
@@ -193,10 +193,10 @@ describe("控制台日志查看器", () => {
         textsOf(".ss-console-log__time").forEach((time) => {
             expect(time).toMatch(/^\d{2}:\d{2}:\d{2}\.\d{3}$/);
         });
-        expect(countText()).toBe("共 6 条");
+        expect(countText()).toBe("Total 6 entries");
     });
 
-    it("超出容量时丢最早的日志，只留最后 capacity 条", () => {
+    it("entries beyond capacity drop the oldest, keeping only the last capacity of them", () => {
         mount({capacity: 200});
         for (let index = 1; index <= 250; index += 1) {
             console.log(`m${index}`);
@@ -206,17 +206,17 @@ describe("控制台日志查看器", () => {
         expect(rows()).toHaveLength(200);
         expect(textsOf(".ss-console-log__text")[0]).toBe("m51");
         expect(textsOf(".ss-console-log__text")[199]).toBe("m250");
-        expect(countText()).toBe("共 200 条");
+        expect(countText()).toBe("Total 200 entries");
     });
 
-    it("容量配置低于下限时抬到 200，高于上限时压到 20000", () => {
+    it("a capacity below the lower bound is raised to 200 and one above the upper bound is clamped to 20000", () => {
         mount({capacity: 50});
         for (let index = 0; index < 260; index += 1) {
             console.log(`low${index}`);
         }
         openConsoleLog();
         // 50 是设置项允许被绕过的最小值，功能必须自己兜住，否则日志没存几条就被丢光
-        expect(countText()).toBe("共 200 条");
+        expect(countText()).toBe("Total 200 entries");
         expect(textsOf(".ss-console-log__text")[0]).toBe("low60");
         mounted.splice(0).forEach((harness) => harness.dispose());
         resetEntries();
@@ -226,7 +226,7 @@ describe("控制台日志查看器", () => {
             console.log(`high${index}`);
         }
         openConsoleLog();
-        expect(countText()).toBe("共 20000 条");
+        expect(countText()).toBe("Total 20000 entries");
         // 渲染上限是 4000 行（大桶容量下一次性拼两万行 DOM 会卡死移动端），
         // 所以窗口里看到的是缓冲末尾的那 4000 条
         expect(rows()).toHaveLength(4000);
@@ -234,18 +234,18 @@ describe("控制台日志查看器", () => {
         expect(textsOf(".ss-console-log__text")[3999]).toBe("high20004");
     });
 
-    it("容量是 0 / 负数 / 非数字时回落到默认 2000 条", () => {
+    it("a capacity of 0 / negative / not a number falls back to the default 2000 entries", () => {
         // 0 与负数会被归一化丢弃，NaN 说明配置被写坏了：三种都只该退到默认值
         mount({capacity: 0});
         for (let index = 0; index < 2005; index += 1) {
             console.log(`d${index}`);
         }
         openConsoleLog();
-        expect(countText()).toBe("共 2000 条");
+        expect(countText()).toBe("Total 2000 entries");
         expect(textsOf(".ss-console-log__text")[0]).toBe("d5");
     });
 
-    it("清空按钮丢掉全部日志，随后新日志仍会继续收", async () => {
+    it("the clear button drops every entry, and newer entries are still collected afterwards", async () => {
         const frames = stubFrames();
         mount({capacity: 200});
         console.log("first");
@@ -255,8 +255,8 @@ describe("控制台日志查看器", () => {
 
         document.querySelector<HTMLButtonElement>("[data-log-clear]")?.click();
         expect(rows()).toHaveLength(0);
-        expect(countText()).toBe("共 0 条");
-        expect(document.querySelector(".ss-console-log__empty")?.textContent).toBe("还没有日志");
+        expect(countText()).toBe("Total 0 entries");
+        expect(document.querySelector(".ss-console-log__empty")?.textContent).toBe("No logs yet");
 
         console.log("after-clear");
         await frames.flush();
@@ -264,7 +264,7 @@ describe("控制台日志查看器", () => {
         expect(textsOf(".ss-console-log__text")).toEqual(["after-clear"]);
     });
 
-    it("复制全部把纯文本送进剪贴板，失败时给出失败提示", async () => {
+    it("copy all sends plain text to the clipboard and reports a failure when it fails", async () => {
         const writeText = vi.fn<(...args: [string]) => Promise<void>>(async () => undefined);
         Object.defineProperty(navigator, "clipboard", {
             value: {writeText},
@@ -282,15 +282,15 @@ describe("控制台日志查看器", () => {
         expect(copied).toMatch(/^\[\d{2}:\d{2}:\d{2}\.\d{3}\] LOG alpha$/m);
         expect(copied).toMatch(/^\[\d{2}:\d{2}:\d{2}\.\d{3}\] ERROR beta$/m);
         // showMessage 排在 copyText 的 then 里，等它落定再断言
-        await vi.waitFor(() => expect(harness.records.messages).toEqual(["已复制全部日志"]));
+        await vi.waitFor(() => expect(harness.records.messages).toEqual(["All logs copied"]));
 
         // 没有 Clipboard API、execCommand 也不可用（jsdom 里就是 undefined）：只能报失败
         Object.defineProperty(navigator, "clipboard", {value: undefined, configurable: true});
         document.querySelector<HTMLButtonElement>("[data-log-copy]")?.click();
-        await vi.waitFor(() => expect(harness.records.messages).toEqual(["已复制全部日志", "复制失败"]));
+        await vi.waitFor(() => expect(harness.records.messages).toEqual(["All logs copied", "Copy failed"]));
     });
 
-    it("重复点入口只保留一个窗口", () => {
+    it("clicking the entry repeatedly keeps a single window", () => {
         mount();
         openConsoleLog();
         openConsoleLog();
@@ -299,13 +299,13 @@ describe("控制台日志查看器", () => {
         expect(document.querySelectorAll("[data-log-copy]")).toHaveLength(1);
     });
 
-    it("功能没挂载时点入口什么都不做（没有宿主可拿来弹窗）", () => {
+    it("clicking the entry without the feature mounted does nothing (there is no host to open a dialog)", () => {
         openConsoleLog();
         expect(document.querySelector(".ss-console-log")).toBeNull();
         expect(document.querySelectorAll(".b3-dialog")).toHaveLength(0);
     });
 
-    it("dispose 还原 console、收掉窗口并停掉未执行的刷新帧", () => {
+    it("dispose restores console, closes the window and cancels the pending refresh frame", () => {
         const frames = stubFrames();
         const passthrough = console.log as unknown as ReturnType<typeof vi.fn>;
         const harness = mount();
@@ -329,21 +329,21 @@ describe("控制台日志查看器", () => {
         expect(textsOf(".ss-console-log__text")).toEqual(["during"]);
     });
 
-    it("保存新的容量后立即裁剪已有日志，并继续按新容量收", async () => {
+    it("saving a new capacity trims the existing entries at once and keeps collecting at the new capacity", async () => {
         const frames = stubFrames();
         const harness = mount({capacity: 400});
         for (let index = 1; index <= 450; index += 1) {
             console.log(`c${index}`);
         }
         openConsoleLog();
-        expect(countText()).toBe("共 400 条");
+        expect(countText()).toBe("Total 400 entries");
 
         harness.config.capacity = 200;
         harness.notifyConfigChange();
         console.log("c451");
         await frames.flush();
 
-        expect(countText()).toBe("共 200 条");
+        expect(countText()).toBe("Total 200 entries");
         // 裁剪留下的必须是最近的 200 条（c252～c451），而不是最早的
         expect(textsOf(".ss-console-log__text")[0]).toBe("c252");
         expect(textsOf(".ss-console-log__text")[199]).toBe("c451");

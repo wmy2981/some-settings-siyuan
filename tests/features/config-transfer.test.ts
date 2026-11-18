@@ -93,9 +93,9 @@ afterEach(() => {
     dialogOptions.length = 0;
 });
 
-describe("插件配置导入导出", () => {
-    describe("parseImport（纯函数）", () => {
-        it("完整导出文档：取 features 字段", () => {
+describe("plugin config import and export", () => {
+    describe("parseImport (pure function)", () => {
+        it("a full export document: takes the features field", () => {
             const parsed = parseImport(JSON.stringify({
                 plugin: "some-settings-siyuan",
                 version: 1,
@@ -104,84 +104,84 @@ describe("插件配置导入导出", () => {
             expect(parsed).toEqual({kind: "ok", features: {alpha: {enabled: true}}});
         });
 
-        it("裸映射：没有 features 字段时整份对象就是配置集合", () => {
+        it("a bare map: without a features field the whole object is the config set", () => {
             // 用户从别处抄一段「只有功能 id」的 JSON 也要能导入
             expect(parseImport('{"alpha":{"enabled":true},"beta":{}}'))
                 .toEqual({kind: "ok", features: {alpha: {enabled: true}, beta: {}}});
         });
 
-        it("features 里的条目不再校验：解析层只判定容器，值由 ConfigStore 归一化", () => {
+        it("entries inside features are not validated: the parser only checks the container and ConfigStore normalises the values", () => {
             // 这里若顺手校验每一项，就会与 core/config 的规则变成两份，
             // 迟早出现「解析说不行、保存说行」的分歧
             expect(parseImport('{"features":{"alpha":1}}'))
                 .toEqual({kind: "ok", features: {alpha: 1}});
         });
 
-        it("空 features 也是合法文档（导出过、但一个配置文件都没有）", () => {
+        it("empty features is a valid document too (exported, but with no config files)", () => {
             expect(parseImport('{"features":{}}')).toEqual({kind: "ok", features: {}});
         });
 
-        it("空对象不是配置集合：既没有 features 也没有任何条目", () => {
+        it("an empty object is not a config set: it has neither features nor any entry", () => {
             // 空映射若判成 ok，用户粘 `{}` 会得到「已导入 0 个」的成功提示
             expect(parseImport("{}")).toEqual({kind: "error", reason: "shape"});
         });
 
         it.each([
-            ["数组", "[]"],
-            ["字符串", '"alpha"'],
-            ["数字", "42"],
-            ["布尔", "true"],
+            ["array", "[]"],
+            ["string", '"alpha"'],
+            ["number", "42"],
+            ["boolean", "true"],
             ["null", "null"],
-        ])("根节点是%s时报结构错误，而不是当成配置集合", (_label, text) => {
+        ])("a %s root reports a shape error instead of a config set", (_label, text) => {
             expect(parseImport(text)).toEqual({kind: "error", reason: "shape"});
         });
 
         it.each([
-            ["截断的对象", "{"],
-            ["空文本", ""],
-            ["尾部逗号", '{"alpha":{}},'],
-            ["不是 JSON 的说明文字", "这是我从别处复制的配置"],
-        ])("%s被判成 JSON 语法错误（与结构错误分开提示）", (_label, text) => {
+            ["truncated object", "{"],
+            ["empty text", ""],
+            ["trailing comma", '{"alpha":{}},'],
+            ["non-JSON prose", "copy I pasted from somewhere else"],
+        ])("%s is reported as a JSON syntax error, separate from shape errors", (_label, text) => {
             // 两种错误给用户的建议完全不同：语法错要重新复制，结构错要换一份文档
             expect(parseImport(text)).toEqual({kind: "error", reason: "json"});
         });
 
-        it("裸映射里混进非对象值就整份拒绝", () => {
+        it("a non-object value in a bare map rejects the whole document", () => {
             // 典型误粘贴：把 `{"plugin":"…","version":1}` 这种头部当成配置写进去
             expect(parseImport('{"alpha":{},"plugin":"some-settings-siyuan"}'))
                 .toEqual({kind: "error", reason: "shape"});
         });
 
-        it("条目的值是数组或 null 时也不算配置对象", () => {
+        it("an array or null entry value is not a config object", () => {
             expect(parseImport('{"alpha":[]}')).toEqual({kind: "error", reason: "shape"});
             expect(parseImport('{"alpha":null}')).toEqual({kind: "error", reason: "shape"});
         });
 
         it.each([
-            ["数组", "[]"],
+            ["array", "[]"],
             ["null", "null"],
-            ["字符串", '"alpha"'],
-            ["数字", "1"],
-        ])("features 是%s时回落到裸映射判定，最终仍是结构错误", (_label, features) => {
+            ["string", '"alpha"'],
+            ["number", "1"],
+        ])("a %s features value falls back to the bare map check and is still a shape error", (_label, features) => {
             // features 不合规时不能直接 ok（会拿到 undefined 往下走），
             // 也不能直接报 json 错（语法本身是对的）
             expect(parseImport(`{"features":${features}}`))
                 .toEqual({kind: "error", reason: "shape"});
         });
 
-        it("features 与头部字段共存时只取 features", () => {
+        it("features wins when header fields are present too", () => {
             const parsed = parseImport('{"plugin":"p","version":9,"features":{"alpha":{"enabled":true}}}');
             expect(parsed).toEqual({kind: "ok", features: {alpha: {enabled: true}}});
         });
 
-        it("容忍首尾空白与换行（用户从文本框里复制时常带）", () => {
+        it("tolerates leading and trailing whitespace and newlines, as pasting usually brings", () => {
             expect(parseImport('\n  {"alpha":{"enabled":true}}\n  '))
                 .toEqual({kind: "ok", features: {alpha: {enabled: true}}});
         });
     });
 
-    describe("导出", () => {
-        it("弹窗里是只读的 <pre>，不是 <textarea>", async () => {
+    describe("export", () => {
+        it("the dialog shows a read-only <pre>, not a <textarea>", async () => {
             // 移动端「能不能编辑」决定软键盘会不会顶上来：只读表单控件同样会弹键盘，
             // 所以这里必须不是表单控件
             const {context, calls} = action({exportConfigs: async () => ({alpha: {enabled: true}})});
@@ -193,7 +193,7 @@ describe("插件配置导入导出", () => {
             expect(calls.export).toBe(1);
         });
 
-        it("导出内容是一份带标记与版本号的、缩进两格的完整文档", async () => {
+        it("the export is a complete document with marker and version, indented by two spaces", async () => {
             const features = {alpha: {enabled: true}, retired: {interval: 5}};
             const {context} = action({exportConfigs: async () => features});
             await exportConfigs(context);
@@ -209,7 +209,7 @@ describe("插件配置导入导出", () => {
             expect(text.split("\n").length).toBeGreaterThan(5);
         });
 
-        it("一个配置文件都没有时导出 features: {}（而不是省略字段）", async () => {
+        it("with no config files it exports features: {} instead of omitting the field", async () => {
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
 
@@ -220,7 +220,7 @@ describe("插件配置导入导出", () => {
             });
         });
 
-        it("桌面端 640px、移动端 92vw，标题取导出那个 key", async () => {
+        it("640px on desktop and 92vw on mobile, with the title from the export key", async () => {
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
             expect(dialogOptions[0].width).toBe("640px");
@@ -234,20 +234,20 @@ describe("插件配置导入导出", () => {
             expect(dialogOptions[0].width).toBe("92vw");
         });
 
-        it("说明文字按 HTML 转义后插入（文案来自 i18n，仍不可当标记用）", async () => {
+        it("the tip is inserted HTML-escaped, so i18n text never acts as markup", async () => {
             const {context} = createActionContext({
                 featureId: "config-transfer",
-                i18n: (key) => key === "feature.configTransfer.exportTip" ? "<b>提示</b>" : key,
+                i18n: (key) => key === "feature.configTransfer.exportTip" ? "<b>tip</b>" : key,
                 exportConfigs: async () => ({}),
             });
             await exportConfigs(context);
 
             const tip = document.querySelector(".b3-dialog .b3-label__text")!;
-            expect(tip.textContent).toBe("<b>提示</b>");
+            expect(tip.textContent).toBe("<b>tip</b>");
             expect(tip.querySelector("b")).toBeNull();
         });
 
-        it("弹窗提前预热图层：容器带预热类，样式表落在 head 里", async () => {
+        it("the dialog preheats the layer: the container gets the class and the CSS lands in head", async () => {
             // 不预热的话移动端入场会闪一帧旧画面（见 core/layer.ts）
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
@@ -257,7 +257,7 @@ describe("插件配置导入导出", () => {
             expect(document.getElementById("some-settings-layer-local-css")).not.toBeNull();
         });
 
-        it("复制成功：提示已复制、带 3 秒超时，弹窗保持打开", async () => {
+        it("copy succeeds: a copied toast with a 3 second timeout, dialog stays open", async () => {
             const copied: string[] = [];
             // jsdom 没有 navigator.clipboard，也不实现 execCommand，这里只把兜底那条路
             // 变成成功，并顺手记下真正被放进 textarea 的文本
@@ -282,7 +282,7 @@ describe("插件配置导入导出", () => {
             expect(dialogElement()).not.toBeNull();
         });
 
-        it("复制失败：提示手动复制，弹窗同样留在原地", async () => {
+        it("copy fails: a manual-copy toast, and the dialog stays put", async () => {
             (document as unknown as {execCommand: () => boolean;}).execCommand = () => false;
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
@@ -294,7 +294,7 @@ describe("插件配置导入导出", () => {
             expect(dialogElement()).not.toBeNull();
         });
 
-        it("关闭按钮销毁弹窗", async () => {
+        it("the close button destroys the dialog", async () => {
             const {context} = action({exportConfigs: async () => ({})});
             await exportConfigs(context);
 
@@ -304,8 +304,8 @@ describe("插件配置导入导出", () => {
         });
     });
 
-    describe("导入", () => {
-        it("弹窗里是可编辑的 <textarea>，初始为空、关掉拼写检查", () => {
+    describe("import", () => {
+        it("the dialog shows an editable <textarea>, empty at first with spellcheck off", () => {
             // 初始为空是刻意的：粘贴位置要留给用户，不能预填上一份内容
             const {context} = action();
             importConfigs(context);
@@ -318,9 +318,9 @@ describe("插件配置导入导出", () => {
         });
 
         it.each([
-            ["语法错误", "not json", "feature.configTransfer.invalidJson"],
-            ["结构错误", "[1,2,3]", "feature.configTransfer.invalidShape"],
-        ])("%s：提示对应文案、不调用导入、弹窗保持打开", async (_label, text, key) => {
+            ["syntax error", "not json", "feature.configTransfer.invalidJson"],
+            ["shape error", "[1,2,3]", "feature.configTransfer.invalidShape"],
+        ])("%s: shows the matching message, imports nothing and keeps the dialog open", async (_label, text, key) => {
             const {context, calls} = action();
             importConfigs(context);
             importField()!.value = text;
@@ -333,7 +333,7 @@ describe("插件配置导入导出", () => {
             expect(dialogElement()).not.toBeNull();
         });
 
-        it("合法文档：把 features 交给 core，提示条数，并排一次 600ms 后的重新载入", async () => {
+        it("a valid document: features go to core, a count toast, and one reload 600ms later", async () => {
             const timers = captureTimeouts();
             const {context, calls} = action({
                 importConfigs: async () => ({applied: ["alpha", "beta"], skipped: ["weird"]}),
@@ -354,7 +354,7 @@ describe("插件配置导入导出", () => {
             expect(dialogElement()).toBeNull();
         });
 
-        it("裸映射也能导入，写回的是整份对象", async () => {
+        it("a bare map imports too, writing back the whole object", async () => {
             captureTimeouts();
             const {context, calls} = action({importConfigs: async () => ({applied: ["alpha"], skipped: []})});
             importConfigs(context);
@@ -367,7 +367,7 @@ describe("插件配置导入导出", () => {
             expect(mockState.messages.at(-1)!.text).toBe("已导入 1 个配置文件，忽略 0 个无法识别的条目");
         });
 
-        it("写盘被拒：错误交给 reportError，弹窗保持打开、不排重新载入", async () => {
+        it("a rejected write: the error goes to reportError, the dialog stays open and no reload is queued", async () => {
             // 校验失败或读回不一致时必须让用户看见原因并停在原地改，
             // 而不是装作导入成功、过一会儿又把页面刷掉
             const timers = captureTimeouts();
@@ -387,7 +387,7 @@ describe("插件配置导入导出", () => {
             expect(timers).toEqual([]);
         });
 
-        it("导入前可以在框里改内容，点导入时读的是此刻的 value", async () => {
+        it("the box can be edited before importing and the current value is read on click", async () => {
             // 判据是 `textarea.value` 而不是初始 JSON，否则用户改了也没用
             captureTimeouts();
             const {context, calls} = action({importConfigs: async () => ({applied: [], skipped: []})});
@@ -401,7 +401,7 @@ describe("插件配置导入导出", () => {
             expect(calls.import).toEqual([{fresh: {}}]);
         });
 
-        it("关闭按钮销毁弹窗，不触发任何导入", () => {
+        it("the close button destroys the dialog without importing anything", () => {
             const {context, calls} = action();
             importConfigs(context);
 
@@ -412,8 +412,8 @@ describe("插件配置导入导出", () => {
         });
     });
 
-    describe("声明", () => {
-        it("永不挂载：两行动作按钮之外没有运行期行为", async () => {
+    describe("declaration", () => {
+        it("never mounted: nothing runs beyond the two action buttons", async () => {
             const {default: definition} = await import("../../src/features/config-transfer/index");
             expect(definition.mount).toBeUndefined();
             expect(definition.isEnabled!({})).toBe(false);

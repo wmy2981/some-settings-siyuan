@@ -38,7 +38,7 @@ afterEach(() => {
 });
 
 describe("reportError", () => {
-    it("记录到控制台并提示用户", () => {
+    it("Logs to the console and notifies the user", () => {
         const error = new Error("boom");
         reportError("feature.mount", error);
         expect(vi.mocked(console.error)).toHaveBeenCalledWith(
@@ -49,25 +49,25 @@ describe("reportError", () => {
         ]);
     });
 
-    it("非 Error 的值按字符串上报", () => {
+    it("Reports a non-Error value as a string", () => {
         reportError("feature.mount", "plain text");
         expect(vi.mocked(console.error)).toHaveBeenCalledWith(`${TAG}feature.mount] ERROR plain text`);
         expect(mockState.messages[0].text).toBe(`${PREFIX} [feature.mount] plain text`);
     });
 
-    it("通知失败时不再抛错", () => {
+    it("Does not throw when notifying fails", () => {
         mockState.showMessageError = new Error("no toast");
         expect(() => reportError("feature.mount", new Error("boom"))).not.toThrow();
         expect(vi.mocked(console.error)).toHaveBeenCalled();
     });
 
-    it("notifyUser 为 false 时只记日志", () => {
+    it("Only logs when notifyUser is false", () => {
         reportError("onunload", new Error("boom"), false);
         expect(vi.mocked(console.error)).toHaveBeenCalled();
         expect(mockState.messages).toHaveLength(0);
     });
 
-    it("详细日志关着时控制台留白，但提示仍然弹出", () => {
+    it("Keeps the console quiet with detailed logging off but still notifies", () => {
         setDetailedLogging(false);
         reportError("feature.mount", new Error("boom"));
         expect(vi.mocked(console.error)).not.toHaveBeenCalled();
@@ -76,12 +76,12 @@ describe("reportError", () => {
 });
 
 describe("guard", () => {
-    it("成功返回 true", () => {
+    it("Returns true on success", () => {
         expect(guard("scope", () => undefined)).toBe(true);
         expect(mockState.messages).toHaveLength(0);
     });
 
-    it("异常被隔离，返回 false 并上报", () => {
+    it("Isolates the error, returns false and reports it", () => {
         expect(guard("scope", () => {
             throw new Error("bad");
         })).toBe(false);
@@ -91,7 +91,7 @@ describe("guard", () => {
         expect(mockState.messages).toHaveLength(1);
     });
 
-    it("notifyUser 为 false 时不提示", () => {
+    it("Does not notify when notifyUser is false", () => {
         expect(guard("scope", () => {
             throw new Error("bad");
         }, false)).toBe(false);
@@ -100,14 +100,14 @@ describe("guard", () => {
 });
 
 describe("guardAsync", () => {
-    it("成功后不产生任何上报", async () => {
+    it("Produces no report on success", async () => {
         const action = vi.fn(async () => undefined);
         await guardAsync("scope", action);
         expect(action).toHaveBeenCalledTimes(1);
         expect(vi.mocked(console.error)).not.toHaveBeenCalled();
     });
 
-    it("异步异常被吞掉并上报", async () => {
+    it("Swallows an async error and reports it", async () => {
         await expect(guardAsync("scope", async () => {
             throw new Error("rejected");
         })).resolves.toBeUndefined();
@@ -117,7 +117,7 @@ describe("guardAsync", () => {
         expect(mockState.messages[0].text).toContain("rejected");
     });
 
-    it("notifyUser 为 false 时只记日志", async () => {
+    it("Only logs when notifyUser is false", async () => {
         await guardAsync("scope", async () => {
             throw new Error("rejected");
         }, false);
@@ -126,12 +126,12 @@ describe("guardAsync", () => {
 });
 
 describe("guardSilent", () => {
-    it("成功时不留下任何记录", () => {
+    it("Leaves no record on success", () => {
         guardSilent("scope", () => undefined);
         expect(vi.mocked(console.error)).not.toHaveBeenCalled();
     });
 
-    it("失败时只记日志，既不提示也不抛错", () => {
+    it("Only logs on failure, with no toast and no throw", () => {
         expect(() =>
             guardSilent("scope", () => {
                 throw new Error("cleanup failed");

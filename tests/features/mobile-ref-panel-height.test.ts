@@ -53,7 +53,7 @@ const stubVisualViewport = (value: {offsetTop?: number; height?: number;}): void
     Object.defineProperty(window, "visualViewport", {configurable: true, writable: true, value});
 };
 
-describe("移动端增大候选浮层高度", () => {
+describe("Enlarged candidate popup height on mobile", () => {
     let harness: HostHarness | undefined;
 
     beforeEach(() => {
@@ -74,7 +74,7 @@ describe("移动端增大候选浮层高度", () => {
         return harness;
     };
 
-    it("默认按视口 60% 放宽已经存在的浮层", () => {
+    it("Widens an existing popup to 60% of the viewport by default", () => {
         const element = hint("256px");
         mount();
 
@@ -82,14 +82,14 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("浮层还没写内联高度时也照常放宽（内核可能刚建出来）", () => {
+    it("Widens a popup that has no inline height yet, as the kernel just built it", () => {
         const element = hint();
         mount();
 
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("比例低于下限时按 20% 计算，但不会低于 160px 的可读高度", () => {
+    it("Clamps a low ratio to 20%, never below the readable 160px", () => {
         const element = hint();
         mount({maxHeight: 20});
 
@@ -97,7 +97,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("160px");
     });
 
-    it("比例取 100% 时也不越过可视区底部（留 8px 空隙）", () => {
+    it("Stops at the viewport bottom with an 8px gap even at 100%", () => {
         const element = hint();
         mount({maxHeight: 100});
 
@@ -105,7 +105,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("760px");
     });
 
-    it("配置超出范围时夹到 20~100 之间，非数字回落 60", () => {
+    it("Clamps an out-of-range setting to 20-100 and a non-number to 60", () => {
         const high = hint();
         mount({maxHeight: 200});
         expect(high.style.maxHeight).toBe("760px");
@@ -125,14 +125,14 @@ describe("移动端增大候选浮层高度", () => {
         expect(invalid.style.maxHeight).toBe("461px");
     });
 
-    it("已经比目标更高的浮层不会被压矮（别把用户拖大的面板改小）", () => {
+    it("Never shrinks a popup that is already taller than the target", () => {
         const element = hint("800px");
         mount({maxHeight: 60});
 
         expect(element.style.maxHeight).toBe("800px");
     });
 
-    it("内联值解析不出像素数（比如 max-content）时原样不动", async () => {
+    it("Leaves a non-pixel inline value such as max-content untouched", async () => {
         // jsdom 不接受 max-height: auto，这里用同样「不带你数字」的关键字代替
         const element = hint("max-content");
         mount();
@@ -140,7 +140,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("max-content");
     });
 
-    it("面板位置靠下时按剩余空间收窄，不会把面板推出屏幕", () => {
+    it("Narrows to the remaining space so a low popup stays on screen", () => {
         const element = hint("100px");
         placeAt(element, 500);
         mount({maxHeight: 100});
@@ -149,7 +149,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("260px");
     });
 
-    it("软键盘弹起时按 visualViewport 量可视区底部", () => {
+    it("Measures the visible bottom through visualViewport when the keyboard opens", () => {
         // 键盘把可视区压到 100~500 这一段，innerHeight 仍然是 768
         stubVisualViewport({offsetTop: 100, height: 400});
         const element = hint("100px");
@@ -159,7 +159,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("492px");
     });
 
-    it("visualViewport 缺字段时退回 window.innerHeight", () => {
+    it("Falls back to window.innerHeight when visualViewport lacks fields", () => {
         stubVisualViewport({});
         const element = hint("100px");
         mount({maxHeight: 100});
@@ -167,7 +167,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("760px");
     });
 
-    it("内核重新写入内联高度后自动再放宽一次", async () => {
+    it("Widens again after the kernel rewrites the inline height", async () => {
         const element = hint("256px");
         mount();
 
@@ -178,7 +178,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("放宽之后观察器不会自激（写一次就稳定下来）", async () => {
+    it("Does not self-trigger the observer, one write settles it", async () => {
         const element = hint("256px");
         mount();
         const first = element.style.maxHeight;
@@ -191,7 +191,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("只处理候选浮层，别的元素一个都不碰", () => {
+    it("Touches only the candidate popup and no other element", () => {
         const other = document.createElement("div");
         other.className = "protyle-wysiwyg";
         other.style.maxHeight = "100px";
@@ -201,7 +201,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(other.style.maxHeight).toBe("100px");
     });
 
-    it("同一次扫描处理多个浮层", () => {
+    it("Handles several popups in the same scan", () => {
         const first = hint("100px");
         const second = hint("300px");
         mount();
@@ -211,7 +211,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(second.style.maxHeight).toBe("461px");
     });
 
-    it("编辑器加载完成（loaded-protyle-static）时补扫新出现的浮层", async () => {
+    it("Scans newly appeared popups on loaded-protyle-static", async () => {
         mount();
         const element = hint("100px");
         await tick();
@@ -224,7 +224,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("每 2 秒重扫一次，兜住没有事件通知的情况", async () => {
+    it("Rescans every 2 seconds to cover missing event notifications", async () => {
         mount();
         const element = hint("100px");
 
@@ -236,7 +236,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("461px");
     });
 
-    it("重复扫描时已处理的元素保持稳定，不会来回改写同一份内联值", async () => {
+    it("Keeps a handled element stable on rescans without rewriting its value", async () => {
         const element = hint("100px");
         mount();
         await tick();
@@ -250,7 +250,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(harness?.records.bus.filter((item) => item.type === "loaded-protyle-static")).toHaveLength(1);
     });
 
-    it("配置变更后新出现的浮层按新比例放宽", async () => {
+    it("Widens new popups by the new ratio after a config change", async () => {
         mount({maxHeight: 60});
         harness!.config.maxHeight = 100;
         harness!.notifyConfigChange();
@@ -264,7 +264,7 @@ describe("移动端增大候选浮层高度", () => {
         expect(element.style.maxHeight).toBe("760px");
     });
 
-    it("卸载后停止定时重扫，也不再观察内联值变化", async () => {
+    it("Stops the rescan timer and the inline value observer after unmount", async () => {
         const element = hint("100px");
         mount();
         await tick();

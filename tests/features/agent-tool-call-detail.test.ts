@@ -25,7 +25,7 @@ import type {
 import {createResponseTap} from "../../src/features/agent-tool-call-detail/tap";
 import {mountFeature} from "../helpers/feature-host";
 
-const LABELS: ToolCallLabels = {args: "参数", result: "结果", noArgs: "无"};
+const LABELS: ToolCallLabels = {args: "Args", result: "Result", noArgs: "none"};
 
 const CHAT_URL = "/api/ai/agent/chat";
 const GET_SESSION_URL = "/api/ai/agent/getSession";
@@ -75,17 +75,17 @@ const settle = async (): Promise<void> => {
     }
 };
 
-describe("智能体工具调用显示细节", () => {
-    describe("describeToolCall（摘要与悬停文本）", () => {
-        it("没有参数时内联摘要为空，悬停里写明「无参数」", () => {
+describe("agent tool call detail", () => {
+    describe("describeToolCall (summary and tooltip text)", () => {
+        it("the inline summary is empty without arguments and the tooltip says there are none", () => {
             // 工具名由胶囊自己显示，摘要里再重复一遍只会让那一行更长
             expect(describeToolCall({name: "search"}, LABELS)).toEqual({
                 inline: "",
-                tooltip: "search\n参数: 无",
+                tooltip: "search\nArgs: none",
             });
         });
 
-        it("优先把 action 放进摘要，再取一个能定位目标的参数", () => {
+        it("puts action in the summary first, then picks one argument that locates the target", () => {
             const view = describeToolCall({
                 name: "block",
                 arguments: {action: "get", id: "20240101000000-abc", query: "hello"},
@@ -95,24 +95,24 @@ describe("智能体工具调用显示细节", () => {
             expect(view.inline).toBe("get 20240101000000-abc");
         });
 
-        it("定位键白名单里的字段优先于普通字段", () => {
+        it("locator key whitelist fields win over ordinary fields", () => {
             const view = describeToolCall({
                 name: "search",
-                arguments: {custom: "noise", query: "思源"},
+                arguments: {custom: "noise", query: "SiYuan"},
             }, LABELS);
 
             // `custom` 不是白名单键，`query` 才是「这一次查了什么」的答案
-            expect(view.inline).toBe("思源");
+            expect(view.inline).toBe("SiYuan");
         });
 
-        it("没有白名单键时取第一个非内容型字段，最后才退回内容型大字段", () => {
+        it("without a whitelisted key it takes the first non-content field and only then falls back to a large content field", () => {
             expect(describeToolCall({name: "x", arguments: {extra: "a", data: "b"}}, LABELS).inline)
                 .toBe("a");
             // 只剩内容型字段时仍要给出摘要，否则整行看起来像没有参数
             expect(describeToolCall({name: "x", arguments: {data: "b"}}, LABELS).inline).toBe("b");
         });
 
-        it("丢掉内核注入的内部字段与空值", () => {
+        it("drops kernel-injected internal fields and empty values", () => {
             const view = describeToolCall({
                 name: "search",
                 arguments: {
@@ -120,18 +120,18 @@ describe("智能体工具调用显示细节", () => {
                     _toolCallID: "c1",
                     query: "",
                     notebook: null,
-                    keyword: " 关键词 ",
+                    keyword: " keyword ",
                 },
             }, LABELS);
 
-            expect(view.inline).toBe("关键词");
+            expect(view.inline).toBe("keyword");
             // 内部字段也不能出现在悬停的 JSON 里：用户看不懂它们
             expect(view.tooltip).not.toContain("_sessionID");
             expect(view.tooltip).not.toContain("_toolCallID");
-            expect(view.tooltip).toContain('"keyword": " 关键词 "');
+            expect(view.tooltip).toContain('"keyword": " keyword "');
         });
 
-        it("数组按标量拼接，混入对象时只报规模，对象只报「{…}」", () => {
+        it("joins arrays of scalars, reports only the length when objects are mixed in and renders objects as {…}", () => {
             expect(describeToolCall({name: "x", arguments: {ids: ["a", "b"]}}, LABELS).inline).toBe("a,b");
             expect(describeToolCall({name: "x", arguments: {ids: [1, 2, 3]}}, LABELS).inline).toBe("1,2,3");
             expect(describeToolCall({name: "x", arguments: {ids: ["a", {id: 1}]}}, LABELS).inline).toBe("[2]");
@@ -140,48 +140,48 @@ describe("智能体工具调用显示细节", () => {
             expect(describeToolCall({name: "x", arguments: {id: false}}, LABELS).inline).toBe("false");
         });
 
-        it("字符串里的换行与连续空白压成一个空格", () => {
+        it("collapses newlines and runs of whitespace inside a string into one space", () => {
             // 内联摘要只有一行，未折叠的换行会把工具行撑成好几行
             expect(describeToolCall({name: "x", arguments: {query: "  a \n\t b  "}}, LABELS).inline).toBe("a b");
         });
 
-        it("内联摘要超过 44 字符时截断并以省略号结尾", () => {
+        it("truncates an inline summary past 44 characters and ends it with an ellipsis", () => {
             const view = describeToolCall({name: "x", arguments: {query: "q".repeat(60)}}, LABELS);
             expect(view.inline).toBe(`${"q".repeat(43)}…`);
             expect(view.inline).toHaveLength(44);
         });
 
-        it("有结果时追加一行折叠后的结果，没有结果就不出现这一行", () => {
+        it("appends one collapsed result line when there is a result and omits it otherwise", () => {
             const withResult = describeToolCall({
                 name: "block",
                 arguments: {id: "b1"},
                 result: "line1\n  line2",
             }, LABELS);
             // 悬停里的参数是缩进过的 JSON：换行原样保留，提示框里才看得清结构
-            expect(withResult.tooltip).toBe('block b1\n参数: {\n  "id": "b1"\n}\n结果: line1 line2');
+            expect(withResult.tooltip).toBe('block b1\nArgs: {\n  "id": "b1"\n}\nResult: line1 line2');
 
             const withoutResult = describeToolCall({name: "block", arguments: {id: "b1"}, result: ""}, LABELS);
-            expect(withoutResult.tooltip).not.toContain("结果:");
+            expect(withoutResult.tooltip).not.toContain("Result:");
         });
 
-        it("参数 JSON 截到 600 字符、结果截到 240 字符", () => {
+        it("truncates the argument JSON at 600 characters and the result at 240", () => {
             // 摘要（内联用的那一份）保持很短：否则悬停文本会先撞上 1600 的总长上限，
             // 量到的「参数那一行」就不再是 600，而是被总长截断后的残段
             const longArgs = describeToolCall({
                 name: "x",
                 arguments: {query: "short", data: "q".repeat(1000)},
             }, LABELS);
-            const argsLine = longArgs.tooltip.slice(longArgs.tooltip.indexOf("参数: ") + "参数: ".length);
+            const argsLine = longArgs.tooltip.slice(longArgs.tooltip.indexOf("Args: ") + "Args: ".length);
             expect(argsLine).toHaveLength(600);
             expect(argsLine.endsWith("…")).toBe(true);
 
             const longResult = describeToolCall({name: "x", result: "r".repeat(300)}, LABELS);
-            const resultLine = longResult.tooltip.slice(longResult.tooltip.indexOf("结果: ") + "结果: ".length);
+            const resultLine = longResult.tooltip.slice(longResult.tooltip.indexOf("Result: ") + "Result: ".length);
             expect(resultLine).toHaveLength(240);
             expect(resultLine.endsWith("…")).toBe(true);
         });
 
-        it("整段悬停文本超过 1600 字符时统一截断", () => {
+        it("truncates the whole tooltip uniformly past 1600 characters", () => {
             // 工具名本身也可能很长（内核允许自定义工具），总长必须兜住
             const view = describeToolCall({name: "n".repeat(1700)}, LABELS);
             expect(view.tooltip).toHaveLength(1600);
@@ -189,26 +189,26 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("mergeInline / mergeTooltip（一个胶囊并多次调用）", () => {
-        it("多次调用的摘要用「 / 」连接并标出次数", () => {
+    describe("mergeInline / mergeTooltip (several calls merged into one chip)", () => {
+        it("joins the summaries of several calls with / and marks the count", () => {
             expect(mergeInline([{inline: "a", tooltip: ""}, {inline: "b", tooltip: ""}])).toBe("a / b ×2");
         });
 
-        it("只有一条调用时不标次数", () => {
+        it("omits the count for a single call", () => {
             expect(mergeInline([{inline: "a", tooltip: ""}])).toBe("a");
         });
 
-        it("占位摘要被跳过，但次数仍按胶囊上的调用数算", () => {
+        it("skips placeholder summaries while still counting every call on the chip", () => {
             // 没有参数的调用也占一个调用位置，次数必须说真话
             expect(mergeInline([{inline: "", tooltip: ""}, {inline: "b", tooltip: ""}])).toBe("b ×2");
         });
 
-        it("全部为空、或没有调用时返回空串", () => {
+        it("returns an empty string when everything is empty or there are no calls", () => {
             expect(mergeInline([])).toBe("");
             expect(mergeInline([{inline: "", tooltip: ""}])).toBe("");
         });
 
-        it("合并后的内联摘要上限是 56 字符", () => {
+        it("caps the merged inline summary at 56 characters", () => {
             const merged = mergeInline([
                 {inline: "a".repeat(44), tooltip: ""},
                 {inline: "b".repeat(44), tooltip: ""},
@@ -217,7 +217,7 @@ describe("智能体工具调用显示细节", () => {
             expect(merged.endsWith("…")).toBe(true);
         });
 
-        it("悬停详情用空行分隔，总长同样兜到 1600", () => {
+        it("separates tooltip details with blank lines and caps the total at 1600", () => {
             expect(mergeTooltip([{inline: "", tooltip: "t1"}, {inline: "", tooltip: "t2"}])).toBe("t1\n\nt2");
             expect(mergeTooltip([])).toBe("");
             const long = mergeTooltip([{inline: "", tooltip: "x".repeat(1600)}, {inline: "", tooltip: "y"}]);
@@ -225,7 +225,7 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("createSessionIndex（会话存档）", () => {
+    describe("createSessionIndex (session archive)", () => {
         /**
          * 装一个「按队列出响应」的 fetch 桩，并在它之上装观察。
          *
@@ -253,7 +253,7 @@ describe("智能体工具调用显示细节", () => {
             return {index, stop, pushSession, pushRaw};
         };
 
-        it("思考条目的步按调用 ID 对齐，结果与参数都留在索引里", async () => {
+        it("aligns thinking-entry steps by call ID and keeps results and arguments in the index", async () => {
             const {index, stop, pushSession} = openIndex();
             await pushSession({
                 code: 0,
@@ -285,7 +285,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("缺调用 ID 时按名字顺序取下一个没被认领的调用", async () => {
+        it("takes the next unclaimed call in name order when call IDs are missing", async () => {
             // 部分模型不给调用 ID，存档里步骤只留工具名；只能按会话内顺序兜底
             const {index, stop, pushSession} = openIndex();
             await pushSession({
@@ -311,7 +311,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("ID 数量与名字数量对不上时整体退回按名字匹配", async () => {
+        it("falls back entirely to name matching when the ID and name counts disagree", async () => {
             const {index, stop, pushSession} = openIndex();
             await pushSession({
                 code: 0,
@@ -328,7 +328,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("步里的名字在调用表里找不到时保留名字、调用留空", async () => {
+        it("keeps the name but leaves the call empty when a step name is missing from the call list", async () => {
             const {index, stop, pushSession} = openIndex();
             await pushSession({
                 code: 0,
@@ -349,7 +349,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("跳过非 thinking 条目、没有 id 的条目与没有名字的调用", async () => {
+        it("skips non-thinking entries, entries without an id and calls without a name", async () => {
             const {index, stop, pushSession} = openIndex();
             await pushSession({
                 code: 0,
@@ -368,7 +368,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("结果只留前 1024 字符，参数不是对象时不收", async () => {
+        it("keeps only the first 1024 characters of a result and rejects non-object arguments", async () => {
             // 读文档、搜索这类调用动辄几十 KB，全留在内存里没有任何用处
             const {index, stop, pushSession} = openIndex();
             await pushSession({
@@ -390,7 +390,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("getSession 的 data 是会话本身，saveSession 的 data.session 才解包", async () => {
+        it("takes getSession's data as the session itself and unwraps saveSession's data.session", async () => {
             const {index, stop, pushSession} = openIndex();
             const entries = [{type: "thinking", id: "t1", steps: [{toolNames: ["a"]}]}];
 
@@ -415,7 +415,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("失败响应、非 JSON 响应与非 0 code 都不读", async () => {
+        it("reads neither failed responses, non-JSON responses nor non-zero codes", async () => {
             const {index, stop, pushRaw} = openIndex();
             const listener = vi.fn();
             index.subscribe(listener);
@@ -431,7 +431,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("读到新条目时通知订阅者，退订后不再通知", async () => {
+        it("notifies subscribers on a new entry and stops after unsubscribe", async () => {
             const {index, stop, pushSession} = openIndex();
             const listener = vi.fn();
             const unsubscribe = index.subscribe(listener);
@@ -445,7 +445,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("索引上限 2000 条，重新写入的条目回到最新一端、不被优先淘汰", async () => {
+        it("caps the index at 2000 entries, and a rewritten entry moves to the newest end so it is not evicted first", async () => {
             const {index, stop, pushSession} = openIndex();
             const ids = Array.from({length: 2000}, (_value, index_) => `e${index_}`);
 
@@ -469,7 +469,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("observe 的撤销函数把 fetch 还原", async () => {
+        it("observe's undo function restores fetch", async () => {
             const original = stubFetch(async () => jsonResponse({code: 0}));
             const index = createSessionIndex();
             const stop = index.observe();
@@ -480,7 +480,7 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("createLiveSteps（实时事件流）", () => {
+    describe("createLiveSteps (live event stream)", () => {
         /**
          * 建一份实时索引 + 一个可复用的 fetch 桩（桩先装、观察后装）。
          *
@@ -506,7 +506,7 @@ describe("智能体工具调用显示细节", () => {
             return {live, stop, pushEvents, pushRaw};
         };
 
-        it("bind 之后 thinking / tool_call 归到这张卡片", async () => {
+        it("attributes thinking / tool_call to this card after bind", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
 
@@ -524,7 +524,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("每进入新一轮模型调用就新开一步（与存档的切法一致）", async () => {
+        it("opens a new step on every new model round (matching how the archive splits them)", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
 
@@ -541,7 +541,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("插件在一轮中途才启用时，没有步骤就先开一个", async () => {
+        it("opens a step when the plugin is enabled mid-round and none exists yet", async () => {
             // 第一个 thinking 事件已经过去了，工具行却已经在界面上
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
@@ -551,7 +551,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("tool_result 换成一份带结果的新对象，不改旧对象", async () => {
+        it("replaces tool_result with a new object carrying the result instead of mutating the old one", async () => {
             // 界面按调用对象缓存过展示文本，就地改字段会一直读到没有结果的旧文本
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
@@ -570,7 +570,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("没有 callID 时按名字认领，同名调用各自只认领一次", async () => {
+        it("claims by name without a callID, and each same-name call only once", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
 
@@ -588,7 +588,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("对不上的 tool_result 不改变索引，也不通知", async () => {
+        it("an unmatched tool_result changes nothing and notifies nobody", async () => {
             const {live, stop, pushEvents} = openLive();
             const listener = vi.fn();
             live.subscribe(listener);
@@ -607,7 +607,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("结果截到 1024 字符；名字缺失的 tool_call 被丢掉", async () => {
+        it("truncates results at 1024 characters and drops tool_calls without a name", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
 
@@ -624,7 +624,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("跨 chunk 的事件行能拼回来，坏 JSON 只跳过那一条", async () => {
+        it("reassembles event lines split across chunks and skips only the malformed JSON", async () => {
             // 网络分片不会保证按行切，行缓冲错了就会「偶发丢事件」
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
@@ -640,7 +640,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("只读 text/event-stream 且成功的响应", async () => {
+        it("reads only successful text/event-stream responses", async () => {
             const {live, stop, pushEvents, pushRaw} = openLive();
             const listener = vi.fn();
             live.subscribe(listener);
@@ -658,7 +658,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("bind 换卡片时旧卡片的实时数据留在原处，新卡片从空开始", async () => {
+        it("keeps the old card's live data in place when bind switches cards, with the new card starting empty", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
             await pushEvents([sseEvent("tool_call", {name: "search"})]);
@@ -673,7 +673,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("同一张卡片重复 bind 不重置它的步骤", async () => {
+        it("re-binding the same card does not reset its steps", async () => {
             const {live, stop, pushEvents} = openLive();
             live.bind("card-1");
             await pushEvents([sseEvent("tool_call", {name: "search"})]);
@@ -684,7 +684,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("bind 之前收到的事件归到第一张绑定的卡片上", async () => {
+        it("attributes events received before bind to the first bound card", async () => {
             // 界面先画出胶囊、后绑定卡片：这批事件不能丢
             const {live, stop, pushEvents} = openLive();
             await pushEvents([sseEvent("tool_call", {name: "search"})]);
@@ -695,7 +695,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("卡片上限 200 张，最早的被淘汰", async () => {
+        it("caps cards at 200 and evicts the oldest", async () => {
             const {live, stop} = openLive();
             // 每次 bind 一张新卡片（bind 同一张才会早退，这里都是不同的 id）
             for (let index = 0; index < 201; index++) {
@@ -706,7 +706,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("observe 的撤销函数把 fetch 还原", async () => {
+        it("observe's undo function restores fetch", async () => {
             const original = stubFetch(async () => sseResponse([]));
             const live = createLiveSteps();
             const stop = live.observe();
@@ -716,8 +716,8 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("createResponseTap（被动读取响应副本）", () => {
-        it("命中的地址读到副本，调用方拿到的还是原始响应", async () => {
+    describe("createResponseTap (passively reading response copies)", () => {
+        it("reads a copy for matched URLs while the caller still gets the original response", async () => {
             const outer = jsonResponse({code: 0, value: 1});
             const original = stubFetch(async () => outer);
             const read = vi.fn();
@@ -735,7 +735,7 @@ describe("智能体工具调用显示细节", () => {
             expect(window.fetch).toBe(original);
         });
 
-        it("不命中的地址既不复制也不读", async () => {
+        it("neither copies nor reads unmatched URLs", async () => {
             stubFetch(async () => jsonResponse({code: 0}));
             const read = vi.fn();
             const stop = createResponseTap(() => false, read);
@@ -746,7 +746,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("string / URL / Request 三种入参都能取出地址", async () => {
+        it("extracts the URL from string / URL / Request inputs", async () => {
             stubFetch(async () => jsonResponse({code: 0}));
             const read = vi.fn();
             const stop = createResponseTap((url) => url.endsWith("/t"), read);
@@ -758,7 +758,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("请求失败时调用方照旧收到同一个错误，读副本这一路静默放弃", async () => {
+        it("the caller still gets the same error on a failed request while the copy path gives up silently", async () => {
             const boom = new Error("boom");
             stubFetch(async () => {
                 throw boom;
@@ -772,7 +772,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("读副本抛错不影响调用方", async () => {
+        it("a throwing copy reader does not affect the caller", async () => {
             const outer = jsonResponse({code: 0});
             stubFetch(async () => outer);
             const stop = createResponseTap(() => true, () => {
@@ -785,7 +785,7 @@ describe("智能体工具调用显示细节", () => {
             stop();
         });
 
-        it("撤销时只还原自己装上的那个 fetch，不覆盖期间别人换掉的实现", async () => {
+        it("undo restores only the fetch it installed and does not overwrite one replaced meanwhile", async () => {
             stubFetch(async () => jsonResponse({code: 0}));
             const stop = createResponseTap(() => false, () => undefined);
             const other = vi.fn(async () => jsonResponse({code: 1}));
@@ -796,7 +796,7 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("createAnnotator（写进思考卡片）", () => {
+    describe("createAnnotator (writing into thinking cards)", () => {
         const cardHtml = (id: string, lines: string[][], done = false): string =>
             `<div class="agent-chat__msg--thinking${done ? " agent-chat__msg--thinking-done" : ""}"
                 data-message-id="${id}">
@@ -832,12 +832,12 @@ describe("智能体工具调用显示细节", () => {
 
         const step = (names: string[], calls: Array<ToolCallData | undefined>): IndexedStep => ({names, calls});
 
-        it("在胶囊后面插一个摘要节点，胶囊自身的文本一个字符都不改", async () => {
+        it("inserts a summary node after the chip without changing a single character of the chip's own text", async () => {
             // 宿主的运行态完全按胶囊的 textContent === 工具名匹配，改了它「运行中」动画就没了
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive();
             const annotator = createAnnotator({
-                stepsOf: () => [step(["search"], [{name: "search", arguments: {query: "思源"}}])],
+                stepsOf: () => [step(["search"], [{name: "search", arguments: {query: "SiYuan"}}])],
                 live,
                 labels: LABELS,
             });
@@ -847,13 +847,13 @@ describe("智能体工具调用显示细节", () => {
             expect(chip.textContent).toBe("search");
             const detail = chip.nextElementSibling as HTMLElement;
             expect(detail.classList.contains("ss-agent-tool-detail")).toBe(true);
-            expect(detail.textContent).toBe("思源");
-            expect(chip.getAttribute("title")).toContain("search 思源");
+            expect(detail.textContent).toBe("SiYuan");
+            expect(chip.getAttribute("title")).toContain("search SiYuan");
             expect(detail.getAttribute("title")).toBe(chip.getAttribute("title"));
             annotator.destroy();
         });
 
-        it("重复对账是幂等的：同一个节点不重建、文本不重写", async () => {
+        it("repeated reconciliation is idempotent: no node rebuild and no text rewrite", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive();
             const steps = [step(["search"], [{name: "search", arguments: {query: "q"}}])];
@@ -884,7 +884,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("数据对不上时清掉摘要与 title、不留残影；整份数据读不到时反而保持原样", async () => {
+        it("clears the summary and title when data disagrees, leaving no residue, yet keeps everything as-is when the whole dataset is unavailable", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive();
             let steps: IndexedStep[] | undefined = [step(["search"], [{name: "search", arguments: {query: "q"}}])];
@@ -916,7 +916,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("实时渲染把同名的多次调用并成一个胶囊时，把它们合到那个胶囊上", async () => {
+        it("merges same-name calls onto the single chip the live render collapses them into", async () => {
             document.body.innerHTML = cardHtml("c1", [["block"]]);
             const {live} = fakeLive();
             const stepOne = step(["block", "block"], [
@@ -931,7 +931,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("存档里已有条目时优先用存档，实时流只在这张卡片还没写回时顶上", async () => {
+        it("prefers the archive when it holds the entry, with the live stream only covering a card not yet written back", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive({
                 c1: [step(["search"], [{name: "search", arguments: {query: "from-live"}}])],
@@ -948,7 +948,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("存档里还没有这个条目时退回实时流", async () => {
+        it("falls back to the live stream while the archive lacks the entry", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive({
                 c1: [step(["search"], [{name: "search", arguments: {query: "from-live"}}])],
@@ -960,7 +960,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("读不到数据的卡片保持原样（连 title 都不加）", async () => {
+        it("leaves cards with unreadable data untouched, not even adding a title", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"], ["block"]]);
             const {live} = fakeLive();
             const annotator = createAnnotator({stepsOf: () => undefined, live, labels: LABELS});
@@ -971,7 +971,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("一行里名字对不上存档时整行都不显示（宁可空着，也不显示错位的参数）", async () => {
+        it("hides the whole line when a name disagrees with the archive (better empty than mismatched arguments)", async () => {
             // 一条工具行要按名字逐个对上这一步的调用；只要有一个名字对不上，整行就跳过。
             // 部分匹配会把后面的参数挂到错的胶囊上，显示错的参数比不显示更糟
             document.body.innerHTML = cardHtml("c1", [["search", "ghost"]]);
@@ -991,7 +991,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("实时渲染把一步拆成多行时按顺序续上，不会从头重复认领", async () => {
+        it("continues in order when the live render splits a step across lines, without claiming from the start again", async () => {
             document.body.innerHTML = cardHtml("c1", [["search", "block"], ["block"]]);
             const {live} = fakeLive();
             const annotator = createAnnotator({
@@ -1009,7 +1009,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("只把最后一张未完成的卡片绑给实时流", async () => {
+        it("binds only the last unfinished card to the live stream", async () => {
             document.body.innerHTML = cardHtml("done", [["search"]], true) +
                 cardHtml("streaming", [["block"]]);
             const {live, bound} = fakeLive();
@@ -1020,7 +1020,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("卡片全部结束时不绑定任何卡片", async () => {
+        it("binds no card when every card has finished", async () => {
             document.body.innerHTML = cardHtml("done", [["search"]], true);
             const {live, bound} = fakeLive();
             const annotator = createAnnotator({stepsOf: () => undefined, live, labels: LABELS});
@@ -1030,7 +1030,7 @@ describe("智能体工具调用显示细节", () => {
             annotator.destroy();
         });
 
-        it("destroy 清掉全部摘要与 title，并停止观察", async () => {
+        it("destroy clears every summary and title and stops observing", async () => {
             document.body.innerHTML = cardHtml("c1", [["search"]]);
             const {live} = fakeLive();
             const annotator = createAnnotator({
@@ -1054,7 +1054,7 @@ describe("智能体工具调用显示细节", () => {
         });
     });
 
-    describe("mountAgentToolCallDetail（装配）", () => {
+    describe("mountAgentToolCallDetail (wiring)", () => {
         const cardHtml = (id: string, names: string[]): string =>
             `<div class="agent-chat__msg--thinking" data-message-id="${id}">
                 <div class="agent-chat__thinking-body">
@@ -1065,7 +1065,7 @@ describe("智能体工具调用显示细节", () => {
                 </div>
             </div>`;
 
-        it("注入把工具行排成两列网格的 CSS", () => {
+        it("injects CSS that lays tool lines out as a two-column grid", () => {
             const harness = mountFeature(definition);
 
             expect(harness.records.styles).toHaveLength(1);
@@ -1082,14 +1082,14 @@ describe("智能体工具调用显示细节", () => {
             expect(harness.styleElement()).toBeNull();
         });
 
-        it("会话存档回来后把摘要补到已渲染的卡片上", async () => {
+        it("fills summaries into already rendered cards once the session archive arrives", async () => {
             // 桩必须先装：tap 只包住装上那一刻的 window.fetch（见 tap.ts）
             stubFetch(async () =>
                 jsonResponse({
                     code: 0,
                     data: {
                         entries: [
-                            {type: "assistant", toolCalls: [{id: "c1", name: "search", arguments: {query: "思源"}}]},
+                            {type: "assistant", toolCalls: [{id: "c1", name: "search", arguments: {query: "SiYuan"}}]},
                             {type: "thinking", id: "m1", steps: [{toolNames: ["search"], toolCallIDs: ["c1"]}]},
                         ],
                     },
@@ -1102,16 +1102,16 @@ describe("智能体工具调用显示细节", () => {
             await settle();
 
             const detail = document.querySelector(".ss-agent-tool-detail");
-            expect(detail?.textContent).toBe("思源");
+            expect(detail?.textContent).toBe("SiYuan");
             harness.dispose();
         });
 
-        it("实时流先给出参数，不必等这一轮写回存档", async () => {
+        it("the live stream supplies arguments without waiting for the round to be archived", async () => {
             // 同上：桩先装，mount 时才会把它包进观察层
             stubFetch(async () =>
                 sseResponse([
                     sseEvent("thinking", {n: 1}),
-                    sseEvent("tool_call", {callID: "c1", name: "search", arguments: {query: "实时"}}),
+                    sseEvent("tool_call", {callID: "c1", name: "search", arguments: {query: "live"}}),
                 ])
             );
             const harness = mountFeature(definition);
@@ -1120,11 +1120,11 @@ describe("智能体工具调用显示细节", () => {
             await window.fetch(CHAT_URL);
             await settle();
 
-            expect(document.querySelector(".ss-agent-tool-detail")?.textContent).toBe("实时");
+            expect(document.querySelector(".ss-agent-tool-detail")?.textContent).toBe("live");
             harness.dispose();
         });
 
-        it("卸载后两路观察都放开、DOM 里不留摘要", async () => {
+        it("releases both observers on unmount and leaves no summaries in the DOM", async () => {
             const original = stubFetch(async () => jsonResponse({code: 0}));
             const harness = mountFeature(definition);
             document.body.insertAdjacentHTML("beforeend", cardHtml("m1", ["search"]));
@@ -1137,7 +1137,7 @@ describe("智能体工具调用显示细节", () => {
             expect(document.querySelector(".agent-chat__thinking-tool")?.hasAttribute("title")).toBe(false);
         });
 
-        it("声明：默认关闭、分类为 ai、只有一个开关", () => {
+        it("declaration: default off, ai category, a single switch", () => {
             expect(definition.id).toBe("agent-tool-call-detail");
             expect(definition.category).toBe("ai");
             expect(definition.enabled).toBe(true);

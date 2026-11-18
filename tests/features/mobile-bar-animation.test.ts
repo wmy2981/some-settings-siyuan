@@ -31,7 +31,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的文字。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("移动端栏体动画优化", () => {
+describe("mobile bar transition tuning", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = (config?: Record<string, unknown>) => {
@@ -44,7 +44,7 @@ describe("移动端栏体动画优化", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：只在移动端交出，时长默认 200ms（0～600）、缓动默认 emphasized", () => {
+    it("declaration: mobile only, with a 200ms default duration (0-600) and emphasized easing", () => {
         expect(definition.category).toBe("appearance");
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled", "duration", "easing"]);
@@ -60,7 +60,7 @@ describe("移动端栏体动画优化", () => {
         expect(definition.settings[2]).toMatchObject({kind: "select", key: "easing", default: "emphasized"});
     });
 
-    it("默认配置：三块栏体共用一条 200ms emphasized 过渡", () => {
+    it("default config: all three bars share one 200ms emphasized transition", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain("#mobileTopBar,");
@@ -74,7 +74,7 @@ describe("移动端栏体动画优化", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("dock 栏把连续不透明度折成两档，且折档整块包在 @supports 里", () => {
+    it("the dock bar folds continuous opacity into two steps, wrapped entirely in @supports", () => {
         const css = rulesOf(mount().css());
         const [plain, supported] = css.split("@supports (opacity: clamp(0, 1, 1))");
 
@@ -92,7 +92,7 @@ describe("移动端栏体动画优化", () => {
         expect(supported).toContain("var(--mobile-bar-opacity, 1)");
     });
 
-    it("时长按配置取值：0 与上限 600 原样可用，越界钳住，非数字回落 200", () => {
+    it("the duration follows the config: 0 and the 600 maximum work as-is, out-of-range values are clamped and non-numbers fall back to 200", () => {
         expect(mount({duration: 0}).css()).toContain("transform 0ms");
         expect(mount({duration: 600}).css()).toContain("transform 600ms");
         expect(mount({duration: -100}).css()).toContain("transform 0ms");
@@ -105,7 +105,7 @@ describe("移动端栏体动画优化", () => {
         expect(mount({duration: 200.5}).css()).toContain("transform 200.5ms");
     });
 
-    it("缓动按白名单映射，未知值回落 emphasized", () => {
+    it("easing maps through a whitelist, and unknown values fall back to emphasized", () => {
         expect(mount({easing: "linear"}).css()).toContain("transform 200ms linear");
         expect(mount({easing: "standard"}).css()).toContain(`transform 200ms ${STANDARD}`);
         expect(mount({easing: "emphasized"}).css()).toContain(`transform 200ms ${EMPHASIZED}`);
@@ -114,7 +114,7 @@ describe("移动端栏体动画优化", () => {
         });
     });
 
-    it("配置变更重新注入同一张样式表，不堆叠第二张", () => {
+    it("a config change re-injects the same stylesheet without stacking a second one", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -130,7 +130,7 @@ describe("移动端栏体动画优化", () => {
         expect(css).not.toContain("transform 200ms");
     });
 
-    it("mount 即应用一次，并把后续变更挂到 onConfigChange 上", () => {
+    it("mount applies once and subscribes later changes through onConfigChange", () => {
         const styles: string[] = [];
         const listeners: (() => void)[] = [];
         const host = {
@@ -149,7 +149,7 @@ describe("移动端栏体动画优化", () => {
         expect(listeners).toHaveLength(1);
     });
 
-    it("dispose 之后 <head> 里的 <style> 与配置订阅一起收干净", () => {
+    it("dispose cleans the <style> out of <head> together with the config subscription", () => {
         const harness = mount();
         const injected = harness.records.styles.length;
 

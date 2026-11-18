@@ -23,8 +23,8 @@ import {mountFeature} from "../helpers/feature-host";
 import type {HostHarness} from "../helpers/feature-host";
 import {mockState} from "../mocks/siyuan";
 
-const RECORDING = "正在录音…";
-const STOP_LABEL = "结束录音";
+const RECORDING = "Recording…";
+const STOP_LABEL = "Stop recording";
 
 const mounted: HostHarness[] = [];
 
@@ -109,8 +109,8 @@ afterEach(() => {
     vi.useRealTimers();
 });
 
-describe("用悬浮窗口取代录音提示", () => {
-    it("声明里归在「正文编辑」、默认关闭", () => {
+describe("replacing the recording toast with a floating window", () => {
+    it("the declaration sits under editor and is off by default", () => {
         expect(definition.id).toBe("recording-window");
         expect(definition.category).toBe("editor");
         expect(definition.enabled).toBe(true);
@@ -120,7 +120,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(definition.mount).toBe(mountRecordingWindow);
     });
 
-    it("没有录音提示时不建窗，也不碰已有 DOM", () => {
+    it("without a recording toast no window is created and the existing DOM is untouched", () => {
         const harness = mount();
         expect(floating()).toBeNull();
         // 只注入了一段样式，其余什么都不该发生
@@ -128,10 +128,10 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(harness.css()).toContain(".ss-recording-window__time");
     });
 
-    it("普通提示、以及文案读不到时都不会被当成录音", async () => {
+    it("an ordinary toast, or one whose text cannot be read, is never taken for a recording", async () => {
         const frames = stubFrames();
         mount();
-        addToast("同步完成");
+        addToast("Sync finished");
         await frames.flush();
         expect(floating()).toBeNull();
 
@@ -142,7 +142,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(floating()).toBeNull();
     });
 
-    it("认出录音提示后把它藏起来（仍留在 DOM 里），换成自己的浮窗", async () => {
+    it("a recognised recording toast is hidden (still in the DOM) and replaced by the floating window", async () => {
         const frames = stubFrames();
         const harness = mount();
         const {toast, stop} = addToast();
@@ -166,7 +166,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(windowElement?.style.zIndex).toBe("8");
     });
 
-    it("时长每秒刷新，跨分钟与跨小时都能正确补位", async () => {
+    it("the duration refreshes every second and pads correctly across minutes and hours", async () => {
         vi.useFakeTimers();
         const frames = stubFrames();
         mount();
@@ -182,7 +182,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(timeText()).toBe("1:01:40");
     });
 
-    it("点浮窗上的「结束录音」只是转手去点内核那个按钮，并把自己置灰", async () => {
+    it("clicking the stop button on the window only forwards the click to the kernel button and greys itself out", async () => {
         const frames = stubFrames();
         mount();
         const {stop} = addToast();
@@ -201,7 +201,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(floating()).not.toBeNull();
     });
 
-    it("原生提示被收掉或开始淡出时跟着收窗，并停掉计时器", async () => {
+    it("the window closes and the timer stops when the native toast is removed or starts fading", async () => {
         vi.useFakeTimers();
         const clearIntervalSpy = vi.spyOn(window, "clearInterval");
         const frames = stubFrames();
@@ -217,7 +217,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(clearIntervalSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("同一段录音里反复同步也只建一个窗", async () => {
+    it("repeated syncs within one recording still build a single window", async () => {
         const frames = stubFrames();
         mount();
         addToast();
@@ -232,7 +232,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(floating()).toBe(first);
     });
 
-    it("移动端换成居中类，底沿按底部操作条的顶沿抬起", async () => {
+    it("mobile switches to the centred class and the bottom edge rises above the bottom bar top edge", async () => {
         vi.useFakeTimers();
         mockState.frontend = "mobile";
         const frames = stubFrames();
@@ -259,7 +259,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(floating()?.style.bottom).toBe("8px");
     });
 
-    it("键盘工具栏出现/收起时立刻重排并重新抢回层级", async () => {
+    it("the window reflows at once and reclaims its z-index when the keyboard toolbar appears or hides", async () => {
         vi.useFakeTimers();
         mockState.frontend = "mobile";
         const frames = stubFrames();
@@ -282,7 +282,7 @@ describe("用悬浮窗口取代录音提示", () => {
         expect(floating()?.style.bottom).toBe("8px");
     });
 
-    it("destroy 收窗、还原原生提示、断开 observer，且可以重复调用", async () => {
+    it("destroy closes the window, restores the native toast, disconnects the observer and can be called repeatedly", async () => {
         vi.useFakeTimers();
         const clearIntervalSpy = vi.spyOn(window, "clearInterval");
         const frames = stubFrames();

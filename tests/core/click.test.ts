@@ -37,7 +37,7 @@ const click = (button: HTMLButtonElement): void => {
 };
 
 describe("bindPendingClick", () => {
-    it("同步执行完立刻恢复按钮", () => {
+    it("restores the button right after a synchronous run", () => {
         const button = makeButton();
         const run = vi.fn(() => undefined);
         bindPendingClick(button, "scope", run);
@@ -46,7 +46,7 @@ describe("bindPendingClick", () => {
         expect(button.disabled).toBe(false);
     });
 
-    it("异步执行期间按钮保持禁用，落定后恢复", async () => {
+    it("keeps the button disabled during an async run and restores it once settled", async () => {
         const button = makeButton();
         let resolve: () => void = () => undefined;
         const run = vi.fn(() =>
@@ -64,7 +64,7 @@ describe("bindPendingClick", () => {
         expect(button.disabled).toBe(false);
     });
 
-    it("执行期间重复点击既不再派发也不再执行", async () => {
+    it("repeated clicks during a run neither dispatch nor execute again", async () => {
         const button = makeButton();
         let resolve: () => void = () => undefined;
         const run = vi.fn(() =>
@@ -86,7 +86,7 @@ describe("bindPendingClick", () => {
         expect(run).toHaveBeenCalledTimes(2);
     });
 
-    it("同步抛错时恢复按钮并上报", () => {
+    it("restores the button and reports when a synchronous error is thrown", () => {
         const button = makeButton();
         const error = new Error("bad");
         bindPendingClick(button, "scope", () => {
@@ -100,7 +100,7 @@ describe("bindPendingClick", () => {
         expect(mockState.messages).toHaveLength(1);
     });
 
-    it("异步失败时恢复按钮并上报", async () => {
+    it("restores the button and reports when an async run fails", async () => {
         const button = makeButton();
         const error = new Error("rejected");
         bindPendingClick(button, "scope", () => Promise.reject(error));
@@ -114,7 +114,7 @@ describe("bindPendingClick", () => {
         );
     });
 
-    it("按钮一开始就是 disabled 时不执行", () => {
+    it("does not run when the button starts out disabled", () => {
         const button = makeButton();
         button.disabled = true;
         const run = vi.fn(() => undefined);
@@ -123,7 +123,7 @@ describe("bindPendingClick", () => {
         expect(run).not.toHaveBeenCalled();
     });
 
-    it("返回非 Promise 的 thenable 也按异步处理", async () => {
+    it("a non-Promise thenable counts as asynchronous too", async () => {
         const button = makeButton();
         let released = false;
         bindPendingClick(button, "scope", () => ({

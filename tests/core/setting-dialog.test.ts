@@ -22,6 +22,10 @@ import {
     activeFeatures,
     FEATURES,
 } from "../../src/core/registry";
+import {
+    SEARCH_FEATURE_ID,
+    setSearchEnabled,
+} from "../../src/core/search";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import type {
     FeatureDefinition,
@@ -39,50 +43,50 @@ class FakeHost {
     readonly files = new Map<string, unknown>();
     rejectWrites = false;
     i18n: Record<string, string> = {
-        "alpha.name": "甲功能",
-        "alpha.desc": "甲的说明",
-        "alpha.enabled": "启用甲",
-        "alpha.enabled.desc": "开关说明",
-        "alpha.size": "尺寸",
-        "alpha.label": "标签",
-        "alpha.label.ph": "请输入标签",
-        "alpha.mode": "方式",
-        "alpha.auto": "自动",
-        "alpha.manual": "手动",
-        "alpha.about": "版本 {version}\n仓库 {repo}",
-        "alpha.repo": "项目仓库",
-        "alpha.run": "执行",
-        "alpha.runLabel": "点我执行",
-        "area.name": "丁功能",
-        "area.authors": "作者名单",
-        "area.authors.desc": "一行一个作者",
-        "area.authors.ph": "作者占位",
-        "beta.name": "不可用功能",
-        "beta.desc": "不可用功能的说明",
-        "toggle.name": "显示不可用的设置",
-        "secondary.name": "乙功能",
-        "switch-mode.name": "丙功能",
-        "switch-mode.scope": "适用端",
-        "switch-mode.off": "禁用",
-        "switch-mode.on": "启用",
-        "category.editor": "编辑",
-        "category.appearance": "外观",
-        "category.settings": "设置",
+        "alpha.name": "Alpha feature",
+        "alpha.desc": "Alpha description",
+        "alpha.enabled": "Turn on this feature",
+        "alpha.enabled.desc": "Switch description",
+        "alpha.size": "Size",
+        "alpha.label": "Label",
+        "alpha.label.ph": "Enter a label",
+        "alpha.mode": "Mode",
+        "alpha.auto": "Automatic",
+        "alpha.manual": "Manual",
+        "alpha.about": "Version {version}\nRepo {repo}",
+        "alpha.repo": "Project repository",
+        "alpha.run": "Run",
+        "alpha.runLabel": "Run now",
+        "area.name": "Area feature",
+        "area.authors": "Author list",
+        "area.authors.desc": "One author per line",
+        "area.authors.ph": "Authors placeholder",
+        "beta.name": "Unavailable feature",
+        "beta.desc": "Description of an unavailable feature",
+        "toggle.name": "Show unavailable settings",
+        "secondary.name": "Secondary feature",
+        "switch-mode.name": "Switch-mode feature",
+        "switch-mode.scope": "Platform scope",
+        "switch-mode.off": "Off",
+        "switch-mode.on": "On",
+        "category.editor": "Editor",
+        "category.appearance": "Appearance",
+        "category.settings": "Settings",
         "common.enabled": "启用",
-        "common.scope.desktop": "桌面端",
-        "common.scope.mobile": "移动端",
-        "panel.empty": "本宿主没有可用的设置项",
-        "panel.categoryEmpty": "当前分类下没有可用的功能。",
-        "panel.unavailable.group": "不可用",
-        "panel.unavailable.disabled": "已被开发者禁用",
-        "panel.unavailable.frontend": "仅适用于{platform}",
-        "panel.unavailable.minVersion": "需要思源 {version} 或更高版本",
-        "panel.unavailable.maxVersion": "仅支持思源 {version} 及更低版本",
-        "panel.search.placeholder": "搜索...",
-        "panel.search.clear": "清空搜索",
-        "panel.search.empty": "无结果",
-        "panel.readonlyTip": "只读工作空间",
-        "action.done": "动作已执行",
+        "common.scope.desktop": "Desktop",
+        "common.scope.mobile": "Mobile",
+        "panel.empty": "No available settings on this host",
+        "panel.categoryEmpty": "No available feature in this category.",
+        "panel.unavailable.group": "Unavailable",
+        "panel.unavailable.disabled": "Disabled by the developer",
+        "panel.unavailable.frontend": "Only available on {platform}",
+        "panel.unavailable.minVersion": "Requires SiYuan {version} or later",
+        "panel.unavailable.maxVersion": "Only supported up to SiYuan {version}",
+        "panel.search.placeholder": "Search...",
+        "panel.search.clear": "Clear search",
+        "panel.search.empty": "No results",
+        "panel.readonlyTip": "Read-only workspace",
+        "action.done": "Action done",
     };
 
     loadData = vi.fn(async (name: string): Promise<unknown> => this.files.get(name) ?? "");
@@ -258,29 +262,32 @@ beforeEach(() => {
     window.siyuan.config.system.kernelVersion = "3.8.7";
     // 「显示不可用的设置」是模块级的标记（由那个功能挂载 / 卸载翻转）：测试之间必须复位。
     setShowUnavailable(false);
+    // 「设置面板搜索」同样由功能挂载翻转；真实插件里它默认开启，测试按同一状态起步。
+    setSearchEnabled(true);
     setDetailedLogging(true);
 });
 
 afterEach(() => {
+    setSearchEnabled(false);
     setDetailedLogging(false);
 });
 
-describe("show：渲染", () => {
-    it("用宿主的 Setting 打开对话框，标题取插件显示名", async () => {
+describe("show: render", () => {
+    it("opens the dialog through the host Setting, titled with the plugin display name", async () => {
         const {panel, root} = await open();
         expect(panel.isOpen).toBe(true);
         expect(mockState.settings).toHaveLength(1);
         expect(root.querySelector(".b3-dialog__container")).not.toBeNull();
     });
 
-    it("重复 show 不会开出第二个对话框", async () => {
+    it("repeated show does not open a second dialog", async () => {
         const {panel} = await open();
         panel.show();
         expect(mockState.settings).toHaveLength(1);
         expect(document.querySelectorAll(".b3-dialog")).toHaveLength(1);
     });
 
-    it("每个有内容的分类一个页签，默认停在第一个", async () => {
+    it("one tab per non-empty category, the first one selected by default", async () => {
         const {qa, q} = await open([
             featureOf("alpha", {category: "editor"}),
             featureOf("secondary", {category: "appearance"}),
@@ -295,19 +302,19 @@ describe("show：渲染", () => {
         expect(panes.map((pane) => pane.dataset.ssTabPanel)).toEqual(["editor", "appearance"]);
         expect(panes[1].classList.contains("fn__none")).toBe(true);
         // 页签文案走 i18n
-        expect(q('[data-ss-tab="editor"] .b3-list-item__text')?.textContent).toBe("编辑");
+        expect(q('[data-ss-tab="editor"] .b3-list-item__text')?.textContent).toBe("Editor");
         // 页签按 FEATURE_CATEGORIES 的顺序排列，缺内容的分类不出现
         expect(qa("[data-ss-tab]")).toHaveLength(2);
     });
 
-    it("桌面端是左侧页签列表，不是移动端页签栏", async () => {
+    it("desktop uses the left tab list, not the mobile tab bar", async () => {
         const {panelElement, q} = await open();
         expect(panelElement.classList.contains(`${PANEL_CLASS}--mobile`)).toBe(false);
         expect(q(`.${PANEL_CLASS}__side`)).not.toBeNull();
         expect(q(".layout-tab-bar")).toBeNull();
     });
 
-    it("移动端换成顶部页签栏", async () => {
+    it("mobile uses the top tab bar instead", async () => {
         mockState.frontend = "mobile";
         const {panelElement, q} = await open();
         expect(panelElement.classList.contains(`${PANEL_CLASS}--mobile`)).toBe(true);
@@ -315,17 +322,17 @@ describe("show：渲染", () => {
         expect(q(`.${PANEL_CLASS}__side`)).toBeNull();
     });
 
-    it("功能行上带功能名、说明与开关，开关不再单独占一行", async () => {
+    it("the feature row carries the name, description and switch, and the switch gets no row of its own", async () => {
         const {q, qa} = await open();
         const row = q('[data-ss-row="alpha::enabled"]');
         expect(row?.tagName).toBe("LABEL");
-        expect(row?.textContent).toContain("甲功能");
-        expect(row?.textContent).toContain("甲的说明");
+        expect(row?.textContent).toContain("Alpha feature");
+        expect(row?.textContent).toContain("Alpha description");
         // 整页里只有一处 enabled 开关
         expect(qa('[data-ss-switch="alpha::enabled"]')).toHaveLength(1);
     });
 
-    it("拿 selector 当开关的功能，把那个下拉提到功能行上", async () => {
+    it("a feature switched by a selector promotes that select to the feature row", async () => {
         const {q} = await open([featureOf("switch-mode", {
             category: "settings",
             settings: [{
@@ -344,19 +351,19 @@ describe("show：渲染", () => {
         expect(select?.value).toBe("off");
     });
 
-    it("每种字段都渲染成对应的控件", async () => {
+    it("every field kind renders as its matching control", async () => {
         const {q} = await open();
         expect(q('[data-ss-number="alpha::size"]')?.getAttribute("value")).toBe("12");
         expect(q('[data-ss-number="alpha::size"]')?.closest(".config-item__number")?.textContent).toContain("px");
         const text = q<HTMLInputElement>('[data-ss-text="alpha::label"]');
         expect(text?.value).toBe("hi");
-        expect(text?.getAttribute("placeholder")).toBe("请输入标签");
+        expect(text?.getAttribute("placeholder")).toBe("Enter a label");
         const select = q<HTMLSelectElement>('[data-ss-select="alpha::mode"]');
-        expect([...(select?.options ?? [])].map((option) => option.textContent)).toEqual(["自动", "手动"]);
-        expect(q('[data-ss-button="alpha::run"]')?.textContent).toBe("点我执行");
+        expect([...(select?.options ?? [])].map((option) => option.textContent)).toEqual(["Automatic", "Manual"]);
+        expect(q('[data-ss-button="alpha::run"]')?.textContent).toBe("Run now");
     });
 
-    it("多行文本渲染成整行的 textarea：行数、占位文案与说明都在", async () => {
+    it("a textarea renders full width with rows, placeholder and description", async () => {
         const {q} = await open([featureOf("area", {
             settings: [
                 {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
@@ -374,13 +381,13 @@ describe("show：渲染", () => {
         const area = q<HTMLTextAreaElement>('[data-ss-textarea="area::authors"]');
         expect(area?.value).toBe("acme\nfoo");
         expect(area?.getAttribute("rows")).toBe("4");
-        expect(area?.getAttribute("placeholder")).toBe("作者占位");
+        expect(area?.getAttribute("placeholder")).toBe("Authors placeholder");
         const row = area?.closest(".config-item");
         expect(row?.classList.contains(`${PANEL_CLASS}__textarea-row`)).toBe(true);
-        expect(row?.textContent).toContain("一行一个作者");
+        expect(row?.textContent).toContain("One author per line");
     });
 
-    it("每个功能的最后一个子行带上收尾标记，层级引导线在那里画成折角", async () => {
+    it("the last child row of each feature is marked so the guide line ends in a corner", async () => {
         const {qa} = await open([
             featureOf("alpha", {category: "editor"}),
             featureOf("secondary", {category: "editor"}),
@@ -391,26 +398,26 @@ describe("show：渲染", () => {
         expect(marked.map((row) => row.dataset.ssRow)).toEqual(["alpha::run", "secondary::run"]);
     });
 
-    it("说明块把占位符换成值，链接用短写显示", async () => {
+    it("the note block fills placeholders with values and shows links in short form", async () => {
         const {q} = await open();
         const note = q('[data-ss-row="alpha::about"]');
-        expect(note?.textContent).toContain("版本 1.0.1");
+        expect(note?.textContent).toContain("Version 1.0.1");
         const anchor = note?.querySelector("a");
         expect(anchor?.textContent).toBe("owner/repo");
         expect(anchor?.getAttribute("href")).toBe("https://github.com/wmy2981/some-settings-siyuan");
     });
 
-    it("没有任何功能时给出空状态", async () => {
+    it("shows an empty state when there is no feature", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         const panel = new SettingsPanel({plugin: host.asPlugin(), store, features: []});
         panel.show();
         const root = mockState.settings[0].dialog!.element;
-        expect(root.querySelector(`.${PANEL_CLASS}__empty`)?.textContent).toBe("本宿主没有可用的设置项");
+        expect(root.querySelector(`.${PANEL_CLASS}__empty`)?.textContent).toBe("No available settings on this host");
     });
 
-    it("函数型按钮文案每次打开面板时求值", async () => {
-        const label = vi.fn((context: FeatureActionContext) => `${context.i18n("alpha.run")}（运行期）`);
+    it("a function button label is evaluated each time the panel opens", async () => {
+        const label = vi.fn((context: FeatureActionContext) => `${context.i18n("alpha.run")} (at runtime)`);
         const {q} = await open([featureOf("alpha", {
             settings: [{
                 kind: "button",
@@ -421,10 +428,10 @@ describe("show：渲染", () => {
             }],
         })]);
         expect(label).toHaveBeenCalledTimes(1);
-        expect(q('[data-ss-button="alpha::run"]')?.textContent).toBe("执行（运行期）");
+        expect(q('[data-ss-button="alpha::run"]')?.textContent).toBe("Run (at runtime)");
     });
 
-    it("动作行的现成 SVG 图标（iconSvg）也能透传", async () => {
+    it("an inline SVG icon (iconSvg) is passed through on an action row", async () => {
         const iconSvg = '<svg viewBox="0 0 32 32"><path fill="#01beff" d="M0 0h1v1H0z"/></svg>';
         const {q} = await open([featureOf("alpha", {
             settings: [{
@@ -441,14 +448,14 @@ describe("show：渲染", () => {
         expect(button.querySelector("svg path")?.getAttribute("fill")).toBe("#01beff");
     });
 
-    it("功能没写说明时功能行只有标题", async () => {
+    it("the feature row shows only the title when no description is declared", async () => {
         const {q} = await open([featureOf("alpha", {description: undefined})]);
         const row = q('[data-ss-row="alpha::enabled"]');
-        expect(row?.textContent).toContain("甲功能");
+        expect(row?.textContent).toContain("Alpha feature");
         expect(row?.querySelector(".b3-label__text")).toBeNull();
     });
 
-    it("下拉既没有静态选项也没有动态来源时渲染成空下拉", async () => {
+    it("a select with neither static options nor a provider renders empty", async () => {
         const {q} = await open([featureOf("alpha", {
             settings: [{kind: "select", key: "mode", title: "alpha.mode", default: "a"}],
         })]);
@@ -456,7 +463,7 @@ describe("show：渲染", () => {
         expect(select?.options).toHaveLength(0);
     });
 
-    it("动态下拉的候选集每次打开面板时重新求值", async () => {
+    it("a dynamic select provider is re-evaluated each time the panel opens", async () => {
         let options = [{value: "a", label: "alpha.auto"}];
         const definitions = [featureOf("alpha", {
             settings: [{
@@ -478,8 +485,8 @@ describe("show：渲染", () => {
     });
 });
 
-describe("show：宿主结构差异", () => {
-    it("正文区里缺 content 时自己补上，动作区则不需要", async () => {
+describe("show: host structure differences", () => {
+    it("adds the content region when the host omits it and leaves the action region alone", async () => {
         mockState.settingRegionsMissing = true;
         const {root} = await open();
         expect(root.querySelector(".b3-dialog__body > .b3-dialog__content")).not.toBeNull();
@@ -488,7 +495,7 @@ describe("show：宿主结构差异", () => {
         expect(root.querySelector("[data-ss-cancel]")).toBeNull();
     });
 
-    it("标题优先用插件显示名，没有时退回包名", async () => {
+    it("the title prefers the plugin display name and falls back to the package name", async () => {
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
         await store.register(featureOf("alpha"));
@@ -504,8 +511,8 @@ describe("show：宿主结构差异", () => {
     });
 });
 
-describe("show：宿主异常", () => {
-    it("Setting.open() 抛错时收干净状态并上报", async () => {
+describe("show: host failures", () => {
+    it("a throwing Setting.open() leaves clean state and is reported", async () => {
         mockState.settingOpenError = new Error("host refused");
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
@@ -518,7 +525,7 @@ describe("show：宿主异常", () => {
         expect(mockState.messages[0].text).toContain("host refused");
     });
 
-    it("宿主没建出对话框时同样不留半成品", async () => {
+    it("leaves nothing behind when the host creates no dialog", async () => {
         mockState.settingDialogMissing = true;
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
@@ -530,7 +537,7 @@ describe("show：宿主异常", () => {
         expect(mockState.messages[0].text).toContain("the host did not create a settings dialog");
     });
 
-    it("对话框没有正文区时关掉它并上报", async () => {
+    it("closes the dialog and reports when it has no body region", async () => {
         mockState.settingBodyMissing = true;
         const host = new FakeHost();
         const store = new ConfigStore(host.asPlugin());
@@ -543,11 +550,11 @@ describe("show：宿主异常", () => {
     });
 });
 
-describe("只读模式", () => {
-    it("控件全部禁用，并提示只读", async () => {
+describe("read-only mode", () => {
+    it("every control is disabled and a read-only notice is shown", async () => {
         window.siyuan.config.readonly = true;
         const {q, qa} = await open();
-        expect(mockState.messages[0].text).toBe("只读工作空间");
+        expect(mockState.messages[0].text).toBe("Read-only workspace");
         expect(q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')?.disabled).toBe(true);
         expect(q<HTMLSelectElement>('[data-ss-select="alpha::mode"]')?.disabled).toBe(true);
         expect(q<HTMLInputElement>('[data-ss-number="alpha::size"]')?.disabled).toBe(true);
@@ -559,20 +566,20 @@ describe("只读模式", () => {
         expect(q(".b3-dialog__action")?.classList.contains("fn__none")).toBe(true);
     });
 
-    it("发布模式下同样按只读处理", async () => {
+    it("publish mode is treated as read-only too", async () => {
         window.siyuan.isPublish = true;
         const {q} = await open();
         expect(q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')?.disabled).toBe(true);
     });
 });
 
-describe("页签交互", () => {
+describe("tab interaction", () => {
     const twoTabs = (): FeatureDefinition[] => [
         featureOf("alpha", {category: "editor"}),
         featureOf("secondary", {category: "appearance"}),
     ];
 
-    it("点击页签切换选中状态与可见页", async () => {
+    it("clicking a tab switches the selection and the visible pane", async () => {
         const {q, qa} = await open(twoTabs());
         (qa("[data-ss-tab]")[1] as HTMLElement).click();
 
@@ -582,7 +589,7 @@ describe("页签交互", () => {
         expect(q('[data-ss-tab-panel="appearance"]')?.classList.contains("fn__none")).toBe(false);
     });
 
-    it("回车与空格都能切换，其它键不动", async () => {
+    it("Enter and Space switch tabs while other keys do nothing", async () => {
         const {qa} = await open(twoTabs());
         const second = qa("[data-ss-tab]")[1];
         second.dispatchEvent(new KeyboardEvent("keydown", {key: "Tab"}));
@@ -595,14 +602,14 @@ describe("页签交互", () => {
         expect(qa("[data-ss-tab]")[0].getAttribute("aria-selected")).toBe("true");
     });
 
-    it("输入法组字期间不响应键盘切换", async () => {
+    it("keyboard switching is ignored while an IME composition is active", async () => {
         const {qa} = await open(twoTabs());
         const second = qa("[data-ss-tab]")[1];
         second.dispatchEvent(new KeyboardEvent("keydown", {key: "Enter", isComposing: true}));
         expect(second.getAttribute("aria-selected")).toBeNull();
     });
 
-    it("关闭时保存当前页签，新面板直接恢复它", async () => {
+    it("closing saves the current tab and a new panel restores it", async () => {
         const first = await open(twoTabs());
         first.qa("[data-ss-tab]")[1].click();
         first.panel.close();
@@ -616,14 +623,14 @@ describe("页签交互", () => {
         expect(second.q('[data-ss-tab-panel="editor"]')?.classList.contains("fn__none")).toBe(true);
     });
 
-    it("记忆的页签已经不存在时退回首个页签", async () => {
+    it("falls back to the first tab when the remembered one is gone", async () => {
         const {qa} = await open(twoTabs(), {"panel-state": {tab: "settings"}});
         await Promise.resolve();
         await Promise.resolve();
         expect(qa("[data-ss-tab]")[0].getAttribute("aria-selected")).toBe("true");
     });
 
-    it("没有切换页签时关闭不重复写状态", async () => {
+    it("closing without switching tabs does not rewrite the state", async () => {
         const {host, panel} = await open(twoTabs(), {"panel-state": {tab: "editor"}});
         await vi.waitFor(() => expect(host.loadData).toHaveBeenCalledWith("feature-panel-state"));
         await Promise.resolve();
@@ -632,14 +639,14 @@ describe("页签交互", () => {
         expect(host.saveData).not.toHaveBeenCalledWith("feature-panel-state", expect.anything());
     });
 
-    it("插件卸载关闭面板时也保存页签", async () => {
+    it("unloading the plugin closes the panel and still saves the tab", async () => {
         const {host, panel, qa} = await open(twoTabs());
         qa("[data-ss-tab]")[1].click();
         panel.dispose();
         await vi.waitFor(() => expect(host.files.get("feature-panel-state")).toEqual({tab: "appearance"}));
     });
 
-    it("页签状态写盘失败时给出可见错误", async () => {
+    it("a failed tab state write surfaces a visible error", async () => {
         const {host, panel, qa} = await open(twoTabs());
         host.rejectWrites = true;
         qa("[data-ss-tab]")[1].click();
@@ -650,7 +657,7 @@ describe("页签交互", () => {
         expect(host.files.get("feature-panel-state")).toBeUndefined();
     });
 
-    it("读取历史状态时用户已经手动切页，以用户的选择为准", async () => {
+    it("a manual tab switch wins over a late read of the stored state", async () => {
         let releaseRead: (() => void) | undefined;
         const blocked = new Promise<void>((resolve) => {
             releaseRead = resolve;
@@ -674,7 +681,7 @@ describe("页签交互", () => {
         expect(tabs[1].getAttribute("aria-selected")).toBe("true");
     });
 
-    it("旧面板的异步读取不会覆盖重新打开后的页签", async () => {
+    it("an old panel's async read does not overwrite the reopened tab", async () => {
         let releaseRead: (() => void) | undefined;
         const blocked = new Promise<void>((resolve) => {
             releaseRead = resolve;
@@ -694,7 +701,7 @@ describe("页签交互", () => {
         expect(first.qa("[data-ss-tab]")[0].getAttribute("aria-selected")).toBe("true");
     });
 
-    it("恢复记住的页签时把移动端页签栏滚到它", async () => {
+    it("restoring a remembered tab scrolls the mobile tab bar to it", async () => {
         mockState.frontend = "mobile";
         const host = new FakeHost();
         host.files.set("feature-panel-state", {tab: "appearance"});
@@ -710,7 +717,7 @@ describe("页签交互", () => {
         expect(bar.scrollLeft).toBe(350);
     });
 
-    it("页签已经完整可见时不滚页签栏", async () => {
+    it("does not scroll the tab bar when the tab is already fully visible", async () => {
         mockState.frontend = "mobile";
         const {qa, q} = await open(twoTabs());
         const bar = q<HTMLElement>(".layout-tab-bar") as HTMLElement;
@@ -721,7 +728,7 @@ describe("页签交互", () => {
         expect(bar.scrollLeft).toBe(0);
     });
 
-    it("页签栏整条放得下时不做任何滚动", async () => {
+    it("does not scroll at all when the whole tab bar fits", async () => {
         mockState.frontend = "mobile";
         const {qa, q} = await open(twoTabs());
         const bar = q<HTMLElement>(".layout-tab-bar") as HTMLElement;
@@ -732,7 +739,7 @@ describe("页签交互", () => {
         expect(bar.scrollLeft).toBe(0);
     });
 
-    it("页签栏还没量到宽度时下一帧补滚", async () => {
+    it("scrolls on the next frame when the tab bar has no width yet", async () => {
         mockState.frontend = "mobile";
         const {qa, q} = await open(twoTabs());
         const bar = q<HTMLElement>(".layout-tab-bar") as HTMLElement;
@@ -748,7 +755,7 @@ describe("页签交互", () => {
         expect(bar.scrollLeft).toBe(350);
     });
 
-    it("桌面端左侧页签列表同样把选中的页签滚出来", async () => {
+    it("the desktop tab list scrolls the selected tab into view as well", async () => {
         const {qa, q} = await open(twoTabs());
         const list = q<HTMLElement>(`.${PANEL_CLASS}__tabs`) as HTMLElement;
         stubScrollBox(list, qa("[data-ss-tab]")[1], {
@@ -765,8 +772,8 @@ describe("页签交互", () => {
     });
 });
 
-describe("改完即写", () => {
-    it("底栏没有任何保存 / 取消按钮，动作区整块收起", async () => {
+describe("write on change", () => {
+    it("no save or cancel button in the footer and the action region stays collapsed", async () => {
         const {q, qa} = await open();
         expect(qa("[data-ss-save]")).toHaveLength(0);
         expect(qa("[data-ss-cancel]")).toHaveLength(0);
@@ -774,7 +781,7 @@ describe("改完即写", () => {
         expect(q(".b3-dialog__action")?.children).toHaveLength(0);
     });
 
-    it("开关改动立即落盘，不需要点任何按钮", async () => {
+    it("a switch change is persisted at once without pressing anything", async () => {
         const {q, host} = await open();
         const toggle = q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')!;
         toggle.checked = true;
@@ -784,7 +791,7 @@ describe("改完即写", () => {
         expect(mockState.settings[0].closed).toBe(false);
     });
 
-    it("下拉改动立即落盘", async () => {
+    it("a select change is persisted at once", async () => {
         const {q, host} = await open();
         const select = q<HTMLSelectElement>('[data-ss-select="alpha::mode"]')!;
         select.value = "manual";
@@ -793,7 +800,7 @@ describe("改完即写", () => {
         await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({mode: "manual"}));
     });
 
-    it("数字框在失焦（change）时立即落盘，并按 min / max 夹住", async () => {
+    it("a number is persisted on blur (change) and clamped to min / max", async () => {
         const {q, host} = await open();
         const number = q<HTMLInputElement>('[data-ss-number="alpha::size"]')!;
         number.value = "40";
@@ -803,7 +810,7 @@ describe("改完即写", () => {
         expect(number.value).toBe("24");
     });
 
-    it("清空数字框时按 0 处理，落盘前被 min 夹住", async () => {
+    it("an emptied number counts as 0 and is clamped to min before saving", async () => {
         // type=number 的输入框拿不到真正的非数字值（非法输入会被浏览器清成空串），
         // 所以这里覆盖的是「清空」这条真实路径：空串 -> 0 -> 夹到 min
         const {q, host} = await open();
@@ -815,21 +822,21 @@ describe("改完即写", () => {
         expect(number.value).toBe("8");
     });
 
-    it("文本输入按静默期合并写盘，连打几个字只写一次", async () => {
+    it("text input coalesces writes within the quiet period, so several keystrokes save once", async () => {
         const {q, host} = await open();
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        for (const value of ["改", "改过", "改过的"]) {
+        for (const value of ["e", "ed", "edited"]) {
             input.value = value;
             fire(input, "input");
         }
         // 静默期没到之前不写
         expect(host.saveData).not.toHaveBeenCalled();
 
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "改过的"}));
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "edited"}));
         expect(host.saveData).toHaveBeenCalledTimes(1);
     });
 
-    it("多行文本与单行文本同一套静默期：打字合并写、失焦立即写", async () => {
+    it("a textarea shares the text quiet period: typing coalesces and blur writes at once", async () => {
         const {q, host} = await open([featureOf("area", {
             settings: [
                 {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
@@ -845,16 +852,16 @@ describe("改完即写", () => {
         await vi.waitFor(() => expect(host.files.get("feature-area")).toMatchObject({authors: "acme\nfoo"}));
     });
 
-    it("连续输入从最后一次输入重新计时", async () => {
+    it("continuous typing restarts the timer from the last input", async () => {
         vi.useFakeTimers();
         try {
             const {q, host} = await open();
             const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
 
-            input.value = "一";
+            input.value = "a";
             fire(input, "input");
             await vi.advanceTimersByTimeAsync(300);
-            input.value = "一二";
+            input.value = "ab";
             fire(input, "input");
             await vi.advanceTimersByTimeAsync(300);
             // 距第一次输入 600ms，但距最后一次只有 300ms：静默期要从最后一次算起
@@ -867,10 +874,10 @@ describe("改完即写", () => {
         }
     });
 
-    it("一个功能的立即提交不会吞掉另一个功能的静默期写盘", async () => {
+    it("one feature's immediate write does not swallow another feature's pending write", async () => {
         const {q, host} = await open([featureOf("alpha"), featureOf("beta")]);
         const text = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        text.value = "待写";
+        text.value = "pending";
         fire(text, "input");
         expect(host.saveData).not.toHaveBeenCalled();
 
@@ -879,21 +886,21 @@ describe("改完即写", () => {
         toggle.checked = true;
         fire(toggle, "change");
 
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "待写"}));
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "pending"}));
     });
 
-    it("静默期还没到就失焦时，改动立刻写盘且只写一次", async () => {
+    it("blurring before the quiet period saves at once and only once", async () => {
         const {q, host} = await open();
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "马上";
+        input.value = "now";
         fire(input, "input");
         fire(input, "change");
 
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "马上"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "now"});
     });
 
-    it("写入过程中继续输入，后续静默写盘不能带上旧值", async () => {
+    it("typing during a write does not let the next quiet write carry a stale value", async () => {
         const {q, host} = await open();
         let releaseFirstWrite: (() => void) | undefined;
         const firstWrite = new Promise<void>((resolve) => {
@@ -905,20 +912,20 @@ describe("改完即写", () => {
             return {code: 0};
         });
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "第一次";
+        input.value = "first pass";
         fire(input, "input");
         fire(input, "change");
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
-        input.value = "第二次";
+        input.value = "second pass";
         fire(input, "input");
         releaseFirstWrite?.();
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(2));
-        expect(host.saveData.mock.calls[1]?.[1]).toMatchObject({label: "第二次"});
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "第二次"});
-        expect(input.value).toBe("第二次");
+        expect(host.saveData.mock.calls[1]?.[1]).toMatchObject({label: "second pass"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "second pass"});
+        expect(input.value).toBe("second pass");
     });
 
-    it("写盘途中继续输入，回显不能覆盖正在输入的内容、也不能丢字", async () => {
+    it("typing during a write is neither overwritten by the echo nor truncated", async () => {
         const {q, host} = await open();
         let release: () => void = () => undefined;
         const gate = new Promise<void>((resolve) => {
@@ -931,38 +938,40 @@ describe("改完即写", () => {
         });
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
         // 第一次输入后失焦：立即写盘，写盘卡在 gate 上
-        input.value = "第一次";
+        input.value = "first pass";
         fire(input, "input");
         fire(input, "change");
         await vi.waitFor(() => expect(host.saveData).toHaveBeenCalledTimes(1));
 
         // 写盘还没回来就继续输入：新内容进下一批，还没进 store
-        input.value = "第一次+新字";
+        input.value = "first pass + new text";
         fire(input, "input");
         release();
         // 第一批写盘完成时的回显不能把用户正在输入的内容改回去
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "第一次"}));
-        expect(input.value).toBe("第一次+新字");
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "first pass"}));
+        expect(input.value).toBe("first pass + new text");
 
         // 再接着敲一个字：落盘的必须是完整内容，不能按被截断的值写
-        input.value = `${input.value}又`;
+        input.value = `${input.value} again`;
         fire(input, "input");
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "第一次+新字又"}));
+        await vi.waitFor(() =>
+            expect(host.files.get("feature-alpha")).toMatchObject({label: "first pass + new text again"})
+        );
     });
 
-    it("关面板时把还没落地的那一次补上", async () => {
+    it("closing the panel flushes the edit that has not landed yet", async () => {
         const {q, host, panel} = await open();
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "关窗前的字";
+        input.value = "typed before closing";
         fire(input, "input");
         expect(host.saveData).not.toHaveBeenCalled();
 
         panel.close();
 
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "关窗前的字"}));
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "typed before closing"}));
     });
 
-    it("重选同一项不写盘", async () => {
+    it("re-selecting the same option writes nothing", async () => {
         const {q, host} = await open(
             [featureOf("alpha")],
             {alpha: {enabled: false, size: 12, label: "hi", mode: "auto"}},
@@ -975,7 +984,7 @@ describe("改完即写", () => {
         expect(host.saveData).not.toHaveBeenCalled();
     });
 
-    it("写盘失败时控件回到磁盘上的值，并把问题显示出来", async () => {
+    it("a failed write rolls the control back to the stored value and shows the problem", async () => {
         const {q, host} = await open();
         host.rejectWrites = true;
         const toggle = q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')!;
@@ -989,17 +998,17 @@ describe("改完即写", () => {
         expect(mockState.settings[0].closed).toBe(false);
     });
 
-    it("重新打开时显示的就是磁盘上的值", async () => {
-        const {panel} = await open([featureOf("alpha")], {alpha: {enabled: true, label: "已存"}});
+    it("reopening shows the value read from disk", async () => {
+        const {panel} = await open([featureOf("alpha")], {alpha: {enabled: true, label: "stored"}});
         panel.close();
         panel.show();
         const root = mockState.settings[mockState.settings.length - 1].dialog!.element;
-        expect(root.querySelector<HTMLInputElement>('[data-ss-text="alpha::label"]')?.value).toBe("已存");
+        expect(root.querySelector<HTMLInputElement>('[data-ss-text="alpha::label"]')?.value).toBe("stored");
     });
 });
 
-describe("动作行", () => {
-    it("点击立刻执行，拿到功能 id、插件名与配置快照", async () => {
+describe("action rows", () => {
+    it("a click runs at once and receives the feature id, plugin name and a config snapshot", async () => {
         const onClick = vi.fn();
         const {q} = await open([featureOf("alpha", {settings: alphaSettings(onClick)})]);
         (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
@@ -1008,16 +1017,16 @@ describe("动作行", () => {
         const context = onClick.mock.calls[0][0] as FeatureActionContext;
         expect(context.featureId).toBe("alpha");
         expect(context.pluginName).toBe("some-settings-siyuan");
-        expect(context.i18n("alpha.run")).toBe("执行");
+        expect(context.i18n("alpha.run")).toBe("Run");
         expect(context.i18n("missing.key")).toBe("missing.key");
         const snapshot = context.configOf("alpha");
         expect(snapshot).toMatchObject({enabled: false, label: "hi"});
         // 快照是副本，改了不落盘
-        snapshot.label = "本地改动";
+        snapshot.label = "local change";
         expect(context.configOf("alpha").label).toBe("hi");
     });
 
-    it("updateConfig 立刻落盘，并同步面板上的开关", async () => {
+    it("updateConfig writes at once and syncs the switch in the panel", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1033,7 +1042,7 @@ describe("动作行", () => {
         expect(q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')?.checked).toBe(true);
     });
 
-    it("清除 / 导出 / 导入都转给配置存储", async () => {
+    it("clear, export and import all forward to the config store", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1047,14 +1056,14 @@ describe("动作行", () => {
         await expect(context!.exportConfigs()).resolves.toEqual({alpha: {enabled: true, label: "x"}});
         await expect(context!.clearAllConfigs()).resolves.toBeUndefined();
         expect(host.files.size).toBe(0);
-        await expect(context!.importConfigs({alpha: {enabled: true, label: "回来的"}})).resolves.toEqual({
+        await expect(context!.importConfigs({alpha: {enabled: true, label: "restored"}})).resolves.toEqual({
             applied: ["alpha"],
             skipped: [],
         });
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "回来的"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "restored"});
     });
 
-    it("清除配置前丢掉静默期里还没落盘的输入", async () => {
+    it("clearing drops input still pending in the quiet period", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1066,7 +1075,7 @@ describe("动作行", () => {
 
         // 静默期里的一次输入：还没落盘
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "还没落盘";
+        input.value = "not saved yet";
         fire(input, "input");
         expect(host.saveData).not.toHaveBeenCalled();
 
@@ -1080,7 +1089,7 @@ describe("动作行", () => {
         expect(host.files.size).toBe(0);
     });
 
-    it("清除成功后到重新载入前不再接受输入", async () => {
+    it("after a successful clear no input is accepted until the reload", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1095,7 +1104,7 @@ describe("动作行", () => {
 
         // 面板上还是清空前的值：这时候的输入不能把旧值写回文件
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "清空后又敲的字";
+        input.value = "typed after clearing";
         fire(input, "input");
         fire(input, "change");
         await new Promise((resolve) => setTimeout(resolve, 450));
@@ -1103,7 +1112,7 @@ describe("动作行", () => {
         expect(host.files.size).toBe(0);
     });
 
-    it("清除失败时面板恢复可用", async () => {
+    it("a failed clear leaves the panel usable", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1118,13 +1127,15 @@ describe("动作行", () => {
 
         // 没有重载，封锁必须解除：用户还得能改设置
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "失败后还能改";
+        input.value = "editable after failure";
         fire(input, "input");
         fire(input, "change");
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "失败后还能改"}));
+        await vi.waitFor(() =>
+            expect(host.files.get("feature-alpha")).toMatchObject({label: "editable after failure"})
+        );
     });
 
-    it("导入前先写掉静默期里的输入，导入结果不会被旧输入覆盖", async () => {
+    it("import flushes pending input first so old input cannot overwrite the imported values", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1136,17 +1147,19 @@ describe("动作行", () => {
 
         // 静默期里的一次输入：还没落盘
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "还没落盘";
+        input.value = "not saved yet";
         fire(input, "input");
         expect(host.saveData).not.toHaveBeenCalled();
 
-        await expect(context!.importConfigs({alpha: {label: "导入值"}})).resolves.toMatchObject({applied: ["alpha"]});
+        await expect(context!.importConfigs({alpha: {label: "imported value"}})).resolves.toMatchObject({
+            applied: ["alpha"],
+        });
         // 静默期到点后也不能用旧输入覆盖导入结果
         await new Promise((resolve) => setTimeout(resolve, 500));
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "imported value"});
     });
 
-    it("导入成功后到重新载入前不再接受输入", async () => {
+    it("after a successful import no input is accepted until the reload", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1155,19 +1168,19 @@ describe("动作行", () => {
         })], {alpha: {enabled: true, label: "x"}});
         (q('[data-ss-button="alpha::run"]') as HTMLElement).click();
         await vi.waitFor(() => expect(context).toBeDefined());
-        await expect(context!.importConfigs({alpha: {label: "导入值"}})).resolves.toBeDefined();
+        await expect(context!.importConfigs({alpha: {label: "imported value"}})).resolves.toBeDefined();
 
         // 面板上还是导入前的值：这时候的输入不能把它写回文件
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "导入后敲的字";
+        input.value = "typed after import";
         fire(input, "input");
         fire(input, "change");
         await new Promise((resolve) => setTimeout(resolve, 450));
         expect(host.saveData).toHaveBeenCalledTimes(1);
-        expect(host.files.get("feature-alpha")).toMatchObject({label: "导入值"});
+        expect(host.files.get("feature-alpha")).toMatchObject({label: "imported value"});
     });
 
-    it("导入失败时面板恢复可用", async () => {
+    it("a failed import leaves the panel usable", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1180,13 +1193,15 @@ describe("动作行", () => {
 
         // 没有重载，封锁必须解除：用户还得能改设置
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "失败后还能改";
+        input.value = "editable after failure";
         fire(input, "input");
         fire(input, "change");
-        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "失败后还能改"}));
+        await vi.waitFor(() =>
+            expect(host.files.get("feature-alpha")).toMatchObject({label: "editable after failure"})
+        );
     });
 
-    it("动作行注册的清理回调在插件卸载时执行，关面板时不执行", async () => {
+    it("cleanup registered by an action row runs on plugin unload and not on panel close", async () => {
         let context: FeatureActionContext | undefined;
         const onUnload = vi.fn();
         const {q, panel} = await open([featureOf("alpha", {
@@ -1206,7 +1221,7 @@ describe("动作行", () => {
         expect(onUnload).toHaveBeenCalledTimes(1);
     });
 
-    it("onUnload 返回的函数可以单独注销这次清理", async () => {
+    it("the function returned by onUnload cancels that single cleanup", async () => {
         let context: FeatureActionContext | undefined;
         const onUnload = vi.fn();
         const {q, panel} = await open([featureOf("alpha", {
@@ -1223,7 +1238,7 @@ describe("动作行", () => {
         expect(onUnload).not.toHaveBeenCalled();
     });
 
-    it("执行期间按钮保持禁用，连点只跑一次", async () => {
+    it("the button stays disabled while running so repeated clicks run once", async () => {
         let done: () => void = () => undefined;
         const onClick = vi.fn(() =>
             new Promise<void>((resolve) => {
@@ -1242,7 +1257,7 @@ describe("动作行", () => {
         await vi.waitFor(() => expect(button.disabled).toBe(false));
     });
 
-    it("动作行抛错时被隔离上报，按钮恢复可用", async () => {
+    it("a throwing action row is isolated and reported, and the button becomes usable again", async () => {
         const onClick = vi.fn(() => {
             throw new Error("action failed");
         });
@@ -1255,7 +1270,7 @@ describe("动作行", () => {
         expect(button.disabled).toBe(false);
     });
 
-    it("找不到对应 onClick 的动作行只告警，不抛错", async () => {
+    it("an action row without a matching onClick only warns and never throws", async () => {
         const definitions = [featureOf("alpha", {
             settings: [{
                 kind: "button",
@@ -1274,7 +1289,7 @@ describe("动作行", () => {
     });
 });
 
-describe("说明块底部的按钮", () => {
+describe("buttons at the bottom of a note block", () => {
     const withActions = (onClick = vi.fn()): FeatureDefinition[] => [
         featureOf("alpha", {
             settings: [
@@ -1291,7 +1306,7 @@ describe("说明块底部的按钮", () => {
         }),
     ];
 
-    it("点一下就跑 onClick，并按「功能 id + key」拿到上下文", async () => {
+    it("a click runs onClick with a context keyed by feature id + key", async () => {
         const onClick = vi.fn();
         const opened = await open(withActions(onClick));
         const button = opened.q<HTMLButtonElement>(".some-settings-panel__note-actions button")!;
@@ -1301,7 +1316,7 @@ describe("说明块底部的按钮", () => {
         expect(onClick).toHaveBeenCalledWith(expect.objectContaining({featureId: "alpha"}));
     });
 
-    it("现成 SVG 图标（iconSvg）原样进到按钮里", async () => {
+    it("an inline SVG icon (iconSvg) lands in the button untouched", async () => {
         const iconSvg = '<svg viewBox="0 0 32 32"><path fill="#f15bb5" d="M0 0h1v1H0z"/></svg>';
         const opened = await open([
             featureOf("alpha", {
@@ -1323,7 +1338,7 @@ describe("说明块底部的按钮", () => {
         expect(button.querySelector("use")).toBeNull();
     });
 
-    it("只读模式下按钮禁用", async () => {
+    it("the button is disabled in read-only mode", async () => {
         window.siyuan.config.readonly = true;
         const onClick = vi.fn();
         const opened = await open(withActions(onClick));
@@ -1332,8 +1347,8 @@ describe("说明块底部的按钮", () => {
     });
 });
 
-describe("说明块外链", () => {
-    it("先让插件有机会拦下，没人拦时才 window.open", async () => {
+describe("note block external links", () => {
+    it("plugins get a chance to intercept and window.open is used only when none does", async () => {
         const {q} = await open();
         const anchor = q<HTMLAnchorElement>('[data-ss-row="alpha::about"] a')!;
         const event = new MouseEvent("click", {bubbles: true, cancelable: true});
@@ -1343,7 +1358,7 @@ describe("说明块外链", () => {
         expect(window.open).toHaveBeenCalledWith(anchor.href, "_blank");
     });
 
-    it("遇到没有事件总线的插件对象时跳过它，仍然打开链接", async () => {
+    it("a plugin object without an event bus is skipped and the link still opens", async () => {
         window.siyuan.ws.app.plugins = [{} as never];
         const {q} = await open();
         const anchor = q<HTMLAnchorElement>('[data-ss-row="alpha::about"] a')!;
@@ -1351,7 +1366,7 @@ describe("说明块外链", () => {
         expect(window.open).toHaveBeenCalledWith(anchor.href, "_blank");
     });
 
-    it("任一插件 emit 返回 false 时不再打开", async () => {
+    it("no link opens when any plugin's emit returns false", async () => {
         const emit = vi.fn(() => false);
         window.siyuan.ws.app.plugins = [{eventBus: {emit}} as never];
         const {q} = await open();
@@ -1363,17 +1378,17 @@ describe("说明块外链", () => {
     });
 });
 
-describe("异常路径", () => {
-    it("控件对应的功能不存在时只告警，改动被丢弃", async () => {
+describe("failure paths", () => {
+    it("a control whose feature is gone only warns and the change is dropped", async () => {
         const {q, panel} = await open();
         (panel as unknown as {options: {features: FeatureDefinition[];};}).options.features = [];
         const input = q<HTMLInputElement>('[data-ss-text="alpha::label"]')!;
-        input.value = "丢弃";
+        input.value = "discarded";
         expect(() => fire(input, "change")).not.toThrow();
         expect(vi.mocked(console.warn)).toHaveBeenCalledWith(expect.stringContaining("has no matching feature"));
     });
 
-    it("写盘抛出不带问题清单的异常时也照常上报", async () => {
+    it("a write that throws without a problem list is still reported", async () => {
         const {q, store} = await open();
         store.patch = vi.fn(async () => {
             throw new Error("unexpected failure");
@@ -1388,7 +1403,7 @@ describe("异常路径", () => {
         expect(mockState.settings[0].closed).toBe(false);
     });
 
-    it("声明里出现未知控件类型时跳过它，面板其余部分正常", async () => {
+    it("an unknown control kind is skipped and the rest of the panel works", async () => {
         const definitions = [featureOf("alpha", {
             settings: [
                 {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
@@ -1402,8 +1417,8 @@ describe("异常路径", () => {
     });
 });
 
-describe("布局与宽度", () => {
-    it("桌面端按视口算宽度，并挂上量到的事实", async () => {
+describe("layout and width", () => {
+    it("desktop computes the width from the viewport and records the measured facts", async () => {
         const {root} = await open();
         const container = root.querySelector<HTMLElement>(".b3-dialog__container")!;
         expect(container.style.width).toBe("900px");
@@ -1412,7 +1427,7 @@ describe("布局与宽度", () => {
         expect(container.dataset.ssNarrow).toBe("false");
     });
 
-    it("窄屏按视口留边，且上限仍生效", async () => {
+    it("a narrow screen keeps a margin and the cap still applies", async () => {
         setViewport(700);
         const {root} = await open();
         const container = root.querySelector<HTMLElement>(".b3-dialog__container")!;
@@ -1420,20 +1435,20 @@ describe("布局与宽度", () => {
         expect(container.dataset.ssNarrow).toBe("true");
     });
 
-    it("极窄视口下不低于最小可用宽度", async () => {
+    it("a very narrow viewport stays above the minimum usable width", async () => {
         setViewport(300);
         const {root} = await open();
         expect(root.querySelector<HTMLElement>(".b3-dialog__container")?.style.width).toBe("280px");
     });
 
-    it("内容区不滚动、内边距归零，滚动交给每一页", async () => {
+    it("the content region does not scroll and has no padding, each pane scrolls itself", async () => {
         const {root} = await open();
         const content = root.querySelector<HTMLElement>(".b3-dialog__content")!;
         expect(content.style.padding).toBe("0px");
         expect(content.style.overflow).toBe("hidden");
     });
 
-    it("独立设置窗口里不写宽度，交给宿主铺满", async () => {
+    it("no width is written in a standalone settings window, the host fills it", async () => {
         mockState.settingAsWindow = true;
         const {root} = await open();
         const container = root.querySelector<HTMLElement>(".b3-dialog__container")!;
@@ -1441,7 +1456,7 @@ describe("布局与宽度", () => {
         expect(container.dataset.ssWidth).toBeUndefined();
     });
 
-    it("移动端不写宽度，交给宿主的底部抽屉", async () => {
+    it("no width is written on mobile, the host's bottom drawer owns it", async () => {
         mockState.frontend = "mobile";
         setViewport(420);
         const {root} = await open();
@@ -1450,14 +1465,14 @@ describe("布局与宽度", () => {
         expect(root.querySelector<HTMLElement>(".b3-dialog__content")?.style.overflow).toBe("auto");
     });
 
-    it("documentElement 量不到宽度时退回 window.innerWidth", async () => {
+    it("falls back to window.innerWidth when documentElement reports no width", async () => {
         setViewport(0);
         window.innerWidth = 800;
         const {root} = await open();
         expect(root.querySelector<HTMLElement>(".b3-dialog__container")?.style.width).toBe("752px");
     });
 
-    it("视口变化后重新计算宽度", async () => {
+    it("the width is recomputed after the viewport changes", async () => {
         vi.useFakeTimers();
         try {
             const {root} = await open();
@@ -1473,7 +1488,7 @@ describe("布局与宽度", () => {
         }
     });
 
-    it("对话框被宿主从页面移除后停止监听视口", async () => {
+    it("viewport listening stops once the host removes the dialog from the page", async () => {
         vi.useFakeTimers();
         try {
             const {root} = await open();
@@ -1489,7 +1504,7 @@ describe("布局与宽度", () => {
         }
     });
 
-    it("关闭后停止监听视口", async () => {
+    it("viewport listening stops after closing", async () => {
         vi.useFakeTimers();
         try {
             const {root, panel} = await open();
@@ -1504,8 +1519,8 @@ describe("布局与宽度", () => {
     });
 });
 
-describe("关闭与卸载", () => {
-    it("close 之后 isOpen 为假，可以再次打开", async () => {
+describe("close and dispose", () => {
+    it("isOpen is false after close and the panel can open again", async () => {
         const {panel} = await open();
         panel.close();
         expect(panel.isOpen).toBe(false);
@@ -1514,14 +1529,14 @@ describe("关闭与卸载", () => {
         expect(mockState.settings).toHaveLength(2);
     });
 
-    it("dispose 收掉面板，且重复调用安全", async () => {
+    it("dispose tears the panel down and is safe to repeat", async () => {
         const {panel} = await open();
         panel.dispose();
         expect(panel.isOpen).toBe(false);
         expect(() => panel.dispose()).not.toThrow();
     });
 
-    it("清理回调里的异常不会冒泡出 dispose", async () => {
+    it("an exception in a cleanup callback does not bubble out of dispose", async () => {
         let context: FeatureActionContext | undefined;
         const {q, panel} = await open([featureOf("alpha", {
             settings: alphaSettings((actionContext) => {
@@ -1542,12 +1557,12 @@ describe("关闭与卸载", () => {
 /**
  * 全局搜索（issue #119）。
  *
- * 搜索只是面板的过滤机制：不新增功能、不加开关、不读写配置。这里按三块验证：
+ * 搜索是面板的过滤机制，开关由 `settings-search` 功能承载（默认开启）。这里按三块验证：
  * - 索引与匹配：能搜到什么、关键词怎么算命中；
  * - 显隐与恢复：命中后隐藏分类导航、聚合结果，清空后原样退回；
  * - 期间的状态：控件照常可用、待写文本不丢、高亮与快捷键。
  */
-describe("搜索", () => {
+describe("search", () => {
     const HIT = `mark.${PANEL_CLASS}__hit`;
     const SEARCH = `.${PANEL_CLASS}--search`;
 
@@ -1583,8 +1598,8 @@ describe("搜索", () => {
         featureOf("secondary", {category: "editor"}),
     ];
 
-    describe("位置与初始状态", () => {
-        it("桌面端搜索框在内容区顶部、设置行上方，不在左侧栏里", async () => {
+    describe("position and initial state", () => {
+        it("on desktop the search box sits at the top of the content region above the rows, not in the side bar", async () => {
             const {q} = await open(twoInEditor());
             const views = q(`.${PANEL_CLASS}__views`);
             const box = views?.querySelector(`.${PANEL_CLASS}__search`);
@@ -1597,40 +1612,40 @@ describe("搜索", () => {
             expect(box?.querySelector("[data-ss-search]")).not.toBeNull();
         });
 
-        it("移动端搜索框在面板标题下方、页签栏上方", async () => {
+        it("on mobile the search box sits below the panel title and above the tab bar", async () => {
             mockState.frontend = "mobile";
             const {panelElement} = await open(twoInEditor());
             expect(panelElement.children[0]?.className).toContain(`${PANEL_CLASS}__search`);
             expect(panelElement.children[1]?.className).toContain("layout-tab-bar");
         });
 
-        it("打开面板不自动聚焦搜索框（移动端因此不会弹键盘）", async () => {
+        it("opening the panel does not focus the search box, so mobile shows no keyboard", async () => {
             mockState.frontend = "mobile";
             const {root} = await open(twoInEditor());
             expect(document.activeElement).not.toBe(searchBox(root));
         });
 
-        it("搜索框占位文案走 i18n", async () => {
+        it("the search placeholder comes from i18n", async () => {
             const {root} = await open(twoInEditor());
-            expect(searchBox(root).getAttribute("placeholder")).toBe("搜索...");
+            expect(searchBox(root).getAttribute("placeholder")).toBe("Search...");
         });
 
-        it("一键清空按钮平时收起，输入内容后才出现", async () => {
+        it("the clear button stays hidden until something is typed", async () => {
             const {root, q} = await open(twoInEditor());
             const clear = q("[data-ss-search-clear]") as HTMLButtonElement;
             expect(hidden(clear)).toBe(true);
 
-            typeQuery(searchBox(root), "甲");
+            typeQuery(searchBox(root), "Alpha");
             expect(hidden(clear)).toBe(false);
 
             typeQuery(searchBox(root), "");
             expect(hidden(clear)).toBe(true);
         });
 
-        it("点一键清空就回到分类视图，焦点留在搜索框", async () => {
+        it("clicking clear returns to the category view and keeps the focus in the search box", async () => {
             const {root, q, panel} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲功能");
+            typeQuery(input, "Alpha feature");
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(true);
 
             (q("[data-ss-search-clear]") as HTMLButtonElement).click();
@@ -1642,11 +1657,11 @@ describe("搜索", () => {
             expect(panel.isOpen).toBe(true);
         });
 
-        it("Esc 清空后清空按钮同样收起", async () => {
+        it("the clear button hides again after Esc clears the query", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
             const clear = q("[data-ss-search-clear]") as HTMLButtonElement;
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             expect(hidden(clear)).toBe(false);
 
             press({key: "Escape"});
@@ -1655,8 +1670,46 @@ describe("搜索", () => {
         });
     });
 
-    describe("索引与匹配", () => {
-        it("内部 id 与字段 key 始终可搜，且忽略大小写", async () => {
+    describe("the feature switch", () => {
+        /** 「设置面板搜索」本身也是一个功能：默认开启，面板靠它的配置变化显隐搜索框。 */
+        const searchFeature = (): FeatureDefinition =>
+            featureOf(SEARCH_FEATURE_ID, {
+                category: "plugin",
+                settings: [{kind: "switch", key: "enabled", title: "alpha.enabled", default: true}],
+            });
+
+        it("hides the search box and leaves every search shortcut to the host when it is off", async () => {
+            setSearchEnabled(false);
+            const {root, q} = await open(twoInEditor());
+
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(true);
+            expect(press({key: "f", ctrlKey: true}).defaultPrevented).toBe(false);
+            expect(press({key: "/"}).defaultPrevented).toBe(false);
+            expect(document.activeElement).not.toBe(searchBox(root));
+        });
+
+        it("turning it off while the panel is open hides the box and returns an active search to the category view", async () => {
+            const {q, panelElement, store} = await open([...twoInEditor(), searchFeature()]);
+            const input = q<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+            typeQuery(input, "Alpha");
+            expect(panelElement.classList.contains(`${PANEL_CLASS}--search`)).toBe(true);
+
+            setSearchEnabled(false);
+            await store.patch(SEARCH_FEATURE_ID, {enabled: false});
+
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(true);
+            expect(input.value).toBe("");
+            expect(panelElement.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
+            expect(hidden(q('[data-ss-feature="secondary"]'))).toBe(false);
+
+            setSearchEnabled(true);
+            await store.patch(SEARCH_FEATURE_ID, {enabled: true});
+            expect(hidden(q(`.${PANEL_CLASS}__search`))).toBe(false);
+        });
+    });
+
+    describe("index and matching", () => {
+        it("internal ids and field keys are always searchable and ignore case", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
 
@@ -1668,21 +1721,21 @@ describe("搜索", () => {
             expect(hidden(q('[data-ss-feature="alpha"]'))).toBe(false);
         });
 
-        it("关键词必须落在同一个字段上：跨字段拼不成一次命中", async () => {
+        it("every keyword must land on one field: a hit cannot be assembled across fields", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
             const empty = q(`.${PANEL_CLASS}__search-empty`);
 
             // 「功能」只在功能名里，「说明」只在功能说明里：一个字段都凑不齐
-            typeQuery(input, "功能 说明");
+            typeQuery(input, "feature description");
             expect(hidden(empty)).toBe(false);
             // 同一个字段里都有 → 命中（说明是「甲的说明」）
-            typeQuery(input, "甲 说明");
+            typeQuery(input, "alpha description");
             expect(hidden(empty)).toBe(true);
             expect(hidden(q('[data-ss-feature="alpha"]'))).toBe(false);
         });
 
-        it("多行文本的占位文案也进搜索索引", async () => {
+        it("a textarea placeholder is part of the search index", async () => {
             const {root, q} = await open([featureOf("area", {
                 settings: [
                     {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
@@ -1695,11 +1748,11 @@ describe("搜索", () => {
                     },
                 ],
             })]);
-            typeQuery(searchBox(root), "作者占位");
+            typeQuery(searchBox(root), "Authors placeholder");
             expect(hidden(q('[data-ss-feature="area"]'))).toBe(false);
         });
 
-        it("静态文案的中英文版本算一个匹配域：命中另一语言时不高亮", async () => {
+        it("the language versions of static text share one match domain, so a hit in another language is not highlighted", async () => {
             const {root, q, qa} = await open([featureOf("alpha", {
                 settings: [
                     {kind: "switch", key: "enabled", title: "alpha.enabled", default: false},
@@ -1716,14 +1769,14 @@ describe("搜索", () => {
             expect(q('[data-ss-feature="alpha"]')?.textContent).not.toContain("Enable");
         });
 
-        it("分类名命中时显示该分类的全部功能", async () => {
+        it("a category name hit shows every feature of that category", async () => {
             const {root, q} = await open([
                 featureOf("alpha", {category: "editor"}),
                 featureOf("secondary", {category: "appearance"}),
             ]);
             const input = searchBox(root);
 
-            typeQuery(input, "编辑");
+            typeQuery(input, "Editor");
             expect(hidden(q('[data-ss-feature="alpha"]'))).toBe(false);
             expect(hidden(q('[data-ss-feature="secondary"]'))).toBe(true);
             expect(hidden(q('[data-ss-tab-panel="appearance"]'))).toBe(true);
@@ -1732,11 +1785,11 @@ describe("搜索", () => {
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(SEARCH.replace(".", ""))).toBe(true);
         });
 
-        it("命中功能时显示它的全部可见设置项，包括没直接命中的字段", async () => {
+        it("a feature hit shows all its visible settings, including fields that did not match", async () => {
             const {root, q, qa} = await open(twoInEditor());
             const input = searchBox(root);
 
-            typeQuery(input, "甲的说明");
+            typeQuery(input, "Alpha description");
             const rows = qa('[data-ss-feature="alpha"]');
             // 开关行 + 数字 + 文本 + 下拉 + 说明块 + 动作行
             expect(rows).toHaveLength(6);
@@ -1744,36 +1797,36 @@ describe("搜索", () => {
             expect(q('[data-ss-feature="secondary"]')?.classList.contains("fn__none")).toBe(true);
         });
 
-        it("分类与功能按现有声明顺序排，不做相关度排序", async () => {
+        it("categories and features keep the declared order instead of a relevance order", async () => {
             // 声明顺序是「外观」在前，但结果分组按 FEATURE_CATEGORIES 的顺序（编辑器在前）
             const {root, qa} = await open([
                 featureOf("secondary", {category: "appearance"}),
                 featureOf("alpha", {category: "editor"}),
             ]);
-            typeQuery(searchBox(root), "功能");
+            typeQuery(searchBox(root), "feature");
             const groups = qa("[data-ss-search-group]")
                 .filter((group) => !hidden(group))
                 .map((group) => group.dataset.ssSearchGroup);
             expect(groups).toEqual(["editor", "appearance"]);
         });
 
-        it("无结果时只显示「无结果」，不展示空分类也没有清除按钮", async () => {
+        it("with no results only the empty state shows, with no empty categories and no clear button", async () => {
             const {root, q, qa} = await open(twoInEditor());
-            typeQuery(searchBox(root), "没有这个设置");
+            typeQuery(searchBox(root), "no such setting");
 
             expect(qa("[data-ss-tab-panel]").every((pane) => hidden(pane))).toBe(true);
             const empty = q(`.${PANEL_CLASS}__search-empty`);
             expect(hidden(empty)).toBe(false);
-            expect(empty?.textContent).toBe("无结果");
+            expect(empty?.textContent).toBe("No results");
             expect(qa(HIT)).toHaveLength(0);
         });
     });
 
-    describe("显隐与恢复", () => {
-        it("有查询时收起分类导航，但保留搜索框", async () => {
+    describe("visibility and restore", () => {
+        it("a query collapses the category navigation but keeps the search box", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
 
             // 桌面端整根左侧栏（分类列表）收起，搜索框在内容区里，照旧可用。
             // 收起交给 `--search` 那段 CSS 的宽度过渡：这里刻意不加 fn__none，
@@ -1784,16 +1837,16 @@ describe("搜索", () => {
             expect(hidden(q(`.${PANEL_CLASS}__views`))).toBe(false);
         });
 
-        it("移动端有查询时收起的是顶部页签栏，靠过渡而不是 display:none", async () => {
+        it("on mobile the top tab bar collapses through a transition rather than display:none", async () => {
             mockState.frontend = "mobile";
             const {root, q, panelElement} = await open(twoInEditor());
-            typeQuery(searchBox(root), "甲");
+            typeQuery(searchBox(root), "Alpha");
             expect(panelElement.classList.contains(`${PANEL_CLASS}--search`)).toBe(true);
             // 收起交给 `--search` 那段 height 过渡：塞 fn__none 就没有过渡，一开一收是硬跳
             expect(hidden(q(".layout-tab-bar"))).toBe(false);
         });
 
-        it("移动端收起前把页签栏的实测高度交给 CSS，展开结束后再交还给内容", async () => {
+        it("on mobile the measured tab bar height goes to CSS before collapsing and is handed back to the content afterwards", async () => {
             mockState.frontend = "mobile";
             const {root, q} = await open(twoInEditor());
             const bar = q<HTMLElement>(".layout-tab-bar") as HTMLElement;
@@ -1801,7 +1854,7 @@ describe("搜索", () => {
             const measured = vi.spyOn(bar, "offsetHeight", "get").mockReturnValue(42);
             const input = searchBox(root);
 
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             expect(bar.style.getPropertyValue("--ss-tabbar-height")).toBe("42px");
 
             typeQuery(input, "");
@@ -1814,28 +1867,28 @@ describe("搜索", () => {
             measured.mockRestore();
         });
 
-        it("过渡途中再次搜索不会把动画中间的高度当成起点", async () => {
+        it("searching during the transition does not take the mid-animation height as the start", async () => {
             mockState.frontend = "mobile";
             const {root, q} = await open(twoInEditor());
             const bar = q<HTMLElement>(".layout-tab-bar") as HTMLElement;
             const measured = vi.spyOn(bar, "offsetHeight", "get").mockReturnValue(42);
             const input = searchBox(root);
 
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             // 展开途中高度还在动画里（量到 0），这时候再搜一次不能拿 0 覆盖掉起点
             typeQuery(input, "");
             measured.mockReturnValue(0);
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
 
             expect(bar.style.getPropertyValue("--ss-tabbar-height")).toBe("42px");
             measured.mockRestore();
         });
 
-        it("清空后恢复分类、页签、行与最后一行标记", async () => {
+        it("clearing restores categories, tabs, rows and the last-row mark", async () => {
             const {root, q, qa} = await open(twoInEditor());
             const input = searchBox(root);
 
-            typeQuery(input, "甲的说明");
+            typeQuery(input, "Alpha description");
             typeQuery(input, "");
 
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
@@ -1849,11 +1902,11 @@ describe("搜索", () => {
             expect(last[0].dataset.ssFeature).toBe("secondary");
         });
 
-        it("反复切换查询后，每页仍然只有一个最后一行标记", async () => {
+        it("switching queries repeatedly still leaves one last-row mark per pane", async () => {
             const {root, qa} = await open(twoInEditor());
             const input = searchBox(root);
 
-            for (const query of ["甲功能", "乙功能", "甲功能"]) {
+            for (const query of ["Alpha feature", "Secondary feature", "Alpha feature"]) {
                 typeQuery(input, query);
                 const marked = qa(".config-item--last-visible");
                 expect(marked).toHaveLength(1);
@@ -1862,12 +1915,12 @@ describe("搜索", () => {
             }
         });
 
-        it("清空搜索后不留下相邻的文本节点", async () => {
+        it("clearing the search leaves no adjacent text nodes", async () => {
             const {root, qa} = await open(twoInEditor());
             const input = searchBox(root);
             // 只命中标题的第一个字：高亮会把「甲功能」切成 mark + 文本两段，
             // 收尾时如果不合并相邻文本节点，这里就会留下两个并排的 Text
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             typeQuery(input, "");
 
             const hasAdjacentText = (element: Element): boolean => {
@@ -1884,11 +1937,11 @@ describe("搜索", () => {
             expect(qa(".config-item__main").some(hasAdjacentText)).toBe(false);
         });
 
-        it("过滤后子行的收尾标记仍落在每个可见功能的最后一个子行上", async () => {
+        it("after filtering the closing mark still lands on the last child row of each visible feature", async () => {
             const {root, qa} = await open(twoInEditor());
             const input = searchBox(root);
 
-            typeQuery(input, "甲功能");
+            typeQuery(input, "Alpha feature");
             const duringSearch = qa(`.${PANEL_CLASS}__child--last`);
             expect(duringSearch).toHaveLength(1);
             expect(duringSearch[0].dataset.ssRow).toBe("alpha::run");
@@ -1898,7 +1951,7 @@ describe("搜索", () => {
                 .toEqual(["alpha::run", "secondary::run"]);
         });
 
-        it("清空后回到搜索前的滚动位置", async () => {
+        it("clearing returns to the scroll position from before the search", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
             const pane = q('[data-ss-tab-panel="editor"]') as HTMLElement;
@@ -1906,7 +1959,7 @@ describe("搜索", () => {
             pane.scrollTop = 40;
             content.scrollTop = 7;
 
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             // 搜索期间视图换成了结果列，滚动位置另算
             typeQuery(input, "");
 
@@ -1914,14 +1967,14 @@ describe("搜索", () => {
             expect(content.scrollTop).toBe(7);
         });
 
-        it("只有空白等于没搜：视图不动", async () => {
+        it("whitespace alone counts as no search and the view stays put", async () => {
             const {root, q} = await open(twoInEditor());
             typeQuery(searchBox(root), "   ");
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
             expect(hidden(q(`.${PANEL_CLASS}__tabs`))).toBe(false);
         });
 
-        it("搜索中迟到的页签恢复不会拆掉结果视图", async () => {
+        it("a late tab restore during a search does not tear down the result view", async () => {
             const host = new FakeHost();
             const release = gatePanelState(host);
             const {root, q} = await open(
@@ -1932,7 +1985,7 @@ describe("搜索", () => {
                 {"panel-state": {tab: "appearance"}},
                 host,
             );
-            typeQuery(searchBox(root), "甲功能");
+            typeQuery(searchBox(root), "Alpha feature");
 
             release();
             await vi.waitFor(() =>
@@ -1946,9 +1999,9 @@ describe("搜索", () => {
             expect(hidden(q('[data-ss-tab-panel="appearance"]'))).toBe(true);
         });
 
-        it("搜索词只存在于本次面板会话：重新打开是空的", async () => {
+        it("the query lives only in this panel session, so reopening starts empty", async () => {
             const {root, panel} = await open(twoInEditor());
-            typeQuery(searchBox(root), "甲");
+            typeQuery(searchBox(root), "Alpha");
             panel.close();
             panel.show();
 
@@ -1958,10 +2011,10 @@ describe("搜索", () => {
         });
     });
 
-    describe("搜索期间的状态", () => {
-        it("结果里的控件照常可用，改动立即落盘", async () => {
+    describe("state during a search", () => {
+        it("controls in the results stay usable and changes are persisted at once", async () => {
             const {root, q, host} = await open(twoInEditor());
-            typeQuery(searchBox(root), "甲");
+            typeQuery(searchBox(root), "Alpha");
 
             const toggle = q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]') as HTMLInputElement;
             toggle.checked = true;
@@ -1970,34 +2023,36 @@ describe("搜索", () => {
             await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({enabled: true}));
         });
 
-        it("结果里的文本输入照常按静默期落盘，继续搜不会丢掉待写的内容", async () => {
+        it("text input in the results still saves through the quiet period and searching on keeps the pending text", async () => {
             const {root, q, host} = await open(twoInEditor());
             const search = searchBox(root);
-            typeQuery(search, "甲");
+            typeQuery(search, "Alpha");
 
             const text = q<HTMLInputElement>('[data-ss-text="alpha::label"]') as HTMLInputElement;
-            text.value = "搜索中改的";
+            text.value = "edited while searching";
             fire(text, "input");
             // 继续在搜索框里打字：结果重算，但控件还是同一份 DOM，没有重建
-            typeQuery(search, "甲功");
+            typeQuery(search, "Alpha feat");
             expect(q('[data-ss-text="alpha::label"]')).toBe(text);
 
-            await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({label: "搜索中改的"}));
+            await vi.waitFor(() =>
+                expect(host.files.get("feature-alpha")).toMatchObject({label: "edited while searching"})
+            );
         });
 
-        it("搜索本身不写任何配置", async () => {
+        it("searching itself writes no config", async () => {
             const {root, host} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲");
-            typeQuery(input, "功能");
+            typeQuery(input, "Alpha");
+            typeQuery(input, "feature");
             typeQuery(input, "");
             expect(host.saveData).not.toHaveBeenCalled();
         });
 
-        it("改设置不清空查询、也不重新过滤", async () => {
+        it("changing a setting neither clears the query nor refilters", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲功能");
+            typeQuery(input, "Alpha feature");
             const secondaryRow = q('[data-ss-feature="secondary"]') as HTMLElement;
 
             const toggle = q<HTMLInputElement>('[data-ss-switch="secondary::enabled"]') as HTMLInputElement;
@@ -2006,10 +2061,10 @@ describe("搜索", () => {
 
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(true);
             expect(hidden(secondaryRow)).toBe(true);
-            expect(input.value).toBe("甲功能");
+            expect(input.value).toBe("Alpha feature");
         });
 
-        it("动态文案更新了索引，也不马上改变当前结果；清空再输入才按最新索引算", async () => {
+        it("updated dynamic text refreshes the index without changing current results, and only a new query after clearing uses it", async () => {
             let options = [{value: "a", label: "alpha.auto"}];
             const {root, q, qa} = await open([featureOf("alpha", {
                 settings: [
@@ -2025,71 +2080,73 @@ describe("搜索", () => {
             })]);
             const input = searchBox(root);
 
-            typeQuery(input, "手动");
+            typeQuery(input, "Manual");
             const empty = q(`.${PANEL_CLASS}__search-empty`);
             expect(hidden(empty)).toBe(false);
 
             // 候选集变了，但查询文本没变：当前命中集合不许被打断
             options = [{value: "a", label: "alpha.auto"}, {value: "b", label: "alpha.manual"}];
-            typeQuery(input, "手动");
+            typeQuery(input, "Manual");
             expect(hidden(empty)).toBe(false);
 
             // 清空后重新输入：按最新索引重新算
             typeQuery(input, "");
-            typeQuery(input, "手动");
+            typeQuery(input, "Manual");
             expect(hidden(empty)).toBe(true);
             expect(qa('[data-ss-feature="alpha"]').every((row) => !hidden(row))).toBe(true);
         });
     });
 
-    describe("高亮", () => {
-        it("同一段文案里的多个关键词分别高亮", async () => {
+    describe("highlighting", () => {
+        it("each keyword in the same text is highlighted separately", async () => {
             const {root, qa} = await open(twoInEditor());
-            typeQuery(searchBox(root), "甲 说明");
-            expect(qa(HIT).map((mark) => mark.textContent)).toEqual(["甲", "甲", "说明"]);
+            typeQuery(searchBox(root), "alpha description");
+            expect(qa(HIT).map((mark) => mark.textContent)).toEqual(["Alpha", "Alpha", "description"]);
         });
 
-        it("高亮只换包装，不解析 HTML：查询里的标签原样当文字", async () => {
+        it("highlighting only wraps text and never parses HTML, so tags in the query stay literal", async () => {
             const {root, q} = await open(twoInEditor());
             typeQuery(searchBox(root), '<img src=x onerror="alert(1)">');
             expect(q('[data-ss-feature="alpha"] img')).toBeNull();
-            expect(q('[data-ss-feature="alpha"] .config-item__main')?.textContent).toContain("甲功能");
+            expect(q('[data-ss-feature="alpha"] .config-item__main')?.textContent).toContain("Alpha feature");
         });
 
-        it("清空搜索后高亮消失、文案复原", async () => {
+        it("clearing the search removes the highlights and restores the text", async () => {
             const {root, q, qa} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             expect(qa(HIT).length).toBeGreaterThan(0);
 
             typeQuery(input, "");
             expect(qa(HIT)).toHaveLength(0);
-            expect(q('[data-ss-feature="alpha"] .config-item__main')?.textContent).toBe("甲功能甲的说明");
+            expect(q('[data-ss-feature="alpha"] .config-item__main')?.textContent).toBe(
+                "Alpha featureAlpha description",
+            );
         });
 
-        it("没有命中文字的分组标题与行内说明都不加标记", async () => {
+        it("group titles and inline descriptions without a matched word carry no mark", async () => {
             const {root, qa} = await open(twoInEditor());
             // 命中另一个功能的说明，alpha 整块收起，不该留下任何标记
-            typeQuery(searchBox(root), "甲的说明");
+            typeQuery(searchBox(root), "Alpha description");
             expect(qa(HIT).every((mark) => !mark.closest('[data-ss-feature="secondary"]'))).toBe(true);
         });
     });
 
-    describe("快捷键", () => {
-        it("`/` 聚焦搜索框并选中已有查询", async () => {
+    describe("shortcuts", () => {
+        it("`/` focuses the search box and selects the existing query", async () => {
             const {root} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
             input.blur();
 
             const event = press({key: "/"});
             expect(event.defaultPrevented).toBe(true);
             expect(document.activeElement).toBe(input);
             expect(input.selectionStart).toBe(0);
-            expect(input.selectionEnd).toBe(1);
+            expect(input.selectionEnd).toBe(5);
         });
 
-        it("`/` 在编辑控件里不劫持", async () => {
+        it("`/` is not hijacked inside an editing control", async () => {
             const {root, q} = await open(twoInEditor());
             const text = q<HTMLInputElement>('[data-ss-text="alpha::label"]') as HTMLInputElement;
             text.focus();
@@ -2100,7 +2157,7 @@ describe("搜索", () => {
             expect(searchBox(root).value).toBe("");
         });
 
-        it("Ctrl/Cmd + F 在面板内聚焦搜索框并阻止宿主搜索", async () => {
+        it("Ctrl/Cmd + F focuses the search box in the panel and blocks the host search", async () => {
             const {root} = await open(twoInEditor());
             const input = searchBox(root);
             const event = press({key: "f", ctrlKey: true});
@@ -2108,10 +2165,10 @@ describe("搜索", () => {
             expect(document.activeElement).toBe(input);
         });
 
-        it("Esc 有查询时只清空搜索、保留焦点、不关面板", async () => {
+        it("Esc with a query only clears the search, keeping the focus and the panel open", async () => {
             const {root, q, panel} = await open(twoInEditor());
             const input = searchBox(root);
-            typeQuery(input, "甲");
+            typeQuery(input, "Alpha");
 
             const event = press({key: "Escape"});
             expect(event.defaultPrevented).toBe(true);
@@ -2121,14 +2178,14 @@ describe("搜索", () => {
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
         });
 
-        it("Esc 没有查询时不拦截，交给宿主", async () => {
+        it("Esc without a query is not intercepted and goes to the host", async () => {
             const {root} = await open(twoInEditor());
             searchBox(root).blur();
             const event = press({key: "Escape"});
             expect(event.defaultPrevented).toBe(false);
         });
 
-        it("输入法组合输入期间的按键不当作快捷键", async () => {
+        it("keys pressed during an IME composition are not treated as shortcuts", async () => {
             const {root} = await open(twoInEditor());
             const input = searchBox(root);
             input.blur();
@@ -2137,13 +2194,13 @@ describe("搜索", () => {
             expect(document.activeElement).not.toBe(input);
         });
 
-        it("输入法组合输入期间不执行过滤，组合结束才按最终文本过滤", async () => {
+        it("no filtering runs during an IME composition and the final text filters once it ends", async () => {
             const {root, q} = await open(twoInEditor());
             const input = searchBox(root);
 
             const composing = new Event("input", {bubbles: true});
             Object.defineProperty(composing, "isComposing", {value: true});
-            input.value = "甲功能";
+            input.value = "Alpha feature";
             input.dispatchEvent(composing);
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(`${PANEL_CLASS}--search`)).toBe(false);
 
@@ -2153,13 +2210,13 @@ describe("搜索", () => {
         });
     });
 
-    describe("面板其它状态不受影响", () => {
-        it("搜索不改变分类的持久化：关面板写下的仍是当前页签", async () => {
+    describe("other panel state is unaffected", () => {
+        it("searching does not change persisted state, closing still writes the current tab", async () => {
             const {root, host, panel, q} = await open([
                 featureOf("alpha", {category: "editor"}),
                 featureOf("secondary", {category: "appearance"}),
             ]);
-            typeQuery(searchBox(root), "功能");
+            typeQuery(searchBox(root), "feature");
             panel.close();
 
             await vi.waitFor(() => expect(host.files.get("feature-panel-state")).toEqual({tab: "editor"}));
@@ -2168,7 +2225,7 @@ describe("搜索", () => {
     });
 });
 
-describe("不可用的设置", () => {
+describe("unavailable settings", () => {
     /** 控制开关的那个功能：面板靠它的配置变化重画不可用条目。 */
     const toggleOf = (): FeatureDefinition => ({
         id: "show-unavailable-settings",
@@ -2200,7 +2257,7 @@ describe("不可用的设置", () => {
         featureId: string,
     ): HTMLElement[] => [...(pane?.querySelectorAll<HTMLElement>(`[data-ss-feature="${featureId}"]`) ?? [])];
 
-    it("不可用条目平时收起；打开开关后灰显在页签最底部并注明原因", async () => {
+    it("unavailable items stay hidden until the switch grays them in at the bottom of the tab with a reason", async () => {
         const {q, store, panelElement} = await open(
             [featureOf("alpha"), toggleOf()],
             {},
@@ -2224,7 +2281,7 @@ describe("不可用的设置", () => {
         expect(pane?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]')?.disabled).toBe(true);
         expect(pane?.querySelector<HTMLInputElement>('[data-ss-switch="beta::enabled"]')?.disabled).toBe(true);
         // 原因行排在这个功能的最后一行
-        expect(betaRows[betaRows.length - 1].textContent).toContain("已被开发者禁用");
+        expect(betaRows[betaRows.length - 1].textContent).toContain("Disabled by the developer");
         // 排在可用功能之后（同一页里）
         const alphaRows = rowsIn(pane, "alpha");
         expect(
@@ -2233,7 +2290,7 @@ describe("不可用的设置", () => {
         ).toBeTruthy();
     });
 
-    it("四种原因各自写明：开发者禁用、平台不符、最低版本、最高版本", async () => {
+    it("the four reasons are spelled out: developer disabled, platform, minimum version and maximum version", async () => {
         setShowUnavailable(true);
         const {q} = await open(
             [featureOf("alpha"), toggleOf()],
@@ -2250,13 +2307,13 @@ describe("不可用的设置", () => {
         );
         const pane = q('[data-ss-tab-panel="editor"]');
         const reasonOf = (id: string): string => rowsIn(pane, id).pop()?.textContent ?? "";
-        expect(reasonOf("off-demo")).toContain("已被开发者禁用");
-        expect(reasonOf("mobile-demo")).toContain("仅适用于移动端");
-        expect(reasonOf("new-demo")).toContain("需要思源 9.0.0 或更高版本");
-        expect(reasonOf("old-demo")).toContain("仅支持思源 3.0.0 及更低版本");
+        expect(reasonOf("off-demo")).toContain("Disabled by the developer");
+        expect(reasonOf("mobile-demo")).toContain("Only available on Mobile");
+        expect(reasonOf("new-demo")).toContain("Requires SiYuan 9.0.0 or later");
+        expect(reasonOf("old-demo")).toContain("Only supported up to SiYuan 3.0.0");
     });
 
-    it("同时命中多个原因时逐条列出，而不是只显示一条", async () => {
+    it("several matching reasons are listed one by one instead of just the first", async () => {
         // 只在移动端存在、又已经超出最高版本：桌面端这两条同时成立
         window.siyuan.config.system.kernelVersion = "3.9.0";
         setShowUnavailable(true);
@@ -2274,10 +2331,10 @@ describe("不可用的设置", () => {
         const reasonRow = rowsIn(pane, "multi").pop();
         const lines = [...(reasonRow?.querySelectorAll(`.${PANEL_CLASS}__unavailable-reason-text`) ?? [])]
             .map((line) => line.textContent);
-        expect(lines).toEqual(["仅适用于移动端", "仅支持思源 3.8.10-alpha.1 及更低版本"]);
+        expect(lines).toEqual(["Only available on Mobile", "Only supported up to SiYuan 3.8.10-alpha.1"]);
     });
 
-    it("分类下没有可用功能时给出提示文案，打开开关后换成灰显条目", async () => {
+    it("a category without available features shows a hint that the switch replaces with grayed rows", async () => {
         const {q, store} = await open(
             [featureOf("alpha"), toggleOf()],
             {},
@@ -2292,7 +2349,7 @@ describe("不可用的设置", () => {
         expect(q('[data-ss-tab="appearance"]')).not.toBeNull();
         const pane = q('[data-ss-tab-panel="appearance"]');
         const empty = pane?.querySelector(`.${PANEL_CLASS}__category-empty`);
-        expect(empty?.textContent).toBe("当前分类下没有可用的功能。");
+        expect(empty?.textContent).toBe("No available feature in this category.");
         expect(hiddenOf(empty)).toBe(false);
         expect(rowsIn(pane, "beta").every(hiddenOf)).toBe(true);
 
@@ -2303,7 +2360,7 @@ describe("不可用的设置", () => {
         expect(rowsIn(pane, "beta").every((row) => !hiddenOf(row))).toBe(true);
     });
 
-    it("搜索时单独汇总在结果最底部；开关关着时搜不到", async () => {
+    it("items are gathered at the very bottom of the results and cannot be found while the switch is off", async () => {
         const {q, root, store} = await open(
             [featureOf("alpha", {category: "editor"}), toggleOf()],
             {},
@@ -2315,7 +2372,7 @@ describe("不可用的设置", () => {
             ],
         );
         const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
-        input.value = "不可用功能";
+        input.value = "Unavailable feature";
         input.dispatchEvent(new Event("input", {bubbles: true}));
 
         const dedicated = q('[data-ss-tab-panel="__unavailable"]');
@@ -2328,7 +2385,7 @@ describe("不可用的设置", () => {
 
         expect(hiddenOf(dedicated)).toBe(false);
         const group = dedicated?.querySelector('[data-ss-search-group="__unavailable"]');
-        expect(group?.textContent).toBe("不可用");
+        expect(group?.textContent).toBe("Unavailable");
         expect(hiddenOf(group)).toBe(false);
         // 汇总页排在所有分类页之后：结果最底部
         const panes = [...root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]")];
@@ -2337,12 +2394,12 @@ describe("不可用的设置", () => {
         expect(hiddenOf(q('[data-ss-tab-panel="appearance"]'))).toBe(true);
 
         // 搜「不可用」这三个字（分组名本身）同样能把这一组翻出来
-        input.value = "不可用";
+        input.value = "Unavailable";
         input.dispatchEvent(new Event("input", {bubbles: true}));
         expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
 
         // 分类名命中时，该分类里不可用的功能也跟着进「不可用」分组
-        input.value = "外观";
+        input.value = "Appearance";
         input.dispatchEvent(new Event("input", {bubbles: true}));
         expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
 
@@ -2352,7 +2409,7 @@ describe("不可用的设置", () => {
         expect(hiddenOf(dedicated)).toBe(true);
     });
 
-    it("真实注册表里的退役功能也画得出来：不抛错、带原因", async () => {
+    it("retired features from the real registry render too, without throwing and with a reason", async () => {
         // 3.9.0 已超过几个「上游实现了就退场」功能的最高版本，它们会以不可用的形式出现
         window.siyuan.config.system.kernelVersion = "3.9.0";
         setShowUnavailable(true);
@@ -2362,13 +2419,13 @@ describe("不可用的设置", () => {
         expect(retired).not.toBeNull();
         expect(retired?.classList.contains(`${PANEL_CLASS}__unavailable`)).toBe(true);
         expect(qa('[data-ss-tab-panel="doc-tree"] [data-ss-feature="doc-tree-title-markdown"]').pop()?.textContent)
-            .toContain("仅支持思源 3.8.10-alpha.1 及更低版本");
+            .toContain("Only supported up to SiYuan 3.8.10-alpha.1");
         // 只在移动端存在的功能在桌面端也画得出来，原因是平台
         expect(qa('[data-ss-tab-panel="appearance"] [data-ss-feature="mobile-dock-blur"]').pop()?.textContent)
-            .toContain("仅适用于移动端");
+            .toContain("Only available on Mobile");
     });
 
-    it("清空搜索后不可用条目回到分类页，显隐仍跟着开关", async () => {
+    it("clearing the search returns unavailable items to their category panes and they still follow the switch", async () => {
         setShowUnavailable(true);
         const {q, root} = await open(
             [featureOf("alpha", {category: "editor"}), toggleOf()],

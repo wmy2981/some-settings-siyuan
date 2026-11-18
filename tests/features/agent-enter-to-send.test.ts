@@ -33,7 +33,7 @@ const buildComposer = () => {
     composer.className = "agent-chat__composer-host";
     const editable = document.createElement("div");
     editable.setAttribute("contenteditable", "true");
-    editable.textContent = "你好";
+    editable.textContent = "Hello";
     composer.append(editable);
     const send = document.createElement("button");
     send.className = "agent-chat__send";
@@ -72,7 +72,7 @@ const stubExecCommand = (result = true) => {
     return {commands, exec};
 };
 
-describe("智能体回车发送", () => {
+describe("agent send on Enter", () => {
     const instances: FeatureInstance[] = [];
     const mounted: {dispose: () => void;}[] = [];
 
@@ -89,7 +89,7 @@ describe("智能体回车发送", () => {
         delete (document as unknown as Record<string, unknown>).execCommand;
     });
 
-    it("声明：桌面与移动端都适用，只有默认关闭的开关", () => {
+    it("declaration: both frontends apply, and the only setting is a switch that is off by default", () => {
         expect(definition.id).toBe("agent-enter-to-send");
         expect(definition.category).toBe("ai");
         expect(definition.enabled).toBe(true);
@@ -101,7 +101,7 @@ describe("智能体回车发送", () => {
         expect(typeof definition.mount).toBe("function");
     });
 
-    it("Enter 发送：拦住默认行为、隔断宿主快捷键，只点一次发送按钮", () => {
+    it("Enter sends: prevents the default action, isolates the host shortcut and clicks the send button once", () => {
         const {editable, clicks} = buildComposer();
         mount();
         const event = keydown();
@@ -113,7 +113,7 @@ describe("智能体回车发送", () => {
         expect(clicks).toHaveBeenCalledTimes(1);
     });
 
-    it("在 window 捕获阶段拦下：输入框自身的 keydown 收不到这一下，宿主的发送快捷键不会跟着响", () => {
+    it("intercepted in the window capture phase: the input's own keydown never sees it and the host send shortcut does not fire", () => {
         const {composer, editable, clicks} = buildComposer();
         const hostHandler = vi.fn();
         // 宿主的快捷键、编辑器的默认换行都挂在输入框自己身上（目标或冒泡阶段）
@@ -126,7 +126,7 @@ describe("智能体回车发送", () => {
         expect(clicks).toHaveBeenCalledTimes(1);
     });
 
-    it("Shift+Enter 一次都不拦：编辑器自己插软换行，长按连按都照旧", () => {
+    it("Shift+Enter is never intercepted: the editor inserts its own soft line break, repeated presses included", () => {
         const {editable, clicks} = buildComposer();
         mount();
         const event = keydown({shiftKey: true});
@@ -137,7 +137,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+Enter 与 Cmd+Enter 变成换行，不发送", () => {
+    it("Ctrl+Enter and Cmd+Enter insert a line break and do not send", () => {
         const {commands} = stubExecCommand(true);
         const {editable, clicks} = buildComposer();
         mount();
@@ -154,7 +154,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("insertLineBreak 不被支持时退回 insertParagraph，这一下键仍然有意义", () => {
+    it("insertParagraph is the fallback when insertLineBreak is unsupported, so the key still does something", () => {
         const {commands} = stubExecCommand(false);
         const {editable, clicks} = buildComposer();
         mount();
@@ -165,7 +165,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("Ctrl+Shift+Enter 按 Shift 处理：既不换行也不发送，留给编辑器", () => {
+    it("Ctrl+Shift+Enter is treated as Shift: neither a line break nor a send, so the editor keeps it", () => {
         const {exec} = stubExecCommand(true);
         const {editable, clicks} = buildComposer();
         mount();
@@ -178,7 +178,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("输入法组字期间不发送、也不吞事件：这一下 Enter 是在确认候选词", () => {
+    it("no send and no swallowing while the IME is composing: that Enter confirms a candidate", () => {
         const {editable, clicks} = buildComposer();
         mount();
 
@@ -193,7 +193,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("已经有人 preventDefault 的事件不再处理（与别的插件共存）", () => {
+    it("an event someone already prevented is left alone (coexisting with other plugins)", () => {
         const {editable, clicks} = buildComposer();
         // 先注册的捕获监听排在插件前面，模拟另一个更早加载的插件先吃掉这一下
         const earlier = (event: Event) => event.preventDefault();
@@ -206,7 +206,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("提示菜单展开时 Enter 交回思源（选中候选项），不发送也不拦", () => {
+    it("Enter goes back to SiYuan while the hint menu is open (it picks a candidate), without sending or intercepting", () => {
         const {editable, clicks} = buildComposer();
         const hint = document.createElement("div");
         hint.className = "protyle-hint--agent-overlay";
@@ -220,7 +220,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("提示菜单只是挂着 fn__none（已收起）时照常发送", () => {
+    it("sending works as usual when the hint menu only carries fn__none (collapsed)", () => {
         const {editable, clicks} = buildComposer();
         const hidden = document.createElement("div");
         hidden.className = "protyle-hint--agent-overlay fn__none";
@@ -232,7 +232,7 @@ describe("智能体回车发送", () => {
         expect(clicks).toHaveBeenCalledTimes(1);
     });
 
-    it("同页面多处提示菜单：只要有一个展开就交回思源", () => {
+    it("several hint menus on the page: one open menu is enough to hand Enter back to SiYuan", () => {
         const {editable, clicks} = buildComposer();
         // 编辑已有消息的输入框也会挂同名的提示菜单，判据不能只看自己的那个
         const otherHidden = document.createElement("div");
@@ -247,7 +247,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("脱离文档的提示菜单不算展开（宿主换输入框时留下的孤儿节点）", () => {
+    it("a detached hint menu does not count as open (an orphan left when the host swaps inputs)", () => {
         const {editable, clicks} = buildComposer();
         // 只 create 不 append：isConnected 为 false，不能被当成「菜单正开着」
         document.createElement("div").className = "protyle-hint--agent-overlay";
@@ -258,7 +258,7 @@ describe("智能体回车发送", () => {
         expect(clicks).toHaveBeenCalledTimes(1);
     });
 
-    it("长按 Enter 的重复事件只拦住、不再发送：异步发送期间按钮还没禁用", () => {
+    it("repeat events from holding Enter are intercepted without sending again: the button is not disabled yet during the async send", () => {
         const {editable, clicks} = buildComposer();
         mount();
         const repeat = keydown({repeat: true});
@@ -269,7 +269,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("发送按钮是 disabled 时什么都不发生：能不能发完全交给思源判断", () => {
+    it("nothing happens while the send button is disabled: SiYuan alone decides whether sending is possible", () => {
         const {editable, send, clicks} = buildComposer();
         send.disabled = true;
         mount();
@@ -280,7 +280,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("Alt+Enter 与非 Enter 键都不介入", () => {
+    it("Alt+Enter and non-Enter keys are not touched", () => {
         const {editable, clicks} = buildComposer();
         mount();
 
@@ -294,7 +294,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("只作用于新消息输入框：编辑已有消息的输入框不动", () => {
+    it("only the new-message input is affected: the editor for an existing message is untouched", () => {
         const area = document.createElement("div");
         area.className = "agent-chat__input-area";
         const editor = document.createElement("div");
@@ -315,7 +315,7 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("在输入框外按 Enter（例如正文编辑器）不处理", () => {
+    it("Enter outside the input (the document editor, for example) is ignored", () => {
         const outside = document.createElement("div");
         document.body.append(outside);
         mount();
@@ -326,7 +326,7 @@ describe("智能体回车发送", () => {
         expect(event.defaultPrevented).toBe(false);
     });
 
-    it("事件目标不是元素（例如派发到 window）时安全返回", () => {
+    it("returns safely when the event target is not an element (dispatched on window, for example)", () => {
         mount();
         const event = keydown();
 
@@ -334,7 +334,7 @@ describe("智能体回车发送", () => {
         expect(event.defaultPrevented).toBe(false);
     });
 
-    it("输入框里没有发送按钮时不报错，仍然拦住 Enter 以免编辑器插入换行", () => {
+    it("no error when the input has no send button, and Enter is still intercepted so the editor does not insert a line break", () => {
         const composer = document.createElement("div");
         composer.className = "agent-chat__composer-host";
         document.body.append(composer);
@@ -345,7 +345,7 @@ describe("智能体回车发送", () => {
         expect(event.defaultPrevented).toBe(true);
     });
 
-    it("destroy 之后不再响应，重复 destroy 也安全", () => {
+    it("no response after destroy, and a repeated destroy is safe", () => {
         const {editable, clicks} = buildComposer();
         const instance = mount();
 
@@ -359,12 +359,12 @@ describe("智能体回车发送", () => {
         expect(clicks).not.toHaveBeenCalled();
     });
 
-    it("mount 返回带 destroy 的实例（宿主按这个接口卸载）", () => {
+    it("mount returns an instance with destroy (the interface the host unmounts through)", () => {
         const instance = mount();
         expect(typeof instance.destroy).toBe("function");
     });
 
-    it("挂载两次会各挂一条监听，卸载其中一次不影响另一次", () => {
+    it("mounting twice installs two listeners, and unmounting one leaves the other working", () => {
         const {editable, clicks} = buildComposer();
         const first = mount();
         mount();
@@ -376,7 +376,7 @@ describe("智能体回车发送", () => {
         expect(clicks).toHaveBeenCalledTimes(1);
     });
 
-    it("按宿主卸载流程 dispose 后 window 上不留监听", () => {
+    it("disposing through the host unmount flow leaves no listener on window", () => {
         const harness = mountFeature(definition);
         mounted.push(harness);
         const {editable, clicks} = buildComposer();

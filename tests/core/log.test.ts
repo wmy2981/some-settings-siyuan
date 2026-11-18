@@ -28,12 +28,12 @@ afterEach(() => {
     setDetailedLogging(false);
 });
 
-describe("总开关", () => {
-    it("默认关闭", () => {
+describe("master switch", () => {
+    it("is off by default", () => {
         expect(isDetailedLogging()).toBe(false);
     });
 
-    it("关闭时所有级别都不输出", () => {
+    it("writes no level while off", () => {
         const log = createLogger("demo");
         log.info("info");
         log.warn("warn");
@@ -43,18 +43,18 @@ describe("总开关", () => {
         expect(vi.mocked(console.error)).not.toHaveBeenCalled();
     });
 
-    it("关闭时加载提示仍然输出", () => {
-        logLoaded("已加载");
-        expect(vi.mocked(console.log)).toHaveBeenCalledWith(`${TAG}core] 已加载`);
+    it("still writes the load notice while off", () => {
+        logLoaded("loaded");
+        expect(vi.mocked(console.log)).toHaveBeenCalledWith(`${TAG}core] loaded`);
     });
 });
 
-describe("格式", () => {
-    it("头部是 [some-settings-siyuan__<scope>]", () => {
+describe("format", () => {
+    it("has the header [some-settings-siyuan__<scope>]", () => {
         expect(logTag("modal-blur")).toBe(`${TAG}modal-blur]`);
     });
 
-    it("分别走 console.log / warn / error，并带级别", () => {
+    it("goes through console.log / warn / error with a level marker", () => {
         setDetailedLogging(true);
         logInfo("core", "started");
         logWarn("core", "careful");
@@ -64,7 +64,7 @@ describe("格式", () => {
         expect(vi.mocked(console.error)).toHaveBeenCalledWith(`${TAG}core] ERROR broken`);
     });
 
-    it("一次调用只产出一行，参数按可读文本拼接", () => {
+    it("produces a single line per call and joins arguments as readable text", () => {
         setDetailedLogging(true);
         createLogger("demo").info("loaded", {enabled: true}, new Error("boom"), 3);
         expect(vi.mocked(console.log)).toHaveBeenCalledTimes(1);
@@ -73,13 +73,13 @@ describe("格式", () => {
         );
     });
 
-    it("没有参数时不留尾随空格", () => {
+    it("leaves no trailing space without arguments", () => {
         setDetailedLogging(true);
         createLogger("demo").info();
         expect(vi.mocked(console.log)).toHaveBeenCalledWith(`${TAG}demo] INFO`);
     });
 
-    it("循环引用不会让日志抛错", () => {
+    it("never throws on a circular reference", () => {
         setDetailedLogging(true);
         const value: Record<string, unknown> = {};
         value.self = value;
@@ -88,8 +88,8 @@ describe("格式", () => {
     });
 });
 
-describe("日志器", () => {
-    it("createLogger 绑定自己的 scope", () => {
+describe("logger", () => {
+    it("createLogger binds its own scope", () => {
         setDetailedLogging(true);
         const log = createLogger("demo");
         expect(log.scope).toBe("demo");

@@ -1,9 +1,13 @@
 /**
- * 设置面板全局搜索的纯逻辑。
+ * 设置面板搜索：匹配规则与开关标记。
  *
- * 这里只有数据：解析查询、拼索引、判断命中、把一段可见文案切成「命中 / 未命中」的片段。
+ * 匹配部分只处理数据：解析查询、拼索引、判断命中、把一段可见文案切成「命中 / 未命中」的片段。
  * 面板里的显隐、分类分组、高亮写进 DOM 由 `setting-dialog.ts` 负责 —— 不碰 DOM 的这些规则
  * 才能单独单测。
+ *
+ * 文件末尾是「设置面板搜索」这个功能此刻开没开的模块级标记：开关是那个功能自己的
+ * `enabled`，挂载即打开、卸载即关闭；面板读这个标记决定搜索框与快捷键在不在，
+ * 与 `core/availability.ts` 里「显示不可用的设置」是同一套做法。
  *
  * 匹配规则（与 issue #119 一致）：
  * - 去掉首尾空白后按空白拆成多个关键词；只有空白等于没搜
@@ -174,3 +178,22 @@ export const highlightSegments = (text: string, keywords: readonly string[]): Hi
     }
     return segments;
 };
+
+/**
+ * 「设置面板搜索」功能的 id。
+ *
+ * 必须与 `src/features/settings-search/` 目录名、那里声明的 id 一致：
+ * 面板靠它订阅这个功能的配置变化，开关一翻就显隐搜索框。
+ */
+export const SEARCH_FEATURE_ID = "settings-search";
+
+/** 面板此刻要不要提供搜索；由「设置面板搜索」功能挂载 / 卸载时翻转。 */
+let searchEnabled = false;
+
+/** 打开 / 关闭面板搜索。只由那个功能调用 —— 挂载即打开、卸载即关闭。 */
+export const setSearchEnabled = (value: boolean): void => {
+    searchEnabled = value;
+};
+
+/** 面板搜索此刻是否打开。 */
+export const isSearchEnabled = (): boolean => searchEnabled;

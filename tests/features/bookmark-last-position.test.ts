@@ -45,23 +45,23 @@ const BOOKMARK_DOM = `
     <div class="sy__bookmark">
         <ul>
             <li class="b3-list-item" data-node-id="doc-1" data-type="NodeDocument">
-                <span class="b3-list-item__text">整篇文档书签</span>
-                <span class="b3-list-item__action">更多</span>
-                <span class="b3-list-item__toggle">折叠</span>
+                <span class="b3-list-item__text">Whole document bookmark</span>
+                <span class="b3-list-item__action">More</span>
+                <span class="b3-list-item__toggle">Collapse</span>
             </li>
             <li class="b3-list-item" data-node-id="block-1" data-type="NodeParagraph">
-                <span class="b3-list-item__text">块书签</span>
+                <span class="b3-list-item__text">Block bookmark</span>
             </li>
             <li class="b3-list-item" data-type="NodeDocument">
-                <span class="b3-list-item__text">没有 id</span>
+                <span class="b3-list-item__text">No id</span>
             </li>
         </ul>
     </div>
     <div class="bookmarkList"><ul>
-        <li data-node-id="doc-2" data-type="NodeDocument">移动端书签</li>
+        <li data-node-id="doc-2" data-type="NodeDocument">Mobile bookmark</li>
     </ul></div>
     <div class="not-a-bookmark"><ul>
-        <li data-node-id="doc-3" data-type="NodeDocument">别的列表</li>
+        <li data-node-id="doc-3" data-type="NodeDocument">Other list</li>
     </ul></div>
 `;
 
@@ -73,7 +73,7 @@ const render = (): void => {
 const row = (nodeId: string): HTMLElement => {
     const element = document.querySelector<HTMLElement>(`li[data-node-id="${nodeId}"]`);
     if (!element) {
-        throw new Error(`书签行 ${nodeId} 不在 DOM 里`);
+        throw new Error(`bookmark row ${nodeId} is not in the DOM`);
     }
     return element;
 };
@@ -106,8 +106,8 @@ afterEach(() => {
     mounted.splice(0).forEach((harness) => harness.dispose());
 });
 
-describe("书签打开笔记时跳到上次位置", () => {
-    it("桌面端点整篇文档书签：换成带 cb-get-scroll 的 openTab，并拦下内核那次点击", () => {
+describe("opening a note from a bookmark jumps to the last position", () => {
+    it("desktop click on a whole-document bookmark: swapped for an openTab carrying cb-get-scroll, and the kernel click is intercepted", () => {
         const harness = mount();
         const {spy, release} = trapBubbleClick();
         try {
@@ -130,7 +130,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         }
     });
 
-    it("监听挂在捕获阶段：不冒泡的 click 也要被接住", () => {
+    it("listener sits in the capture phase: even a non-bubbling click is caught", () => {
         mount();
 
         // 只挂冒泡监听会漏掉「宿主自己拦截后再派发」的那条路；
@@ -141,7 +141,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(vi.mocked(openTab).mock.calls[0][0].doc.id).toBe("doc-1");
     });
 
-    it("移动端走 openMobileFileById，只带 cb-get-scroll", () => {
+    it("mobile goes through openMobileFileById with cb-get-scroll only", () => {
         mockState.frontend = "mobile";
         const harness = mount();
 
@@ -158,7 +158,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(openTab).not.toHaveBeenCalled();
     });
 
-    it("browser-mobile 也按移动端处理", () => {
+    it("browser-mobile is handled as mobile too", () => {
         mockState.frontend = "browser-mobile";
         mount();
 
@@ -168,7 +168,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(openTab).not.toHaveBeenCalled();
     });
 
-    it("两个书签面板都认：.sy__bookmark 与 .bookmarkList", () => {
+    it("both bookmark panels are recognized: .sy__bookmark and .bookmarkList", () => {
         mount();
 
         dispatchClick(row("doc-1"));
@@ -177,7 +177,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(vi.mocked(openTab).mock.calls.map((call) => call[0].doc.id)).toEqual(["doc-1", "doc-2"]);
     });
 
-    it("块书签不接管：加在块上的书签本来就该跳到那个块", () => {
+    it("block bookmarks are not taken over: a bookmark on a block should jump to that block", () => {
         mount();
         const {spy, release} = trapBubbleClick();
         try {
@@ -190,7 +190,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         }
     });
 
-    it("「更多」菜单与折叠箭头有自己的行为，不能被抢走", () => {
+    it("the More menu and the collapse arrow keep their own behavior and are not stolen", () => {
         mount();
 
         dispatchClick(row("doc-1").querySelector(".b3-list-item__action") as HTMLElement);
@@ -199,7 +199,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(openTab).not.toHaveBeenCalled();
     });
 
-    it("修饰键与中键点的是另一套语义（新页签 / 分屏 / 不跳转），一律放行", () => {
+    it("modifier keys and middle click mean something else (new tab / split / no jump) and always pass through", () => {
         mount();
         const {spy, release} = trapBubbleClick();
         try {
@@ -216,7 +216,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         }
     });
 
-    it("书签面板之外的同类行、以及没有 data-node-id 的行都不碰", () => {
+    it("similar rows outside the bookmark panels, and rows without data-node-id, are untouched", () => {
         mount();
         const {spy, release} = trapBubbleClick();
         try {
@@ -230,7 +230,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         }
     });
 
-    it("点在 document 上（target 不是元素）不抛错也不打开", () => {
+    it("clicking on document (target is not an element) neither throws nor opens", () => {
         mount();
 
         // event.target 可能是 document 本身，`instanceof Element` 的守卫就是为它写的
@@ -240,7 +240,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(openTab).not.toHaveBeenCalled();
     });
 
-    it("destroy 摘掉监听，重复 destroy 也不抛", () => {
+    it("destroy removes the listener and a repeated destroy does not throw", () => {
         const harness = mount();
         const instance = harness.instance as {destroy: () => void;};
         expect(typeof instance.destroy).toBe("function");
@@ -253,7 +253,7 @@ describe("书签打开笔记时跳到上次位置", () => {
         expect(() => harness.dispose()).not.toThrow();
     });
 
-    it("声明：文档树分类、默认关闭、只带一个 enabled 开关", () => {
+    it("declaration: doc-tree category, off by default, a single enabled switch", () => {
         expect(definition.id).toBe("bookmark-last-position");
         expect(definition.category).toBe("doc-tree");
         expect(definition.enabled).toBe(true);

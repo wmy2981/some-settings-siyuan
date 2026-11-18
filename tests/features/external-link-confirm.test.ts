@@ -95,7 +95,7 @@ afterEach(() => {
 const listenerOf = (records: HostRecords) => {
     const record = records.bus.find((item) => item.type === "open-link");
     if (!record) {
-        throw new Error("external-link-confirm 没有注册 open-link 监听器");
+        throw new Error("external-link-confirm registered no open-link listener");
     }
     return record.listener;
 };
@@ -123,7 +123,7 @@ const linkInDocument = (href: string): HTMLSpanElement => {
     const link = document.createElement("span");
     link.dataset.type = "a";
     link.dataset.href = href;
-    link.textContent = "链接";
+    link.textContent = "link";
     document.body.append(link);
     return link;
 };
@@ -135,9 +135,9 @@ const clickOn = (element: Element, init: MouseEventInit = {}): MouseEvent => {
     return event;
 };
 
-describe("外链跳转前确认", () => {
-    describe("样式", () => {
-        it("注入弹窗自己那套 CSS，卸载后连 <style> 一起收走", () => {
+describe("confirm before opening external links", () => {
+    describe("styles", () => {
+        it("injects the dialog's own CSS and removes the <style> on unmount", () => {
             mount();
 
             const css = harness?.css() ?? "";
@@ -155,8 +155,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("弹窗内容", () => {
-        it("弹窗里显示完整链接，取消 / 打开 / 复制三个按钮都在", () => {
+    describe("dialog content", () => {
+        it("shows the full link and keeps the cancel / open / copy buttons", () => {
             mount();
 
             const event = emitOpenLink(harness!.records, {href: "https://example.com/a/b?c=1"});
@@ -176,7 +176,7 @@ describe("外链跳转前确认", () => {
             expect(dialog?.querySelector("[data-ss-open-link]")?.textContent).toBe("feature.externalLinkConfirm.open");
         });
 
-        it("链接文本按 HTML 转义：网址里的 & 与引号不能把弹窗结构冲掉", () => {
+        it("link text is HTML-escaped: & and quotes in a URL cannot break the dialog", () => {
             mount();
 
             emitOpenLink(harness!.records, {href: 'https://example.com/?a=1&b="x"<y>'});
@@ -190,7 +190,7 @@ describe("外链跳转前确认", () => {
             expect(url?.children).toHaveLength(0);
         });
 
-        it("弹窗预热：容器在入场前就挂上图层类", () => {
+        it("dialog preheat: the container carries the layer class before it appears", () => {
             mount();
 
             emitOpenLink(harness!.records, {href: "https://example.com/"});
@@ -204,8 +204,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("拦哪些链接", () => {
-        it("href 缺失时用 originalHref，仍然按外链处理", () => {
+    describe("which links are intercepted", () => {
+        it("falls back to originalHref when href is missing, still external", () => {
             mount();
 
             emitOpenLink(harness!.records, {originalHref: "https://example.com/original"});
@@ -214,7 +214,7 @@ describe("外链跳转前确认", () => {
                 .toBe("https://example.com/original");
         });
 
-        it("站内资源与 siyuan:// 一律放行：它们不经过系统浏览器，问了只会烦人", () => {
+        it("in-app resources and siyuan:// always pass: they never reach the system browser", () => {
             mount();
 
             for (const href of ["assets/a.png", "siyuan://plugins/x", "mailto:a@b.c", ""]) {
@@ -224,7 +224,7 @@ describe("外链跳转前确认", () => {
             expect(dialogElement()).toBeNull();
         });
 
-        it("已经在问的时候再来一次只取消跳转，不叠第二个弹窗", () => {
+        it("a second link while asking only cancels it, without stacking a dialog", () => {
             mount();
 
             emitOpenLink(harness!.records, {href: "https://example.com/1"});
@@ -238,8 +238,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("取消", () => {
-        it("点取消销毁弹窗，并且这一次已经拦下的跳转不会发生", () => {
+    describe("cancel", () => {
+        it("cancel destroys the dialog and the intercepted jump never happens", () => {
             mount();
             emitOpenLink(harness!.records, {href: "https://example.com/1"});
 
@@ -249,7 +249,7 @@ describe("外链跳转前确认", () => {
             expect(window.open).not.toHaveBeenCalled();
         });
 
-        it("取消之后再点别的链接还能正常提问", () => {
+        it("after cancelling, another link still prompts", () => {
             mount();
             emitOpenLink(harness!.records, {href: "https://example.com/1"});
             dialogElement()?.querySelector<HTMLElement>("[data-ss-cancel-link]")?.click();
@@ -261,8 +261,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("打开", () => {
-        it("点打开后销毁弹窗，并在原链接上补发一次同样的 click", () => {
+    describe("open", () => {
+        it("open destroys the dialog and re-dispatches the same click on the link", () => {
             mount();
             const link = linkInDocument("https://example.com/x");
             const source = clickOn(link, {shiftKey: true, ctrlKey: true});
@@ -284,7 +284,7 @@ describe("外链跳转前确认", () => {
             expect(window.open).not.toHaveBeenCalled();
         });
 
-        it("补发 click 时自己不再拦一次（绕过标记在同一帧内复位）", () => {
+        it("the re-dispatched click is not intercepted again, the bypass flag resets within the frame", () => {
             mount();
             const link = linkInDocument("https://example.com/x");
             emitOpenLink(harness!.records, {href: "https://example.com/x", event: clickOn(link)});
@@ -302,7 +302,7 @@ describe("外链跳转前确认", () => {
             expect(document.body.querySelectorAll(".b3-dialog")).toHaveLength(0);
         });
 
-        it("链接已经不在文档里时退回 window.open", () => {
+        it("falls back to window.open when the link left the document", () => {
             mount();
             const detached = document.createElement("span");
             detached.dataset.type = "a";
@@ -319,7 +319,7 @@ describe("外链跳转前确认", () => {
             expect(window.open).toHaveBeenCalledWith("https://example.com/gone", "_blank");
         });
 
-        it("事件里没有原始事件（键盘路径）时也走 window.open", () => {
+        it("uses window.open when the event carries no original event, the keyboard path", () => {
             mount();
             emitOpenLink(harness!.records, {href: "https://example.com/kbd"});
 
@@ -329,8 +329,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("复制", () => {
-        it("剪贴板可用时提示「已复制」", async () => {
+    describe("copy", () => {
+        it("shows the copied toast when the clipboard works", async () => {
             const writeText = vi.fn(async () => undefined);
             Object.defineProperty(navigator, "clipboard", {
                 value: {writeText},
@@ -347,7 +347,7 @@ describe("外链跳转前确认", () => {
             expect(dialogElement()).not.toBeNull();
         });
 
-        it("复制失败也要说一句，不能静默", async () => {
+        it("a copy failure still reports something, never silently", async () => {
             // jsdom 里 navigator.clipboard 与 document.execCommand 都不存在，正好是失败路径
             mount();
             emitOpenLink(harness!.records, {href: "https://example.com/copy"});
@@ -358,8 +358,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("卸载与清理", () => {
-        it("卸载时收掉还开着的弹窗", () => {
+    describe("unmount and cleanup", () => {
+        it("unmount closes a dialog that is still open", () => {
             const current = mount();
             emitOpenLink(current.records, {href: "https://example.com/"});
             expect(dialogElement()).not.toBeNull();
@@ -369,7 +369,7 @@ describe("外链跳转前确认", () => {
             expect(document.body.querySelectorAll(".b3-dialog")).toHaveLength(0);
         });
 
-        it("卸载后 bus 上的监听器被摘掉，再派发 open-link 也不弹窗", () => {
+        it("the bus listener is removed on unmount, so a later open-link shows no dialog", () => {
             const current = mount();
             current.dispose();
 
@@ -378,7 +378,7 @@ describe("外链跳转前确认", () => {
             expect(document.body.querySelectorAll(".b3-dialog")).toHaveLength(0);
         });
 
-        it("重复销毁是幂等的", () => {
+        it("repeated destroy is idempotent", () => {
             const current = mount();
             emitOpenLink(current.records, {href: "https://example.com/"});
 
@@ -389,8 +389,8 @@ describe("外链跳转前确认", () => {
         });
     });
 
-    describe("开关", () => {
-        it("默认关闭：配置里 enabled 的默认值是 false", () => {
+    describe("switch", () => {
+        it("off by default: the enabled setting defaults to false", () => {
             const enabled = externalLinkConfirm.settings.find((field) => field.key === "enabled");
             expect(enabled && "default" in enabled ? enabled.default : undefined).toBe(false);
         });

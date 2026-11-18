@@ -126,8 +126,8 @@ const tap = (target: Element, x = 10, y = 10): MouseEvent => {
     return up;
 };
 
-describe("移动端下拉用思源原生样式", () => {
-    it("声明：只在移动端交出，到 3.8.7-alpha.2 为止（之后宿主自己统一了下拉）", () => {
+describe("mobile selects use SiYuan's native styling", () => {
+    it("declaration: shipped for mobile only, up to 3.8.7-alpha.2 (the host unifies selects afterwards)", () => {
         expect(definition.id).toBe("mobile-select-native");
         expect(definition.category).toBe("appearance");
         expect(definition.name).toBe("feature.mobileSelectNative.title");
@@ -140,8 +140,8 @@ describe("移动端下拉用思源原生样式", () => {
         ]);
     });
 
-    it("按下只挡浏览器默认弹层，菜单要等到抬起才弹（否则会被这次点击的尾巴关掉）", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+    it("pointerdown only blocks the browser default popup and the menu waits for the release (otherwise the tail of this click closes it)", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         mount();
 
         const down = point("pointerdown", {button: 0});
@@ -154,8 +154,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(1);
     });
 
-    it("菜单项按 option 顺序列出、label 取文字、checked 标在当前值上，定位参数取自控件", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"], ["c", "丙"]]);
+    it("menu items follow the option order, label comes from the text, checked marks the current value and the position comes from the control", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"], ["c", "C"]]);
         select.value = "b";
         layout(select, {left: 30, top: 40, width: 200, height: 36});
         mount();
@@ -163,14 +163,14 @@ describe("移动端下拉用思源原生样式", () => {
         tap(select);
 
         expect(opened).toHaveLength(1);
-        expect(opened[0].items.map((item) => item.label)).toEqual(["甲", "乙", "丙"]);
+        expect(opened[0].items.map((item) => item.label)).toEqual(["A", "B", "C"]);
         expect(opened[0].items.map((item) => item.checked)).toEqual([false, true, false]);
         expect(opened[0].options).toEqual({x: 30, y: 76, h: 36, w: 200});
         // 「选项个数」是排查「菜单空着」时唯一能对上的日志
         expect(mountLogs()).toContain("native menu took over the select (3 options)");
     });
 
-    it("option 没有文字时 label 回落到 value", () => {
+    it("label falls back to the value when the option has no text", () => {
         const select = makeSelect([["alpha", ""]]);
         mount();
 
@@ -179,8 +179,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened[0].items[0].label).toBe("alpha");
     });
 
-    it("选中另一项：写回 value，并按 input → change 的顺序在冒泡阶段补发", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+    it("selecting another item writes the value back and re-dispatches input → change in that order during bubbling", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         const events: string[] = [];
         select.addEventListener("input", (event) => events.push(`input:${(event as Event).bubbles}`));
         select.addEventListener("change", (event) => events.push(`change:${(event as Event).bubbles}`));
@@ -194,8 +194,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(events).toEqual(["input:true", "change:true"]);
     });
 
-    it("选中的就是当前值：不改值、也不派发任何事件", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+    it("selecting the current value changes nothing and dispatches no events", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         const listener = vi.fn();
         select.addEventListener("input", listener);
         select.addEventListener("change", listener);
@@ -208,9 +208,9 @@ describe("移动端下拉用思源原生样式", () => {
         expect(listener).not.toHaveBeenCalled();
     });
 
-    it("只接管思源自己的下拉：普通 select、禁用的下拉、非 select 元素都不动", () => {
-        const plain = makeSelect([["a", "甲"]], {className: ""});
-        const disabled = makeSelect([["a", "甲"]], {disabled: true});
+    it("takes over only SiYuan's own selects: plain selects, disabled ones and non-select elements are left alone", () => {
+        const plain = makeSelect([["a", "A"]], {className: ""});
+        const disabled = makeSelect([["a", "A"]], {disabled: true});
         const div = document.createElement("div");
         document.body.append(div);
         mount();
@@ -225,8 +225,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(0);
     });
 
-    it("手指划走（位移超过阈值）不算点选：不弹菜单，也不吞掉这次手势", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+    it("dragging past the threshold is not a tap: no menu and no swallowed gesture", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         mount();
 
         select.dispatchEvent(point("pointerdown", {button: 0, clientX: 10, clientY: 10}));
@@ -242,8 +242,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(0);
     });
 
-    it("触摸路径：touchstart 不 preventDefault（否则页面划不动），touchend 才开菜单", () => {
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+    it("touch path: touchstart does not preventDefault (the page would stop scrolling) and only touchend opens the menu", () => {
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         mount();
 
         const start = touch("touchstart", 10, 10);
@@ -259,8 +259,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(1);
     });
 
-    it("触摸滑动：touchend 位移超阈值时不弹菜单、也不拦默认行为", () => {
-        const select = makeSelect([["a", "甲"]]);
+    it("touch drag: no menu and no default prevention when touchend moves past the threshold", () => {
+        const select = makeSelect([["a", "A"]]);
         mount();
 
         select.dispatchEvent(touch("touchstart", 10, 10));
@@ -271,10 +271,10 @@ describe("移动端下拉用思源原生样式", () => {
         expect(end.defaultPrevented).toBe(false);
     });
 
-    it("去重窗口：同一根手指 300ms 内的重复手势只开一次菜单", () => {
+    it("dedupe window: repeated gestures from the same finger within 300ms open the menu only once", () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date(2024, 0, 1, 12, 0, 0));
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         mount();
 
         tap(select);
@@ -291,10 +291,10 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(2);
     });
 
-    it("再次打开前先把上一份菜单收掉，不叠两个弹层", () => {
+    it("closes the previous menu before opening again instead of stacking two popups", () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date(2024, 0, 1, 12, 0, 0));
-        const select = makeSelect([["a", "甲"], ["b", "乙"]]);
+        const select = makeSelect([["a", "A"], ["b", "B"]]);
         mount();
 
         tap(select);
@@ -306,10 +306,10 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(2);
     });
 
-    it("菜单弹出后的短时间内，落在遮罩上的 click 被吞掉（内核「点菜单外面」会关掉它）", () => {
+    it("clicks landing on the scrim shortly after the menu opens are swallowed (the kernel closes it on an outside click)", () => {
         vi.useFakeTimers();
         vi.setSystemTime(new Date(2024, 0, 1, 12, 0, 0));
-        const select = makeSelect([["a", "甲"]]);
+        const select = makeSelect([["a", "A"]]);
         const scrim = document.createElement("div");
         scrim.id = "commonMenuScrim";
         document.body.append(scrim);
@@ -338,8 +338,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(scrimListener).toHaveBeenCalledTimes(2);
     });
 
-    it("控件自己的 click 一律吞掉：不让浏览器再走一次原生下拉", () => {
-        const select = makeSelect([["a", "甲"]]);
+    it("clicks on the control itself are always swallowed so the browser does not run its native select again", () => {
+        const select = makeSelect([["a", "A"]]);
         const selectListener = vi.fn();
         select.addEventListener("click", selectListener);
         mount();
@@ -353,8 +353,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(0);
     });
 
-    it("pointercancel / touchcancel 之后这次手势作废，抬起时不再弹菜单", () => {
-        const select = makeSelect([["a", "甲"]]);
+    it("the gesture is dropped after pointercancel / touchcancel, so the release opens no menu", () => {
+        const select = makeSelect([["a", "A"]]);
         mount();
 
         select.dispatchEvent(point("pointerdown", {button: 0}));
@@ -368,8 +368,8 @@ describe("移动端下拉用思源原生样式", () => {
         expect(opened).toHaveLength(0);
     });
 
-    it("destroy 拆掉全部监听并收掉菜单，不再拦任何事件", () => {
-        const select = makeSelect([["a", "甲"]]);
+    it("destroy removes every listener and closes the menu, blocking nothing afterwards", () => {
+        const select = makeSelect([["a", "A"]]);
         const harness = mount();
         tap(select);
         expect(opened).toHaveLength(1);
@@ -390,7 +390,7 @@ describe("移动端下拉用思源原生样式", () => {
         expect(closeMenu).toHaveBeenCalledTimes(1);
     });
 
-    it("mount 只挂事件监听：不注入样式、不注册任何入口", () => {
+    it("mount only adds event listeners: no styles injected and no entries registered", () => {
         const harness = mount();
         expect(harness.records.styles).toHaveLength(0);
         expect(harness.records.bus).toHaveLength(0);
@@ -399,11 +399,11 @@ describe("移动端下拉用思源原生样式", () => {
         expect(harness.instance?.destroy).toBeTypeOf("function");
     });
 
-    it("移动端前端下才有的实现：桌面端也不拒绝挂载（前端筛选由注册表负责）", () => {
+    it("a mobile-only implementation still mounts on desktop (the registry handles frontend filtering)", () => {
         // 这个文件本身不判前端，是否挂载由声明的 frontends 决定；
         // 这里固定桌面端再挂一次，确认它不依赖当前前端就能工作
         mockState.frontend = "desktop";
-        const select = makeSelect([["a", "甲"]]);
+        const select = makeSelect([["a", "A"]]);
         mount();
 
         tap(select);

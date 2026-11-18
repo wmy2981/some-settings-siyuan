@@ -26,7 +26,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的选择器与属性名。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("退出应用遮罩始终模糊", () => {
+describe("Exit mask stays blurred", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -39,7 +39,7 @@ describe("退出应用遮罩始终模糊", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：属于界面分类，自 3.8.10 起加载，只有一个默认关闭的开关", () => {
+    it("declaration: appearance category, loaded from 3.8.10, a single switch that is off by default", () => {
         expect(definition.category).toBe("appearance");
         expect(definition.minAppVersion).toBe("3.8.10");
         // 桌面端与移动端共用同一套进度遮罩，不该只对一端交出
@@ -48,7 +48,7 @@ describe("退出应用遮罩始终模糊", () => {
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("只停掉动画：比宿主那条多一级 body，不写 !important", () => {
+    it("only stops the animation: one extra body level over the host rule, no !important", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain("body #exitProgress .b3-dialog__scrim--progress {");
@@ -58,14 +58,14 @@ describe("退出应用遮罩始终模糊", () => {
         expect(css).not.toContain("!important");
     });
 
-    it("不重写模糊与底色：无障碍回退仍由宿主的媒体查询负责", () => {
+    it("does not rewrite the blur or the background: the host media queries keep the accessible fallback", () => {
         const css = rulesOf(mount().css());
 
         expect(css).not.toContain("backdrop-filter");
         expect(css).not.toContain("background");
     });
 
-    it("静态 CSS 不订阅配置变化：广播保存不会重复注入", () => {
+    it("static CSS does not subscribe to config changes, so a broadcast save does not reinject", () => {
         const harness = mount();
         expect(harness.records.styles).toHaveLength(1);
         expect(harness.records.configListeners).toHaveLength(0);
@@ -75,14 +75,14 @@ describe("退出应用遮罩始终模糊", () => {
         expect(harness.records.styles).toHaveLength(1);
     });
 
-    it("重复挂载共用同一个 <style>", () => {
+    it("repeated mounts share one <style>", () => {
         mount();
         mount();
 
         expect(styleCount()).toBe(1);
     });
 
-    it("mount 只调一次 addStyle，并记录挂载与卸载", () => {
+    it("mount calls addStyle once and logs both mount and unmount", () => {
         const styles: string[] = [];
         const logs: unknown[][] = [];
         const host = {
@@ -105,7 +105,7 @@ describe("退出应用遮罩始终模糊", () => {
         expect(logs).toHaveLength(2);
     });
 
-    it("dispose 之后 <head> 里的 <style> 被移除", () => {
+    it("dispose removes the <style> from <head>", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 

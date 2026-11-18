@@ -26,7 +26,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的同名文字。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("隐藏智能体新会话的推荐操作", () => {
+describe("Hides the suggested actions on the agent welcome screen", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -39,14 +39,14 @@ describe("隐藏智能体新会话的推荐操作", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：属于人工智能分类，两端都适用，只有一个默认关闭的开关", () => {
+    it("Declaration: AI category, both frontends, a single switch that is off by default", () => {
         expect(definition.category).toBe("ai");
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("只隐藏示例推荐容器：直接子元素 + 补一级父元素，且只有一条 display: none", () => {
+    it("Hides only the examples container: direct child plus one parent level, with a single display: none", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain(".agent-welcome > .agent-welcome__examples {");
@@ -60,7 +60,7 @@ describe("隐藏智能体新会话的推荐操作", () => {
         expect(css).not.toContain("!important");
     });
 
-    it("挂载只注入样式，不改任何 DOM", () => {
+    it("Mounting only injects the style and leaves the DOM untouched", () => {
         const before = document.body.innerHTML;
 
         mount();
@@ -70,7 +70,7 @@ describe("隐藏智能体新会话的推荐操作", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("静态 CSS 不订阅配置变化：广播保存不会重复注入", () => {
+    it("Static CSS ignores config changes: a broadcast save injects nothing new", () => {
         const harness = mount();
         expect(harness.records.styles).toHaveLength(1);
         expect(harness.records.configListeners).toHaveLength(0);
@@ -83,14 +83,14 @@ describe("隐藏智能体新会话的推荐操作", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("重复挂载共用同一个 <style>，不会堆出第二张样式表", () => {
+    it("Mounting again reuses the same <style> instead of stacking a second sheet", () => {
         mount();
         mount();
 
         expect(styleCount()).toBe(1);
     });
 
-    it("mount 只调一次 addStyle，不碰其它宿主能力", () => {
+    it("mount calls addStyle once and touches no other host capability", () => {
         const styles: string[] = [];
         const host = {
             addStyle: (css: string) => {
@@ -103,7 +103,7 @@ describe("隐藏智能体新会话的推荐操作", () => {
         expect(styles[0]).toContain("display: none");
     });
 
-    it("dispose 之后 <head> 里的 <style> 被移除", () => {
+    it("dispose removes the <style> from <head>", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 
@@ -113,7 +113,7 @@ describe("隐藏智能体新会话的推荐操作", () => {
         expect(harness.styleElement()).toBeNull();
     });
 
-    it("dispose 幂等：重复卸载不会抛错", () => {
+    it("dispose is idempotent: unmounting twice does not throw", () => {
         const harness = mount();
         harness.dispose();
         expect(() => harness.dispose()).not.toThrow();

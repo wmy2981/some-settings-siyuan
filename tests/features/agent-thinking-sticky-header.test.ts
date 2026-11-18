@@ -84,7 +84,7 @@ const buildScene = (options: SceneOptions) => {
     const header = document.createElement("div");
     header.className = "agent-chat__thinking-header";
     const label = document.createElement("span");
-    label.textContent = "已思考 3 秒";
+    label.textContent = "Thought for 3s";
     header.append(label);
     const body = document.createElement("div");
     body.className = "agent-chat__thinking-body";
@@ -117,7 +117,7 @@ const click = (element: Element): void => {
 const styleCount = (): number =>
     document.head.querySelectorAll('style[data-some-settings-style="agent-thinking-sticky-header"]').length;
 
-describe("智能体思考标题固定在顶部", () => {
+describe("agent thinking header sticks to the top", () => {
     const harnesses: HostHarness[] = [];
     const stops: (() => void)[] = [];
     const frames = () => stubFrames();
@@ -140,7 +140,7 @@ describe("智能体思考标题固定在顶部", () => {
         vi.useRealTimers();
     });
 
-    it("声明：只支持到 3.8.10-alpha.1（上游从下一个版本起自己实现了）", () => {
+    it("declaration: supported up to 3.8.10-alpha.1 (upstream implements it from the next version on)", () => {
         expect(definition.id).toBe("agent-thinking-sticky-header");
         expect(definition.category).toBe("ai");
         expect(definition.enabled).toBe(true);
@@ -152,7 +152,7 @@ describe("智能体思考标题固定在顶部", () => {
         ]);
     });
 
-    it("注入一条规则：粘性定位 + 负的 top 抹掉滚动区的内边距 + 底色与层级", () => {
+    it("injects a single rule: sticky positioning, a negative top that cancels the scroller padding, plus background and stacking level", () => {
         const harness = mount();
         const css = harness.css();
 
@@ -171,7 +171,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(harness.styleElement()?.textContent).toBe(harness.records.styles[0]);
     });
 
-    it("选择器不加限定层级：停靠面板与编辑器内 AI 面板共用同一套类名", () => {
+    it("the selector adds no ancestor scope: the dock panel and the in-editor AI panel share the same class names", () => {
         const css = mount().css().replace(/\/\*[\s\S]*?\*\//g, "").trim();
         const selector = css.slice(0, css.indexOf("{")).trim();
 
@@ -181,14 +181,14 @@ describe("智能体思考标题固定在顶部", () => {
         expect(selector).not.toContain(" ");
     });
 
-    it("移动端与桌面端注入同一份 CSS（单条规则两端共用）", () => {
+    it("mobile and desktop get the same CSS (one rule shared by both)", () => {
         const desktop = mount().css();
         harnesses.splice(0).forEach((harness) => harness.dispose());
         // 源码不按前端分支，两端必须是同一份，而不是「桌面生效、移动端漏了」
         expect(desktop).toBe(mount().css());
     });
 
-    it("重新挂载（保存配置后宿主重新挂载）时重写同一张样式表，不堆叠第二张", () => {
+    it("a remount (the host remounts after saving) rewrites the same stylesheet instead of stacking a second one", () => {
         mount();
         expect(styleCount()).toBe(1);
         const first = document.head.querySelector<HTMLStyleElement>(
@@ -206,7 +206,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(first?.textContent).toBe(second.records.styles[0]);
     });
 
-    it("卸载后样式元素与点击监听一起收干净", () => {
+    it("unmounting cleans up the style element and the click listener", () => {
         const harness = mount();
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         const frame = frames();
@@ -222,13 +222,13 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(100);
     });
 
-    it("卸载幂等：重复释放不抛错", () => {
+    it("unmount is idempotent: releasing twice does not throw", () => {
         const harness = mount();
         harness.dispose();
         expect(() => harness.dispose()).not.toThrow();
     });
 
-    it("折叠后卡片整个滑到上沿之上：把顶沿对回滚动区上沿", () => {
+    it("once the collapsed card has slid fully above the top edge the top edge is realigned to the scroller top", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         anchor();
@@ -241,7 +241,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(60);
     });
 
-    it("过渡结束后再看一眼：240ms 后按当时的高度再对齐一次", () => {
+    it("looks again after the transition: realigns once more at 240ms using the height at that moment", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         const spy = vi.spyOn(scene.card, "getBoundingClientRect");
@@ -259,7 +259,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(spy).toHaveBeenCalledTimes(2);
     });
 
-    it("卡片底沿还在上沿之下时不动滚动位置：卡片自己就是用户的参照物", () => {
+    it("the scroll position stays put while the card bottom is still below the top edge: the card is the user's own reference", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: 120, cardBottom: 900, scrollTop: 60});
         anchor();
@@ -272,7 +272,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(60);
     });
 
-    it("卡片底沿正好等于上沿（边界）时仍然对齐", () => {
+    it("still realigns when the card bottom equals the top edge (boundary)", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -30, cardBottom: 0, scrollTop: 100});
         anchor();
@@ -285,7 +285,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(70);
     });
 
-    it("滚动位置不会被算成负数：已经在上沿之上、scrollTop 也是 0 时保持 0", () => {
+    it("the scroll position never goes negative: already above the top edge with scrollTop 0 it stays 0", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -30, cardBottom: -10, scrollTop: 0});
         anchor();
@@ -297,7 +297,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(0);
     });
 
-    it("点在标题里的文字上也生效（整行可点）", () => {
+    it("clicking the text inside the header works too (the whole row is clickable)", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         anchor();
@@ -309,7 +309,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(60);
     });
 
-    it("点思考正文不触发对齐：只有标题是折叠开关", () => {
+    it("clicking the thinking body does not realign: only the header is the collapse toggle", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         anchor();
@@ -323,12 +323,12 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(100);
     });
 
-    it("标题不在思考卡片里（重试卡片用另一套类名）时完全不介入", () => {
+    it("stays out entirely when the header is not inside a thinking card (retry cards use other class names)", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         const retry = document.createElement("div");
         retry.className = "agent-chat__msg--retry";
-        retry.innerHTML = '<div class="agent-chat__thinking-header">失败</div>';
+        retry.innerHTML = '<div class="agent-chat__thinking-header">Failed</div>';
         scene.scroller.append(retry);
         anchor();
         const frame = frames();
@@ -339,11 +339,11 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(100);
     });
 
-    it("没有滚动祖先时安全返回，不碰任何滚动位置", () => {
+    it("returns safely with no scroll ancestor and touches no scroll position", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const card = document.createElement("div");
         card.className = "agent-chat__msg--thinking";
-        card.innerHTML = '<div class="agent-chat__thinking-header">已思考</div>';
+        card.innerHTML = '<div class="agent-chat__thinking-header">Thought</div>';
         document.body.append(card);
         anchor();
         const frame = frames();
@@ -356,7 +356,7 @@ describe("智能体思考标题固定在顶部", () => {
         }).not.toThrow();
     });
 
-    it("定时器到点前卡片已被移除：不读已脱离文档的节点", () => {
+    it("the card is removed before the timer fires: detached nodes are never measured", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         const spy = vi.spyOn(scene.card, "getBoundingClientRect");
@@ -374,7 +374,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(100);
     });
 
-    it("连点两次只保留最后一个定时器：不会在 240ms 后连做两次无关的对齐", () => {
+    it("two clicks keep only the last timer, so no extra unrelated realign runs 240ms later", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: -40, cardBottom: -10, scrollTop: 100});
         const spy = vi.spyOn(scene.card, "getBoundingClientRect");
@@ -392,7 +392,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(spy).toHaveBeenCalledTimes(3);
     });
 
-    it("stop() 之后不再响应，未到点的定时器也被清掉", () => {
+    it("nothing responds after stop() and pending timers are cleared", () => {
         vi.useFakeTimers({toFake: ["setTimeout", "clearTimeout"]});
         const scene = buildScene({cardTop: 100, cardBottom: 400, scrollTop: 60});
         const spy = vi.spyOn(scene.card, "getBoundingClientRect");
@@ -412,7 +412,7 @@ describe("智能体思考标题固定在顶部", () => {
         expect(scene.scroller.scrollTop).toBe(60);
     });
 
-    it("直接调用 mount 也返回带 destroy 的实例", () => {
+    it("calling mount directly also returns an instance with destroy", () => {
         const instance: FeatureInstance = mountAgentThinkingStickyHeader(
             {
                 addStyle: () => () => undefined,

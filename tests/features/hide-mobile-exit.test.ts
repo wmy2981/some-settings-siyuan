@@ -29,7 +29,7 @@ const styleCount = (): number =>
 /** 去掉注释再检查规则本体，避免命中注释里的同名文字。 */
 const rulesOf = (css: string): string => css.replace(/\/\*[\s\S]*?\*\//g, "");
 
-describe("隐藏移动端退出应用按钮", () => {
+describe("Hides the mobile exit button", () => {
     const mounted: {dispose: () => void;}[] = [];
 
     const mount = () => {
@@ -42,14 +42,14 @@ describe("隐藏移动端退出应用按钮", () => {
         mounted.splice(0).forEach((harness) => harness.dispose());
     });
 
-    it("声明：属于界面分类，只在移动端交出，只有一个默认关闭的开关", () => {
+    it("Declaration: appearance category, mobile only, one off-by-default switch", () => {
         expect(definition.category).toBe("appearance");
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
     });
 
-    it("选择器逐级限定到那个按钮，不波及整个工具栏或右侧面板", () => {
+    it("Scopes the selector to that button, not the toolbar or the side panel", () => {
         const css = rulesOf(mount().css());
 
         expect(css).toContain("#sidebarRight > .toolbar > #sidebarRightExit {");
@@ -60,7 +60,7 @@ describe("隐藏移动端退出应用按钮", () => {
         expect(css).not.toContain("!important");
     });
 
-    it("按钮留在 DOM 里：功能只加样式，不动核心 DOM", () => {
+    it("Keeps the button in the DOM, the feature only adds styles", () => {
         document.body.innerHTML = `<div id="sidebarRight">
             <div class="toolbar"><button id="sidebarRightExit" class="fn__none"></button></div>
         </div>`;
@@ -74,7 +74,7 @@ describe("隐藏移动端退出应用按钮", () => {
         expect(styleCount()).toBe(1);
     });
 
-    it("静态 CSS 不订阅配置变化：广播保存不会重复注入", () => {
+    it("Static CSS ignores config changes, a broadcast save injects nothing", () => {
         const harness = mount();
         expect(harness.records.styles).toHaveLength(1);
         expect(harness.records.configListeners).toHaveLength(0);
@@ -84,14 +84,14 @@ describe("隐藏移动端退出应用按钮", () => {
         expect(harness.records.styles).toHaveLength(1);
     });
 
-    it("重复挂载共用同一个 <style>", () => {
+    it("Shares a single <style> across repeated mounts", () => {
         mount();
         mount();
 
         expect(styleCount()).toBe(1);
     });
 
-    it("mount 只调一次 addStyle", () => {
+    it("Calls addStyle exactly once per mount", () => {
         const styles: string[] = [];
         const host = {
             addStyle: (css: string) => {
@@ -104,7 +104,7 @@ describe("隐藏移动端退出应用按钮", () => {
         expect(styles[0]).toContain("#sidebarRightExit");
     });
 
-    it("dispose 之后 <head> 里的 <style> 被移除", () => {
+    it("Removes the <style> from <head> after dispose", () => {
         const harness = mount();
         expect(styleCount()).toBe(1);
 

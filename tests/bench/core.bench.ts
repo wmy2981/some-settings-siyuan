@@ -110,7 +110,7 @@ describe("core hot paths", () => {
     it("prints the benchmark table", () => {
         const rows: BenchRow[] = [];
         const index = buildIndex();
-        const escapeTarget = '面板文案 <div class="b3-label">"图片压缩" & \'image\' — some-settings-siyuan</div>';
+        const escapeTarget = 'panel <div class="b3-label">"image compress" & \'image\' — some-settings-siyuan</div>';
 
         rows.push(
             measure("escapeHtml(120 chars)", () => {
@@ -158,7 +158,7 @@ describe("core hot paths", () => {
             }, {iterations: 20_000}),
         );
 
-        const css = "/* 样式表重复注入是配置驱动的常态 */\n.x { color: red; }";
+        const css = "/* repeated style injection is normal with config-driven panels */\n.x { color: red; }";
         rows.push(
             measure("addStyle(repeat, same owner)", () => {
                 addStyle("bench", css);
