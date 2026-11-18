@@ -123,6 +123,21 @@
 
 ![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
 
+## 开发
+
+需要 Node.js 24 及以上，克隆仓库后按需执行：
+
+```bash
+npm ci              # 安装依赖
+npm run dev         # 监听源码，把 index.js / index.css / i18n 直接写到仓库根目录
+npm run build       # 校验功能声明后打包出 dist/ 与 package.zip
+npm run check       # 只校验功能声明与三份语言文件
+npm run typecheck   # TypeScript 类型检查
+npm run lint        # ESLint
+npm run format      # dprint 格式化（format:check 只检查不写盘）
+npm test            # 单元测试（vitest）
+```
+
 ## 许可证
 
 [AGPL-3.0-or-later](./LICENSE)

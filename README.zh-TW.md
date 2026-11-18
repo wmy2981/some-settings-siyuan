@@ -123,6 +123,21 @@
 
 ![市集趨勢圖表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)
 
+## 開發
+
+需要 Node.js 24 以上，複製倉庫後按需執行：
+
+```bash
+npm ci              # 安裝依賴
+npm run dev         # 監看原始碼，把 index.js / index.css / i18n 直接寫到倉庫根目錄
+npm run build       # 校驗功能宣告後打包出 dist/ 與 package.zip
+npm run check       # 只校驗功能宣告與三份語言檔
+npm run typecheck   # TypeScript 型別檢查
+npm run lint        # ESLint
+npm run format      # dprint 格式化（format:check 只檢查不寫入）
+npm test            # 單元測試（vitest）
+```
+
 ## 授權條款
 
 [AGPL-3.0-or-later](./LICENSE)

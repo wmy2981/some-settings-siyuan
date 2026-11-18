@@ -136,6 +136,21 @@ plugin adds no top bar button, no status bar item and no dock item.
 
 ![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
 
+## Development
+
+Requires Node.js 24 or newer. After cloning the repository:
+
+```bash
+npm ci              # install dependencies
+npm run dev         # watch sources, write index.js / index.css / i18n into the repository root
+npm run build       # check the feature declarations, then build dist/ and package.zip
+npm run check       # check the feature declarations and the three language files only
+npm run typecheck   # TypeScript typecheck
+npm run lint        # ESLint
+npm run format      # format with dprint (format:check only verifies)
+npm test            # unit tests (vitest)
+```
+
 ## License
 
 [AGPL-3.0-or-later](./LICENSE)
