@@ -203,11 +203,11 @@ describe("applyPatch: i18n overrides", () => {
         expect(detailOf("i18n:\n  en:\n    feature.alpha.title: true\n")).toContain("must be a string");
     });
 
-    it("validates every language section, even one that does not apply here", () => {
-        // 整份生效或整份作废：非当前语言段里的结构 / 类型错误同样让补丁作废
-        expect(
-            detailOf('i18n:\n  en:\n    feature.alpha.title: "A"\n  zh-CN:\n    feature.alpha.title: true\n'),
-        ).toContain("must be a string");
+    it("ignores a non-current language section, even when its values are invalid", () => {
+        // 其他语言段不生效，也不校验其中的键值；当前语言那一段照常生效
+        const outcome = apply('i18n:\n  en:\n    feature.alpha.title: "A"\n  zh-CN:\n    feature.alpha.title: true\n');
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "A"});
     });
 
     it("rejects an empty translation so the UI cannot fall back to the key", () => {
@@ -250,6 +250,15 @@ describe("applyPatch: unknown entries are skipped", () => {
         expect(outcome.kind).toBe("applied");
         expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha"});
         expect(outcome.kind === "applied" && outcome.ignored.translations).toEqual(["nosuch.key"]);
+    });
+
+    it("skips an unknown i18n key without validating its value", () => {
+        // 键不存在时整条跳过：写成布尔值、空值都不能拖垮别的条目
+        const outcome = apply('i18n:\n  en:\n    nosuch.key: false\n    feature.alpha.title: "Alpha"\n');
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha"});
+        expect(outcome.kind === "applied" && outcome.ignored.translations).toEqual(["nosuch.key"]);
+        expect(apply("i18n:\n  en:\n    nosuch.key:\n").kind).toBe("none");
     });
 
     it("does not validate the body of an unknown feature id", () => {

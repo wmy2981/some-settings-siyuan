@@ -105,9 +105,9 @@ i18n:
 ```
 
 * **Only the current interface language applies.** The plugin loads one language file at runtime (the
-  one for the interface language), so a section for another language does not apply; any structural
-  or type error inside the `i18n` section still invalidates the whole file. The language code may be
-  written as `zh-CN` or with the legacy underscore `zh_CN`.
+  one for the interface language), so a section for another language does not apply and its values are
+  not validated; the overall `i18n` shape (language → key/value table) must still be valid. The
+  language code may be written as `zh-CN` or with the legacy underscore `zh_CN`.
 * **Only existing keys can be changed.** The key must already exist in the language file that ships
   with the plugin; a missing key is skipped (see the next subsection). Values are used verbatim:
   placeholders such as `{platform}`, `{version}` and `{count}` are still filled in by the code that
@@ -151,8 +151,9 @@ feature id or i18n key: that entry is skipped, see above.) The reasons include:
 * a top-level key other than `features` and `i18n`, or `features` not being a "feature id → fields"
   mapping;
 * an unknown field, a value of the wrong type;
-* an `i18n` section that is not a "language → key → text" structure, or a value that is not a string
-  (an empty string is rejected as well);
+* an `i18n` section that is not a "language → key → text" structure, or a value (for a key that
+  exists in the current language) that is not a string; an empty string is rejected as well, while an
+  unknown key is skipped together with its value;
 * an invalid `category`, an invalid frontend, a duplicated frontend;
 * an invalid version number, or a range that ends up empty because `minAppVersion` is above
   `maxAppVersion` after merging with the source declaration.

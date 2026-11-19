@@ -206,13 +206,14 @@ const patchOf = (id: string, value: YamlValue, definition: FeatureDefinition): F
     return patch;
 };
 
-/** 补丁里的 i18n 段：语言 → 键 → 文案。 */
-export type TranslationSections = Record<string, Record<string, string>>;
+/** 补丁里的 i18n 段：语言 → 键 → 原始 YAML 值。 */
+export type TranslationSections = Record<string, YamlMapping>;
 
 /**
- * 读补丁的 `i18n` 段：只认「语言 → 键 → 字符串」这一种结构。
+ * 读补丁的 `i18n` 段：只认「语言 → 键」这一层结构，值的类型先不动。
  *
- * 这里只看结构，「这个键到底存不存在」要等拿到宿主那份文案才能判断（见 `translationsOf()`）。
+ * 「这个键到底存不存在」要等拿到宿主那份文案才能判断（见 `translationsOf()`）；键不存在时
+ * 连值都不该校验 —— 否则一条早已删掉的文案会连带整份补丁作废。
  * `i18n:` / `i18n: {}` / 某个语言后面什么都没写，都表示这一层没有覆盖。
  */
 const i18nSectionsOf = (root: YamlMapping): TranslationSections => {
@@ -232,20 +233,7 @@ const i18nSectionsOf = (root: YamlMapping): TranslationSections => {
         if (!isMapping(section)) {
             reject(`i18n "${lang}" must map translation keys to texts`);
         }
-        const messages: Record<string, string> = {};
-        Object.keys(section).forEach((key) => {
-            const value = section[key];
-            if (typeof value !== "string") {
-                reject(`i18n "${lang}": the value of "${key}" must be a string`);
-            }
-            // 空串会让取文案的代码回落到 key 本身（面板与 FeatureHost 都按真值判断），
-            // 补丁看起来生效了、界面却是 key，所以直接判为非法
-            if (value === "") {
-                reject(`i18n "${lang}": the value of "${key}" must not be empty`);
-            }
-            messages[key] = value as string;
-        });
-        sections[lang] = messages;
+        sections[lang] = section;
     });
     return sections;
 };
@@ -268,12 +256,22 @@ const translationsOf = (
     const translations: Record<string, string> = {};
     const ignored: string[] = [];
     Object.keys(section).forEach((key) => {
-        // 宿主加载的那份文案里没有这个键：跳过它，绝不能让其余条目跟着失效
+        // 宿主加载的那份文案里没有这个键：整条跳过，值写成什么都不再校验 ——
+        // 插件升级删掉一条文案后，旧补丁里那条即使写坏了也不该拖垮其余条目
         if (typeof locale.messages?.[key] !== "string") {
             ignored.push(key);
             return;
         }
-        translations[key] = section[key];
+        const value = section[key];
+        if (typeof value !== "string") {
+            reject(`i18n "${locale.lang}": the value of "${key}" must be a string`);
+        }
+        // 空串会让取文案的代码回落到 key 本身（面板与 FeatureHost 都按真值判断），
+        // 补丁看起来生效了、界面却是 key，所以直接判为非法
+        if (value === "") {
+            reject(`i18n "${locale.lang}": the value of "${key}" must not be empty`);
+        }
+        translations[key] = value;
     });
     return {translations, ignored};
 };
