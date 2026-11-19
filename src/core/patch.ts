@@ -435,20 +435,22 @@ const currentLanguage = (): string => {
 };
 
 /**
- * 把补丁文案写回宿主那份 i18n 对象。
+ * 把补丁文案整体写回宿主那份 i18n 对象。
  *
  * `plugin.i18n` 是设置面板、动作行与各功能取文案的唯一来源，直接改它才能让补丁与
  * 「把这段文字写进 i18n/<lang>.json」完全等价 —— 包括 `{version}` 这类占位符：值原样替换，
- * 占位符仍由用它的代码去填。`plugin.i18n` 缺失时什么也不做。
+ * 占位符仍由用它的代码去填。
+ *
+ * 先拼出一份完整副本再一次性赋值：宿主对象是只读、Proxy 或 setter 抛错时不会留下
+ * 「写进去一半」的状态，调用方可以把整份补丁按失败处理，而不是让异常冒到插件启动流程。
  */
-const applyTranslations = (plugin: Plugin, translations: Record<string, string>): void => {
+const applyTranslations = (plugin: Plugin, translations: Record<string, string>): boolean => {
     const messages = plugin.i18n;
     if (!messages || typeof messages !== "object") {
-        return;
+        return false;
     }
-    Object.keys(translations).forEach((key) => {
-        messages[key] = translations[key];
-    });
+    plugin.i18n = {...messages, ...translations};
+    return true;
 };
 
 /**
@@ -478,8 +480,14 @@ export const loadPatch = async (
         return {kind: "none", detail: `${PATCH_STORAGE_NAME} is empty`};
     }
     const outcome = applyPatch(definitions, text, {lang: currentLanguage(), messages: plugin.i18n});
-    if (outcome.kind === "applied") {
-        applyTranslations(plugin, outcome.translations);
+    if (outcome.kind === "applied" && Object.keys(outcome.translations).length > 0) {
+        try {
+            if (!applyTranslations(plugin, outcome.translations)) {
+                return {kind: "failed", detail: `${PATCH_STORAGE_NAME} cannot be applied: the host has no i18n object`};
+            }
+        } catch (error) {
+            return {kind: "failed", detail: `cannot apply the translations of ${PATCH_STORAGE_NAME}: ${String(error)}`};
+        }
     }
     return outcome;
 };

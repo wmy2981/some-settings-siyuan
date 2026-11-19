@@ -378,7 +378,37 @@ describe("loadPatch", () => {
         } as unknown as Plugin;
         const outcome = await loadPatch(host, DEFINITIONS);
         expect(outcome.kind).toBe("applied");
-        expect(i18n["feature.alpha.title"]).toBe("Patched");
+        // 新对象一次性替换，旧的 i18n 对象保持原样
+        expect(host.i18n["feature.alpha.title"]).toBe("Patched");
+        expect(i18n["feature.alpha.title"]).toBe("Alpha");
+    });
+
+    it("fails without touching the old object when the host refuses the i18n write", async () => {
+        const i18n: Record<string, unknown> = {"feature.alpha.title": "Alpha"};
+        const host = {
+            name: "some-settings-siyuan",
+            get i18n() {
+                return i18n;
+            },
+            set i18n(_value: unknown) {
+                throw new Error("read only");
+            },
+            loadData: vi.fn(async () => 'i18n:\n  en:\n    feature.alpha.title: "Patched"\n'),
+        } as unknown as Plugin;
+        const outcome = await loadPatch(host, DEFINITIONS);
+        expect(outcome.kind).toBe("failed");
+        expect(outcome.kind === "failed" && outcome.detail).toContain("read only");
+        // 写入整体失败：旧对象里的值没有被改掉一半
+        expect(i18n["feature.alpha.title"]).toBe("Alpha");
+    });
+
+    it("an i18n-only patch overrides nothing when the host has no i18n object", async () => {
+        const host = {
+            name: "some-settings-siyuan",
+            i18n: undefined,
+            loadData: vi.fn(async () => 'i18n:\n  en:\n    feature.alpha.title: "Patched"\n'),
+        } as unknown as Plugin;
+        await expect(loadPatch(host, DEFINITIONS)).resolves.toMatchObject({kind: "none"});
     });
 
     it("a missing file is a normal state, not an error", async () => {
