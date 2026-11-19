@@ -105,8 +105,9 @@ i18n:
 ```
 
 * **Only the current interface language applies.** The plugin loads one language file at runtime (the
-  one for the interface language), so a section for another language does not apply and raises no
-  error; the language code may be written as `zh-CN` or with the legacy underscore `zh_CN`.
+  one for the interface language), so a section for another language does not apply; any structural
+  or type error inside the `i18n` section still invalidates the whole file. The language code may be
+  written as `zh-CN` or with the legacy underscore `zh_CN`.
 * **Only existing keys can be changed.** The key must already exist in the language file that ships
   with the plugin; a missing key is skipped (see the next subsection). Values are used verbatim:
   placeholders such as `{platform}`, `{version}` and `{count}` are still filled in by the code that
@@ -147,10 +148,11 @@ ships with the plugin, and no partial state is ever applied. (The only exception
 feature id or i18n key: that entry is skipped, see above.) The reasons include:
 
 * YAML syntax errors (the message carries a line number);
-* a top-level key other than `features`, or `features` not being a "feature id → fields" mapping;
+* a top-level key other than `features` and `i18n`, or `features` not being a "feature id → fields"
+  mapping;
 * an unknown field, a value of the wrong type;
-* an `i18n` section that is not a "language → key → text" structure, a value that is not a string,
-  or a key that the language file shipped with the plugin does not have;
+* an `i18n` section that is not a "language → key → text" structure, or a value that is not a string
+  (an empty string is rejected as well);
 * an invalid `category`, an invalid frontend, a duplicated frontend;
 * an invalid version number, or a range that ends up empty because `minAppVersion` is above
   `maxAppVersion` after merging with the source declaration.
@@ -164,8 +166,8 @@ When that happens:
 * after every successful opening of the plugin's settings panel a non-blocking message tells you the
   patch is invalid. The patch has no row in the panel, so without that message you would only find out
   by reading the console;
-* a missing file, an empty file, a comments-only file and `features: {}` all mean "no override" and
-  produce no error at all.
+* a missing file, an empty file, a comments-only file, `features: {}` and `i18n: {}` all mean
+  "no override" and produce no error at all.
 
 ## Maintenance boundaries
 
