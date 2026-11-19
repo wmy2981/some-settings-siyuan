@@ -238,6 +238,11 @@ const i18nSectionsOf = (root: YamlMapping): TranslationSections => {
             if (typeof value !== "string") {
                 reject(`i18n "${lang}": the value of "${key}" must be a string`);
             }
+            // 空串会让取文案的代码回落到 key 本身（面板与 FeatureHost 都按真值判断），
+            // 补丁看起来生效了、界面却是 key，所以直接判为非法
+            if (value === "") {
+                reject(`i18n "${lang}": the value of "${key}" must not be empty`);
+            }
             messages[key] = value as string;
         });
         sections[lang] = messages;

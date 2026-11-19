@@ -210,6 +210,10 @@ describe("applyPatch: i18n overrides", () => {
         ).toContain("must be a string");
     });
 
+    it("rejects an empty translation so the UI cannot fall back to the key", () => {
+        expect(detailOf('i18n:\n  en:\n    feature.alpha.title: ""\n')).toContain("must not be empty");
+    });
+
     it("applies feature overrides and translations in the same file", () => {
         const outcome = apply(
             'features:\n  alpha:\n    enabled: false\ni18n:\n  en:\n    feature.alpha.title: "Alpha"\n',
