@@ -28,7 +28,8 @@ import type {Logger} from "./log";
  * - doc-tree：文档树、页签与文档图标
  * - appearance：弹窗、栏体、侧栏等界面外观
  * - connection：内核连接
- * - settings：思源的设置页与集市
+ * - settings：思源的设置页
+ * - bazaar：思源的集市
  * - plugin：本插件自身的维护与说明
  */
 export type FeatureCategory =
@@ -38,6 +39,7 @@ export type FeatureCategory =
     | "appearance"
     | "connection"
     | "settings"
+    | "bazaar"
     | "plugin";
 
 /** 页签顺序：面板照这份数组渲染，没内容的不出现。 */
@@ -48,6 +50,7 @@ export const FEATURE_CATEGORIES: FeatureCategory[] = [
     "appearance",
     "connection",
     "settings",
+    "bazaar",
     "plugin",
 ];
 

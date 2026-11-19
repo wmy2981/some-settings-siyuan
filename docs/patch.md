@@ -31,7 +31,7 @@ remove a restriction.
 | Field           | Overrides                                        | Valid values                                                                                               |
 | --------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | `enabled`       | whether the feature ships with the plugin        | `true` / `false`                                                                                           |
-| `category`      | the settings tab the feature lives in            | `ai` / `editor` / `doc-tree` / `appearance` / `connection` / `settings` / `plugin`                         |
+| `category`      | the settings tab the feature lives in            | `ai` / `editor` / `doc-tree` / `appearance` / `connection` / `settings` / `bazaar` / `plugin`              |
 | `frontends`     | the frontends it applies to                      | a list of `desktop` / `mobile`; `[]` means neither frontend; `null` or an empty value means no restriction |
 | `minAppVersion` | the lowest supported SiYuan version (inclusive)  | a SiYuan version string such as `"3.8.7"`; `null` or an empty value removes the lower bound                |
 | `maxAppVersion` | the highest supported SiYuan version (inclusive) | a SiYuan version string such as `"3.9.0"`; `null` or an empty value removes the upper bound                |

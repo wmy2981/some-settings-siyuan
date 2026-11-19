@@ -12,7 +12,7 @@ import {openIconManager} from "./manager";
 
 export default defineFeature({
     id: "bazaar-custom-icon",
-    category: "settings",
+    category: "bazaar",
     enabled: true,
     name: "feature.bazaarCustomIcon.title",
     description: "feature.bazaarCustomIcon.description",

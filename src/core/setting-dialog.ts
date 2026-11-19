@@ -163,6 +163,7 @@ const CATEGORY_ICONS: Record<FeatureCategory, string> = {
     appearance: "iconTheme",
     connection: "iconPlugZap",
     settings: "iconSettings",
+    bazaar: "iconBazaar",
     plugin: "iconPlugin",
 };
 

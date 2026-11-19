@@ -31,7 +31,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Hide the selection toolbar
 * Guide to the Ref Crumbs plugin
 
-### Document tree and tabs
+### Document tree
 
 * Fixed first document icon
 * Jump to the last position when a bookmark opens a note
@@ -41,7 +41,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Outline heading level limit
 * Mobile document tree title size back to 3.8.9
 
-### Interface and appearance
+### Appearance
 
 * Blur behind modals
 * Keep the exit screen blurred
@@ -57,19 +57,22 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Ask before quitting
 * F12 toggles the developer tools
 
-### Connection and kernel
+### Connection
 
 * Reconnect button on the disconnect panel
 * Automatic reconnect after a disconnect
 
-### Settings and marketplace
+### Settings
 
 * Aliyun OSS bucket usage
+* Syntax highlighting for snippets
+* Console log viewer
+
+### Marketplace
+
 * Custom marketplace icons
 * Block marketplace packages by author
 * Hide downloaded donation buttons
-* Syntax highlighting for snippets
-* Console log viewer
 
 ### This plugin
 
