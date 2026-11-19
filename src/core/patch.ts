@@ -417,11 +417,11 @@ export const reportPatch = (outcome: PatchOutcome): void => {
         return;
     }
     if (outcome.kind === "failed") {
-        log.warn(`${PATCH_STORAGE_NAME} is invalid and is ignored for every feature: ${outcome.detail}`);
+        log.warn(`${PATCH_STORAGE_NAME} is invalid and is ignored for every feature and text: ${outcome.detail}`);
         return;
     }
     // 没有补丁是正常状态：只在详细日志里说明一句，不告警、不提示
-    log.info(`no feature declaration is patched: ${outcome.detail}`);
+    log.info(`the patch overrides nothing: ${outcome.detail}`);
     logIgnored(outcome.ignored);
 };
 
