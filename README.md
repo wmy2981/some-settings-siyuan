@@ -119,6 +119,8 @@ plugin adds no top bar button, no status bar item and no dock item.
   marketplace icons change this client only, sync with SiYuan and survive a configuration clear.
 * Uninstalling the plugin leaves the plugin storage directory alone: every feature's configuration, the panel
   state and your own `.patch.yml` stay in place and apply again after a reinstall.
+* Advanced use: a `.patch.yml` in the plugin storage directory can override feature declarations and interface
+  texts; see [docs/patch.md](docs/patch.md). The plugin never creates or rewrites that file.
 * Both reconnect features reload the whole frontend; note content lives in the kernel, so a reload loses nothing.
 * The author blocklist only covers the five online marketplace list tabs; downloaded and update lists stay
   unchanged. Authors are matched exactly against the author field of the marketplace index (case-insensitive),
