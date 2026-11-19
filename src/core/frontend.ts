@@ -52,10 +52,12 @@ export const withoutMobileInputFocus = <T>(run: () => T): T => {
 
 /**
  * 该功能是否适用于当前前端。
- * 没声明 frontends 的功能两端都适用。
+ *
+ * 不写 `frontends` 表示两端都适用；显式写空数组表示**两端都不适用**（用户级补丁用它把功能
+ * 彻底关掉，见 `core/patch.ts`），所以这里不能把空数组当成「不写」——两者含义正好相反。
  */
 export const supportsCurrentFrontend = (definition: FeatureDefinition): boolean => {
-    if (!definition.frontends || definition.frontends.length === 0) {
+    if (!definition.frontends) {
         return true;
     }
     return definition.frontends.includes(currentFrontend());

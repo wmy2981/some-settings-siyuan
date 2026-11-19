@@ -333,7 +333,7 @@ describe("Bazaar package custom icons", () => {
     describe("feature declaration", () => {
         it("a switch that is off by default, a manager entry and a notice block; the action button opens the manager", async () => {
             expect(definition.id).toBe("bazaar-custom-icon");
-            expect(definition.category).toBe("settings");
+            expect(definition.category).toBe("bazaar");
             expect(definition.enabled).toBe(true);
             expect(definition.settings.map((field) => field.key)).toEqual(["enabled", "manage", "notice"]);
             expect(definition.settings[0]).toEqual({

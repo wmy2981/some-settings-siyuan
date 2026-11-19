@@ -79,7 +79,9 @@ class FakeHost {
         "panel.categoryEmpty": "No available feature in this category.",
         "panel.unavailable.group": "Unavailable",
         "panel.unavailable.disabled": "Disabled by the developer",
+        "panel.unavailable.userDisabled": "Disabled by your patch",
         "panel.unavailable.frontend": "Only available on {platform}",
+        "panel.unavailable.frontendNone": "Not available on any frontend",
         "panel.unavailable.minVersion": "Requires SiYuan {version} or later",
         "panel.unavailable.maxVersion": "Only supported up to SiYuan {version}",
         "panel.search.placeholder": "Search...",
@@ -2290,7 +2292,7 @@ describe("unavailable settings", () => {
         ).toBeTruthy();
     });
 
-    it("the four reasons are spelled out: developer disabled, platform, minimum version and maximum version", async () => {
+    it("every reason is spelled out: developer, user patch, platform, no platform, both versions", async () => {
         setShowUnavailable(true);
         const {q} = await open(
             [featureOf("alpha"), toggleOf()],
@@ -2300,7 +2302,11 @@ describe("unavailable settings", () => {
                 featureOf("alpha"),
                 toggleOf(),
                 betaOf({id: "off-demo", enabled: false}),
+                // 用户级补丁关掉的功能：原因要写成「用户禁用」，不能混成开发者禁用
+                betaOf({id: "patch-off", enabled: false, fromPatch: {enabled: false}}),
                 betaOf({id: "mobile-demo", frontends: ["mobile"]}),
+                // 补丁把适用端设成空数组：两端都不适用，没有端名可填
+                betaOf({id: "nowhere-demo", frontends: []}),
                 betaOf({id: "new-demo", minAppVersion: "9.0.0"}),
                 betaOf({id: "old-demo", maxAppVersion: "3.0.0"}),
             ],
@@ -2308,7 +2314,10 @@ describe("unavailable settings", () => {
         const pane = q('[data-ss-tab-panel="editor"]');
         const reasonOf = (id: string): string => rowsIn(pane, id).pop()?.textContent ?? "";
         expect(reasonOf("off-demo")).toContain("Disabled by the developer");
+        expect(reasonOf("patch-off")).toContain("Disabled by your patch");
+        expect(reasonOf("patch-off")).not.toContain("Disabled by the developer");
         expect(reasonOf("mobile-demo")).toContain("Only available on Mobile");
+        expect(reasonOf("nowhere-demo")).toContain("Not available on any frontend");
         expect(reasonOf("new-demo")).toContain("Requires SiYuan 9.0.0 or later");
         expect(reasonOf("old-demo")).toContain("Only supported up to SiYuan 3.0.0");
     });

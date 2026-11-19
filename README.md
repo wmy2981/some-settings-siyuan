@@ -31,7 +31,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Hide the selection toolbar
 * Guide to the Ref Crumbs plugin
 
-### Document tree and tabs
+### Document tree
 
 * Fixed first document icon
 * Jump to the last position when a bookmark opens a note
@@ -41,7 +41,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Outline heading level limit
 * Mobile document tree title size back to 3.8.9
 
-### Interface and appearance
+### Appearance
 
 * Blur behind modals
 * Keep the exit screen blurred
@@ -57,19 +57,22 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Ask before quitting
 * F12 toggles the developer tools
 
-### Connection and kernel
+### Connection
 
 * Reconnect button on the disconnect panel
 * Automatic reconnect after a disconnect
 
-### Settings and marketplace
+### Settings
 
 * Aliyun OSS bucket usage
+* Syntax highlighting for snippets
+* Console log viewer
+
+### Marketplace
+
 * Custom marketplace icons
 * Block marketplace packages by author
 * Hide downloaded donation buttons
-* Syntax highlighting for snippets
-* Console log viewer
 
 ### This plugin
 
@@ -114,6 +117,10 @@ plugin adds no top bar button, no status bar item and no dock item.
   only collects from the moment its own switch is on, so logs from plugin startup are never recorded.
 * Import, export and clear cover every configuration file under `data/storage/petal/some-settings-siyuan`; custom
   marketplace icons change this client only, sync with SiYuan and survive a configuration clear.
+* Uninstalling the plugin leaves the plugin storage directory alone: every feature's configuration, the panel
+  state and your own `.patch.yml` stay in place and apply again after a reinstall.
+* Advanced use: a `.patch.yml` in the plugin storage directory can override feature declarations and interface
+  texts; see [docs/patch.md](docs/patch.md). The plugin never creates or rewrites that file.
 * Both reconnect features reload the whole frontend; note content lives in the kernel, so a reload loses nothing.
 * The author blocklist only covers the five online marketplace list tabs; downloaded and update lists stay
   unchanged. Authors are matched exactly against the author field of the marketplace index (case-insensitive),

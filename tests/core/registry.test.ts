@@ -17,11 +17,13 @@ import {SHOW_UNAVAILABLE_FEATURE_ID} from "../../src/core/availability";
 import {LOG_FEATURE_ID} from "../../src/core/log";
 import {
     activeFeatures,
-    ALL_FEATURE_IDS,
     categoryOrder,
+    effectiveFeatures,
     FEATURES,
     featureById,
     featuresOf,
+    resetEffectiveFeatures,
+    setEffectiveFeatures,
 } from "../../src/core/registry";
 import {SEARCH_FEATURE_ID} from "../../src/core/search";
 import {FEATURE_CATEGORIES} from "../../src/core/types";
@@ -69,10 +71,6 @@ describe("The registry itself", () => {
             const entry = path.join(ROOT, "src", "features", feature.id, "index.ts");
             expect(fs.existsSync(entry), `missing ${entry}`).toBe(true);
         });
-    });
-
-    it("ALL_FEATURE_IDS matches FEATURES in order and content", () => {
-        expect(ALL_FEATURE_IDS).toEqual(FEATURES.map((feature) => feature.id));
     });
 
     it("enabled must be an explicit true or false", () => {
@@ -163,6 +161,40 @@ describe("Lookups", () => {
     });
 });
 
+describe("the effective declaration view", () => {
+    /** 只改一个功能的声明视图，其余原样引用。 */
+    const withFeature = (id: string, extra: Partial<FeatureDefinition>): FeatureDefinition[] =>
+        FEATURES.map((feature) => feature.id === id ? {...feature, ...extra} : feature);
+
+    it("is the source declarations until a patch replaces it as a whole", () => {
+        expect(effectiveFeatures()).toBe(FEATURES);
+
+        try {
+            setEffectiveFeatures(withFeature("log-output", {enabled: false}));
+            // 装载、面板、搜索读的都是这一份：关掉之后它立刻不在生效清单里
+            expect(activeFeatures().map((feature) => feature.id)).not.toContain("log-output");
+            expect(featureById("log-output")?.enabled).toBe(false);
+            // 源码声明本身一个字段都没动，随时能整份退回
+            expect(FEATURES[0].enabled).toBe(true);
+        } finally {
+            resetEffectiveFeatures();
+        }
+
+        expect(effectiveFeatures()).toBe(FEATURES);
+        expect(activeFeatures().map((feature) => feature.id)).toContain("log-output");
+    });
+
+    it("uses the patched category for the panel tabs and the search groups", () => {
+        try {
+            setEffectiveFeatures(withFeature("log-output", {category: "editor"}));
+            expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
+            expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
+        } finally {
+            resetEffectiveFeatures();
+        }
+    });
+});
+
 describe("activeFeatures", () => {
     it("Desktop excludes mobile-only features", () => {
         mockState.frontend = "desktop";
@@ -199,7 +231,6 @@ describe("activeFeatures", () => {
         FEATURES.push(retired);
         try {
             expect(activeFeatures().map((feature) => feature.id)).not.toContain("retired-demo");
-            expect(ALL_FEATURE_IDS).not.toContain("retired-demo");
         } finally {
             FEATURES.pop();
         }
@@ -222,7 +253,7 @@ describe("activeFeatures", () => {
         expect(active.size).toBe(
             FEATURES.filter((feature) =>
                 feature.enabled &&
-                (!feature.frontends?.length || feature.frontends.includes("desktop")) &&
+                (!feature.frontends || feature.frontends.includes("desktop")) &&
                 supportsCurrentHost(feature)
             ).length,
         );

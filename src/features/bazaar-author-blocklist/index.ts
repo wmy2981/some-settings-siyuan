@@ -13,7 +13,7 @@ import {mountBazaarAuthorBlocklist} from "./apply";
 
 export default defineFeature({
     id: "bazaar-author-blocklist",
-    category: "settings",
+    category: "bazaar",
     enabled: true,
     name: "feature.bazaarAuthorBlocklist.title",
     description: "feature.bazaarAuthorBlocklist.description",

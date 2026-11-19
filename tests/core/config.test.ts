@@ -984,3 +984,26 @@ describe("prefetch", () => {
         });
     });
 });
+
+describe("files that are not feature configurations", () => {
+    /** 用户级声明补丁：它和配置放在同一个目录里，但三个整体动作都不能碰它。 */
+    const PATCH = "features:\n  alpha:\n    enabled: false\n";
+
+    it("export, clear and import leave the patch file untouched", async () => {
+        const host = new FakeHost();
+        host.files.set("feature-alpha", {enabled: true});
+        host.files.set(".patch.yml", PATCH);
+        serveDirListing(host);
+        const store = new ConfigStore(host.asPlugin());
+
+        // 导出只含配置文件
+        await expect(store.exportAll()).resolves.toEqual({alpha: {enabled: true}});
+        // 导入只写配置文件
+        await expect(store.importMany({alpha: {enabled: false}})).resolves.toMatchObject({applied: ["alpha"]});
+        expect(host.files.get(".patch.yml")).toBe(PATCH);
+        // 清除只删配置文件：补丁由用户自己维护，卸载时也不动它
+        await store.clearAll();
+        expect(host.files.has("feature-alpha")).toBe(false);
+        expect(host.files.get(".patch.yml")).toBe(PATCH);
+    });
+});

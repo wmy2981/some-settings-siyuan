@@ -3,7 +3,7 @@ import {mountHideBazaarDownloadedDonate} from "./style";
 
 export default defineFeature({
     id: "hide-bazaar-downloaded-donate",
-    category: "settings",
+    category: "bazaar",
     enabled: true,
     name: "feature.hideBazaarDownloadedDonate.title",
     description: "feature.hideBazaarDownloadedDonate.description",

@@ -5,7 +5,7 @@
  * 1. onload —— 建立功能装载器、注册内联图标、同步挂载各功能（顶栏/命令/停靠栏必须同步注册）
  * 2. onLayoutReady —— 挂上插件自己的顶栏入口，打开设置面板
  * 3. onunload —— 释放全部功能，幂等
- * 4. uninstall —— 删除插件自己的全部存储
+ * 4. uninstall —— 保留插件自己的全部存储（不删数据目录）
  *
  * 任何功能的异常都在 core/error.ts 里被隔离，不允许冒泡到这里。
  */
@@ -14,25 +14,13 @@ import {
     showMessage,
 } from "siyuan";
 import {FeatureManager} from "./core/bootstrap";
-import {storageNameOf} from "./core/config";
-import {
-    guardAsync,
-    reportError,
-} from "./core/error";
+import {reportError} from "./core/error";
 import {currentFrontend} from "./core/frontend";
 import {
     createLogger,
     isDetailedLogging,
     logLoaded,
 } from "./core/log";
-import {ALL_FEATURE_IDS} from "./core/registry";
-import {
-    CONFIG_IO_CONCURRENCY,
-    listStoredFiles,
-    mapLimit,
-    removeStorageDir,
-    removeStoredFile,
-} from "./core/storage";
 // 集市要求包根目录必须有 index.css；各功能自己的样式走 host.addStyle() 运行时注入
 import "./index.scss";
 import manifest from "../plugin.json";
@@ -77,49 +65,16 @@ export default class SomeSettingsPlugin extends Plugin {
     }
 
     /**
-     * 卸载：删掉本插件存储目录下的全部配置文件。
+     * 卸载：本插件不删自己的存储目录。
      *
-     * 目标按**目录里的文件**来，不按注册表里的功能来 —— 声明里的 enabled、前端适配、版本区间
-     * 都只决定功能加不加载，退役的、甚至已经从插件里删掉的功能留下的配置文件同样是本插件的垃圾，
-     * 宿主又只删 `data/plugins/<插件名>` 而不碰 petal 存储，不清掉它们就会一直躺在工作区里
-     * 并跟着同步走。列目录失败时退回注册表清单：卸载里宁可少删几个，也不能一个都不删。
+     * `data/storage/petal/<插件名>/` 里是各功能的配置、面板状态与用户自己维护的
+     * `.patch.yml`。卸载插件不该连带删掉它们 —— 用户重装后应当拿回原来的设置与补丁，
+     * 而不是从零开始。宿主只删插件包目录与集市元信息，petal 存储交给插件决定；
+     * 这里刻意什么都不做，只写一条日志并照旧给出提示。
      */
     async uninstall(): Promise<void> {
-        const storageNames = await this.storageNamesToRemove();
-        log.info(`uninstall: removing ${storageNames.length} configuration file(s)`);
-        // 宿主只给 5 秒预算，逐个 await 在大目录上会把预算吃光；文件之间互不依赖，
-        // 按有限并发一起删。每个文件的结局单独收敛，一个失败不影响其余文件。
-        await mapLimit(storageNames, CONFIG_IO_CONCURRENCY, async (storageName) => {
-            await guardAsync(`uninstall.${storageName}`, async () => {
-                const status = await removeStoredFile(this, storageName);
-                if (!status.ok) {
-                    log.warn(`uninstall could not remove ${storageName}: ${status.detail}`);
-                } else {
-                    log.info(`uninstall removed ${storageName}`);
-                }
-            }, false);
-        });
-        // 存储目录下可能还有功能自己建的子目录（例如自定义图标），逐个删文件清不掉它们；
-        // 最后直接删整个目录收尾。整个卸载只有 5 秒预算，这一条也只发一次请求。
-        await guardAsync("uninstall.storage", async () => {
-            const status = await removeStorageDir(this);
-            if (!status.ok) {
-                log.warn(`uninstall could not remove the plugin storage directory: ${status.detail}`);
-            } else {
-                log.info("uninstall removed the plugin storage directory");
-            }
-        }, false);
+        log.info("uninstall: keeping the plugin storage directory and every file in it");
         showMessage(`[${this.name}] ${this.i18n["plugin.unloaded"]}`, 4000);
-    }
-
-    /** 卸载时要删的文件名：目录里的全部文件，列不出目录时退回注册表里的功能名单。 */
-    private async storageNamesToRemove(): Promise<string[]> {
-        try {
-            return await listStoredFiles(this);
-        } catch (error) {
-            log.warn("uninstall could not list the plugin storage directory, falling back to the registry", error);
-            return ALL_FEATURE_IDS.map(storageNameOf);
-        }
     }
 
     /**

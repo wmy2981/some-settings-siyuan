@@ -120,7 +120,33 @@ export const FEATURES: FeatureDefinition[] = [
     pluginReminder,
 ];
 
-export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
+/**
+ * 当前的声明视图：默认就是源码声明 `FEATURES`，用户级 `.patch.yml` 生效时换成应用补丁后的那份。
+ *
+ * 只由装载器在 `onload` 阶段整份替换一次（之后不再变）。所有需要知道「一个功能此刻的声明
+ * 与它在这台机器上还能不能用」的地方 —— 配置预读、功能装载、设置面板、不可用条目灰显、
+ * 搜索分组 —— 都必须读这里，不能自己拿 `FEATURES` 重新判一遍：补丁只改显示、不改装载，
+ * 就会出现「面板里说了、功能没跟上」的两套结论。
+ */
+let declarations: FeatureDefinition[] = FEATURES;
+
+/** 此刻生效的声明视图（默认等于源码声明 `FEATURES`）。 */
+export const effectiveFeatures = (): FeatureDefinition[] => declarations;
+
+/**
+ * 整份换成应用补丁后的声明视图。
+ *
+ * 只接受一整份：补丁要么全生效、要么全不生效，逐条打补丁会留下没人看得出来的中间状态。
+ * 原始 `FEATURES` 与里面的对象都不会被改动，随时可以整份退回。
+ */
+export const setEffectiveFeatures = (features: FeatureDefinition[]): void => {
+    declarations = features;
+};
+
+/** 退回源码声明；插件卸载与测试收尾用。 */
+export const resetEffectiveFeatures = (): void => {
+    declarations = FEATURES;
+};
 
 /**
  * 本宿主上仍然生效的功能：声明里 enabled 为真、适用于当前前端，且宿主版本落在
@@ -132,12 +158,13 @@ export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
  * 与这里筛掉的是同一批功能。
  */
 export const activeFeatures = (): FeatureDefinition[] =>
-    FEATURES.filter((feature) => unavailableReasons(feature).length === 0);
+    declarations.filter((feature) => unavailableReasons(feature).length === 0);
 
-export const featureById = (id: string): FeatureDefinition | undefined => FEATURES.find((feature) => feature.id === id);
+export const featureById = (id: string): FeatureDefinition | undefined =>
+    declarations.find((feature) => feature.id === id);
 
-/** 按分类取功能，顺序与 FEATURES 一致。 */
+/** 按分类取功能，顺序与声明视图一致。 */
 export const featuresOf = (category: FeatureCategory): FeatureDefinition[] =>
-    FEATURES.filter((feature) => feature.category === category);
+    declarations.filter((feature) => feature.category === category);
 
 export const categoryOrder: FeatureCategory[] = FEATURE_CATEGORIES;

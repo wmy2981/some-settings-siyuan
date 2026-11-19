@@ -16,7 +16,7 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const FEATURES_DIR = path.join(root, "src", "features");
 const REGISTRY_FILE = path.join(root, "src", "core", "registry.ts");
 const I18N_DIR = path.join(root, "src", "i18n");
-const VALID_CATEGORIES = ["ai", "editor", "doc-tree", "appearance", "connection", "settings", "plugin"];
+const VALID_CATEGORIES = ["ai", "editor", "doc-tree", "appearance", "connection", "settings", "bazaar", "plugin"];
 
 // ---------------------------------------------------------------- i18n 键名规则
 // 键名只由功能 id / 分类 id 机械决定，不维护映射表：`feature.<camelId>.…`、`category.<camelId>`。

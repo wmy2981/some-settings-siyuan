@@ -23,7 +23,6 @@ import {
     listStoredFiles,
     mapLimit,
     readStoredFile,
-    removeStorageDir,
     removeStoredFile,
     writeStoredFile,
 } from "../../src/core/storage";
@@ -212,45 +211,6 @@ describe("removeStoredFile", () => {
         const status = await removeStoredFile(asPlugin(plugin), "feature-a");
         expect(status.ok).toBe(false);
         expect(status.detail).toContain("no permission");
-        expect(vi.mocked(console.warn)).toHaveBeenCalled();
-    });
-});
-
-describe("removeStorageDir", () => {
-    it("removes the whole storage directory", async () => {
-        mockState.fetchSyncPost.mockResolvedValue({code: 0});
-        await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({ok: true, code: 0, detail: "code 0"});
-        expect(mockState.fetchSyncPost).toHaveBeenCalledWith(
-            "/api/file/removeFile",
-            {path: STORAGE_DIR},
-            undefined,
-            false,
-        );
-    });
-
-    it("an already-missing directory also counts as success", async () => {
-        mockState.fetchSyncPost.mockResolvedValue({code: 404});
-        await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({
-            ok: true,
-            code: 404,
-            detail: "code 404",
-        });
-    });
-
-    it("any other code counts as a failure", async () => {
-        mockState.fetchSyncPost.mockResolvedValue({code: 403, msg: "readonly"});
-        await expect(removeStorageDir(asPlugin(makePlugin()))).resolves.toEqual({
-            ok: false,
-            code: 403,
-            detail: "code 403: readonly",
-        });
-    });
-
-    it("a throwing request counts as a failure and warns", async () => {
-        mockState.fetchSyncPost.mockRejectedValue(new Error("offline"));
-        const status = await removeStorageDir(asPlugin(makePlugin()));
-        expect(status.ok).toBe(false);
-        expect(status.detail).toContain("offline");
         expect(vi.mocked(console.warn)).toHaveBeenCalled();
     });
 });
