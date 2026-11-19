@@ -719,7 +719,7 @@ describe("user declaration patch", () => {
         hoisted.active = [featureOf("alpha")];
         const plugin = new FakePlugin();
         plugin.i18n["feature.alpha.title"] = "Alpha";
-        plugin.files.set(".patch.yml", "i18n:\n  en:\n    feature.alpha.title: \"Patched\"\n");
+        plugin.files.set(".patch.yml", 'i18n:\n  en:\n    feature.alpha.title: "Patched"\n');
         const manager = new FeatureManager(plugin as never);
         await manager.load();
         expect(plugin.i18n["feature.alpha.title"]).toBe("Patched");
@@ -785,12 +785,12 @@ describe("user declaration patch", () => {
         const plugin = new FakePlugin();
         // 「日志输出」的开关打开着才会挂载，也只有它挂载时详细日志才会被打开
         plugin.files.set("feature-log-output", {enabled: true});
-        plugin.files.set(".patch.yml", "features:\n  nosuch:\n    enabled: false\n");
+        plugin.files.set(".patch.yml", "features: [oops\n");
         const manager = new FeatureManager(plugin as never);
         try {
             await manager.load();
             expect(warn).toHaveBeenCalledTimes(1);
-            expect(String(warn.mock.calls[0][0])).toContain("unknown feature id");
+            expect(String(warn.mock.calls[0][0])).toContain("must end with");
         } finally {
             manager.dispose();
         }

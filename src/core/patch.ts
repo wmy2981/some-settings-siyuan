@@ -8,7 +8,8 @@
  *
  * 几条硬约束（与 issue #127 一致）：
  * - **整份生效或整份作废。** 任何一处语法 / 结构 / 取值问题都让整份补丁不生效，绝不留下
- *   「一半功能套用了补丁」的中间状态 —— 那种状态没人能一眼看出来。
+ *   「一半功能套用了补丁」的中间状态 —— 那种状态没人能一眼看出来。点名了不存在的功能 id 或
+ *   i18n 键时只跳过那一条：插件升级后删掉一条文案，不该让整份补丁连带失效。
  * - **声明只覆盖那五个字段。** `settings`、`mount`、功能名与说明都不能改；文案只能改
  *   宿主已加载语言文件里已有的键，值原样替换，`{…}` 占位符仍由用它的代码去填。
  * - **这里是声明层，不是运行开关。** 补丁关掉一个功能等于开发者没交出它：不读配置、不挂载、
@@ -59,7 +60,7 @@ const VALID_FRONTENDS: string[] = ["desktop", "mobile"];
  * - `failed`：整份补丁作废，`detail` 是给人看的原因（不含文件内容）。
  */
 export type PatchOutcome =
-    | {kind: "none"; detail: string;}
+    | {kind: "none"; detail: string; ignored?: PatchIgnored;}
     | {
         kind: "applied";
         features: FeatureDefinition[];
@@ -67,8 +68,18 @@ export type PatchOutcome =
         count: number;
         /** 实际生效的文案覆盖：键是 i18n key，值是替换后的整段文案。 */
         translations: Record<string, string>;
+        /** 被静默跳过的条目，只用于日志：插件里没有这个 id / 当前语言里没有这个键。 */
+        ignored: PatchIgnored;
     }
     | {kind: "failed"; detail: string;};
+
+/** 补丁里点名、但在这台机器上找不到对应对象的条目。 */
+export interface PatchIgnored {
+    /** 注册表里没有的功能 id。 */
+    features: string[];
+    /** 当前语言那份文案里没有的 i18n 键。 */
+    translations: string[];
+}
 
 /**
  * 补丁要改的那份界面文案。
@@ -240,27 +251,33 @@ const i18nSectionsOf = (root: YamlMapping): TranslationSections => {
  * 语言代码兼容两种写法：宿主用的 `zh-CN`，以及历史文件名的 `zh_CN`。只有当前语言那一节
  * 会生效 —— 宿主只加载一份语言文件，别的语言的翻译在运行期根本不存在。
  */
-const translationsOf = (sections: TranslationSections, locale: PatchLocale): Record<string, string> => {
+const translationsOf = (
+    sections: TranslationSections,
+    locale: PatchLocale,
+): {translations: Record<string, string>; ignored: string[];} => {
     const candidates = [locale.lang, locale.lang.replace(/-/g, "_")];
     const section = candidates.map((lang) => sections[lang]).find((value) => typeof value !== "undefined");
     if (!section) {
-        return {};
+        return {translations: {}, ignored: []};
     }
     const translations: Record<string, string> = {};
+    const ignored: string[] = [];
     Object.keys(section).forEach((key) => {
+        // 宿主加载的那份文案里没有这个键：跳过它，绝不能让其余条目跟着失效
         if (typeof locale.messages?.[key] !== "string") {
-            reject(`i18n "${locale.lang}": there is no such key as "${key}" in the loaded language file`);
+            ignored.push(key);
+            return;
         }
         translations[key] = section[key];
     });
-    return translations;
+    return {translations, ignored};
 };
 
 /** 把整份补丁读成「功能 id → 覆盖值」；没有任何条目时返回空 Map。 */
 const overridesOf = (
     root: YamlMapping,
     definitions: readonly FeatureDefinition[],
-): Map<string, FeaturePatch> => {
+): {overrides: Map<string, FeaturePatch>; ignored: string[];} => {
     Object.keys(root).forEach((key) => {
         if (!TOP_LEVEL_KEYS.includes(key)) {
             reject(
@@ -273,20 +290,23 @@ const overridesOf = (
     const container = root[FEATURES_KEY];
     // `features:` / `features: {}` / 整份文件只有注释：没有覆盖，属于正常状态
     if (container === null || typeof container === "undefined") {
-        return new Map();
+        return {overrides: new Map(), ignored: []};
     }
     if (!isMapping(container)) {
         reject(`"${FEATURES_KEY}" must map feature ids to overrides`);
     }
     const overrides = new Map<string, FeaturePatch>();
+    const ignored: string[] = [];
     Object.keys(container).forEach((id) => {
         const definition = definitions.find((item) => item.id === id);
+        // 功能已经不在了（插件升级删掉了它 / id 写错了）：跳过这一条，别让整份补丁作废
         if (!definition) {
-            reject(`unknown feature id "${id}"`);
+            ignored.push(id);
+            return;
         }
         overrides.set(id, patchOf(id, container[id], definition));
     });
-    return overrides;
+    return {overrides, ignored};
 };
 
 /** 把一份覆盖值套到一个源码声明上，产出一条新的声明视图（源码对象不动）。 */
@@ -332,18 +352,43 @@ export const applyPatch = (
         return {kind: "failed", detail: parsed.detail};
     }
     try {
-        const overrides = overridesOf(parsed.value, definitions);
-        const translations = translationsOf(i18nSectionsOf(parsed.value), locale);
-        if (overrides.size === 0 && Object.keys(translations).length === 0) {
-            return {kind: "none", detail: "the patch overrides nothing"};
+        const featurePatch = overridesOf(parsed.value, definitions);
+        const textPatch = translationsOf(i18nSectionsOf(parsed.value), locale);
+        const ignored = {features: featurePatch.ignored, translations: textPatch.ignored};
+        if (featurePatch.overrides.size === 0 && Object.keys(textPatch.translations).length === 0) {
+            return {kind: "none", detail: "the patch overrides nothing", ignored};
         }
-        const features = definitions.map((definition) => patchedDefinition(definition, overrides.get(definition.id)));
-        return {kind: "applied", features, count: overrides.size, translations};
+        const features = definitions.map((definition) =>
+            patchedDefinition(definition, featurePatch.overrides.get(definition.id))
+        );
+        return {
+            kind: "applied",
+            features,
+            count: featurePatch.overrides.size,
+            translations: textPatch.translations,
+            ignored,
+        };
     } catch (error) {
         return {
             kind: "failed",
             detail: error instanceof Error ? error.message : `cannot apply the patch: ${String(error)}`,
         };
+    }
+};
+
+/**
+ * 记下被静默跳过的条目：只写名字，不写文件里的其他内容 ——
+ * 用户改错了 id / 键时，详细日志里能看到是哪一条没生效。
+ */
+const logIgnored = (ignored?: PatchIgnored): void => {
+    if (!ignored) {
+        return;
+    }
+    if (ignored.features.length > 0) {
+        log.info(`skipped unknown feature id(s): ${ignored.features.join(", ")}`);
+    }
+    if (ignored.translations.length > 0) {
+        log.info(`skipped unknown i18n key(s): ${ignored.translations.join(", ")}`);
     }
 };
 
@@ -363,6 +408,7 @@ export const reportPatch = (outcome: PatchOutcome): void => {
                 Object.keys(outcome.translations).length
             } translation(s)`,
         );
+        logIgnored(outcome.ignored);
         return;
     }
     if (outcome.kind === "failed") {
@@ -371,6 +417,7 @@ export const reportPatch = (outcome: PatchOutcome): void => {
     }
     // 没有补丁是正常状态：只在详细日志里说明一句，不告警、不提示
     log.info(`no feature declaration is patched: ${outcome.detail}`);
+    logIgnored(outcome.ignored);
 };
 
 /** 当前界面语言；拿不到宿主配置时按 en 处理（插件自带的兜底语言）。 */

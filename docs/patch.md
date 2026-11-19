@@ -108,9 +108,17 @@ i18n:
   one for the interface language), so a section for another language does not apply and raises no
   error; the language code may be written as `zh-CN` or with the legacy underscore `zh_CN`.
 * **Only existing keys can be changed.** The key must already exist in the language file that ships
-  with the plugin. Values are used verbatim: placeholders such as `{platform}`, `{version}` and
-  `{count}` are still filled in by the code that uses the text, exactly as if the sentence had been
-  written into `i18n/<language>.json` directly.
+  with the plugin; a missing key is skipped (see the next subsection). Values are used verbatim:
+  placeholders such as `{platform}`, `{version}` and `{count}` are still filled in by the code that
+  uses the text, exactly as if the sentence had been written into `i18n/<language>.json` directly.
+
+### Unknown feature ids and i18n keys
+
+When a feature id or an i18n key named by the patch does not exist on this machine (a typo, or the
+feature or text was removed by a plugin upgrade), that single entry is **skipped silently** and the
+rest still applies. An old patch therefore survives an upgrade that removes a text; the downside is
+that a typo produces no error at all — the `skipped unknown …` line in the detailed log is the only
+clue.
 
 ## When it takes effect
 
@@ -135,11 +143,12 @@ i18n:
 ## What happens on errors
 
 **Any single problem invalidates the whole file**: every feature falls back to the declaration that
-ships with the plugin, and no partial state is ever applied. The reasons include:
+ships with the plugin, and no partial state is ever applied. (The only exception is an unknown
+feature id or i18n key: that entry is skipped, see above.) The reasons include:
 
 * YAML syntax errors (the message carries a line number);
 * a top-level key other than `features`, or `features` not being a "feature id → fields" mapping;
-* an unknown feature id, an unknown field, a value of the wrong type;
+* an unknown field, a value of the wrong type;
 * an `i18n` section that is not a "language → key → text" structure, a value that is not a string,
   or a key that the language file shipped with the plugin does not have;
 * an invalid `category`, an invalid frontend, a duplicated frontend;

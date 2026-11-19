@@ -194,10 +194,6 @@ describe("applyPatch: i18n overrides", () => {
             .toBe("Only available on {platform}");
     });
 
-    it("rejects a key that the loaded language file does not have", () => {
-        expect(detailOf('i18n:\n  en:\n    nosuch.key: "x"\n')).toContain("no such key");
-    });
-
     it("rejects an i18n section that is not a mapping", () => {
         expect(detailOf("i18n: [en]\n")).toContain("must map language codes");
         expect(detailOf("i18n:\n  en: nope\n")).toContain("must map translation keys");
@@ -228,6 +224,41 @@ describe("applyPatch: i18n overrides", () => {
     });
 });
 
+describe("applyPatch: unknown entries are skipped", () => {
+    it("skips an unknown feature id but still applies the other entries", () => {
+        const outcome = apply("features:\n  nosuch:\n    enabled: false\n  alpha:\n    enabled: false\n");
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.count).toBe(1);
+        expect(outcome.kind === "applied" && outcome.features[0].enabled).toBe(false);
+        // 被跳过的 id 只记下来给日志用
+        expect(outcome.kind === "applied" && outcome.ignored.features).toEqual(["nosuch"]);
+    });
+
+    it("skips an unknown i18n key but still applies the other translations", () => {
+        const outcome = apply('i18n:\n  en:\n    nosuch.key: "x"\n    feature.alpha.title: "Alpha"\n');
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha"});
+        expect(outcome.kind === "applied" && outcome.ignored.translations).toEqual(["nosuch.key"]);
+    });
+
+    it("does not validate the body of an unknown feature id", () => {
+        // id 不存在时整条跳过：里面写成什么都不会连累别的条目
+        const outcome = apply("features:\n  nosuch: false\n  alpha:\n    enabled: false\n");
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.count).toBe(1);
+    });
+
+    it("a patch that only names unknown entries overrides nothing", () => {
+        expect(apply("features:\n  nosuch:\n    enabled: false\n").kind).toBe("none");
+        expect(apply('i18n:\n  en:\n    nosuch.key: "x"\n').kind).toBe("none");
+    });
+
+    it("a known entry with a bad value still invalidates the whole file", () => {
+        // 跳过只针对「找不到对象」；找到了却写错，仍旧整份作废
+        expect(detailOf('features:\n  alpha:\n    enabled: "false"\n')).toContain("must be true or false");
+    });
+});
+
 describe("applyPatch: the whole file is rejected", () => {
     it("a YAML syntax error", () => {
         expect(detailOf("features: [oops\n")).toContain("must end with");
@@ -239,10 +270,6 @@ describe("applyPatch: the whole file is rejected", () => {
 
     it("a features value that is not a mapping", () => {
         expect(detailOf("features: [alpha]\n")).toContain("must map feature ids to overrides");
-    });
-
-    it("an unknown feature id", () => {
-        expect(detailOf("features:\n  nosuch:\n    enabled: false\n")).toContain("unknown feature id");
     });
 
     it("an entry that is not a mapping", () => {
@@ -379,10 +406,10 @@ describe("reportPatch", () => {
     it("warns about a failure without echoing the file content", () => {
         const warn = vi.mocked(console.warn);
         warn.mockClear();
-        withLogging(() => reportPatch({kind: "failed", detail: 'unknown feature id "nosuch"'}));
+        withLogging(() => reportPatch({kind: "failed", detail: 'line 3: unknown field "settings"'}));
         expect(warn).toHaveBeenCalledTimes(1);
         const line = String(warn.mock.calls[0][0]);
-        expect(line).toContain("unknown feature id");
+        expect(line).toContain("unknown field");
         expect(line).toContain(PATCH_STORAGE_NAME);
     });
 
@@ -392,17 +419,51 @@ describe("reportPatch", () => {
         warn.mockClear();
         info.mockClear();
         reportPatch({kind: "failed", detail: "boom"});
-        reportPatch({kind: "applied", features: [], count: 2, translations: {}});
+        reportPatch({
+            kind: "applied",
+            features: [],
+            count: 2,
+            translations: {},
+            ignored: {features: [], translations: []},
+        });
         reportPatch({kind: "none", detail: "missing"});
         expect(warn).not.toHaveBeenCalled();
         expect(info).not.toHaveBeenCalled();
+    });
+
+    it("names the entries it skipped so a typo can be traced", () => {
+        const info = vi.mocked(console.log);
+        info.mockClear();
+        withLogging(() => {
+            reportPatch({
+                kind: "applied",
+                features: [],
+                count: 0,
+                translations: {},
+                ignored: {features: ["nosuch"], translations: ["nosuch.key"]},
+            });
+            reportPatch({
+                kind: "none",
+                detail: "the patch overrides nothing",
+                ignored: {features: ["nosuch"], translations: []},
+            });
+        });
+        expect(String(info.mock.calls[1][0])).toContain("skipped unknown feature id(s): nosuch");
+        expect(String(info.mock.calls[2][0])).toContain("skipped unknown i18n key(s): nosuch.key");
+        expect(String(info.mock.calls[4][0])).toContain("skipped unknown feature id(s): nosuch");
     });
 
     it("logs the applied count and the no-patch case at INFO level", () => {
         const info = vi.mocked(console.log);
         info.mockClear();
         withLogging(() => {
-            reportPatch({kind: "applied", features: [], count: 2, translations: {}});
+            reportPatch({
+                kind: "applied",
+                features: [],
+                count: 2,
+                translations: {},
+                ignored: {features: [], translations: []},
+            });
             reportPatch({kind: "none", detail: "missing"});
         });
         expect(info).toHaveBeenCalledTimes(2);
