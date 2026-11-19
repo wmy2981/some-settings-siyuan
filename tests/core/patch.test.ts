@@ -552,6 +552,6 @@ describe("reportPatch", () => {
         });
         expect(info).toHaveBeenCalledTimes(2);
         expect(String(info.mock.calls[0][0])).toContain("applied");
-        expect(String(info.mock.calls[1][0])).toContain("the patch overrides nothing");
+        expect(String(info.mock.calls[1][0])).toContain("no patch override is applied");
     });
 });

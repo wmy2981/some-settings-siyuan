@@ -364,7 +364,7 @@ export const applyPatch = (
         const textPatch = translationsOf(i18nSectionsOf(parsed.value), locale);
         const ignored = {features: featurePatch.ignored, translations: textPatch.ignored};
         if (featurePatch.overrides.size === 0 && Object.keys(textPatch.translations).length === 0) {
-            return {kind: "none", detail: "the patch overrides nothing", ignored};
+            return {kind: "none", detail: "the patch has no effective entries", ignored};
         }
         const features = definitions.map((definition) =>
             patchedDefinition(definition, featurePatch.overrides.get(definition.id))
@@ -424,7 +424,7 @@ export const reportPatch = (outcome: PatchOutcome): void => {
         return;
     }
     // 没有补丁是正常状态：只在详细日志里说明一句，不告警、不提示
-    log.info(`the patch overrides nothing: ${outcome.detail}`);
+    log.info(`no patch override is applied: ${outcome.detail}`);
     logIgnored(outcome.ignored);
 };
 
