@@ -30,6 +30,7 @@ if (typeof window.crypto?.subtle === "undefined") {
 const baseSiyuan = () => ({
     config: {
         readonly: false,
+        lang: "en",
         system: {
             kernelVersion: "3.8.7",
             container: "",

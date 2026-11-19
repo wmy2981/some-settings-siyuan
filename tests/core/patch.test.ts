@@ -383,6 +383,33 @@ describe("loadPatch", () => {
         expect(i18n["feature.alpha.title"]).toBe("Alpha");
     });
 
+    it("picks the section by the host interface language", async () => {
+        window.siyuan.config.lang = "zh-CN";
+        const i18n: Record<string, unknown> = {"feature.alpha.title": "Alpha"};
+        const host = {
+            name: "some-settings-siyuan",
+            i18n,
+            loadData: vi.fn(
+                async () =>
+                    'i18n:\n  en:\n    feature.alpha.title: "English"\n  zh-CN:\n    feature.alpha.title: "中文"\n',
+            ),
+        } as unknown as Plugin;
+        await loadPatch(host, DEFINITIONS);
+        expect(host.i18n["feature.alpha.title"]).toBe("中文");
+    });
+
+    it("matches a zh-CN section when the host still reports zh_CN", async () => {
+        window.siyuan.config.lang = "zh_CN";
+        const i18n: Record<string, unknown> = {"feature.alpha.title": "Alpha"};
+        const host = {
+            name: "some-settings-siyuan",
+            i18n,
+            loadData: vi.fn(async () => 'i18n:\n  zh-CN:\n    feature.alpha.title: "中文"\n'),
+        } as unknown as Plugin;
+        await loadPatch(host, DEFINITIONS);
+        expect(host.i18n["feature.alpha.title"]).toBe("中文");
+    });
+
     it("fails without touching the old object when the host refuses the i18n write", async () => {
         const i18n: Record<string, unknown> = {"feature.alpha.title": "Alpha"};
         const host = {
