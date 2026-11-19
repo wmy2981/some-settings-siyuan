@@ -248,7 +248,12 @@ const translationsOf = (
     sections: TranslationSections,
     locale: PatchLocale,
 ): {translations: Record<string, string>; ignored: string[];} => {
-    const candidates = [locale.lang, locale.lang.replace(/-/g, "_")];
+    // 两种写法都要认：宿主用 BCP 47（zh-CN），旧的配置 / 测试里还可能出现 zh_CN
+    const candidates = [
+        locale.lang,
+        locale.lang.replace(/-/g, "_"),
+        locale.lang.replace(/_/g, "-"),
+    ];
     const section = candidates.map((lang) => sections[lang]).find((value) => typeof value !== "undefined");
     if (!section) {
         return {translations: {}, ignored: []};

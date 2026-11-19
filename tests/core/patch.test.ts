@@ -188,6 +188,14 @@ describe("applyPatch: i18n overrides", () => {
         expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha zh"});
     });
 
+    it("also matches a zh-CN section when the host still reports zh_CN", () => {
+        const outcome = apply('i18n:\n  zh-CN:\n    feature.alpha.title: "Alpha zh"\n', {
+            lang: "zh_CN",
+            messages: LOCALE.messages,
+        });
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha zh"});
+    });
+
     it("keeps values verbatim, so the code that uses them still fills in the {…} placeholders", () => {
         const outcome = apply('i18n:\n  en:\n    feature.alpha.description: "Only available on {platform}"\n');
         expect(outcome.kind === "applied" && outcome.translations["feature.alpha.description"])
