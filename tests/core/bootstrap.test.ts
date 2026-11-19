@@ -27,14 +27,23 @@ import {mockState} from "../mocks/siyuan";
 
 const hoisted = vi.hoisted(() => ({
     active: [] as FeatureDefinition[],
+    /** 应用补丁后的声明视图；`undefined` 表示没有补丁，读到的就是源码声明。 */
+    effective: undefined as FeatureDefinition[] | undefined,
+    patches: [] as FeatureDefinition[][],
     panels: [] as {shown: boolean; disposed: boolean;}[],
 }));
 
 vi.mock("../../src/core/registry", () => ({
     activeFeatures: () => hoisted.active,
-    // 装载日志会遍历整张注册表来解释「谁被跳过」，测试里注册表就是这份清单
+    effectiveFeatures: () => hoisted.effective ?? hoisted.active,
+    // 装载器要能整份换掉声明视图，测试里记下换进来的那一份供断言
+    setEffectiveFeatures: (features: FeatureDefinition[]) => {
+        hoisted.patches.push(features);
+        hoisted.effective = features;
+    },
+    // 装载日志会遍历整张声明视图来解释「谁被跳过」，测试里它就是这份清单
     get FEATURES() {
-        return hoisted.active;
+        return hoisted.effective ?? hoisted.active;
     },
     featureById: (id: string) => hoisted.active.find((feature) => feature.id === id),
 }));
@@ -46,6 +55,10 @@ vi.mock("../../src/core/setting-dialog", () => ({
 
         constructor() {
             hoisted.panels.push(this);
+        }
+
+        get isOpen(): boolean {
+            return this.shown;
         }
 
         show(): void {
@@ -67,7 +80,7 @@ const TAG = "[some-settings-siyuan__";
 class FakePlugin {
     readonly name = "some-settings-siyuan";
     readonly displayName = "some settings";
-    i18n: Record<string, string> = {hello: "Hello"};
+    i18n: Record<string, string> = {hello: "Hello", "panel.patchInvalid": "Patch ignored"};
     readonly files = new Map<string, unknown>();
     readonly protyleSlash: unknown[] = [];
     readonly topBars: {id?: string; title: string;}[] = [];
@@ -167,6 +180,8 @@ const start = async (definitions: FeatureDefinition[], stored: Record<string, un
 
 beforeEach(() => {
     hoisted.active = [];
+    hoisted.effective = undefined;
+    hoisted.patches = [];
     hoisted.panels = [];
     // 详细日志默认关着，这份测试要观察控制台上的记录，所以显式打开
     setDetailedLogging(true);
@@ -207,11 +222,11 @@ describe("load", () => {
         expect(host("alpha").config.enabled).toBe(true);
     });
 
-    it("the constructor hands the active features to the settings panel", () => {
-        hoisted.active = [featureOf("alpha")];
-        const manager = new FeatureManager(new FakePlugin() as never);
+    it("load hands the active features to the settings panel", async () => {
+        const {manager} = await start([featureOf("alpha")], {alpha: {enabled: true}});
         expect(hoisted.panels).toHaveLength(1);
-        expect(manager.panel).toBe(hoisted.panels[0]);
+        manager.openSettings();
+        expect(hoisted.panels[0].shown).toBe(true);
     });
 });
 
@@ -678,6 +693,104 @@ describe("openSettings / dispose", () => {
         expect(destroy).toHaveBeenCalledTimes(1);
         expect(plugin.removedTopBars).toEqual(["top"]);
         expect(document.head.querySelectorAll("style[data-some-settings-style]")).toHaveLength(0);
+    });
+});
+
+describe("user declaration patch", () => {
+    it("reads .patch.yml before anything else and hands the patched view on", async () => {
+        hoisted.active = [featureOf("alpha"), featureOf("beta")];
+        const plugin = new FakePlugin();
+        plugin.files.set(".patch.yml", "features:\n  beta:\n    enabled: false\n    category: ai\n");
+        const manager = new FeatureManager(plugin as never);
+        await manager.load();
+
+        expect(hoisted.patches).toHaveLength(1);
+        const patched = hoisted.patches[0].find((feature) => feature.id === "beta");
+        expect(patched?.enabled).toBe(false);
+        expect(patched?.category).toBe("ai");
+        expect(patched?.fromPatch).toEqual({enabled: false});
+        // 源码声明本身一条都没有被改
+        expect(hoisted.active[1].enabled).toBe(true);
+        expect(hoisted.active[1].category).toBe("editor");
+        expect(hoisted.active[1].fromPatch).toBeUndefined();
+    });
+
+    it("an invalid patch is ignored as a whole and only warns when the panel opens", async () => {
+        const mount = vi.fn();
+        hoisted.active = [featureOf("alpha", {mount})];
+        const plugin = new FakePlugin();
+        plugin.files.set("feature-alpha", {enabled: true});
+        plugin.files.set(".patch.yml", "features: [oops");
+        const manager = new FeatureManager(plugin as never);
+        await manager.load();
+
+        // 整份作废：连条目都没有被套用，功能照常挂载
+        expect(hoisted.patches).toHaveLength(0);
+        expect(mount).toHaveBeenCalledTimes(1);
+        expect(mockState.messages).toHaveLength(0);
+
+        manager.openSettings();
+        expect(mockState.messages).toHaveLength(1);
+        expect(mockState.messages[0].text).toBe("Patch ignored");
+        // 每次打开面板都提示一次：用户改完文件重载后不会被静默吞掉
+        manager.openSettings();
+        expect(mockState.messages).toHaveLength(2);
+    });
+
+    it("a patch that cannot be read keeps the source declarations and still loads everything", async () => {
+        const mount = vi.fn();
+        hoisted.active = [featureOf("alpha", {mount})];
+        const plugin = new FakePlugin();
+        plugin.files.set("feature-alpha", {enabled: true});
+        const loadData = plugin.loadData.getMockImplementation() as (name: string) => Promise<unknown>;
+        plugin.loadData.mockImplementation(async (name: string): Promise<unknown> => {
+            if (name === ".patch.yml") {
+                throw new Error("io error");
+            }
+            return loadData(name);
+        });
+
+        const manager = new FeatureManager(plugin as never);
+        await manager.load();
+        expect(hoisted.patches).toHaveLength(0);
+        expect(mount).toHaveBeenCalledTimes(1);
+        manager.openSettings();
+        expect(mockState.messages).toHaveLength(1);
+    });
+
+    it("writes the patch log only after the log-output feature has mounted", async () => {
+        // 详细日志是「日志输出」功能挂载那一刻打开的：补丁日志必须等它挂上之后再写，
+        // 否则用户改错了文件，控制台里什么都没有
+        const warn = vi.mocked(console.warn);
+        warn.mockClear();
+        hoisted.active = [
+            featureOf("log-output", {
+                mount: () => {
+                    setDetailedLogging(true);
+                    return {destroy: () => setDetailedLogging(false)};
+                },
+            }),
+            featureOf("alpha"),
+        ];
+        const plugin = new FakePlugin();
+        // 「日志输出」的开关打开着才会挂载，也只有它挂载时详细日志才会被打开
+        plugin.files.set("feature-log-output", {enabled: true});
+        plugin.files.set(".patch.yml", "features:\n  nosuch:\n    enabled: false\n");
+        const manager = new FeatureManager(plugin as never);
+        try {
+            await manager.load();
+            expect(warn).toHaveBeenCalledTimes(1);
+            expect(String(warn.mock.calls[0][0])).toContain("unknown feature id");
+        } finally {
+            manager.dispose();
+        }
+    });
+
+    it("a missing patch file neither patches nor notifies", async () => {
+        const {manager} = await start([featureOf("alpha")], {alpha: {enabled: true}});
+        manager.openSettings();
+        expect(hoisted.patches).toHaveLength(0);
+        expect(mockState.messages).toHaveLength(0);
     });
 });
 

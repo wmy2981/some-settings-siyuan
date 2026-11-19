@@ -172,7 +172,8 @@ export interface SettingsPanelOptions {
     /** 当前宿主上真正可用的功能（`activeFeatures()`），面板按它们拼页签。 */
     features: FeatureDefinition[];
     /**
-     * 注册表里的全部功能，用来找出「不可用」的那部分（开发者禁用 / 平台不符 / 版本区间不符）。
+     * 整份声明视图（应用用户补丁之后的），用来找出「不可用」的那部分
+     * （开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符）。
      *
      * 不传就当作没有不可用功能：面板测试里直接给一份功能清单时不必额外准备第二份。
      */
@@ -239,10 +240,17 @@ const SHOW_UNAVAILABLE_CLASS = `${PANEL_CLASS}--show-unavailable`;
 /** 不可用原因 → i18n key。版本两种原因带 `{version}`，平台那种带 `{platform}`。 */
 const REASON_KEYS: Record<UnavailableReason, string> = {
     disabled: "panel.unavailable.disabled",
+    userDisabled: "panel.unavailable.userDisabled",
     frontend: "panel.unavailable.frontend",
     minAppVersion: "panel.unavailable.minVersion",
     maxAppVersion: "panel.unavailable.maxVersion",
 };
+
+/**
+ * 适用端被补丁设成空数组（两端都不适用）时的说明：这时没有端名可以填进 `{platform}`，
+ * 直接沿用上一条会渲染成「仅适用于 」，等于什么都没说。
+ */
+const NO_FRONTEND_KEY = "panel.unavailable.frontendNone";
 
 /**
  * 判断一份 class 属性是不是「一个行」的：行带 `config-item` 这个整词。
@@ -475,7 +483,7 @@ export class SettingsPanel {
     }
 
     /**
-     * 注册表里在当前宿主上不可用的功能（开发者禁用 / 平台不符 / 版本区间不符）。
+     * 声明视图里在当前宿主上不可用的功能（开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符）。
      *
      * 面板默认不显示它们；「显示不可用的设置」打开后，每个页签底部会灰显出来并注明原因。
      * 它们不参与配置装载（`activeFeatures()` 已经把它们筛掉了），所以控件只能按声明默认值显示。
@@ -921,15 +929,25 @@ export class SettingsPanel {
     private reasonTextsOf(feature: FeatureDefinition): string[] {
         return unavailableReasons(feature).map((reason) => {
             const template = this.t(REASON_KEYS[reason]);
-            if (reason === "frontend") {
-                return template.replace("{platform}", this.platformLabelsOf(feature));
+            switch (reason) {
+                case "frontend": {
+                    const platforms = this.platformLabelsOf(feature);
+                    // 空数组（两端都不适用）时没有端名可填
+                    return platforms ? template.replace("{platform}", platforms) : this.t(NO_FRONTEND_KEY);
+                }
+                case "minAppVersion":
+                    return feature.minAppVersion ? template.replace("{version}", feature.minAppVersion) : template;
+                case "maxAppVersion":
+                    return feature.maxAppVersion ? template.replace("{version}", feature.maxAppVersion) : template;
+                default:
+                    return template;
             }
-            const version = reason === "minAppVersion" ? feature.minAppVersion : feature.maxAppVersion;
-            return version ? template.replace("{version}", version) : template;
         });
     }
 
-    /** 功能声明的适用端名字：`["mobile"]` → 「移动端」。 */
+    /**
+     * 功能声明的适用端名字：`["mobile"]` → 「移动端」。空数组时返回空串，调用方改用另一条文案。
+     */
     private platformLabelsOf(feature: FeatureDefinition): string {
         return (feature.frontends ?? []).map((frontend) =>
             this.t(frontend === "mobile" ? "common.scope.mobile" : "common.scope.desktop")

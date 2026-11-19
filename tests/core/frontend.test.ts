@@ -61,8 +61,12 @@ describe("supportsCurrentFrontend", () => {
         expect(supportsCurrentFrontend(definitionWith())).toBe(true);
     });
 
-    it("an empty array means no restriction", () => {
-        expect(supportsCurrentFrontend(definitionWith([]))).toBe(true);
+    it("an explicitly empty array applies to neither frontend", () => {
+        // 用户级补丁用 [] 把一个功能在自己的机器上彻底关掉，所以它和「不写」不是一回事
+        mockState.frontend = "desktop";
+        expect(supportsCurrentFrontend(definitionWith([]))).toBe(false);
+        mockState.frontend = "mobile";
+        expect(supportsCurrentFrontend(definitionWith([]))).toBe(false);
     });
 
     it("applies when only the current frontend is listed", () => {

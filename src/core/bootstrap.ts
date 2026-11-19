@@ -30,9 +30,16 @@ import {
     LOG_FEATURE_ID,
     setDetailedLogging,
 } from "./log";
+import type {PatchOutcome} from "./patch";
+import {
+    loadPatch,
+    reportPatch,
+} from "./patch";
 import {
     activeFeatures,
+    effectiveFeatures,
     FEATURES,
+    setEffectiveFeatures,
 } from "./registry";
 import {SettingsPanel} from "./setting-dialog";
 import {
@@ -46,6 +53,9 @@ import type {
     FeatureInstance,
 } from "./types";
 
+/** 补丁无效时，面板打开后那条提示的 i18n key。 */
+const PATCH_INVALID_KEY = "panel.patchInvalid";
+
 /**
  * 功能此刻是否应当运行。
  *
@@ -58,7 +68,10 @@ const isEnabled = (definition: FeatureDefinition, config: FeatureConfig): boolea
 /** 功能没被装载的原因，写进加载日志：排查「开关明明开着却没生效」时先看这一行。 */
 const skipReason = (definition: FeatureDefinition): string => {
     if (!definition.enabled) {
-        return "the declaration says enabled: false";
+        // 用户级补丁也能关掉一个功能，日志里要能看出是谁关的
+        return definition.fromPatch?.enabled === false ?
+            "the user patch says enabled: false" :
+            "the declaration says enabled: false";
     }
     if (!supportsCurrentFrontend(definition)) {
         return `it does not apply to the ${currentFrontend()} frontend`;
@@ -77,7 +90,13 @@ interface MountedFeature {
 export class FeatureManager {
     private readonly plugin: Plugin;
     readonly store: ConfigStore;
-    readonly panel: SettingsPanel;
+    /**
+     * 设置面板。补丁要先读回来才能建它（面板拿到的是应用补丁之后的声明视图），
+     * 所以它不在构造函数里建，而是 `load()` 读完补丁之后才赋值。
+     */
+    private panel?: SettingsPanel;
+    /** 用户级补丁的读取结果；`failed` 时面板每次打开后提示一次，见 `openSettings()`。 */
+    private patchOutcome?: PatchOutcome;
     private readonly mounted = new Map<string, MountedFeature>();
     private readonly log = createLogger("core.bootstrap");
     private disposed = false;
@@ -85,14 +104,6 @@ export class FeatureManager {
     constructor(plugin: Plugin) {
         this.plugin = plugin;
         this.store = new ConfigStore(plugin);
-        this.panel = new SettingsPanel({
-            plugin,
-            store: this.store,
-            features: activeFeatures(),
-            // 面板要把「不可用」的那部分也画出来（开发者禁用 / 平台不符 / 版本区间不符），
-            // 所以除生效清单外还要拿到整张注册表。
-            allFeatures: FEATURES,
-        });
     }
 
     /**
@@ -100,7 +111,18 @@ export class FeatureManager {
      * 由插件在 onload 阶段调用一次。
      */
     async load(): Promise<void> {
+        // 补丁必须在任何声明被读之前落地：配置预读、功能装载、面板与搜索读的都是同一份声明视图
+        await this.readPatch();
+        const declarations = effectiveFeatures();
         const active = activeFeatures();
+        this.panel = new SettingsPanel({
+            plugin: this.plugin,
+            store: this.store,
+            features: active,
+            // 面板要把「不可用」的那部分也画出来（开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符），
+            // 所以除生效清单外还要拿到整张声明视图。
+            allFeatures: declarations,
+        });
         // 先把各功能的读盘请求并发发出去：每个功能一个文件、互不依赖，逐个 await 会把
         // N 次内核往返串成一条线。这里不等结果（每条请求各自兑现），所以某个文件读得慢
         // 不会拖住排在它前面的功能；下面的注册与挂载仍按注册表顺序逐个进行。
@@ -112,15 +134,15 @@ export class FeatureManager {
         if (logDefinition && await this.register(logDefinition)) {
             this.syncMount(logDefinition);
         }
-        this.log.info(`loading ${active.length} of ${FEATURES.length} feature(s)`, {
+        this.log.info(`loading ${active.length} of ${declarations.length} feature(s)`, {
             frontend: currentFrontend(),
             kernelVersion: window.siyuan?.config?.system?.kernelVersion ?? "unknown",
             detailedLogging: isDetailedLogging(),
         });
-        // 不生效的功能（前端对不上、宿主版本超出支持区间、声明 enabled: false）根本不在
+        // 不生效的功能（前端对不上、宿主版本超出支持区间、声明或补丁里的 enabled: false）根本不在
         // activeFeatures() 里：既不会读配置、也不会出现在面板里、更不会挂载。
         // 它们最容易被误当成「功能坏了」，所以逐条写明跳过的原因。
-        FEATURES.filter((definition) => !active.includes(definition)).forEach((definition) => {
+        declarations.filter((definition) => !active.includes(definition)).forEach((definition) => {
             this.log.info(`skip ${definition.id}: ${skipReason(definition)}`);
         });
         for (const definition of active) {
@@ -131,6 +153,31 @@ export class FeatureManager {
                 this.syncMount(definition);
             }
         }
+    }
+
+    /**
+     * 读用户级补丁并把声明视图换成应用补丁后的那一份。
+     *
+     * 补丁出任何问题都只记一条 WARN 并保留源码声明 —— 它绝不能挡住插件启动、设置入口
+     * 或其他功能；错误本身在打开设置面板后由 `openSettings()` 提示给用户，
+     * 免得用户改了文件却发现「什么都没发生」。
+     */
+    private async readPatch(): Promise<void> {
+        const outcome = await loadPatch(this.plugin, FEATURES);
+        this.patchOutcome = outcome;
+        if (outcome.kind === "applied") {
+            setEffectiveFeatures(outcome.features);
+        }
+    }
+
+    /**
+     * 补丁结局的日志与提示状态。
+     *
+     * 日志要等「日志输出」功能挂载之后再写：详细日志正是它挂载时才打开的，在 `readPatch()`
+     * 里写等于什么都不输出。面板那条提示则只看有没有失败原因。
+     */
+    private patchProblemOf(): string | undefined {
+        return this.patchOutcome?.kind === "failed" ? this.patchOutcome.detail : undefined;
     }
 
     /**
@@ -159,6 +206,10 @@ export class FeatureManager {
         }
         if (wanted) {
             this.mount(definition);
+            // 详细日志是「日志输出」功能挂载那一刻才打开的，补丁的日志只能等它挂上之后再写
+            if (definition.id === LOG_FEATURE_ID && this.patchOutcome) {
+                reportPatch(this.patchOutcome);
+            }
             return;
         }
         this.unmount(definition.id, "switch");
@@ -312,9 +363,26 @@ export class FeatureManager {
         };
     }
 
-    /** 设置面板入口。 */
+    /**
+     * 设置面板入口。
+     *
+     * 补丁无效时在面板打开之后给一条非阻断提示：「改了 `data/storage/petal/<插件名>/.patch.yml`
+     * 却什么都没发生」是最难自查的情况，而补丁本身在面板里没有任何条目可以显示状态。
+     * 用 `showMessage` 而不是模态框：它不该打断任何操作，也不需要用户确认。
+     */
     openSettings(): void {
-        this.panel.show();
+        this.panel?.show();
+        const problem = this.patchProblemOf();
+        if (!problem || !this.panel?.isOpen) {
+            return;
+        }
+        const message = this.plugin.i18n?.[PATCH_INVALID_KEY];
+        try {
+            showMessage(typeof message === "string" && message ? message : PATCH_INVALID_KEY, 6000, "error");
+        } catch (error) {
+            // 提示本身失败不能连带影响面板
+            this.log.warn("cannot tell the user about the invalid patch", error);
+        }
     }
 
     /** 插件卸载：释放全部功能与设置面板。幂等。 */
@@ -324,7 +392,7 @@ export class FeatureManager {
         }
         this.disposed = true;
         this.log.info(`disposing ${this.mounted.size} mounted feature(s)`);
-        guardSilent("panel.close", () => this.panel.dispose());
+        guardSilent("panel.close", () => this.panel?.dispose());
         // 「日志输出」永远最后卸载：它的 destroy 会关掉详细日志，早一步关掉，
         // 后面那些功能的卸载日志就全没了。其余功能后挂载的先卸载。
         // 不能只靠倒序：用户中途关掉再打开日志功能时，它在 Map 里的位置会变到末尾。

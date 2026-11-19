@@ -347,7 +347,12 @@ export interface FeatureDefinition {
      * `default: true`，两者不一致由 `npm run check` 与声明测试拦下。
      */
     defaultOn?: boolean;
-    /** 不写表示桌面端与移动端都适用。 */
+    /**
+     * 不写表示桌面端与移动端都适用。
+     *
+     * 显式写空数组表示**两端都不适用**：用户级补丁用它把一个功能在自己的机器上彻底关掉，
+     * 与「不写」是两件事，判定见 `core/frontend.ts`。
+     */
     frontends?: FeatureFrontend[];
     /**
      * 支持该功能的最低思源版本（含）。不写表示不限下限。
@@ -374,6 +379,34 @@ export interface FeatureDefinition {
     isEnabled?(config: FeatureConfig): boolean;
     /** 仅在功能生效（activeFeatures）且 isEnabled 为真时调用。 */
     mount?(host: FeatureHost): FeatureInstance | void;
+    /**
+     * 用户级补丁覆盖了哪些字段（`data/storage/petal/<插件名>/.patch.yml`）。
+     *
+     * **只由核心在应用补丁时写入**，功能目录里的 `index.ts` 不要写它：声明视图上的其余字段
+     * 已经是覆盖后的值，只有「这个 `false` 是谁写的」没法从值本身看出来，而设置面板要据此
+     * 区分「已被用户禁用」与「已被开发者禁用」。
+     */
+    fromPatch?: FeaturePatchMarker;
+}
+
+/** 用户级补丁在声明视图上的来源标记。 */
+export interface FeaturePatchMarker {
+    /** 补丁里显式写了 `enabled` 时才有值。 */
+    enabled?: boolean;
+}
+
+/**
+ * 用户级补丁为一个功能提供的一份覆盖值。
+ *
+ * 字段省略表示沿用源码声明；`frontends` / `minAppVersion` / `maxAppVersion` 显式写 `null`
+ * 表示解除源码里的那一条限制（不是「没改」）。
+ */
+export interface FeaturePatch {
+    enabled?: boolean;
+    category?: FeatureCategory;
+    frontends?: FeatureFrontend[] | null;
+    minAppVersion?: string | null;
+    maxAppVersion?: string | null;
 }
 
 /** 定义辅助函数：只做类型约束，不改变行为。 */

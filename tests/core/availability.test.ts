@@ -37,6 +37,16 @@ describe("unavailableReasons", () => {
         expect(unavailableReasons(featureOf({enabled: false}))).toEqual(["disabled"]);
     });
 
+    it("disabled by the user patch is reported separately from the developer", () => {
+        // 两种「关掉」的后果一样（不装载、灰显），但原因必须分清：用户改的是自己的补丁文件
+        expect(unavailableReasons(featureOf({enabled: false, fromPatch: {enabled: false}})))
+            .toEqual(["userDisabled"]);
+        // 开发者关掉、补丁没提它：仍是开发者禁用
+        expect(unavailableReasons(featureOf({enabled: false}))).toEqual(["disabled"]);
+        // 补丁把开发者撤下的功能重新打开：一条禁用原因都不剩
+        expect(unavailableReasons(featureOf({enabled: true, fromPatch: {enabled: true}}))).toEqual([]);
+    });
+
     it("not available on the current platform", () => {
         mockState.frontend = "desktop";
         expect(unavailableReasons(featureOf({frontends: ["mobile"]}))).toEqual(["frontend"]);
