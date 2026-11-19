@@ -203,6 +203,13 @@ describe("applyPatch: i18n overrides", () => {
         expect(detailOf("i18n:\n  en:\n    feature.alpha.title: true\n")).toContain("must be a string");
     });
 
+    it("validates every language section, even one that does not apply here", () => {
+        // 整份生效或整份作废：非当前语言段里的结构 / 类型错误同样让补丁作废
+        expect(
+            detailOf('i18n:\n  en:\n    feature.alpha.title: "A"\n  zh-CN:\n    feature.alpha.title: true\n'),
+        ).toContain("must be a string");
+    });
+
     it("applies feature overrides and translations in the same file", () => {
         const outcome = apply(
             'features:\n  alpha:\n    enabled: false\ni18n:\n  en:\n    feature.alpha.title: "Alpha"\n',
@@ -315,8 +322,7 @@ describe("applyPatch: the whole file is rejected", () => {
     });
 
     it("one bad entry invalidates the good ones too", () => {
-        const outcome = applyPatch(
-            DEFINITIONS,
+        const outcome = apply(
             "features:\n  alpha:\n    enabled: false\n  beta:\n    category: nowhere\n",
         );
         expect(outcome.kind).toBe("failed");

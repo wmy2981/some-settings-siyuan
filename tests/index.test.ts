@@ -13,7 +13,9 @@ import SomeSettingsPlugin from "../src/index";
 import {mockState} from "./mocks/siyuan";
 
 const pluginOf = (): SomeSettingsPlugin =>
-    new SomeSettingsPlugin({i18n: {"plugin.unloaded": "Some Settings unloaded"}}) as SomeSettingsPlugin;
+    new SomeSettingsPlugin(
+        {i18n: {"plugin.unloaded": "Some Settings unloaded"}} as never,
+    ) as SomeSettingsPlugin;
 
 describe("uninstall", () => {
     it("keeps the whole plugin storage directory", async () => {
