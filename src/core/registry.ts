@@ -120,8 +120,6 @@ export const FEATURES: FeatureDefinition[] = [
     pluginReminder,
 ];
 
-export const ALL_FEATURE_IDS: string[] = FEATURES.map((feature) => feature.id);
-
 /**
  * 当前的声明视图：默认就是源码声明 `FEATURES`，用户级 `.patch.yml` 生效时换成应用补丁后的那份。
  *

@@ -17,7 +17,6 @@ import {SHOW_UNAVAILABLE_FEATURE_ID} from "../../src/core/availability";
 import {LOG_FEATURE_ID} from "../../src/core/log";
 import {
     activeFeatures,
-    ALL_FEATURE_IDS,
     categoryOrder,
     effectiveFeatures,
     FEATURES,
@@ -72,10 +71,6 @@ describe("The registry itself", () => {
             const entry = path.join(ROOT, "src", "features", feature.id, "index.ts");
             expect(fs.existsSync(entry), `missing ${entry}`).toBe(true);
         });
-    });
-
-    it("ALL_FEATURE_IDS matches FEATURES in order and content", () => {
-        expect(ALL_FEATURE_IDS).toEqual(FEATURES.map((feature) => feature.id));
     });
 
     it("enabled must be an explicit true or false", () => {
@@ -236,7 +231,6 @@ describe("activeFeatures", () => {
         FEATURES.push(retired);
         try {
             expect(activeFeatures().map((feature) => feature.id)).not.toContain("retired-demo");
-            expect(ALL_FEATURE_IDS).not.toContain("retired-demo");
         } finally {
             FEATURES.pop();
         }
