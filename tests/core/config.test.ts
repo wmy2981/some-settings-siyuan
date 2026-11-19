@@ -1001,7 +1001,7 @@ describe("files that are not feature configurations", () => {
         // 导入只写配置文件
         await expect(store.importMany({alpha: {enabled: false}})).resolves.toMatchObject({applied: ["alpha"]});
         expect(host.files.get(".patch.yml")).toBe(PATCH);
-        // 清除只删配置文件：补丁由用户自己维护，卸载时才随目录一起消失
+        // 清除只删配置文件：补丁由用户自己维护，卸载时也不动它
         await store.clearAll();
         expect(host.files.has("feature-alpha")).toBe(false);
         expect(host.files.get(".patch.yml")).toBe(PATCH);

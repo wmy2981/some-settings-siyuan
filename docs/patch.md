@@ -172,8 +172,8 @@ When that happens:
 * "Export configuration", "Import configuration" and "Clear this plugin's configuration" only touch
   the `feature-*` configuration files in the directory; they do **not** include `.patch.yml` and never
   modify it.
-* Uninstalling the plugin still deletes the whole plugin storage directory, so `.patch.yml` goes with
-  it. Back it up if you want to keep it.
+* Uninstalling the plugin deletes nothing in the plugin storage directory: `.patch.yml` and every
+  feature's configuration stay in place and apply again after a reinstall.
 * The panel and its search never show the patch itself: no row, no control, no path, no content, no
   status. The `i18n` section only overrides existing texts; it cannot add a key that nothing reads.
 
