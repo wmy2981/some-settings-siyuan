@@ -44,8 +44,13 @@ API 签名、样式类名、文件布局，以及每个功能**为什么**这么
 * **声明有两层：源码声明（`src/features/<id>/index.ts`）与用户补丁
   （`data/storage/petal/<插件名>/.patch.yml`，见 [patch.zh-CN.md](./patch.zh-CN.md)）。** 补丁只覆盖
   `enabled` / `category` / `frontends` / `minAppVersion` / `maxAppVersion` 五项，开关仍是功能自己的
-  `enabled` 设置项。两层的结论合成一份声明视图，存在 `core/registry.ts` 的 `effectiveFeatures()`：
-  配置预读、功能装载、面板页签、灰显原因与搜索索引全都读它，不要再各自拿 `FEATURES` 重判一遍。
+  `enabled` 设置项；顶层的 `i18n` 段按界面语言覆盖文案。两层的结论合成一份声明视图，存在
+  `core/registry.ts` 的 `effectiveFeatures()`：配置预读、功能装载、面板页签、灰显原因与搜索索引全都读它，
+  不要再各自拿 `FEATURES` 重判一遍。
+* **i18n 补丁改的是宿主已经加载的那份语言文件对象（`plugin.i18n`），不是另建一张表。** 面板、动作行、
+  各功能与 `plugin.i18n[...]` 都从这一处取文案，直接改它才能和「把文字写进 `i18n/<lang>.json`」
+  完全等价：值原样替换，`{version}` / `{count}` 这类占位符仍由用它的代码去填。只有当前界面语言那一节
+  生效（兼容 `zh_CN` 这种历史写法），键也必须是这份文件里已经有的 —— 运行期没有代码会去读新增的键。
 * **补丁整份生效或整份作废。** 解析（`core/yaml.ts`）与校验（`core/patch.ts`）任何一处失败都
   让整份补丁不生效并退回源码声明，不留「一半套用了补丁」的中间状态 —— 那种状态没人看得懂。
   读取 / 解析 / 校验 / 应用失败都只在内部收敛，绝不阻断插件启动、设置入口与其他功能。

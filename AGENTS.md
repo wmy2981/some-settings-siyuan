@@ -52,7 +52,7 @@
 
 * **用户可以在自己的机器上覆盖其中几项。** 插件私有目录里的 `.patch.yml`（用户自己创建与维护，
   插件不生成模板、不在面板里显示、不监听变化）按功能 id 覆盖 `enabled` / `category` / `frontends` /
-  `minAppVersion` / `maxAppVersion`，整份生效或整份作废，结果是一份新的声明视图
+  `minAppVersion` / `maxAppVersion`，并按界面语言覆盖 `i18n` 文案，整份生效或整份作废，结果是一份新的声明视图
   （`core/registry.ts` 的 `effectiveFeatures()`，用户文档见 [docs/patch.zh-CN.md](docs/patch.zh-CN.md)（另有英文与繁体版））。
   写新功能时不用为它做任何事，但**不要**在核心之外绕过那份视图、自己拿 `FEATURES` 重判可用性。
 

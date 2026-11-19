@@ -715,6 +715,16 @@ describe("user declaration patch", () => {
         expect(hoisted.active[1].fromPatch).toBeUndefined();
     });
 
+    it("writes the i18n overrides into the host i18n before anything reads it", async () => {
+        hoisted.active = [featureOf("alpha")];
+        const plugin = new FakePlugin();
+        plugin.i18n["feature.alpha.title"] = "Alpha";
+        plugin.files.set(".patch.yml", "i18n:\n  en:\n    feature.alpha.title: \"Patched\"\n");
+        const manager = new FeatureManager(plugin as never);
+        await manager.load();
+        expect(plugin.i18n["feature.alpha.title"]).toBe("Patched");
+    });
+
     it("an invalid patch is ignored as a whole and only warns when the panel opens", async () => {
         const mount = vi.fn();
         hoisted.active = [featureOf("alpha", {mount})];

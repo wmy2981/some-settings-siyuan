@@ -21,6 +21,7 @@ import {
     PATCH_STORAGE_NAME,
     reportPatch,
 } from "../../src/core/patch";
+import type {PatchLocale} from "../../src/core/patch";
 import type {FeatureDefinition} from "../../src/core/types";
 
 const settings = [{kind: "switch", key: "enabled", title: "common.enabled", default: false}] as const;
@@ -41,8 +42,21 @@ const DEFINITIONS: FeatureDefinition[] = [
     featureOf("retired", {enabled: false}),
 ];
 
+/** 宿主此刻的界面语言与它加载的那份文案：补丁的 i18n 段按它挑语言、按它认键。 */
+const LOCALE: PatchLocale = {
+    lang: "en",
+    messages: {
+        "feature.alpha.title": "Alpha",
+        "feature.alpha.description": "The alpha feature",
+        "feature.beta.title": "Beta",
+    },
+};
+
+const apply = (text: string, locale: PatchLocale = LOCALE): ReturnType<typeof applyPatch> =>
+    applyPatch(DEFINITIONS, text, locale);
+
 const patchedView = (text: string): FeatureDefinition[] => {
-    const outcome = applyPatch(DEFINITIONS, text);
+    const outcome = apply(text);
     if (outcome.kind !== "applied") {
         throw new Error(`expected the patch to be applied, got ${outcome.kind}: ${outcome.detail}`);
     }
@@ -50,7 +64,7 @@ const patchedView = (text: string): FeatureDefinition[] => {
 };
 
 const detailOf = (text: string): string => {
-    const outcome = applyPatch(DEFINITIONS, text);
+    const outcome = apply(text);
     if (outcome.kind !== "failed") {
         throw new Error(`expected the patch to be rejected, got ${outcome.kind}`);
     }
@@ -67,19 +81,19 @@ const byId = (features: FeatureDefinition[], id: string): FeatureDefinition => {
 
 describe("applyPatch: nothing to override", () => {
     it("an empty or comment-only file overrides nothing", () => {
-        expect(applyPatch(DEFINITIONS, "").kind).toBe("none");
-        expect(applyPatch(DEFINITIONS, "# nothing here\n").kind).toBe("none");
+        expect(apply("").kind).toBe("none");
+        expect(apply("# nothing here\n").kind).toBe("none");
     });
 
     it("an empty features mapping overrides nothing", () => {
-        expect(applyPatch(DEFINITIONS, "features: {}\n").kind).toBe("none");
-        expect(applyPatch(DEFINITIONS, "features:\n").kind).toBe("none");
+        expect(apply("features: {}\n").kind).toBe("none");
+        expect(apply("features:\n").kind).toBe("none");
     });
 });
 
 describe("applyPatch: overriding", () => {
     it("counts the overridden features and builds a full view", () => {
-        const outcome = applyPatch(DEFINITIONS, "features:\n  alpha:\n    enabled: false\n");
+        const outcome = apply("features:\n  alpha:\n    enabled: false\n");
         expect(outcome.kind).toBe("applied");
         expect(outcome.kind === "applied" && outcome.count).toBe(1);
         expect(patchedView("features:\n  alpha:\n    enabled: false\n")).toHaveLength(DEFINITIONS.length);
@@ -149,6 +163,71 @@ describe("applyPatch: overriding", () => {
     });
 });
 
+describe("applyPatch: i18n overrides", () => {
+    it("overrides a translation of the current language", () => {
+        const outcome = apply('i18n:\n  en:\n    feature.alpha.title: "Alpha patched"\n');
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha patched"});
+        expect(outcome.kind === "applied" && outcome.count).toBe(0);
+        // 只改文案：声明视图里的功能原样引用，没有复制也没有动过
+        expect(outcome.kind === "applied" && outcome.features[0]).toBe(DEFINITIONS[0]);
+    });
+
+    it("applies only the section of the current language", () => {
+        const outcome = apply(
+            'i18n:\n  en:\n    feature.alpha.title: "Alpha en"\n  zh-CN:\n    feature.alpha.title: "Alpha zh"\n',
+        );
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha en"});
+    });
+
+    it("accepts the legacy underscore spelling of the language code", () => {
+        const outcome = apply('i18n:\n  zh_CN:\n    feature.alpha.title: "Alpha zh"\n', {
+            lang: "zh-CN",
+            messages: LOCALE.messages,
+        });
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha zh"});
+    });
+
+    it("keeps values verbatim, so the code that uses them still fills in the {…} placeholders", () => {
+        const outcome = apply('i18n:\n  en:\n    feature.alpha.description: "Only available on {platform}"\n');
+        expect(outcome.kind === "applied" && outcome.translations["feature.alpha.description"])
+            .toBe("Only available on {platform}");
+    });
+
+    it("rejects a key that the loaded language file does not have", () => {
+        expect(detailOf('i18n:\n  en:\n    nosuch.key: "x"\n')).toContain("no such key");
+    });
+
+    it("rejects an i18n section that is not a mapping", () => {
+        expect(detailOf("i18n: [en]\n")).toContain("must map language codes");
+        expect(detailOf("i18n:\n  en: nope\n")).toContain("must map translation keys");
+    });
+
+    it("rejects a value that is not a string", () => {
+        expect(detailOf("i18n:\n  en:\n    feature.alpha.title: true\n")).toContain("must be a string");
+    });
+
+    it("applies feature overrides and translations in the same file", () => {
+        const outcome = apply(
+            'features:\n  alpha:\n    enabled: false\ni18n:\n  en:\n    feature.alpha.title: "Alpha"\n',
+        );
+        expect(outcome.kind).toBe("applied");
+        expect(outcome.kind === "applied" && outcome.count).toBe(1);
+        expect(outcome.kind === "applied" && outcome.features[0].enabled).toBe(false);
+        expect(outcome.kind === "applied" && outcome.translations).toEqual({"feature.alpha.title": "Alpha"});
+    });
+
+    it("an i18n-only patch leaves every declaration untouched", () => {
+        const outcome = apply('i18n:\n  en:\n    feature.alpha.title: "A"\n');
+        expect(outcome.kind === "applied" && outcome.features.every((feature, index) => feature === DEFINITIONS[index]))
+            .toBe(true);
+    });
+
+    it("a section for another language overrides nothing", () => {
+        expect(apply('i18n:\n  zh-TW:\n    feature.alpha.title: "A"\n').kind).toBe("none");
+    });
+});
+
 describe("applyPatch: the whole file is rejected", () => {
     it("a YAML syntax error", () => {
         expect(detailOf("features: [oops\n")).toContain("must end with");
@@ -202,8 +281,7 @@ describe("applyPatch: the whole file is rejected", () => {
         expect(detailOf('features:\n  beta:\n    maxAppVersion: "3.7.0"\n')).toContain("above maxAppVersion");
         // 而解除下限之后，同一份补丁就合法了
         expect(
-            applyPatch(
-                DEFINITIONS,
+            apply(
                 'features:\n  beta:\n    minAppVersion: null\n    maxAppVersion: "3.7.0"\n',
             ).kind,
         ).toBe("applied");
@@ -235,6 +313,18 @@ describe("loadPatch", () => {
         expect(loadData).toHaveBeenCalledWith(PATCH_STORAGE_NAME);
         expect(PATCH_STORAGE_NAME).toBe(".patch.yml");
         expect(outcome.kind).toBe("applied");
+    });
+
+    it("writes the translations into the i18n object the host already loaded", async () => {
+        const i18n: Record<string, unknown> = {"feature.alpha.title": "Alpha"};
+        const host = {
+            name: "some-settings-siyuan",
+            i18n,
+            loadData: vi.fn(async () => 'i18n:\n  en:\n    feature.alpha.title: "Patched"\n'),
+        } as unknown as Plugin;
+        const outcome = await loadPatch(host, DEFINITIONS);
+        expect(outcome.kind).toBe("applied");
+        expect(i18n["feature.alpha.title"]).toBe("Patched");
     });
 
     it("a missing file is a normal state, not an error", async () => {
@@ -302,7 +392,7 @@ describe("reportPatch", () => {
         warn.mockClear();
         info.mockClear();
         reportPatch({kind: "failed", detail: "boom"});
-        reportPatch({kind: "applied", features: [], count: 2});
+        reportPatch({kind: "applied", features: [], count: 2, translations: {}});
         reportPatch({kind: "none", detail: "missing"});
         expect(warn).not.toHaveBeenCalled();
         expect(info).not.toHaveBeenCalled();
@@ -312,7 +402,7 @@ describe("reportPatch", () => {
         const info = vi.mocked(console.log);
         info.mockClear();
         withLogging(() => {
-            reportPatch({kind: "applied", features: [], count: 2});
+            reportPatch({kind: "applied", features: [], count: 2, translations: {}});
             reportPatch({kind: "none", detail: "missing"});
         });
         expect(info).toHaveBeenCalledTimes(2);
