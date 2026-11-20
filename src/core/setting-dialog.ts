@@ -53,6 +53,7 @@ import {bindPendingClick} from "./click";
 import type {ConfigStore} from "./config";
 import {
     defaultConfig,
+    normalizeConfig,
     storageNameOf,
 } from "./config";
 import {
@@ -422,6 +423,15 @@ export class SettingsPanel {
     private viewportTimer?: number;
     /** 动作行注册的「插件卸载时」清理回调。 */
     private readonly unloadListeners = new Set<() => void>();
+    /**
+     * 不可用功能在磁盘上的配置，键是功能 id。
+     *
+     * 它们不进 store（`activeFeatures()` 已经把它们筛掉，既不装载也不挂载），面板只把文件读出来
+     * 按实际值灰显，控件依旧 `disabled`。读到之前用声明里的默认值拼行。
+     */
+    private unavailableConfigs = new Map<string, FeatureConfig>();
+    /** 这一次打开是否已经读过不可用功能的配置：只读一次，翻开关时不必再读。 */
+    private unavailableConfigsLoaded = false;
     /** 「显示不可用的设置」开关的订阅：开着面板时翻开关，不可用条目立刻显隐。 */
     private toggleUnsubscribe?: () => void;
     /** 「设置面板搜索」开关的订阅：开着面板时翻开关，搜索框立刻显隐。 */
@@ -487,7 +497,8 @@ export class SettingsPanel {
      * 声明视图里在当前宿主上不可用的功能（开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符）。
      *
      * 面板默认不显示它们；「显示不可用的设置」打开后，每个页签底部会灰显出来并注明原因。
-     * 它们不参与配置装载（`activeFeatures()` 已经把它们筛掉了），所以控件只能按声明默认值显示。
+     * 它们不参与配置装载（`activeFeatures()` 已经把它们筛掉了），配置由
+     * `loadUnavailableConfigs()` 直接从文件读回来只作显示，读到之前用声明里的默认值。
      */
     private unavailableFeaturesAll(): FeatureDefinition[] {
         return (this.options.allFeatures ?? []).filter((feature) => unavailableReasons(feature).length > 0);
@@ -515,6 +526,9 @@ export class SettingsPanel {
         this.tabTouched = false;
         // 已落盘状态属于这一次打开，不能被上一次关闭的异步写盘顺带改掉。
         this.storedTab = undefined;
+        // 不可用功能的配置也属于这一次打开：开关关着时根本没读，读出来的旧值不能留给下一个面板。
+        this.unavailableConfigs = new Map();
+        this.unavailableConfigsLoaded = false;
         // 上一次打开留下的补滚帧指向旧的对话框，先收掉；搜索状态与快捷键监听一并复位。
         this.cancelRevealFrame();
         this.disposeSearch();
@@ -596,6 +610,10 @@ export class SettingsPanel {
         // 面板读到的标记随之改变，这里只负责把结果画出来。
         this.toggleUnsubscribe?.();
         this.toggleUnsubscribe = this.options.store.subscribe(SHOW_UNAVAILABLE_FEATURE_ID, () => {
+            // 面板开着的时候才翻开关：这一刻才需要那些灰显行，配置也就这一刻才读
+            if (isShowUnavailable()) {
+                void this.loadUnavailableConfigs(generation);
+            }
             this.applyUnavailableVisibility();
         });
         // 「设置面板搜索」同理：功能会在配置落盘时当场挂载 / 卸载，面板再按标记显隐搜索框。
@@ -603,6 +621,10 @@ export class SettingsPanel {
         this.searchToggleUnsubscribe = this.options.store.subscribe(SEARCH_FEATURE_ID, () => {
             this.applySearchAvailability();
         });
+        // 开关本来就开着：把不可用功能存过的值读回来，让灰显行显示实际配置而不是默认值。
+        if (isShowUnavailable()) {
+            void this.loadUnavailableConfigs(generation);
+        }
         void this.restoreTab(generation);
 
         if (isReadonly()) {
@@ -919,11 +941,56 @@ export class SettingsPanel {
     /**
      * 一个不可用功能的全部行。
      *
-     * 它的配置不会被装载（`activeFeatures()` 已经把它筛掉），所以控件只能按声明里的默认值
-     * 灰显出来 —— 那不是用户存过的值，但「这个功能长什么样」仍然一眼看得出来。
+     * 它的配置不会被装载（`activeFeatures()` 已经把它筛掉），面板把配置文件直接读出来
+     * （`loadUnavailableConfigs()`）只用于显示；读到之前、或者根本没有这个文件时，
+     * 按声明里的默认值灰显出来。无论显示的是哪一份，控件都不可操作。
      */
     private unavailableBlockHtml(feature: FeatureDefinition): string {
-        return this.featureBlockHtml(feature, defaultConfig(feature.settings), true, this.reasonTextsOf(feature));
+        return this.featureBlockHtml(
+            feature,
+            this.unavailableConfigs.get(feature.id) ?? defaultConfig(feature.settings),
+            true,
+            this.reasonTextsOf(feature),
+        );
+    }
+
+    /**
+     * 读回不可用功能在磁盘上的配置，并按实际值把已经画好的灰显控件补齐。
+     *
+     * 这些功能不装载、不挂载，store 里没有它们的内存态，所以「这个功能此刻是什么状态」只有
+     * 配置文件知道：打开「显示不可用的设置」时读一次，用户存过的值才不会被声明默认值顶替。
+     * 只读不写：控件保持 `disabled`，功能也不会因为这一次读盘被挂起来。
+     *
+     * 面板先同步画出来（默认值），读回来再就地改控件的值；只改这一个打开过程里的面板，
+     * 关掉又重开时旧结果不会写进新面板。
+     */
+    private async loadUnavailableConfigs(generation: number): Promise<void> {
+        const features = this.unavailableFeaturesAll();
+        if (!this.dialog || features.length === 0 || this.unavailableConfigsLoaded) {
+            return;
+        }
+        // 先立标记再读：读是异步的，翻开关时会连着触发两次，没有这个标记就会重复读一遍
+        this.unavailableConfigsLoaded = true;
+        const reads = await Promise.all(features.map(async (feature) => ({
+            feature,
+            stored: await readStoredFile(this.options.plugin, storageNameOf(feature.id)),
+        })));
+        if (generation !== this.showGeneration || !this.dialog) {
+            return;
+        }
+        reads.forEach(({feature, stored}) => {
+            const config = normalizeConfig(
+                feature.settings,
+                stored,
+                (message) => log.warn(`${feature.id}: ${message}`),
+            );
+            this.unavailableConfigs.set(feature.id, config);
+            this.applyConfig(feature.id, config);
+        });
+        log.info(
+            `loaded ${reads.length} unavailable configuration(s) for display`,
+            reads.map(({feature, stored}) => [feature.id, stored === null ? "defaults" : "stored"]),
+        );
     }
 
     /** 一个不可用功能的全部原因文案：命中的每一条各占一行，顺序与 `unavailableReasons()` 一致。 */
@@ -1641,18 +1708,27 @@ export class SettingsPanel {
      * 把某个功能的控件改回存储里的值（写盘失败后使用）。
      *
      * 只动这一个功能的控件：别的功能没有改动，不该被动过。
+     */
+    private syncControls(featureId: string): void {
+        this.applyConfig(featureId, this.options.store.get(featureId));
+    }
+
+    /**
+     * 把某个功能的控件改成给定配置里的值。
+     *
+     * 可用的功能拿 store 里的那份；不可用的功能拿从文件里读回来的那份（只读显示，控件是
+     * `disabled`），两种情形共用这一段 —— 否则「界面上显示的值」会有两套走法。
      *
      * 有在途改动的控件跳过：写盘是异步的，用户可能在这次写盘途中又输入了新内容（还在
-     * `pending` 里、没进 store），按 store 回写会把他正在输入的内容覆盖掉，接着打字还会
+     * `pending` 里、没进 store），按存储回写会把他正在输入的内容覆盖掉，接着打字还会
      * 按被截断的值落盘。等它自己那次写盘完成时再对齐。
      * 值没变的控件也不赋值：给 `input.value` 赋值会把光标挪到末尾，等于打断正在编辑的输入。
      */
-    private syncControls(featureId: string): void {
+    private applyConfig(featureId: string, config: FeatureConfig): void {
         const root = this.dialog?.element;
         if (!root) {
             return;
         }
-        const config = this.options.store.get(featureId);
         const keyOf = (encoded: string | undefined): string | undefined => {
             if (typeof encoded !== "string") {
                 return undefined;
