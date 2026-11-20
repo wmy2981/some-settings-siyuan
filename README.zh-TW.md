@@ -124,3 +124,5 @@ npm test            # 單元測試（vitest）
 ## 授權條款
 
 [AGPL-3.0-or-later](./LICENSE)
+
+隨外掛分發的第三方內容與建置期工具見[第三方聲明](./THIRD_PARTY_NOTICES.md)。

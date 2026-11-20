@@ -126,3 +126,5 @@ npm test            # unit tests (vitest)
 ## License
 
 [AGPL-3.0-or-later](./LICENSE)
+
+Third-party material shipped with the plugin, and the tools used to build and test it, are listed in [third-party notices](./THIRD_PARTY_NOTICES.md).

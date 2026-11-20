@@ -124,3 +124,5 @@ npm test            # 单元测试（vitest）
 ## 许可证
 
 [AGPL-3.0-or-later](./LICENSE)
+
+随插件分发的第三方内容与构建期工具见[第三方声明](./THIRD_PARTY_NOTICES.md)。
