@@ -95,6 +95,10 @@
 然後開啟 **設定 → 市集 → 已下載 → 一些設定 → 設定**，這是唯一的入口 —— 外掛不在頂欄、狀態列、
 停靠欄註冊任何按鈕。
 
+## 進階用法
+
+在自己的機器上覆蓋功能宣告與介面文案，參見[使用者層級宣告補丁：`.patch.yml`](docs/patch.zh-TW.md)。
+
 ## 市集趨勢圖表
 
 ![市集趨勢圖表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)

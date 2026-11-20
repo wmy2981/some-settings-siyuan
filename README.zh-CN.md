@@ -95,6 +95,10 @@
 然后打开 **设置 → 集市 → 已下载 → 一些设置 → 设置**，这是唯一的入口 —— 插件不在顶栏、状态栏、
 停靠栏注册任何按钮。
 
+## 高级用法
+
+在自己的机器上覆盖功能声明与界面文案，参见[用户级声明补丁：`.patch.yml`](docs/patch.zh-CN.md)。
+
 ## 集市趋势图表
 
 ![集市趋势图表](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=zh)

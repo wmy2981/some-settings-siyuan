@@ -97,6 +97,10 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 Then open **Settings → Marketplace → Downloaded → Some Settings → Settings**. That is the only entry point — the
 plugin adds no top bar button, no status bar item and no dock item.
 
+## Advanced Use
+
+See [User-level declaration patch: `.patch.yml`](docs/patch.md) for overriding feature declarations and interface texts on your own machine.
+
 ## Bazaar Stats Graph
 
 ![Bazaar stats graph](https://siyuan-bazaar-stats-graph.sr1.cc.cd/api/chart/wmy2981/some-settings-siyuan?metrics=downloads,rating,ratings&range=all&area=true&lang=en)
