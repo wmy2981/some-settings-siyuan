@@ -4,6 +4,8 @@
 
 > 一批**可独立启停**的思源增强功能：每个设置项都能单独启用或禁用。
 
+欢迎反馈问题、建议新功能，请[创建 Issue](https://github.com/wmy2981/some-settings-siyuan/issues/new/choose)。
+
 ## 功能清单
 
 分类按功能作用到的思源原生功能划分，与设置面板里的页签一一对应。

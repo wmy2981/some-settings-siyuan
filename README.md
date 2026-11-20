@@ -4,6 +4,8 @@
 
 > A batch of **independently toggleable** SiYuan enhancements — every setting item can be enabled or disabled on its own.
 
+Feedback and feature suggestions are welcome — please [open an issue](https://github.com/wmy2981/some-settings-siyuan/issues/new/choose).
+
 ## Features
 
 Categories follow the native SiYuan feature each setting affects, and match the tabs of the settings panel.
