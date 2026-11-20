@@ -40,6 +40,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Accent for the opened note
 * Inline Markdown in document tree titles
 * Inline Markdown in tab titles
+* Close idle tabs
 * Outline heading level limit
 * Mobile document tree title size back to 3.8.9
 

@@ -56,6 +56,7 @@ import recordingWindow from "../features/recording-window";
 import refCrumbsGuide from "../features/ref-crumbs-guide";
 import settingsSearch from "../features/settings-search";
 import showUnavailableSettings from "../features/show-unavailable-settings";
+import tabAutoClose from "../features/tab-auto-close";
 import tabTitleMarkdown from "../features/tab-title-markdown";
 import {unavailableReasons} from "./availability";
 import type {
@@ -81,6 +82,7 @@ export const FEATURES: FeatureDefinition[] = [
     docTreeOpenedAccent,
     docTreeTitleMarkdown,
     tabTitleMarkdown,
+    tabAutoClose,
     outlineLevelFilter,
     headingLevelIcon,
     bazaarCustomIcon,
