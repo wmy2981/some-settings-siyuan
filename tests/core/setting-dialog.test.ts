@@ -2253,6 +2253,10 @@ describe("unavailable settings", () => {
 
     const hiddenOf = (element: Element | null | undefined): boolean => Boolean(element?.classList.contains("fn__none"));
 
+    /** 某个功能在磁盘上的配置被读了几次。 */
+    const readsOf = (host: FakeHost, id: string): number =>
+        host.loadData.mock.calls.filter((call) => call[0] === `feature-${id}`).length;
+
     /** 某个页签里属于某个功能的行（不可用条目在分类页与汇总页各有一份，按页签分开看）。 */
     const rowsIn = (
         pane: Element | null,
@@ -2457,5 +2461,71 @@ describe("unavailable settings", () => {
         input.value = "";
         input.dispatchEvent(new Event("input", {bubbles: true}));
         expect(rowsIn(pane, "beta").every((row) => !hiddenOf(row))).toBe(true);
+    });
+
+    it("grayed rows show the stored configuration instead of the declared defaults", async () => {
+        setShowUnavailable(true);
+        const {q, store, host} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {beta: {enabled: true, size: 20}},
+            undefined,
+            [featureOf("alpha"), toggleOf(), betaOf({enabled: false})],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        const size = pane?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]');
+        const toggle = pane?.querySelector<HTMLInputElement>('[data-ss-switch="beta::enabled"]');
+        // 面板先按声明默认值画出来，配置文件读回来之后再换成存过的值
+        await vi.waitFor(() => expect(size?.value).toBe("20"));
+        expect(toggle?.checked).toBe(true);
+        // 搜索结果里那一份同样是存过的值
+        const dedicated = q('[data-ss-tab-panel="__unavailable"]');
+        expect(dedicated?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]')?.value).toBe("20");
+        // 只是显示：控件依然不可操作，配置也没有因此被装载进 store
+        expect(size?.disabled).toBe(true);
+        expect(toggle?.disabled).toBe(true);
+        expect(store.get("beta")).toEqual({});
+        expect(host.files.get("feature-beta")).toEqual({enabled: true, size: 20});
+    });
+
+    it("the unavailable configuration is read only once the switch is on, and only once per panel", async () => {
+        const {q, store, host} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {beta: {enabled: true, size: 20}},
+            undefined,
+            [featureOf("alpha"), toggleOf(), betaOf({enabled: false})],
+        );
+        const size = (): HTMLInputElement | null => q<HTMLInputElement>('[data-ss-number="beta::size"]');
+        // 开关关着时那些行根本不显示，配置文件也就不读
+        expect(readsOf(host, "beta")).toBe(0);
+        expect(size()?.value).toBe("12");
+
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+        await vi.waitFor(() => expect(size()?.value).toBe("20"));
+        expect(readsOf(host, "beta")).toBe(1);
+
+        // 关了再开不重复读盘：这一次打开的面板里那份值还在
+        setShowUnavailable(false);
+        await store.patch("show-unavailable-settings", {enabled: false});
+        expect(size()?.value).toBe("20");
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+        expect(size()?.value).toBe("20");
+        expect(readsOf(host, "beta")).toBe(1);
+    });
+
+    it("a feature without a stored file keeps the declared defaults", async () => {
+        setShowUnavailable(true);
+        const {q} = await open(
+            [featureOf("alpha"), toggleOf()],
+            {},
+            undefined,
+            [featureOf("alpha"), toggleOf(), betaOf({enabled: false})],
+        );
+        const pane = q('[data-ss-tab-panel="editor"]');
+        await vi.waitFor(() =>
+            expect(pane?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]')?.value).toBe("12")
+        );
+        expect(pane?.querySelector<HTMLInputElement>('[data-ss-switch="beta::enabled"]')?.checked).toBe(false);
     });
 });

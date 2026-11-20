@@ -11,6 +11,8 @@ kernel.js
 # 工具缓存
 .eslintcache
 .dprint
+# gh 在仓库目录里运行时写下的设备标识（XDG_STATE_HOME 落在这里时出现）
+.local
 
 # 编辑器 / 系统
 .idea

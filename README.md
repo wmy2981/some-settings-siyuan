@@ -4,6 +4,8 @@
 
 > A batch of **independently toggleable** SiYuan enhancements — every setting item can be enabled or disabled on its own.
 
+Feedback and feature suggestions are welcome — please [open an issue](https://github.com/wmy2981/some-settings-siyuan/issues/new/choose).
+
 ## Features
 
 Categories follow the native SiYuan feature each setting affects, and match the tabs of the settings panel.
@@ -38,6 +40,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Accent for the opened note
 * Inline Markdown in document tree titles
 * Inline Markdown in tab titles
+* Close idle tabs
 * Outline heading level limit
 * Mobile document tree title size back to 3.8.9
 
@@ -97,49 +100,9 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 Then open **Settings → Marketplace → Downloaded → Some Settings → Settings**. That is the only entry point — the
 plugin adds no top bar button, no status bar item and no dock item.
 
-## Notes
+## Advanced Use
 
-* Every change is written to that feature's own configuration file at once: there is no Save button and closing the
-  panel loses nothing. There is no per-item reset either, so restoring one item means exporting the configuration,
-  editing it and importing it again, or clearing everything.
-* The panel restores the tab that was open when it last closed, and falls back to the first tab if that one is gone.
-* The search box (top of the settings area on desktop, below the panel title on mobile) filters categories, features
-  and setting items at once, showing each matched feature with all of its settings and highlighting the match;
-  `Ctrl/Cmd + F` or `/` focuses it, and `Esc` or the clear icon inside the box only empties it. It is on by default
-  and can be turned off under **This plugin**; once off the box disappears and both shortcuts go back to SiYuan.
-  The query is never saved, and searching writes no configuration.
-* With **Show unavailable settings** on under **This plugin**, every tab lists the features that cannot run here
-  at the bottom in gray, with every matching reason (disabled by the developer, not available on this platform,
-  or outside the supported SiYuan version range); search collects them into a separate **Unavailable** group at
-  the end. Their controls show declaration defaults, cannot be operated, and their configuration is never loaded.
-* Detailed logging is off by default and leaves a single load hint in the console; once enabled under
-  **This plugin**, every event is one INFO / WARN / ERROR line tagged with the feature id. The console log viewer
-  only collects from the moment its own switch is on, so logs from plugin startup are never recorded.
-* Import, export and clear cover every configuration file under `data/storage/petal/some-settings-siyuan`; custom
-  marketplace icons change this client only, sync with SiYuan and survive a configuration clear.
-* Uninstalling the plugin leaves the plugin storage directory alone: every feature's configuration, the panel
-  state and your own `.patch.yml` stay in place and apply again after a reinstall.
-* Advanced use: a `.patch.yml` in the plugin storage directory can override feature declarations and interface
-  texts; see [docs/patch.md](docs/patch.md). The plugin never creates or rewrites that file.
-* Both reconnect features reload the whole frontend; note content lives in the kernel, so a reload loses nothing.
-* The author blocklist only covers the five online marketplace list tabs; downloaded and update lists stay
-  unchanged. Authors are matched exactly against the author field of the marketplace index (case-insensitive),
-  the hiding is re-applied whenever SiYuan repaints the list, and the package count plus the "all blocked" hint
-  follow the same rule.
-* Per-feature limits: the mobile inline-code copy button follows the caret and copies visible text only; the bookmark
-  jump only takes over whole-document bookmarks opened with a plain left click; the recording window only replaces
-  the UI (SiYuan's recorder has no pause, so it offers stop only); asset metadata only covers workspace assets
-  (`assets/…`); snippet highlighting needs SiYuan's own highlight.js and falls back to plain text.
-* _Outline heading level limit_ only changes what is displayed: the document, the outline data and SiYuan's own
-  collapse state stay untouched, and turning the feature off brings every row back. A heading below the chosen level
-  gets no current-position highlight while it is hidden, and searching the outline lifts the limit only while the
-  search box has text.
-* _Details for the agent's tool calls_ reads only responses the panel already received, so unmatched calls show no
-  parameters; _Send the agent message with Enter_ shadows the default Agent Send shortcut.
-* _Translate agent thinking_ only replaces the displayed text: the original reasoning, the session and the model
-  context stay untouched, and translations are never saved. Translation starts only when a thinking card is expanded,
-  keeps the still-streaming tail in its original language, and sends the reasoning text to the selected free Microsoft
-  or Google endpoint.
+See [User-level declaration patch: `.patch.yml`](docs/patch.md) for overriding feature declarations and interface texts on your own machine.
 
 ## Bazaar Stats Graph
 
@@ -163,3 +126,5 @@ npm test            # unit tests (vitest)
 ## License
 
 [AGPL-3.0-or-later](./LICENSE)
+
+Third-party material shipped with the plugin, and the tools used to build and test it, are listed in [third-party notices](./THIRD_PARTY_NOTICES.md).
