@@ -127,6 +127,14 @@ describe("applyPatch: overriding", () => {
         expect(alpha.category).toBe("ai");
     });
 
+    it("moves a feature to several categories", () => {
+        const alpha = byId(patchedView("features:\n  alpha:\n    category: [ai, doc-tree]\n"), "alpha");
+        expect(alpha.category).toEqual(["ai", "doc-tree"]);
+        // 块状列表是同一个意思
+        const block = byId(patchedView("features:\n  alpha:\n    category:\n      - ai\n      - editor\n"), "alpha");
+        expect(block.category).toEqual(["ai", "editor"]);
+    });
+
     it("overrides the frontends, including the empty list that applies nowhere", () => {
         expect(byId(patchedView("features:\n  beta:\n    frontends: [mobile]\n"), "beta").frontends)
             .toEqual(["mobile"]);
@@ -317,6 +325,11 @@ describe("applyPatch: the whole file is rejected", () => {
 
     it("an unknown category", () => {
         expect(detailOf("features:\n  alpha:\n    category: nowhere\n")).toContain("category must be one of");
+    });
+
+    it("an empty or duplicated category list", () => {
+        expect(detailOf("features:\n  alpha:\n    category: []\n")).toContain("at least one");
+        expect(detailOf("features:\n  alpha:\n    category: [ai, ai]\n")).toContain("twice");
     });
 
     it("an unknown or duplicated frontend", () => {

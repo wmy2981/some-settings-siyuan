@@ -89,7 +89,10 @@ import type {
     FeatureDefinition,
     SettingField,
 } from "./types";
-import {FEATURE_CATEGORIES} from "./types";
+import {
+    categoriesOf,
+    FEATURE_CATEGORIES,
+} from "./types";
 import {
     actionButtonHtml,
     buttonRowHtml,
@@ -490,7 +493,7 @@ export class SettingsPanel {
 
     /** 当前分类（页签）下要显示设置界面的功能。 */
     private visibleFeatures(category: FeatureCategory): FeatureDefinition[] {
-        return this.visibleFeaturesAll().filter((feature) => feature.category === category);
+        return this.visibleFeaturesAll().filter((feature) => categoriesOf(feature).includes(category));
     }
 
     /**
@@ -506,7 +509,7 @@ export class SettingsPanel {
 
     /** 当前分类（页签）下不可用的功能，顺序与注册表一致。 */
     private unavailableFeatures(category: FeatureCategory): FeatureDefinition[] {
-        return this.unavailableFeaturesAll().filter((feature) => feature.category === category);
+        return this.unavailableFeaturesAll().filter((feature) => categoriesOf(feature).includes(category));
     }
 
     // ------------------------------------------------------------ 生命周期
@@ -1944,7 +1947,7 @@ export class SettingsPanel {
         const showUnavailable = isShowUnavailable();
         const unavailableAll = this.unavailableFeaturesAll();
         const unavailableIds = new Set(unavailableAll.map((feature) => feature.id));
-        const unavailableCategoryOf = new Map(unavailableAll.map((feature) => [feature.id, feature.category]));
+        const unavailableCategoriesOf = new Map(unavailableAll.map((feature) => [feature.id, categoriesOf(feature)]));
         let shown = 0;
         root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
             if (pane.dataset.ssTabPanel === UNAVAILABLE_PANE_ID) {
@@ -1983,7 +1986,8 @@ export class SettingsPanel {
             featureRows.forEach((rows, id) => {
                 // 分类名命中时，该分类里不可用的功能也跟着出现（与分类分组「命中即整组显示」一致）
                 const show = showUnavailable &&
-                    (showAll || hits.features.has(id) || hits.categories.has(unavailableCategoryOf.get(id) ?? ""));
+                    (showAll || hits.features.has(id) ||
+                        (unavailableCategoriesOf.get(id) ?? []).some((category) => hits.categories.has(category)));
                 if (show) {
                     visible += 1;
                 }
@@ -2256,7 +2260,7 @@ export class SettingsPanel {
                 );
             }
         });
-        return {category: feature.category, id: feature.id, fields};
+        return {categories: categoriesOf(feature), id: feature.id, fields};
     }
 
     /** 一条静态 i18n 文案的匹配域：当前语言那一份，加上各语言文件里的同一条。 */

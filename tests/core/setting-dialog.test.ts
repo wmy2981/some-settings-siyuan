@@ -309,6 +309,27 @@ describe("show: render", () => {
         expect(qa("[data-ss-tab]")).toHaveLength(2);
     });
 
+    it("a feature in several categories gets a full copy in each tab", async () => {
+        const {qa} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+        expect(qa("[data-ss-tab]").map((tab) => tab.dataset.ssTab)).toEqual(["editor", "appearance"]);
+        const editor = qa('[data-ss-tab-panel="editor"]')[0];
+        const appearance = qa('[data-ss-tab-panel="appearance"]')[0];
+        expect(editor.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(6);
+        expect(appearance.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(6);
+        expect(editor.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
+        expect(appearance.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
+    });
+
+    it("changing the copy in one tab updates the copy in the other", async () => {
+        const {qa, host} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+        const switches = qa('[data-ss-switch="alpha::enabled"]') as HTMLInputElement[];
+        expect(switches).toHaveLength(2);
+        switches[0].checked = true;
+        fire(switches[0], "change");
+        await vi.waitFor(() => expect(switches[1].checked).toBe(true));
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({enabled: true}));
+    });
+
     it("desktop uses the left tab list, not the mobile tab bar", async () => {
         const {panelElement, q} = await open();
         expect(panelElement.classList.contains(`${PANEL_CLASS}--mobile`)).toBe(false);
@@ -1787,6 +1808,19 @@ describe("search", () => {
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(SEARCH.replace(".", ""))).toBe(true);
         });
 
+        it("a feature in several categories shows up under every matching group", async () => {
+            const {root, qa} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+            typeQuery(searchBox(root), "Alpha feature");
+            expect(qa('[data-ss-tab-panel="editor"]')[0].classList.contains("fn__none")).toBe(false);
+            expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(false);
+            const rows = qa('[data-ss-feature="alpha"]');
+            expect(rows).toHaveLength(12);
+            expect(rows.every((row) => !row.classList.contains("fn__none"))).toBe(true);
+            // 分类名命中只翻出一组：搜「Editor」时外观组仍然收起
+            typeQuery(searchBox(root), "Editor");
+            expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(true);
+        });
+
         it("a feature hit shows all its visible settings, including fields that did not match", async () => {
             const {root, q, qa} = await open(twoInEditor());
             const input = searchBox(root);
@@ -2420,6 +2454,26 @@ describe("unavailable settings", () => {
         setShowUnavailable(false);
         await store.patch("show-unavailable-settings", {enabled: false});
         expect(hiddenOf(dedicated)).toBe(true);
+    });
+
+    it("a retired feature in several categories is found by any of their names", async () => {
+        const {q, root, store} = await open(
+            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha", {category: "editor"}),
+                toggleOf(),
+                betaOf({category: ["appearance", "editor"], enabled: false}),
+            ],
+        );
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+        const dedicated = q('[data-ss-tab-panel="__unavailable"]');
+        const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+        input.value = "Editor";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
     });
 
     it("retired features from the real registry render too, without throwing and with a reason", async () => {

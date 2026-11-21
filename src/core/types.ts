@@ -31,6 +31,9 @@ import type {Logger} from "./log";
  * - settings：思源的设置页
  * - bazaar：思源的集市
  * - plugin：本插件自身的维护与说明
+ *
+ * 一个功能可以同时属于多个分类：声明里把 `category` 写成数组，它就会在每个分类的页签里
+ * 各出现一份；配置与挂载仍然只有一份。
  */
 export type FeatureCategory =
     | "ai"
@@ -329,7 +332,14 @@ export interface FeatureInstance {
 export interface FeatureDefinition {
     /** 必须等于功能文件夹名，也等于它自己的配置文件名（`feature-<id>`）。 */
     id: string;
-    category: FeatureCategory;
+    /**
+     * 这个功能所在的设置页签。
+     *
+     * 写一个分类 id 表示只属于那个页签；写数组表示同时出现在其中每一个页签里，
+     * 每个页签各渲染一份完整的设置行。配置仍是一份（按功能 id 存），功能也只挂载一次。
+     * 页签的先后顺序按 `FEATURE_CATEGORIES`，与数组顺序无关。
+     */
+    category: FeatureCategory | FeatureCategory[];
     /** i18n key，不是字面量。 */
     name: string;
     description?: string;
@@ -406,7 +416,8 @@ export interface FeaturePatchMarker {
  */
 export interface FeaturePatch {
     enabled?: boolean;
-    category?: FeatureCategory;
+    /** 一个分类 id 或一组分类 id；整组替换源码声明。 */
+    category?: FeatureCategory | FeatureCategory[];
     frontends?: FeatureFrontend[] | null;
     minAppVersion?: string | null;
     maxAppVersion?: string | null;
@@ -414,3 +425,13 @@ export interface FeaturePatch {
 
 /** 定义辅助函数：只做类型约束，不改变行为。 */
 export const defineFeature = (definition: FeatureDefinition): FeatureDefinition => definition;
+
+/**
+ * 一个功能所属的全部页签。
+ *
+ * `category` 可以写单个字符串（只属于一个分类）或数组（同时属于多个分类）；
+ * 这里统一成数组并去掉重复项，注册表、设置面板与搜索都只认这个结果。
+ */
+export const categoriesOf = (
+    definition: FeatureDefinition,
+): FeatureCategory[] => [...new Set(Array.isArray(definition.category) ? definition.category : [definition.category])];

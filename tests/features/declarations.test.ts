@@ -18,9 +18,11 @@ import {
 } from "vitest";
 import {defaultConfig} from "../../src/core/config";
 import {FEATURES} from "../../src/core/registry";
-import {FEATURE_CATEGORIES} from "../../src/core/types";
+import {
+    categoriesOf,
+    FEATURE_CATEGORIES,
+} from "../../src/core/types";
 import type {
-    FeatureCategory,
     FeatureDefinition,
     SettingField,
 } from "../../src/core/types";
@@ -103,9 +105,14 @@ describe("feature declarations", () => {
         expect(new Set(ids).size).toBe(ids.length);
     });
 
-    it("every feature declares a valid category and an explicit enabled", () => {
+    it("every feature declares at least one valid category and an explicit enabled", () => {
         FEATURES.forEach((feature) => {
-            expect(FEATURE_CATEGORIES).toContain(feature.category as FeatureCategory);
+            const categories = categoriesOf(feature);
+            expect(categories.length, feature.id).toBeGreaterThan(0);
+            expect(new Set(categories).size, feature.id).toBe(categories.length);
+            categories.forEach((category) => {
+                expect(FEATURE_CATEGORIES).toContain(category);
+            });
             expect(typeof feature.enabled).toBe("boolean");
         });
     });

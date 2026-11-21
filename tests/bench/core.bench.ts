@@ -29,6 +29,7 @@ import {
     addStyle,
     removeStylesOf,
 } from "../../src/core/style";
+import {categoriesOf} from "../../src/core/types";
 import type {
     FeatureConfig,
     SettingField,
@@ -57,7 +58,10 @@ const staticField = (key: string): SearchField => fieldOf(zh[key], zhTW[key], en
 const buildIndex = (): SearchIndex => {
     const categories: Record<string, SearchField> = {};
     const features = FEATURES.map((feature) => {
-        categories[feature.category] = staticField(categoryKey(feature.category));
+        const featureCategories = categoriesOf(feature);
+        featureCategories.forEach((category) => {
+            categories[category] = staticField(categoryKey(category));
+        });
         const fields: SearchField[] = [fieldOf(feature.id), staticField(feature.name)];
         if (feature.description) {
             fields.push(staticField(feature.description));
@@ -82,7 +86,7 @@ const buildIndex = (): SearchIndex => {
                 fields.push(staticField(field.label));
             }
         });
-        return {category: feature.category, id: feature.id, fields};
+        return {categories: featureCategories, id: feature.id, fields};
     });
     return {categories, features};
 };

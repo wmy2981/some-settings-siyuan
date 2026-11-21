@@ -29,16 +29,17 @@ Feature declarations live under the top-level key `features`, grouped by **featu
 all of the five fields below. An omitted field keeps the declaration from the source; it does **not**
 remove a restriction.
 
-| Field           | Overrides                                        | Valid values                                                                                               |
-| --------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
-| `enabled`       | whether the feature ships with the plugin        | `true` / `false`                                                                                           |
-| `category`      | the settings tab the feature lives in            | `ai` / `editor` / `doc-tree` / `appearance` / `connection` / `settings` / `bazaar` / `plugin`              |
-| `frontends`     | the frontends it applies to                      | a list of `desktop` / `mobile`; `[]` means neither frontend; `null` or an empty value means no restriction |
-| `minAppVersion` | the lowest supported SiYuan version (inclusive)  | a SiYuan version string such as `"3.8.7"`; `null` or an empty value removes the lower bound                |
-| `maxAppVersion` | the highest supported SiYuan version (inclusive) | a SiYuan version string such as `"3.9.0"`; `null` or an empty value removes the upper bound                |
+| Field           | Overrides                                        | Valid values                                                                                                     |
+| --------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `enabled`       | whether the feature ships with the plugin        | `true` / `false`                                                                                                 |
+| `category`      | the settings tab(s) the feature lives in         | `ai` / `editor` / `doc-tree` / `appearance` / `connection` / `settings` / `bazaar` / `plugin`, or a list of them |
+| `frontends`     | the frontends it applies to                      | a list of `desktop` / `mobile`; `[]` means neither frontend; `null` or an empty value means no restriction       |
+| `minAppVersion` | the lowest supported SiYuan version (inclusive)  | a SiYuan version string such as `"3.8.7"`; `null` or an empty value removes the lower bound                      |
+| `maxAppVersion` | the highest supported SiYuan version (inclusive) | a SiYuan version string such as `"3.9.0"`; `null` or an empty value removes the upper bound                      |
 
-`category` takes the tab id, not the tab label. Quote version numbers: `3.8` is not a valid version,
-`"3.8.7"` is.
+`category` takes the tab id, not the tab label. Write a list such as `[editor, doc-tree]` to show the feature in
+several tabs at once; the list must not be empty or repeat a tab. Quote version numbers: `3.8` is not a valid
+version, `"3.8.7"` is.
 
 ## Example
 
@@ -53,6 +54,10 @@ features:
   desktop-command-panel-slim:
     category: editor
     frontends: [desktop, mobile]
+
+  # Show it in both the "Editor" and "Document tree" tabs
+  heading-level-icon:
+    category: [editor, doc-tree]
 
   # Try it only on your own SiYuan version
   tab-title-markdown:
@@ -136,7 +141,8 @@ clue.
   mounted and it stays out of the settings panel by default. With "Show unavailable settings" turned
   on in the "This plugin" tab, it is grayed in at the bottom of its own tab with the reason
   "Disabled by your patch".
-* The patch can change the category: both the normal and the grayed entries move to the new tab, and
+* The patch can change the category: both the normal and the grayed entries move to the new tab (or to
+  several tabs), and
   the order inside the tab still follows the registration order.
 * The patch can change the frontends and the version range; the reasons are recalculated from the
   patched declaration, so nothing from the source declaration lingers.

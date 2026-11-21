@@ -138,20 +138,45 @@ for (const dir of featureDirs) {
     const source = fs.readFileSync(indexPath, "utf8");
 
     const idMatch = /defineFeature\s*\(\s*\{[\s\S]*?\bid\s*:\s*"([^"]+)"/.exec(source);
-    const categoryMatch = /\bcategory\s*:\s*"([^"]+)"/.exec(source);
     if (!idMatch) {
         fail(`src/features/${dir}/index.ts has no defineFeature({ id: "..." })`);
         continue;
     }
     const id = idMatch[1];
-    const category = categoryMatch ? categoryMatch[1] : "";
 
     if (id !== dir) {
         fail(`feature id "${id}" does not match the folder name "${dir}" (they must be identical)`);
     }
-    if (!VALID_CATEGORIES.includes(category)) {
-        fail(`feature "${id}" has an invalid category="${category}"; valid values are ${VALID_CATEGORIES.join("/")}`);
+
+    // 分类声明：一个字符串，或一个字符串数组（同时出现在多个页签下）。
+    // 先从声明字段里找，避免误认 settings 里的同名文案。
+    const declarationEnd = source.indexOf("settings:", idMatch.index);
+    const declarationSource = source.slice(idMatch.index, declarationEnd < 0 ? source.length : declarationEnd);
+    const categoryValue = /\bcategory\s*:\s*(\[[^\]]*\]|"[^"]+")/.exec(declarationSource)?.[1];
+    const categories = [];
+    if (!categoryValue) {
+        fail(`feature "${id}" does not declare category (one or more of ${VALID_CATEGORIES.join("/")})`);
+    } else if (categoryValue.startsWith("[")) {
+        [...categoryValue.matchAll(/"([^"]+)"/g)].forEach((match) => categories.push(match[1]));
+        if (categories.length === 0) {
+            fail(
+                `feature "${id}" declares an empty category list; name at least one of ${VALID_CATEGORIES.join("/")}`,
+            );
+        }
+    } else {
+        categories.push(categoryValue.slice(1, -1));
     }
+    categories.forEach((category) => {
+        if (!VALID_CATEGORIES.includes(category)) {
+            fail(
+                `feature "${id}" has an invalid category="${category}"; valid values are ${VALID_CATEGORIES.join("/")}`,
+            );
+        }
+    });
+    const repeatedCategories = categories.filter((category, index) => categories.indexOf(category) !== index);
+    [...new Set(repeatedCategories)].forEach((category) => {
+        fail(`feature "${id}" lists the category "${category}" twice`);
+    });
 
     // -------------------------------------------------- 1. enabled 声明
     // 它是「这个功能随插件一起交不交出」，必须是明确的布尔量：
@@ -356,7 +381,7 @@ for (const dir of featureDirs) {
         }
     }
 
-    found.set(id, {dir, category, i18nKeys});
+    found.set(id, {dir, categories, i18nKeys});
 }
 
 // ------------------------------------------------- 4. 注册表登记完整性

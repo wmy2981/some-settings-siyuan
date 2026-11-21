@@ -26,7 +26,10 @@ import {
     setEffectiveFeatures,
 } from "../../src/core/registry";
 import {SEARCH_FEATURE_ID} from "../../src/core/search";
-import {FEATURE_CATEGORIES} from "../../src/core/types";
+import {
+    categoriesOf,
+    FEATURE_CATEGORIES,
+} from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
 import {supportsCurrentHost} from "../../src/core/version";
 import {mockState} from "../mocks/siyuan";
@@ -79,9 +82,11 @@ describe("The registry itself", () => {
         });
     });
 
-    it("The category must be a native category listed in the docs", () => {
+    it("Every declared category must be a native category listed in the docs", () => {
         FEATURES.forEach((feature) => {
-            expect(FEATURE_CATEGORIES).toContain(feature.category);
+            categoriesOf(feature).forEach((category) => {
+                expect(FEATURE_CATEGORIES).toContain(category);
+            });
         });
     });
 
@@ -144,16 +149,22 @@ describe("Lookups", () => {
         const editor = featuresOf("editor");
         expect(editor.length).toBeGreaterThan(0);
         editor.forEach((feature) => {
-            expect(feature.category).toBe("editor");
+            expect(categoriesOf(feature)).toContain("editor");
         });
-        const expected = FEATURES.filter((feature) => feature.category === "editor");
+        const expected = FEATURES.filter((feature) => categoriesOf(feature).includes("editor"));
         expect(editor).toEqual(expected);
     });
 
     it("All categories together cover every feature", () => {
         const collected = FEATURE_CATEGORIES.flatMap((category) => featuresOf(category));
-        expect(collected).toHaveLength(FEATURES.length);
-        expect(collected.map((feature) => feature.id).sort()).toEqual(FEATURES.map((feature) => feature.id).sort());
+        // 一个功能可以同时属于多个分类，所以按 id 去重后与注册表对齐，而不是按出现次数
+        expect([...new Set(collected.map((feature) => feature.id))].sort())
+            .toEqual(FEATURES.map((feature) => feature.id).sort());
+    });
+
+    it("categoriesOf normalizes a single category and drops duplicates", () => {
+        expect(categoriesOf(FEATURES[0])).toEqual([FEATURES[0].category]);
+        expect(categoriesOf({...FEATURES[0], category: ["editor", "editor", "ai"]})).toEqual(["editor", "ai"]);
     });
 
     it("Tab order is FEATURE_CATEGORIES itself", () => {
@@ -188,6 +199,17 @@ describe("the effective declaration view", () => {
         try {
             setEffectiveFeatures(withFeature("log-output", {category: "editor"}));
             expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
+            expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
+        } finally {
+            resetEffectiveFeatures();
+        }
+    });
+
+    it("puts a feature declared in several categories into every one of them", () => {
+        try {
+            setEffectiveFeatures(withFeature("log-output", {category: ["editor", "appearance"]}));
+            expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
+            expect(featuresOf("appearance").map((feature) => feature.id)).toContain("log-output");
             expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
         } finally {
             resetEffectiveFeatures();
