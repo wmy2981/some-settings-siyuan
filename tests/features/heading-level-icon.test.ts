@@ -98,7 +98,7 @@ describe("heading icons show their level", () => {
     it("the declaration is off by default and applies to both frontends", () => {
         expect(definition.frontends).toBeUndefined();
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
     });
 
     it("a heading block switches to the matching H1-H6 icon, changing href and xlink:href together", () => {

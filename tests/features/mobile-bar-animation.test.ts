@@ -45,7 +45,7 @@ describe("mobile bar transition tuning", () => {
     });
 
     it("declaration: mobile only, with a 200ms default duration (0-600) and emphasized easing", () => {
-        expect(definition.category).toBe("appearance");
+        expect(definition.category).toEqual(["appearance"]);
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled", "duration", "easing"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

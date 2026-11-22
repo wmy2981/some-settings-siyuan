@@ -26,7 +26,10 @@ import {
     setEffectiveFeatures,
 } from "../../src/core/registry";
 import {SEARCH_FEATURE_ID} from "../../src/core/search";
-import {FEATURE_CATEGORIES} from "../../src/core/types";
+import {
+    defineFeature,
+    FEATURE_CATEGORIES,
+} from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
 import {supportsCurrentHost} from "../../src/core/version";
 import {mockState} from "../mocks/siyuan";
@@ -79,9 +82,11 @@ describe("The registry itself", () => {
         });
     });
 
-    it("The category must be a native category listed in the docs", () => {
+    it("Every declared category must be a native category listed in the docs", () => {
         FEATURES.forEach((feature) => {
-            expect(FEATURE_CATEGORIES).toContain(feature.category);
+            feature.category.forEach((category) => {
+                expect(FEATURE_CATEGORIES).toContain(category);
+            });
         });
     });
 
@@ -144,16 +149,25 @@ describe("Lookups", () => {
         const editor = featuresOf("editor");
         expect(editor.length).toBeGreaterThan(0);
         editor.forEach((feature) => {
-            expect(feature.category).toBe("editor");
+            expect(feature.category).toContain("editor");
         });
-        const expected = FEATURES.filter((feature) => feature.category === "editor");
+        const expected = FEATURES.filter((feature) => feature.category.includes("editor"));
         expect(editor).toEqual(expected);
     });
 
     it("All categories together cover every feature", () => {
         const collected = FEATURE_CATEGORIES.flatMap((category) => featuresOf(category));
-        expect(collected).toHaveLength(FEATURES.length);
-        expect(collected.map((feature) => feature.id).sort()).toEqual(FEATURES.map((feature) => feature.id).sort());
+        // 一个功能可以同时属于多个分类，所以按 id 去重后与注册表对齐，而不是按出现次数
+        expect([...new Set(collected.map((feature) => feature.id))].sort())
+            .toEqual(FEATURES.map((feature) => feature.id).sort());
+    });
+
+    it("defineFeature turns a single category into a one-item list and drops duplicates", () => {
+        const base = FEATURES[0];
+        expect(defineFeature({...base, category: "editor"}).category).toEqual(["editor"]);
+        expect(defineFeature({...base, category: ["editor", "editor", "ai"]}).category).toEqual(["editor", "ai"]);
+        // 声明视图里永远是数组，所以下游不必再区分「一个还是多个」
+        expect(defineFeature({...base, category: ["appearance"]}).category).toEqual(["appearance"]);
     });
 
     it("Tab order is FEATURE_CATEGORIES itself", () => {
@@ -186,8 +200,19 @@ describe("the effective declaration view", () => {
 
     it("uses the patched category for the panel tabs and the search groups", () => {
         try {
-            setEffectiveFeatures(withFeature("log-output", {category: "editor"}));
+            setEffectiveFeatures(withFeature("log-output", {category: ["editor"]}));
             expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
+            expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
+        } finally {
+            resetEffectiveFeatures();
+        }
+    });
+
+    it("puts a feature declared in several categories into every one of them", () => {
+        try {
+            setEffectiveFeatures(withFeature("log-output", {category: ["editor", "appearance"]}));
+            expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
+            expect(featuresOf("appearance").map((feature) => feature.id)).toContain("log-output");
             expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
         } finally {
             resetEffectiveFeatures();
@@ -223,7 +248,7 @@ describe("activeFeatures", () => {
     it("A feature declared enabled: false never takes effect, even with a matching frontend and version", () => {
         const retired: FeatureDefinition = {
             id: "retired-demo",
-            category: "editor",
+            category: ["editor"],
             name: "demo.name",
             enabled: false,
             settings: [{kind: "switch", key: "enabled", title: "demo.t", default: false}],

@@ -40,7 +40,7 @@ describe("Exit mask stays blurred", () => {
     });
 
     it("declaration: appearance category, loaded from 3.8.10, a single switch that is off by default", () => {
-        expect(definition.category).toBe("appearance");
+        expect(definition.category).toEqual(["appearance"]);
         expect(definition.minAppVersion).toBe("3.8.10");
         // 桌面端与移动端共用同一套进度遮罩，不该只对一端交出
         expect(definition.frontends).toBeUndefined();

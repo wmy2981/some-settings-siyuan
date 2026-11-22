@@ -1139,7 +1139,7 @@ describe("agent tool call detail", () => {
 
         it("declaration: default off, ai category, a single switch", () => {
             expect(definition.id).toBe("agent-tool-call-detail");
-            expect(definition.category).toBe("ai");
+            expect(definition.category).toEqual(["ai"]);
             expect(definition.enabled).toBe(true);
             expect(definition.settings).toEqual([
                 {kind: "switch", key: "enabled", title: "common.enabled", default: false},

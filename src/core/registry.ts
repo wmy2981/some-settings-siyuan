@@ -165,8 +165,8 @@ export const activeFeatures = (): FeatureDefinition[] =>
 export const featureById = (id: string): FeatureDefinition | undefined =>
     declarations.find((feature) => feature.id === id);
 
-/** 按分类取功能，顺序与声明视图一致。 */
+/** 按分类取功能，顺序与声明视图一致；一个功能可以同时属于多个分类。 */
 export const featuresOf = (category: FeatureCategory): FeatureDefinition[] =>
-    declarations.filter((feature) => feature.category === category);
+    declarations.filter((feature) => feature.category.includes(category));
 
 export const categoryOrder: FeatureCategory[] = FEATURE_CATEGORIES;

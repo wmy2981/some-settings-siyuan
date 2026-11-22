@@ -113,6 +113,32 @@ const hasField = (patch: FeaturePatch, field: keyof FeaturePatch): boolean =>
     Object.prototype.hasOwnProperty.call(patch, field);
 
 /**
+ * `category` 的取值：一个分类 id，或一组分类 id。
+ *
+ * 数组是「同时出现在这些页签下」；空数组没有意义（功能会从面板里消失），
+ * 重复项会让同一个页签渲染两遍，两者都按整份补丁作废处理。
+ */
+const categoryListOf = (id: string, value: YamlValue): FeatureCategory[] => {
+    const list = Array.isArray(value) ? value : [value];
+    if (list.length === 0) {
+        reject(`feature "${id}": category must list at least one of ${FEATURE_CATEGORIES.join(" / ")}`);
+    }
+    const categories: FeatureCategory[] = [];
+    list.forEach((item) => {
+        if (typeof item !== "string" || !(FEATURE_CATEGORIES as string[]).includes(item)) {
+            reject(
+                `feature "${id}": category must be one of ${FEATURE_CATEGORIES.join(" / ")}, but is "${String(item)}"`,
+            );
+        }
+        if (categories.includes(item as FeatureCategory)) {
+            reject(`feature "${id}": category lists "${item}" twice`);
+        }
+        categories.push(item as FeatureCategory);
+    });
+    return categories;
+};
+
+/**
  * `frontends` 的取值：`null` / 空值解除限制，数组里的每一项只能是 desktop / mobile 且不重复。
  *
  * 空数组是合法的，含义是「两端都不适用」—— 与省略字段（两端都适用）相反。
@@ -175,14 +201,9 @@ const patchOf = (id: string, value: YamlValue, definition: FeatureDefinition): F
                 patch.enabled = fieldValue as boolean;
                 break;
             case "category":
-                if (typeof fieldValue !== "string" || !(FEATURE_CATEGORIES as string[]).includes(fieldValue)) {
-                    reject(
-                        `feature "${id}": category must be one of ${FEATURE_CATEGORIES.join(" / ")}, but is "${
-                            String(fieldValue)
-                        }"`,
-                    );
-                }
-                patch.category = fieldValue as FeatureCategory;
+                // 声明视图里 `category` 只有列表一种形态（见 types.ts 的 categoryList），
+                // 补丁只写一个分类时也存成只含一项的列表
+                patch.category = categoryListOf(id, fieldValue);
                 break;
             case "frontends":
                 patch.frontends = frontendsOf(id, fieldValue);

@@ -112,7 +112,7 @@ afterEach(() => {
 describe("replacing the recording toast with a floating window", () => {
     it("the declaration sits under editor and is off by default", () => {
         expect(definition.id).toBe("recording-window");
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

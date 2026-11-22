@@ -170,7 +170,7 @@ afterEach(() => {
 describe("Aliyun OSS bucket usage data", () => {
     it("the declaration has a single switch, off by default", () => {
         expect(definition.id).toBe("oss-usage");
-        expect(definition.category).toBe("settings");
+        expect(definition.category).toEqual(["settings"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

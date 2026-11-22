@@ -42,7 +42,7 @@ describe("hide selection toolbar", () => {
     });
 
     it("declaration: editor category, desktop only, a single off-by-default switch", () => {
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
         expect(definition.frontends).toEqual(["desktop"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

@@ -44,7 +44,7 @@ describe("accent color for the opened note in the document tree", () => {
     });
 
     it("declaration: the category is the document tree, the switch defaults to off, the color follows SiYuan and the width defaults to 3px within 1-10", () => {
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["enabled", "color", "width"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

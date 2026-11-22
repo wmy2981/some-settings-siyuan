@@ -40,7 +40,7 @@ describe("Hides the suggested actions on the agent welcome screen", () => {
     });
 
     it("Declaration: AI category, both frontends, a single switch that is off by default", () => {
-        expect(definition.category).toBe("ai");
+        expect(definition.category).toEqual(["ai"]);
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

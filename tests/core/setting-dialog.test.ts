@@ -132,7 +132,7 @@ const alphaSettings = (onClick: (context: FeatureActionContext) => void = () => 
 
 const featureOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `${id}.name`,
     description: `${id}.desc`,
     enabled: true,
@@ -291,8 +291,8 @@ describe("show: render", () => {
 
     it("one tab per non-empty category, the first one selected by default", async () => {
         const {qa, q} = await open([
-            featureOf("alpha", {category: "editor"}),
-            featureOf("secondary", {category: "appearance"}),
+            featureOf("alpha", {category: ["editor"]}),
+            featureOf("secondary", {category: ["appearance"]}),
         ]);
         const tabs = qa("[data-ss-tab]");
         expect(tabs.map((tab) => tab.dataset.ssTab)).toEqual(["editor", "appearance"]);
@@ -307,6 +307,29 @@ describe("show: render", () => {
         expect(q('[data-ss-tab="editor"] .b3-list-item__text')?.textContent).toBe("Editor");
         // 页签按 FEATURE_CATEGORIES 的顺序排列，缺内容的分类不出现
         expect(qa("[data-ss-tab]")).toHaveLength(2);
+    });
+
+    it("a feature in several categories gets a full copy in each tab", async () => {
+        const {qa} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+        expect(qa("[data-ss-tab]").map((tab) => tab.dataset.ssTab)).toEqual(["editor", "appearance"]);
+        const editor = qa('[data-ss-tab-panel="editor"]')[0];
+        const appearance = qa('[data-ss-tab-panel="appearance"]')[0];
+        const editorRows = editor.querySelectorAll('[data-ss-feature="alpha"]');
+        // 只断言「两份一样多、且不止一行」，不写死行数：fixture 加个字段不该让它变红
+        expect(editorRows.length).toBeGreaterThan(1);
+        expect(appearance.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(editorRows.length);
+        expect(editor.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
+        expect(appearance.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
+    });
+
+    it("changing the copy in one tab updates the copy in the other", async () => {
+        const {qa, host} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+        const switches = qa('[data-ss-switch="alpha::enabled"]') as HTMLInputElement[];
+        expect(switches).toHaveLength(2);
+        switches[0].checked = true;
+        fire(switches[0], "change");
+        await vi.waitFor(() => expect(switches[1].checked).toBe(true));
+        await vi.waitFor(() => expect(host.files.get("feature-alpha")).toMatchObject({enabled: true}));
     });
 
     it("desktop uses the left tab list, not the mobile tab bar", async () => {
@@ -336,7 +359,7 @@ describe("show: render", () => {
 
     it("a feature switched by a selector promotes that select to the feature row", async () => {
         const {q} = await open([featureOf("switch-mode", {
-            category: "settings",
+            category: ["settings"],
             settings: [{
                 kind: "select",
                 key: "scope",
@@ -391,8 +414,8 @@ describe("show: render", () => {
 
     it("the last child row of each feature is marked so the guide line ends in a corner", async () => {
         const {qa} = await open([
-            featureOf("alpha", {category: "editor"}),
-            featureOf("secondary", {category: "editor"}),
+            featureOf("alpha", {category: ["editor"]}),
+            featureOf("secondary", {category: ["editor"]}),
         ]);
         const marked = qa(`.${PANEL_CLASS}__child--last`);
         // 两个功能各一个：末行是那个功能自己的最后一行，不是整页的最后一行
@@ -577,8 +600,8 @@ describe("read-only mode", () => {
 
 describe("tab interaction", () => {
     const twoTabs = (): FeatureDefinition[] => [
-        featureOf("alpha", {category: "editor"}),
-        featureOf("secondary", {category: "appearance"}),
+        featureOf("alpha", {category: ["editor"]}),
+        featureOf("secondary", {category: ["appearance"]}),
     ];
 
     it("clicking a tab switches the selection and the visible pane", async () => {
@@ -1026,6 +1049,33 @@ describe("action rows", () => {
         // 快照是副本，改了不落盘
         snapshot.label = "local change";
         expect(context.configOf("alpha").label).toBe("hi");
+    });
+
+    it("an action rendered in two tabs runs only once", async () => {
+        let finish: () => void = () => undefined;
+        const onClick = vi.fn(() =>
+            new Promise<void>((done) => {
+                finish = done;
+            })
+        );
+        const {qa} = await open([featureOf("alpha", {
+            category: ["editor", "appearance"],
+            settings: alphaSettings(onClick),
+        })]);
+        const buttons = qa('[data-ss-button="alpha::run"]') as HTMLButtonElement[];
+        expect(buttons).toHaveLength(2);
+
+        buttons[0].click();
+        await vi.waitFor(() => expect(onClick).toHaveBeenCalledTimes(1));
+        // 两份一起禁：切到另一个页签再点也进不来
+        expect(buttons.every((button) => button.disabled)).toBe(true);
+        buttons[1].click();
+        await Promise.resolve();
+        expect(onClick).toHaveBeenCalledTimes(1);
+
+        // 结束后两份一起放开（面板里后面的用例还要用这个功能）
+        finish();
+        await vi.waitFor(() => expect(buttons.every((button) => !button.disabled)).toBe(true));
     });
 
     it("updateConfig writes at once and syncs the switch in the panel", async () => {
@@ -1596,8 +1646,8 @@ describe("search", () => {
 
     /** 同一页里放两个功能：命中一个，另一个应当整体收起。 */
     const twoInEditor = (): FeatureDefinition[] => [
-        featureOf("alpha", {category: "editor"}),
-        featureOf("secondary", {category: "editor"}),
+        featureOf("alpha", {category: ["editor"]}),
+        featureOf("secondary", {category: ["editor"]}),
     ];
 
     describe("position and initial state", () => {
@@ -1676,7 +1726,7 @@ describe("search", () => {
         /** 「设置面板搜索」本身也是一个功能：默认开启，面板靠它的配置变化显隐搜索框。 */
         const searchFeature = (): FeatureDefinition =>
             featureOf(SEARCH_FEATURE_ID, {
-                category: "plugin",
+                category: ["plugin"],
                 settings: [{kind: "switch", key: "enabled", title: "alpha.enabled", default: true}],
             });
 
@@ -1773,8 +1823,8 @@ describe("search", () => {
 
         it("a category name hit shows every feature of that category", async () => {
             const {root, q} = await open([
-                featureOf("alpha", {category: "editor"}),
-                featureOf("secondary", {category: "appearance"}),
+                featureOf("alpha", {category: ["editor"]}),
+                featureOf("secondary", {category: ["appearance"]}),
             ]);
             const input = searchBox(root);
 
@@ -1785,6 +1835,22 @@ describe("search", () => {
             expect(hidden(q('[data-ss-search-group="editor"]'))).toBe(false);
             // 分类名命中也要能聚合成结果视图：导航收起、面板挂上搜索类
             expect(q(`.${PANEL_CLASS}`)?.classList.contains(SEARCH.replace(".", ""))).toBe(true);
+        });
+
+        it("a feature in several categories shows up under every matching group", async () => {
+            const {root, qa} = await open([featureOf("alpha", {category: ["editor", "appearance"]})]);
+            typeQuery(searchBox(root), "Alpha feature");
+            expect(qa('[data-ss-tab-panel="editor"]')[0].classList.contains("fn__none")).toBe(false);
+            expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(false);
+            const editorRows = qa('[data-ss-tab-panel="editor"] [data-ss-feature="alpha"]');
+            const appearanceRows = qa('[data-ss-tab-panel="appearance"] [data-ss-feature="alpha"]');
+            // 两个页签各一份，都露出来；行数不写死，跟着 fixture 走
+            expect(editorRows.length).toBeGreaterThan(0);
+            expect(appearanceRows).toHaveLength(editorRows.length);
+            expect([...editorRows, ...appearanceRows].every((row) => !row.classList.contains("fn__none"))).toBe(true);
+            // 分类名命中只翻出一组：搜「Editor」时外观组仍然收起
+            typeQuery(searchBox(root), "Editor");
+            expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(true);
         });
 
         it("a feature hit shows all its visible settings, including fields that did not match", async () => {
@@ -1802,8 +1868,8 @@ describe("search", () => {
         it("categories and features keep the declared order instead of a relevance order", async () => {
             // 声明顺序是「外观」在前，但结果分组按 FEATURE_CATEGORIES 的顺序（编辑器在前）
             const {root, qa} = await open([
-                featureOf("secondary", {category: "appearance"}),
-                featureOf("alpha", {category: "editor"}),
+                featureOf("secondary", {category: ["appearance"]}),
+                featureOf("alpha", {category: ["editor"]}),
             ]);
             typeQuery(searchBox(root), "feature");
             const groups = qa("[data-ss-search-group]")
@@ -1981,8 +2047,8 @@ describe("search", () => {
             const release = gatePanelState(host);
             const {root, q} = await open(
                 [
-                    featureOf("alpha", {category: "editor"}),
-                    featureOf("secondary", {category: "appearance"}),
+                    featureOf("alpha", {category: ["editor"]}),
+                    featureOf("secondary", {category: ["appearance"]}),
                 ],
                 {"panel-state": {tab: "appearance"}},
                 host,
@@ -2215,8 +2281,8 @@ describe("search", () => {
     describe("other panel state is unaffected", () => {
         it("searching does not change persisted state, closing still writes the current tab", async () => {
             const {root, host, panel, q} = await open([
-                featureOf("alpha", {category: "editor"}),
-                featureOf("secondary", {category: "appearance"}),
+                featureOf("alpha", {category: ["editor"]}),
+                featureOf("secondary", {category: ["appearance"]}),
             ]);
             typeQuery(searchBox(root), "feature");
             panel.close();
@@ -2231,7 +2297,7 @@ describe("unavailable settings", () => {
     /** 控制开关的那个功能：面板靠它的配置变化重画不可用条目。 */
     const toggleOf = (): FeatureDefinition => ({
         id: "show-unavailable-settings",
-        category: "plugin",
+        category: ["plugin"],
         name: "toggle.name",
         enabled: true,
         settings: [{kind: "switch", key: "enabled", title: "common.enabled", default: false}],
@@ -2240,7 +2306,7 @@ describe("unavailable settings", () => {
     /** 一个不可用的功能：默认是开发者禁用，可以换成别的原因。 */
     const betaOf = (extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
         id: "beta",
-        category: "editor",
+        category: ["editor"],
         name: "beta.name",
         description: "beta.desc",
         enabled: true,
@@ -2355,7 +2421,7 @@ describe("unavailable settings", () => {
             [
                 featureOf("alpha"),
                 toggleOf(),
-                betaOf({id: "beta", category: "appearance", enabled: false}),
+                betaOf({id: "beta", category: ["appearance"], enabled: false}),
             ],
         );
         // 「外观」分类只有不可用的功能：页签仍然出现
@@ -2375,13 +2441,13 @@ describe("unavailable settings", () => {
 
     it("items are gathered at the very bottom of the results and cannot be found while the switch is off", async () => {
         const {q, root, store} = await open(
-            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
             {},
             undefined,
             [
-                featureOf("alpha", {category: "editor"}),
+                featureOf("alpha", {category: ["editor"]}),
                 toggleOf(),
-                betaOf({category: "appearance", enabled: false}),
+                betaOf({category: ["appearance"], enabled: false}),
             ],
         );
         const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
@@ -2422,6 +2488,26 @@ describe("unavailable settings", () => {
         expect(hiddenOf(dedicated)).toBe(true);
     });
 
+    it("a retired feature in several categories is found by any of their names", async () => {
+        const {q, root, store} = await open(
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
+            {},
+            undefined,
+            [
+                featureOf("alpha", {category: ["editor"]}),
+                toggleOf(),
+                betaOf({category: ["appearance", "editor"], enabled: false}),
+            ],
+        );
+        setShowUnavailable(true);
+        await store.patch("show-unavailable-settings", {enabled: true});
+        const dedicated = q('[data-ss-tab-panel="__unavailable"]');
+        const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+        input.value = "Editor";
+        input.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(rowsIn(dedicated, "beta").every((row) => !hiddenOf(row))).toBe(true);
+    });
+
     it("retired features from the real registry render too, without throwing and with a reason", async () => {
         // 3.9.0 已超过几个「上游实现了就退场」功能的最高版本，它们会以不可用的形式出现
         window.siyuan.config.system.kernelVersion = "3.9.0";
@@ -2441,13 +2527,13 @@ describe("unavailable settings", () => {
     it("clearing the search returns unavailable items to their category panes and they still follow the switch", async () => {
         setShowUnavailable(true);
         const {q, root} = await open(
-            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
             {},
             undefined,
             [
-                featureOf("alpha", {category: "editor"}),
+                featureOf("alpha", {category: ["editor"]}),
                 toggleOf(),
-                betaOf({category: "editor", enabled: false}),
+                betaOf({category: ["editor"], enabled: false}),
             ],
         );
         const pane = q('[data-ss-tab-panel="editor"]');

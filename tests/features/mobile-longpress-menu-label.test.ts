@@ -104,7 +104,7 @@ afterEach(() => {
 describe("mobile long-press menu labels", () => {
     it("declaration: mobile only, appearance category, disabled by default", () => {
         expect(definition.id).toBe("mobile-longpress-menu-label");
-        expect(definition.category).toBe("appearance");
+        expect(definition.category).toEqual(["appearance"]);
         expect(definition.name).toBe("feature.mobileLongpressMenuLabel.title");
         expect(definition.enabled).toBe(true);
         // 桌面端的长按菜单不是这套 DOM，挂上去只会白扫一遍

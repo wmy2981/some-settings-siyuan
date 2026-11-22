@@ -28,7 +28,7 @@ const settings = [{kind: "switch", key: "enabled", title: "common.enabled", defa
 
 const featureOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `feature.${id}.title`,
     enabled: true,
     settings: [...settings],
@@ -124,7 +124,15 @@ describe("applyPatch: overriding", () => {
 
     it("moves a feature to another category", () => {
         const alpha = byId(patchedView("features:\n  alpha:\n    category: ai\n"), "alpha");
-        expect(alpha.category).toBe("ai");
+        expect(alpha.category).toEqual(["ai"]);
+    });
+
+    it("moves a feature to several categories", () => {
+        const alpha = byId(patchedView("features:\n  alpha:\n    category: [ai, doc-tree]\n"), "alpha");
+        expect(alpha.category).toEqual(["ai", "doc-tree"]);
+        // 块状列表是同一个意思
+        const block = byId(patchedView("features:\n  alpha:\n    category:\n      - ai\n      - editor\n"), "alpha");
+        expect(block.category).toEqual(["ai", "editor"]);
     });
 
     it("overrides the frontends, including the empty list that applies nowhere", () => {
@@ -157,7 +165,7 @@ describe("applyPatch: overriding", () => {
         const view = patchedView(
             "features:\n  alpha:\n    enabled: false\n    category: doc-tree\n  beta:\n    maxAppVersion: null\n",
         );
-        expect(byId(view, "alpha").category).toBe("doc-tree");
+        expect(byId(view, "alpha").category).toEqual(["doc-tree"]);
         expect(byId(view, "alpha").enabled).toBe(false);
         expect(byId(view, "beta").maxAppVersion).toBeUndefined();
     });
@@ -317,6 +325,11 @@ describe("applyPatch: the whole file is rejected", () => {
 
     it("an unknown category", () => {
         expect(detailOf("features:\n  alpha:\n    category: nowhere\n")).toContain("category must be one of");
+    });
+
+    it("an empty or duplicated category list", () => {
+        expect(detailOf("features:\n  alpha:\n    category: []\n")).toContain("at least one");
+        expect(detailOf("features:\n  alpha:\n    category: [ai, ai]\n")).toContain("twice");
     });
 
     it("an unknown or duplicated frontend", () => {

@@ -44,7 +44,7 @@ describe("mobile doc tree title font-size regression 3.8.9", () => {
     });
 
     it("declaration: doc-tree category, mobile only, a single default-off switch", () => {
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

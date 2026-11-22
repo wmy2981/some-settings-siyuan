@@ -69,7 +69,7 @@ describe("hide donate buttons in the downloaded bazaar list", () => {
 
     it("declares default-off and returns no destroy (a pure style feature has no runtime state)", () => {
         expect(definition.id).toBe("hide-bazaar-downloaded-donate");
-        expect(definition.category).toBe("bazaar");
+        expect(definition.category).toEqual(["bazaar"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

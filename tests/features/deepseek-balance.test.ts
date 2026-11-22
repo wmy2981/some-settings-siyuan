@@ -742,7 +742,7 @@ describe("DeepSeek balance display", () => {
     describe("Declaration", () => {
         it("Is off by default, with a 30s interval clamped to 1-3600s", () => {
             expect(definition.enabled).toBe(true);
-            expect(definition.category).toBe("ai");
+            expect(definition.category).toEqual(["ai"]);
             expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
             expect(definition.settings[1]).toMatchObject({
                 kind: "number",
