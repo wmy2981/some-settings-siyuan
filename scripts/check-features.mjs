@@ -149,13 +149,16 @@ for (const dir of featureDirs) {
     }
 
     // 分类声明：一个字符串，或一个字符串数组（同时出现在多个页签下）。
-    // 先从声明字段里找，避免误认 settings 里的同名文案。
-    const declarationEnd = source.indexOf("settings:", idMatch.index);
-    const declarationSource = source.slice(idMatch.index, declarationEnd < 0 ? source.length : declarationEnd);
-    const categoryValue = /\bcategory\s*:\s*(\[[^\]]*\]|"[^"]+")/.exec(declarationSource)?.[1];
+    // 只认字面量，并且不受书写顺序影响：这个文件里 `category` 只出现在声明那一处，
+    // 所以整份文件搜一次就够（先按 `settings:` 截断的话，把它写在 settings 之后就会误报缺失）。
+    const categoryValue = /\bcategory\s*:\s*(\[[^\]]*\]|"[^"]+")/.exec(source)?.[1];
     const categories = [];
     if (!categoryValue) {
-        fail(`feature "${id}" does not declare category (one or more of ${VALID_CATEGORIES.join("/")})`);
+        fail(
+            `feature "${id}" declares no literal category; write category: "editor" or category: ["editor", "doc-tree"] (one or more of ${
+                VALID_CATEGORIES.join("/")
+            })`,
+        );
     } else if (categoryValue.startsWith("[")) {
         [...categoryValue.matchAll(/"([^"]+)"/g)].forEach((match) => categories.push(match[1]));
         if (categories.length === 0) {
@@ -381,7 +384,7 @@ for (const dir of featureDirs) {
         }
     }
 
-    found.set(id, {dir, categories, i18nKeys});
+    found.set(id, {dir, i18nKeys});
 }
 
 // ------------------------------------------------- 4. 注册表登记完整性
