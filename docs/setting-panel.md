@@ -134,6 +134,12 @@
   所以 `PANEL_CSS` 里没有任何一处抬升字重。不要再给某一类行单独加粗或改字号：
   「全部 `.config-item__main` 加粗」与「只有功能名加粗」两版都试过，前者层级消失，
   后者把视觉重心全拉到标题上、参数行被压成一片灰。
+* **字号一个 px 都不写在面板里，只靠用对内核的类**：行标题是 `.config-item__main` 里的
+  一层 `.config-name`（内核给它 15px），说明是 `.b3-label__text`（内核的 `.config-items`
+  里给它 13px）。结构照 `config/render/fragments.ts` 的 `genConfigItemMainHtml` 与
+  `plugin/Setting.ts` 的行标记，两处都是「`.config-item__main` > `.config-name` + `.b3-label__text`」。
+  **标题不能直接躺在 `.config-item__main` 里当裸文本**：那一层是 14px，标题会比思源自己的
+  设置项小一号，而说明仍是 13px，两者看起来就一样大了。
 * **子设置行统一缩进一小格**：功能名那一行（`__sub`）不动，它下面的参数行、说明块、动作行
   都带 `.some-settings-panel__child`，由 `PANEL_CSS` 加 `padding-inline-start`（桌面端 40px、
   ≤750px 时 26px，跟着行自己的内边距走）。缩进加在整行上，移动端控件折到第二行时一起对齐；

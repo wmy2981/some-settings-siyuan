@@ -102,9 +102,16 @@ const HTML_ESCAPE_PATTERN = /[&"'<>]/g;
  */
 export const escapeHtml = (value: string): string => value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPES[char]);
 
-/** 原生「主文案 + 说明」块。 */
+/**
+ * 原生「主文案 + 说明」块。
+ *
+ * 标题必须自占一层 `.config-name`：内核设置页与宿主的 `Setting` 面板都是这个结构
+ * （`config/render/fragments.ts` 的 `genConfigItemMainHtml`、`plugin/Setting.ts` 的行标记），
+ * 而内核给 `.config-item__main` 的字号是 14px、给 `.config-name` 的是 15px。
+ * 少了这一层，面板标题会比思源自己的设置项小一号，说明（`.b3-label__text`，13px）反而显得没小多少。
+ */
 export const mainHtml = (title: string, description?: string): string =>
-    `<div class="fn__flex-1 config-item__main">${escapeHtml(title)}${
+    `<div class="fn__flex-1 config-item__main"><div class="config-name">${escapeHtml(title)}</div>${
         description ? `<div class="b3-label__text">${escapeHtml(description)}</div>` : ""
     }</div>`;
 
