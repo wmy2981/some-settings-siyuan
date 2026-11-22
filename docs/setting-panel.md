@@ -1,6 +1,6 @@
 * **面板走思源原生的 `Setting`**：对话框（标题、正文区、动作区、关闭方式）全部由宿主创建，
   插件只在 `setting.open()` 返回后往正文里填自己的面板。这样移动端不需要插件做任何事 ——
-  新版宿主在 `Setting.open()` 内部用 `MobileDialog` 渲染，插件设置就自动变成底部抽屉：
+  宿主在 `Setting.open()` 内部用 `AdaptiveDialog`（旧版叫 `MobileDialog`）渲染，插件设置就自动变成底部抽屉：
   抓手、拖动、遮罩、返回键、可视视口与键盘避让都由宿主接管，插件不复制任何一套。
   桌面端仍是居中弹窗。仓库固定的 `siyuan@1.2.8` 类型里还没有 `setting.dialog` / `setting.close()` /
   `openInWindow`（较新的 petal 已经声明），所以只在 `setting-dialog.ts` 里做一处窄类型扩展
