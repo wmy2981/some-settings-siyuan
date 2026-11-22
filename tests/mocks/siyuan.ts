@@ -48,6 +48,8 @@ export const mockState = {
     settingRegionsMissing: false,
     /** 让 `Setting.open()` 建一个「独立设置窗口」形态的对话框。 */
     settingAsWindow: false,
+    /** 独立窗口模式：`Setting.open()` 不当场建对话框，等测试调用 `Setting.releaseDialog()`。 */
+    settingWindowPending: false,
     /** 让 `showMessage()` 抛错，用于验证「提示本身失败也不影响主流程」。 */
     showMessageError: null as Error | null,
     /** `fetchSyncPost()` 的固定响应；给函数时按入参决定。 */
@@ -64,7 +66,7 @@ export const mockState = {
  * `tests/setup.ts` 在每个测试后调用一次，模拟宿主机收掉所有还开着的对话框。
  */
 export const closeOpenSettings = (): void => {
-    const open = mockState.settings.filter((setting) => setting.dialog !== undefined);
+    const open = mockState.settings.filter((setting) => setting.dialog !== undefined || setting.pendingWindow);
     mockState.settings = [];
     open.forEach((setting) => {
         try {
@@ -89,6 +91,7 @@ export const resetMockState = (): void => {
     mockState.settingBodyMissing = false;
     mockState.settingRegionsMissing = false;
     mockState.settingAsWindow = false;
+    mockState.settingWindowPending = false;
     mockState.showMessageError = null;
     mockState.fetchSyncPost.mockReset();
     mockState.fetchSyncPost.mockResolvedValue({code: 0, data: []});
@@ -146,9 +149,19 @@ export class Setting {
     dialog?: Dialog;
     closed = false;
     destroyCallback?: () => void;
+    /** 构造参数 `openInWindow`：面板有没有请宿主把设置开到独立窗口里。 */
+    openInWindow = false;
+    /**
+     * 独立窗口模式下「已请求开窗、对话框还没建出来」的那一段。
+     *
+     * 它与 `dialog === undefined` 不是一回事：宿主建不出对话框时面板会当场放弃，
+     * 而这个状态下面板还在等窗口，测试收尾必须把它也收掉（否则留下一个轮询定时器）。
+     */
+    pendingWindow = false;
 
-    constructor(options: {destroyCallback?: () => void;} = {}) {
+    constructor(options: {destroyCallback?: () => void; openInWindow?: boolean;} = {}) {
         this.destroyCallback = options.destroyCallback;
+        this.openInWindow = options.openInWindow === true;
         mockState.settings.push(this);
     }
 
@@ -157,9 +170,31 @@ export class Setting {
         if (mockState.settingOpenError) {
             throw mockState.settingOpenError;
         }
+        if (mockState.settingWindowPending) {
+            this.pendingWindow = true;
+            return;
+        }
         if (mockState.settingDialogMissing) {
             return;
         }
+        this.createDialog();
+    }
+
+    /** 模拟独立设置窗口那边把对话框建出来（`open()` 之后由测试调用）。 */
+    releaseDialog(): void {
+        this.pendingWindow = false;
+        this.createDialog();
+    }
+
+    close(): void {
+        this.closed = true;
+        this.pendingWindow = false;
+        this.dialog?.element.remove();
+        this.dialog = undefined as unknown as Dialog | undefined;
+        this.destroyCallback?.();
+    }
+
+    private createDialog(): void {
         const wrapper = document.createElement("div");
         wrapper.innerHTML = dialogMarkup({
             asWindow: mockState.settingAsWindow,
@@ -168,13 +203,6 @@ export class Setting {
         });
         document.body.append(wrapper);
         this.dialog = {element: wrapper} as unknown as Dialog;
-    }
-
-    close(): void {
-        this.closed = true;
-        this.dialog?.element.remove();
-        this.dialog = undefined as unknown as Dialog | undefined;
-        this.destroyCallback?.();
     }
 }
 

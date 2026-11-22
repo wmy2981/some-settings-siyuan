@@ -2,10 +2,26 @@
   插件只在 `setting.open()` 返回后往正文里填自己的面板。这样移动端不需要插件做任何事 ——
   新版宿主在 `Setting.open()` 内部用 `MobileDialog` 渲染，插件设置就自动变成底部抽屉：
   抓手、拖动、遮罩、返回键、可视视口与键盘避让都由宿主接管，插件不复制任何一套。
-  桌面端仍是居中弹窗；设置窗口模式下 `Setting.close()` 还会替插件收掉那个窗口。
-  仓库固定的 `siyuan@1.2.8` 类型里还没有 `setting.dialog` / `setting.close()`（较新的 petal
-  已经声明），所以只在 `setting-dialog.ts` 里做一处窄类型扩展（`SettingWithDialog`），不要扩散成
-  全局断言；升级 SDK 后把这处扩展删掉。
+  桌面端仍是居中弹窗。仓库固定的 `siyuan@1.2.8` 类型里还没有 `setting.dialog` / `setting.close()` /
+  `openInWindow`（较新的 petal 已经声明），所以只在 `setting-dialog.ts` 里做一处窄类型扩展
+  （`SettingOptions` / `SettingWithDialog` / `createSetting()`），不要扩散成全局断言；
+  升级 SDK 后把这处扩展删掉。
+* **打开方式跟随用户设置**：思源自己的「设置 - 应用 - 常规 - 在独立窗口中打开设置界面」
+  （`window.siyuan.config.system.settingsWindow`，仅桌面 Electron 客户端）勾上时，
+  面板按 `Setting({openInWindow: true})` 开到独立原生窗口里；没勾、或者旧宿主没有这个设置时
+  仍是弹窗。判定在 `inSettingsWindowMode()`，**每次打开现读**，跟着用户随时切换。
+  设置窗口模式下 `Setting.close()` 还会替插件收掉那个窗口，关窗时宿主的销毁回调与弹窗一致，
+  所以「关面板补写静默期改动」那条路径不用另写一份。除此之外还有三点与弹窗不同：
+  * `Setting.open()` **异步**给出对话框：它只请宿主去开窗，那个窗口启动完（加载语言、外观与插件）
+    才回调挂载，主窗口这边这时才有 `setting.dialog`。所以 `show()` 拿不到对话框且确实请求了窗口时
+    走 `waitForWindowDialog()` 轮询等它（50ms 一次，30 秒等不到就 `reportError` + `close()` 收掉这次打开）；
+  * 对话框在**另一个窗口的文档**里，面板样式表、入场图层预热、搜索快捷键、按需补建的正文区
+    都必须按 `dialog.element.ownerDocument` 落位（`ensurePanelCss(doc)`、`preheatDialogLayer(dialog)`、
+    `releaseSearchKeys()`，`ensureRegion()` 与高亮的文本节点也取 `ownerDocument`）。照着插件所属窗口的
+    `document` 写就整段落空：面板变成没有样式的裸标记，`Ctrl/Cmd + F` 也拦不到。宿主给插件设置窗口的
+    文档里同样要求「避免依赖所属窗口的 document 查询或样式」；
+  * 宽度不归插件管：宿主给 `.b3-dialog` 加了 `--window` 并把容器铺满窗口，`applyDesktopLayout()` 只把
+    正文区内边距清零，不再量视口写宽度、也不起视口轮询。
 * **页签结构，每页只有一层**：分类按功能**作用到的思源原生功能**划分（人工智能 / 编辑器 /
   文档树 / 外观 / 连接 / 设置 / 集市 / 插件自身），一个分类一个页签，
   没有内容的不出现；页签内容直接是设置行，**任何形式的嵌套分组都不允许**。

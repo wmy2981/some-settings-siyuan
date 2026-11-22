@@ -575,6 +575,55 @@ describe("show: host failures", () => {
     });
 });
 
+/**
+ * 独立设置窗口模式：打开方式跟随用户在思源里的「在独立窗口中打开设置界面」。
+ *
+ * 宿主的 `Setting.open()` 在这一模式下异步建对话框（窗口要先启动、加载完插件），
+ * 所以面板必须先等 `setting.dialog` 出现，再把样式与内容画进**那个窗口的文档**。
+ */
+describe("standalone settings window", () => {
+    const settingsWindowOf = (on: boolean): void => {
+        (window.siyuan.config.system as unknown as {settingsWindow?: boolean;}).settingsWindow = on;
+    };
+
+    it("asks the host to open the panel in a window only when the user enabled it", async () => {
+        settingsWindowOf(false);
+        await open();
+        expect(mockState.settings[0].openInWindow).toBe(false);
+
+        settingsWindowOf(true);
+        await open();
+        expect(mockState.settings[1].openInWindow).toBe(true);
+    });
+
+    it("waits for the window to create the dialog and then renders the panel", async () => {
+        settingsWindowOf(true);
+        mockState.settingAsWindow = true;
+        mockState.settingWindowPending = true;
+        const host = new FakeHost();
+        const store = new ConfigStore(host.asPlugin());
+        await store.register(featureOf("alpha"));
+        const panel = new SettingsPanel({plugin: host.asPlugin(), store, features: [featureOf("alpha")]});
+
+        panel.show();
+
+        // 窗口还没启动完：面板算「开着」，但界面上什么都没有
+        expect(panel.isOpen).toBe(true);
+        expect(document.querySelector(`.${PANEL_CLASS}`)).toBeNull();
+
+        mockState.settings[0].releaseDialog();
+
+        await vi.waitFor(() => expect(document.querySelector(`.${PANEL_CLASS}`)).not.toBeNull());
+        const root = mockState.settings[0].dialog!.element;
+        expect(root.querySelector<HTMLElement>(".b3-dialog__container")?.dataset.ssWidth).toBeUndefined();
+        expect(root.querySelector<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')).not.toBeNull();
+        // 面板样式表落在对话框自己那份文档里
+        expect((root.ownerDocument.getElementById(`${PANEL_CLASS}-local-css`) as HTMLElement | null)?.textContent)
+            .toContain(`.${PANEL_CLASS}__side`);
+        panel.close();
+    });
+});
+
 describe("read-only mode", () => {
     it("every control is disabled and a read-only notice is shown", async () => {
         window.siyuan.config.readonly = true;

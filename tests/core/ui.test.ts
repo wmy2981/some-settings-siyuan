@@ -587,13 +587,13 @@ describe("ensurePanelCss", () => {
         document.getElementById(`${PANEL_CLASS}-local-css`) as HTMLStyleElement | null;
 
     it("the first call injects the stylesheet", () => {
-        ensurePanelCss();
+        ensurePanelCss(document);
         expect(cssElement()?.textContent).toBe(PANEL_CSS);
     });
 
     it("repeated calls leave one stylesheet and do not append the content twice", () => {
-        ensurePanelCss();
-        ensurePanelCss();
+        ensurePanelCss(document);
+        ensurePanelCss(document);
         expect(document.querySelectorAll(`#${PANEL_CLASS}-local-css`)).toHaveLength(1);
         expect(cssElement()?.textContent).toBe(PANEL_CSS);
     });
@@ -603,7 +603,7 @@ describe("ensurePanelCss", () => {
         stale.id = `${PANEL_CLASS}-local-css`;
         stale.textContent = "/* old version */";
         document.head.append(stale);
-        ensurePanelCss();
+        ensurePanelCss(document);
         expect(cssElement()?.textContent).toBe(PANEL_CSS);
     });
 });
