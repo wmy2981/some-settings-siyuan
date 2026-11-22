@@ -9,7 +9,7 @@ import {mountDevtoolsHotkey} from "./hotkey";
 
 export default defineFeature({
     id: "devtools-hotkey",
-    category: "appearance",
+    category: "settings",
     enabled: true,
     name: "feature.devtoolsHotkey.title",
     description: "feature.devtoolsHotkey.description",

@@ -34,7 +34,7 @@ const freshVersion = async (): Promise<typeof import("../../src/core/version")> 
 /** 只带版本区间的功能声明；其余字段判定用不到。 */
 const definitionWith = (range: {minAppVersion?: string; maxAppVersion?: string;}): FeatureDefinition => ({
     id: "demo",
-    category: "editor",
+    category: ["editor"],
     name: "demo.name",
     enabled: true,
     settings: [],

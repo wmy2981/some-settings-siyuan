@@ -80,7 +80,7 @@ describe("Outline heading levels", () => {
     });
 
     it("declaration: doc tree category, select as the switch, all by default", () => {
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.frontends).toBeUndefined();
         expect(configKeysOf(definition.settings)).toEqual(["level"]);
         expect(definition.settings[0]).toMatchObject({kind: "select", key: "level", default: "all"});

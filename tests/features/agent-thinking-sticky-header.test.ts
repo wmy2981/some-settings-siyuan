@@ -142,7 +142,7 @@ describe("agent thinking header sticks to the top", () => {
 
     it("declaration: supported up to 3.8.10-alpha.1 (upstream implements it from the next version on)", () => {
         expect(definition.id).toBe("agent-thinking-sticky-header");
-        expect(definition.category).toBe("ai");
+        expect(definition.category).toEqual(["ai"]);
         expect(definition.enabled).toBe(true);
         // 版本上限是闭区间：写到上游实现的前一个版本为止
         expect(definition.maxAppVersion).toBe("3.8.10-alpha.1");

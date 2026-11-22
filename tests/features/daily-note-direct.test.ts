@@ -273,9 +273,9 @@ describe("direct daily note creation", () => {
         expect(findDialog()).toBeNull();
     });
 
-    it("declaration: editor category, off by default, the notebook select comes from optionsProvider", () => {
+    it("declaration: doc-tree category, off by default, the notebook select comes from optionsProvider", () => {
         expect(definition.id).toBe("daily-note-direct");
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

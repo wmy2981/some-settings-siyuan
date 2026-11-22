@@ -255,7 +255,7 @@ describe("opening a note from a bookmark jumps to the last position", () => {
 
     it("declaration: doc-tree category, off by default, a single enabled switch", () => {
         expect(definition.id).toBe("bookmark-last-position");
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

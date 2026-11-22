@@ -430,7 +430,7 @@ describe("mounting into the online bazaar list", () => {
 describe("feature declaration", () => {
     it("defaults to off, with a switch as the first setting row and the author list as a textarea", () => {
         expect(definition.id).toBe("bazaar-author-blocklist");
-        expect(definition.category).toBe("bazaar");
+        expect(definition.category).toEqual(["bazaar"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         const authors = definition.settings.find((field) => field.key === "authors");

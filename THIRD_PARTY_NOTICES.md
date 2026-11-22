@@ -9,10 +9,10 @@ The plugin itself is licensed under the GNU Affero General Public License v3.0 o
 
 ## Distributed third-party material
 
-| Material | Location | License | Copyright | Notes |
-| --- | --- | --- | --- | --- |
-| SiYuan sponsor icon (`Constants.SIYUAN_IMAGE_SPONSOR`, 32×32 gradient heart) | `src/features/plugin-reminder/links.ts` (`DONATE_ICON`) | AGPL-3.0 | © siyuan-note and SiYuan contributors | Copied verbatim so the plugin's "donate" button matches the one on SiYuan's About page. This is the reason the whole plugin is AGPL-3.0-or-later rather than a permissive license. |
-| SiYuan daylight theme values used by the README preview mock-up | `assets/preview.html` → `assets/preview.png` | AGPL-3.0 | © siyuan-note and SiYuan contributors | The preview reproduces SiYuan's settings UI; its `--b3-*` custom property values are taken from `app/appearance/themes/daylight/theme.css`. The image is documentation only and is not loaded at runtime. |
+| Material                                                                     | Location                                                | License  | Copyright                             | Notes                                                                                                                                                                                                     |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------- | -------- | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| SiYuan sponsor icon (`Constants.SIYUAN_IMAGE_SPONSOR`, 32×32 gradient heart) | `src/features/plugin-reminder/links.ts` (`DONATE_ICON`) | AGPL-3.0 | © siyuan-note and SiYuan contributors | Copied verbatim so the plugin's "donate" button matches the one on SiYuan's About page. This is the reason the whole plugin is AGPL-3.0-or-later rather than a permissive license.                        |
+| SiYuan daylight theme values used by the README preview mock-up              | `assets/preview.html` → `assets/preview.png`            | AGPL-3.0 | © siyuan-note and SiYuan contributors | The preview reproduces SiYuan's settings UI; its `--b3-*` custom property values are taken from `app/appearance/themes/daylight/theme.css`. The image is documentation only and is not loaded at runtime. |
 
 The plugin does not embed any other third-party code, fonts, icons, or data. Everything else in
 `src/`, `assets/` and the built `package.zip` is original work of this repository's author.
@@ -28,18 +28,18 @@ These packages run on the developer's machine or in CI. Their output is bundled 
 compiled JavaScript authored by this repository; none of their own runtime code is shipped inside
 `package.zip`.
 
-| Package | Version | License |
-| --- | --- | --- |
-| `vite` | 8.x | MIT |
-| `typescript` | 6.x | Apache-2.0 |
-| `eslint` | 10.x | MIT |
-| `dprint` | 0.57.x | MIT |
-| `vitest` / `@vitest/coverage-v8` | 5.x | MIT |
-| `jsdom` | 31.x | MIT |
-| `sharp` | 0.35.x | Apache-2.0 |
-| `playwright` | 1.x | Apache-2.0 |
-| `sass` | 1.x | MIT |
-| `fflate` | 0.8.x | MIT |
+| Package                          | Version | License    |
+| -------------------------------- | ------- | ---------- |
+| `vite`                           | 8.x     | MIT        |
+| `typescript`                     | 6.x     | Apache-2.0 |
+| `eslint`                         | 10.x    | MIT        |
+| `dprint`                         | 0.57.x  | MIT        |
+| `vitest` / `@vitest/coverage-v8` | 5.x     | MIT        |
+| `jsdom`                          | 31.x    | MIT        |
+| `sharp`                          | 0.35.x  | Apache-2.0 |
+| `playwright`                     | 1.x     | Apache-2.0 |
+| `sass`                           | 1.x     | MIT        |
+| `fflate`                         | 0.8.x   | MIT        |
 
 Exact versions are pinned in `package-lock.json`.
 

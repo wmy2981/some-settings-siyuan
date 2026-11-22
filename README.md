@@ -22,8 +22,6 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 ### Editor
 
 * Never remember the code language
-* Create the daily note directly
-* Create new documents at a fixed location
 * Confirm before opening a web link
 * File size and metadata in the asset menu
 * Create a file in assets from the slash menu
@@ -31,7 +29,6 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Heading level in the title icon
 * Copy button for inline code
 * Hide the selection toolbar
-* Guide to the Ref Crumbs plugin
 
 ### Document tree
 
@@ -43,6 +40,8 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Close idle tabs
 * Outline heading level limit
 * Mobile document tree title size back to 3.8.9
+* Create the daily note directly
+* Create new documents at a fixed location
 
 ### Appearance
 
@@ -57,8 +56,6 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Labels in the mobile long-press menu
 * Keep the block icon visible on mobile
 * Hide the mobile Quit button
-* Ask before quitting
-* F12 toggles the developer tools
 
 ### Connection
 
@@ -67,8 +64,10 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 
 ### Settings
 
+* Ask before quitting
 * Aliyun OSS bucket usage
 * Syntax highlighting for snippets
+* F12 toggles the developer tools
 * Console log viewer
 
 ### Marketplace

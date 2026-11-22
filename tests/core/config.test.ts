@@ -107,7 +107,7 @@ const settings: SettingField[] = [
 
 const definitionOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `${id}.name`,
     enabled: true,
     settings,

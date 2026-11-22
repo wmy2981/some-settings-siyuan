@@ -120,7 +120,7 @@ describe("pin the icon of a first-time-added document", () => {
     it("declares default-off with 📄 as the default icon", () => {
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});
         expect(definition.settings[1]).toMatchObject({kind: "text", key: "emoji", default: "📄"});
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree", "editor"]);
     });
 
     it("first click: intercepts the click and writes the configured emoji as code points", () => {

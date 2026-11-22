@@ -126,7 +126,7 @@ describe("tab title renders inline Markdown", () => {
 
     it("declaration: the scope option is the switch, disabled by default, version cap matches the doc-tree one", () => {
         expect(definition.id).toBe("tab-title-markdown");
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.enabled).toBe(true);
         expect(definition.maxAppVersion).toBe("3.8.10-alpha.1");
         expect(definition.isEnabled?.({scope: "disabled"})).toBe(false);

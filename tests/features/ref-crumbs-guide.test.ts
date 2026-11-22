@@ -173,10 +173,11 @@ describe("ref-crumbs plugin guide", () => {
         expect(openByMobile).not.toHaveBeenCalled();
     });
 
-    it("declaration: never mounts, has no config, and is a note plus one action button", () => {
+    it("declaration: not shipped, never mounts, has no config, and is a note plus one action button", () => {
         expect(definition.id).toBe("ref-crumbs-guide");
-        expect(definition.category).toBe("editor");
-        expect(definition.enabled).toBe(true);
+        expect(definition.category).toEqual(["editor"]);
+        // 整条收回：声明保留、配置不加载、面板默认不显示、不挂载
+        expect(definition.enabled).toBe(false);
         // 没有运行期行为，所以显式「永不启用」，而不是加一个点了也没用的开关
         expect(definition.isEnabled?.({})).toBe(false);
         expect(definition.mount).toBeUndefined();

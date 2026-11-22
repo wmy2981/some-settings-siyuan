@@ -75,6 +75,18 @@ describe("mainHtml", () => {
         expect(root.querySelector(".b3-label__text")?.textContent).toBe("Description");
     });
 
+    it("the title is its own config-name block, like the kernel setting rows", () => {
+        // 内核给 .config-item__main 14px、给 .config-name 15px：标题必须自占一层，
+        // 否则面板标题比原生设置项小一号（`plugin/Setting.ts` 的行标记也是这个结构）
+        const root = parse(mainHtml("Title", "Description"));
+        const main = root.querySelector(".config-item__main");
+        const title = main?.querySelector(":scope > .config-name");
+        expect(title?.textContent).toBe("Title");
+        // 标题是元素而不是裸文本，说明才排在它下面
+        expect(title?.nextElementSibling?.className).toBe("b3-label__text");
+        expect(main?.firstChild).toBe(title);
+    });
+
     it("no description block when the description is missing", () => {
         expect(query(mainHtml("Title"), ".b3-label__text")).toBeNull();
     });

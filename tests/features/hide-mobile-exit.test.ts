@@ -43,7 +43,7 @@ describe("Hides the mobile exit button", () => {
     });
 
     it("Declaration: appearance category, mobile only, one off-by-default switch", () => {
-        expect(definition.category).toBe("appearance");
+        expect(definition.category).toEqual(["appearance"]);
         expect(definition.frontends).toEqual(["mobile"]);
         expect(configKeysOf(definition.settings)).toEqual(["enabled"]);
         expect(definition.settings[0]).toMatchObject({kind: "switch", key: "enabled", default: false});

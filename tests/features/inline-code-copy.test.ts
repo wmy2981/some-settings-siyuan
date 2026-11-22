@@ -146,7 +146,7 @@ afterEach(() => {
 describe("inline code copy button", () => {
     it("declaration: category is editor, the switch is mode itself (no separate enabled switch)", () => {
         expect(definition.id).toBe("inline-code-copy");
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
         expect(definition.name).toBe("feature.inlineCodeCopy.title");
         expect(definition.enabled).toBe(true);
         expect(definition.frontends).toBeUndefined();

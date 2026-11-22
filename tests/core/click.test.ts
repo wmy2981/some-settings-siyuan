@@ -36,6 +36,13 @@ const click = (button: HTMLButtonElement): void => {
     button.dispatchEvent(new MouseEvent("click"));
 };
 
+/** 面板里的按钮都带 `data-ss-button`（值就是动作标识），守卫按它认同一个动作的几份按钮。 */
+const makeCopy = (scope: string): HTMLButtonElement => {
+    const button = makeButton();
+    button.dataset.ssButton = scope;
+    return button;
+};
+
 describe("bindPendingClick", () => {
     it("restores the button right after a synchronous run", () => {
         const button = makeButton();
@@ -72,7 +79,8 @@ describe("bindPendingClick", () => {
                 resolve = done;
             })
         );
-        bindPendingClick(button, "scope", run);
+        // 这个用例最后会留下一次没结束的执行（守卫按动作记，别的用例别再共用同一个 scope）
+        bindPendingClick(button, "repeated", run);
 
         click(button);
         click(button);
@@ -139,5 +147,41 @@ describe("bindPendingClick", () => {
         await new Promise((done) => setTimeout(done, 5));
         expect(released).toBe(true);
         expect(button.disabled).toBe(false);
+    });
+
+    it("disables every copy of the same action and lets only one of them run", async () => {
+        const first = makeCopy("alpha::run");
+        const second = makeCopy("alpha::run");
+        let resolve: () => void = () => undefined;
+        const run = vi.fn(() =>
+            new Promise<void>((done) => {
+                resolve = done;
+            })
+        );
+        bindPendingClick(first, "alpha::run", run);
+        bindPendingClick(second, "alpha::run", run);
+
+        // 切到另一个页签再点同一颗按钮：既不派发，也过不了在途判断
+        click(first);
+        expect(first.disabled).toBe(true);
+        expect(second.disabled).toBe(true);
+        click(second);
+        expect(run).toHaveBeenCalledTimes(1);
+
+        resolve();
+        await Promise.resolve();
+        await Promise.resolve();
+        expect(first.disabled).toBe(false);
+        expect(second.disabled).toBe(false);
+        click(second);
+        expect(run).toHaveBeenCalledTimes(2);
+    });
+
+    it("leaves the buttons of other actions alone", () => {
+        const mine = makeCopy("alpha::run");
+        const other = makeCopy("alpha::export");
+        bindPendingClick(mine, "alpha::run", () => undefined);
+        click(mine);
+        expect(other.disabled).toBe(false);
     });
 });

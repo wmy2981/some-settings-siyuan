@@ -148,7 +148,7 @@ class FakePlugin {
 
 const featureOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `${id}.name`,
     enabled: true,
     settings: [{kind: "switch", key: "enabled", title: "common.enabled", default: false}],
@@ -707,11 +707,11 @@ describe("user declaration patch", () => {
         expect(hoisted.patches).toHaveLength(1);
         const patched = hoisted.patches[0].find((feature) => feature.id === "beta");
         expect(patched?.enabled).toBe(false);
-        expect(patched?.category).toBe("ai");
+        expect(patched?.category).toEqual(["ai"]);
         expect(patched?.fromPatch).toEqual({enabled: false});
         // 源码声明本身一条都没有被改
         expect(hoisted.active[1].enabled).toBe(true);
-        expect(hoisted.active[1].category).toBe("editor");
+        expect(hoisted.active[1].category).toEqual(["editor"]);
         expect(hoisted.active[1].fromPatch).toBeUndefined();
     });
 

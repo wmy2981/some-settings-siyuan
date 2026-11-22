@@ -45,6 +45,11 @@
 * 上游自己实现了某个能力后，功能必须能退场：声明 `maxAppVersion: "<前一个思源版本>"`，
   宿主版本超过它就不再加载、不显示、不挂载。`minAppVersion` / `maxAppVersion` 都是**闭区间**，
   不写表示该侧不限；版本号按 `alpha < beta < rc < 正式版` 比较。
+* 分类默认写一个 id。只有功能**真的同时落在几块原生界面上**时才写数组
+  （`category: ["editor", "doc-tree"]`）：它在每个页签里各渲染一份完整的设置行，配置、开关与挂载
+  仍只有一份，行里的动作按钮也因此有几份（`core/click.ts` 的守卫按动作记）。
+  `defineFeature` 把两种写法都归一化成数组，所以声明视图里的 `category` 永远是
+  `FeatureCategory[]`，读的时候直接 `includes()` / `forEach()`，不要再比较成字符串。
 
 **推论（很重要）**：功能关着时根本不会被挂载，所以不能用 `addTopBar` / `addDock` / `addTab` /
 `addCommand` 这类必须在 onload 同步注册的 API；真要用就把 `mount` 写成无条件执行、内部按开关收放。
