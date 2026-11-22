@@ -43,7 +43,9 @@ const renderDesktop = (ids: string[]): void => {
     ids.forEach((id, index) => {
         bar.insertAdjacentHTML(
             "beforeend",
-            `<li class="item${index === 0 ? " item--focus" : ""}" data-type="tab-header" data-id="${id}" data-activetime="${BASE}">
+            `<li class="item${
+                index === 0 ? " item--focus" : ""
+            }" data-type="tab-header" data-id="${id}" data-activetime="${BASE}">
     <span class="item__text">${id}</span><span class="item__close"></span></li>`,
         );
         container.insertAdjacentHTML("beforeend", `<div class="fn__flex-1" data-id="${id}"></div>`);
