@@ -11,7 +11,7 @@ import {mountNewDocFixedTarget} from "./target";
 
 export default defineFeature({
     id: "new-doc-fixed-target",
-    category: "editor",
+    category: "doc-tree",
     enabled: true,
     name: "feature.newDocFixedTarget.title",
     description: "feature.newDocFixedTarget.description",

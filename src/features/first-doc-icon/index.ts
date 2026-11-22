@@ -13,7 +13,7 @@ import {mountFirstDocIcon} from "./icon";
 
 export default defineFeature({
     id: "first-doc-icon",
-    category: "doc-tree",
+    category: ["doc-tree", "editor"],
     enabled: true,
     name: "feature.firstDocIcon.title",
     description: "feature.firstDocIcon.description",
