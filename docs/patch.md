@@ -142,8 +142,7 @@ clue.
   on in the "This plugin" tab, it is grayed in at the bottom of its own tab with the reason
   "Disabled by your patch".
 * The patch can change the category: both the normal and the grayed entries move to the new tab (or to
-  several tabs), and
-  the order inside the tab still follows the registration order.
+  several tabs), and the order inside the tab still follows the registration order.
 * The patch can change the frontends and the version range; the reasons are recalculated from the
   patched declaration, so nothing from the source declaration lingers.
 
