@@ -5,6 +5,11 @@
  * 因此移动端**不需要插件做任何事**就会被新版宿主渲染成底部抽屉（抓手、遮罩、拖动、
  * 返回键、可视视口与键盘避让全部由宿主接管），桌面端仍是居中的设置弹窗。
  *
+ * 打开方式跟随用户在「设置 - 应用 - 常规」里的「在独立窗口中打开设置界面」：勾了就按
+ * `Setting({openInWindow})` 请宿主把面板开到独立原生窗口里。那一条路径有两个额外约束 ——
+ * 对话框**异步**在**另一个窗口的文档**里建出来（`waitForWindowDialog()`），所以面板样式表与
+ * 快捷键都按对话框自己的 `ownerDocument` 落位，不借插件所属窗口的 `document`。
+ *
  * 结构与参考插件的面板同构：`.b3-dialog__content > .config > (页签 + .config-items)*`。
  *
  * - 每个分类（按作用到的原生功能划分）各是一个页签，没有内容的不出现
@@ -365,29 +370,54 @@ const TYPING_QUIET_MS = 400;
  * 取对话框里的一个区域（正文区 / 动作区），没有就补一个。
  *
  * 宿主的 `Setting.open()` 正常会建好正文区；补建只是兜底 —— 结构略有差异的宿主版本上
- * 宁可自己补一个，也不能让面板没有正文。
+ * 宁可自己补一个，也不能让面板没有正文。节点必须建在**父节点自己那份文档**里：
+ * 独立设置窗口模式下对话框不在插件所属窗口的文档中。
  */
 const ensureRegion = (parent: HTMLElement, className: string): HTMLElement => {
     const existing = parent.querySelector<HTMLElement>(`.${className}`);
     if (existing) {
         return existing;
     }
-    const element = document.createElement("div");
+    const element = parent.ownerDocument.createElement("div");
     element.className = className;
     parent.append(element);
     return element;
 };
 
 /**
- * 宿主的 `Setting` 比 SDK 的类型声明多出两样东西（宿主源码里都是 public）：
- * - `open()` 会把建好的对话框挂在 `setting.dialog` 上；
+ * 宿主的 `Setting` 比 SDK 的类型声明多出几样东西（宿主源码里都是 public）：
+ * - 构造参数 `openInWindow`：桌面端在独立原生窗口里打开设置；
+ * - `open()` 会把建好的对话框挂在 `setting.dialog` 上（独立窗口模式下由另一个窗口稍后创建）；
  * - `close()` 会按「普通对话框 / 独立设置窗口」分别收掉。
  * 这里只做一处窄类型扩展，不扩散成全局断言。
  */
+interface SettingOptions {
+    destroyCallback?: () => void;
+    openInWindow?: boolean;
+}
 type SettingWithDialog = Setting & {
     dialog?: Dialog;
     close?: () => void;
 };
+type SettingConstructor = new(options: SettingOptions) => SettingWithDialog;
+
+/**
+ * 用户在「设置 - 应用 - 常规」里勾的「在独立窗口中打开设置界面」
+ * （`window.siyuan.config.system.settingsWindow`，仅桌面 Electron 客户端生效）。
+ *
+ * 仓库固定的 SDK 类型里还没有这个字段（较新的版本才声明），按可选读取：
+ * 旧宿主没有它时是 `undefined`，面板照旧开在主窗口的对话框里。
+ */
+const inSettingsWindowMode = (): boolean =>
+    (window.siyuan?.config?.system as {settingsWindow?: boolean;} | undefined)?.settingsWindow === true;
+
+/** 独立设置窗口模式下等它建出对话框的轮询间隔与上限。 */
+const SETTINGS_WINDOW_POLL_MS = 50;
+const SETTINGS_WINDOW_TIMEOUT_MS = 30000;
+
+/** 按宿主真实的构造参数建 `Setting`：SDK 的类型里还没有 `openInWindow`。 */
+const createSetting = (options: SettingOptions): SettingWithDialog =>
+    new (Setting as unknown as SettingConstructor)(options);
 
 export class SettingsPanel {
     private readonly options: SettingsPanelOptions;
@@ -456,6 +486,8 @@ export class SettingsPanel {
     private searchSnapshot?: SearchSnapshot;
     /** 面板打开期间挂在 document 上的快捷键监听。 */
     private searchKeys?: (event: KeyboardEvent) => void;
+    /** 快捷键监听挂在哪份文档上：独立设置窗口模式下它不是插件所属窗口的那一份。 */
+    private searchKeysDocument?: Document;
     /** 恢复滚动位置的那一帧（个别内核算不到滚动高度时补一次）。 */
     private scrollFrame?: number;
     /** 移动端页签栏展开后，删掉过渡起点高度的那个定时器。 */
@@ -515,11 +547,14 @@ export class SettingsPanel {
         if (this.setting) {
             return;
         }
-        ensurePanelCss();
+        // 打开方式跟随用户在「设置 - 应用 - 常规」里的选择：勾了「在独立窗口中打开设置界面」
+        // 就请宿主把本插件的设置也开到独立窗口里，没勾（或旧宿主没有这个设置）仍是弹窗。
+        const openInWindow = inSettingsWindowMode();
         const mobile = isMobileFrontend();
         log.info("opening the settings panel", {
             frontend: mobile ? "mobile" : "desktop",
             features: this.options.features.length,
+            settingsWindow: openInWindow,
         });
 
         const generation = ++this.showGeneration;
@@ -532,7 +567,8 @@ export class SettingsPanel {
         // 上一次打开留下的补滚帧指向旧的对话框，先收掉；搜索状态与快捷键监听一并复位。
         this.cancelRevealFrame();
         this.disposeSearch();
-        const setting = new Setting({
+        const setting = createSetting({
+            openInWindow,
             destroyCallback: () => {
                 // 关面板时把还在静默期里的那一次补上：用户改完直接关窗，改动也不会丢。
                 void this.flushPending();
@@ -551,12 +587,12 @@ export class SettingsPanel {
                 this.searchToggleUnsubscribe?.();
                 this.searchToggleUnsubscribe = undefined;
             },
-        }) as SettingWithDialog;
+        });
         this.setting = setting;
 
         // 对话框由宿主建：新版宿主在移动端用 MobileDialog 把它渲染成底部抽屉，
         // 桌面端仍是居中弹窗；设置窗口模式下 Setting.close() 还会替我们收掉那个窗口。
-        // open() 是同步的，返回时正文已经就绪，因此这里一次性填好整块面板内容 ——
+        // 普通打开时 open() 是同步的，返回时正文已经就绪，因此这里一次性填好整块面板内容 ——
         // 不逐项插入、不异步挂载，入场动画开始前内容就是完整的。
         //
         // 移动端还要挡掉宿主在 open() 里对正文输入控件的自动聚焦：那一下会顶起软键盘、
@@ -573,13 +609,65 @@ export class SettingsPanel {
         }
 
         const dialog = setting.dialog;
-        if (!dialog) {
-            // 宿主没有建出对话框：收干净状态并报错，不留一个关不掉的半成品面板。
-            this.setting = undefined;
-            reportError("settings.open", new Error("the host did not create a settings dialog"));
+        if (dialog) {
+            this.attachDialog(dialog, generation);
             return;
         }
+        // 独立窗口模式：对话框由宿主在另一个窗口里建，这一刻还拿不到（见 waitForWindowDialog）。
+        if (openInWindow) {
+            this.waitForWindowDialog(setting, generation);
+            return;
+        }
+        // 宿主没有建出对话框：收干净状态并报错，不留一个关不掉的半成品面板。
+        this.setting = undefined;
+        reportError("settings.open", new Error("the host did not create a settings dialog"));
+    }
+
+    /**
+     * 等独立设置窗口把对话框建出来。
+     *
+     * `Setting.open()` 走独立窗口时**不同步**给出对话框：它只是请宿主去开窗，那个窗口启动完
+     * （加载语言、外观与插件）才回调挂载，主窗口这边这时才拿得到 `setting.dialog`。
+     * 所以这里轮询等它出现，出现之后再把面板画进去；面板关掉、重开或一直等不到都立刻停。
+     *
+     * 30 秒等不到就当作窗口没建起来：收掉这次打开（`Setting.close()` 会取消还没落地的开窗请求），
+     * 不让用户对着一个空白窗口、也不留下一个永远等下去的定时器。
+     */
+    private waitForWindowDialog(setting: SettingWithDialog, generation: number): void {
+        const started = Date.now();
+        const timer = window.setInterval(() => {
+            if (generation !== this.showGeneration || this.setting !== setting) {
+                window.clearInterval(timer);
+                return;
+            }
+            const dialog = setting.dialog;
+            if (!dialog) {
+                if (Date.now() - started < SETTINGS_WINDOW_TIMEOUT_MS) {
+                    return;
+                }
+                window.clearInterval(timer);
+                reportError("settings.open", new Error("the settings window did not create a dialog"));
+                this.close();
+                return;
+            }
+            window.clearInterval(timer);
+            log.info("the settings window created the dialog", {elapsedMs: Date.now() - started});
+            this.attachDialog(dialog, generation);
+        }, SETTINGS_WINDOW_POLL_MS);
+    }
+
+    /**
+     * 把面板画进宿主建好的对话框。
+     *
+     * 独立设置窗口模式下这个对话框在**另一个窗口的文档**里：面板样式、快捷键都必须落在
+     * 那份文档上，不能借用插件所属窗口的 `document`（宿主给插件设置窗口的文档说明里
+     * 也写明了这一点）。
+     */
+    private attachDialog(dialog: Dialog, generation: number): void {
         this.dialog = dialog;
+        const mobile = isMobileFrontend();
+        // 面板样式表跟着对话框自己的文档走：独立窗口模式下主窗口那份管不到它。
+        ensurePanelCss(dialog.element.ownerDocument);
 
         // 入场图层预热：宿主的 Dialog 在 50ms 后才加 b3-dialog--open，这里在 open() 返回后
         // 同步补类，样式在过渡开始前就已生效（见 core/layer.ts）。
@@ -1802,14 +1890,28 @@ export class SettingsPanel {
         });
         this.syncSearchClear();
 
-        // 快捷键挂在 document 的捕获阶段：宿主的「在文档里搜索」也听着 Ctrl/Cmd + F，
+        // 快捷键挂在面板自己那份文档的捕获阶段：宿主的「在文档里搜索」也听着 Ctrl/Cmd + F，
         // 只有捕获阶段才能赶在它前面把键拦下来。面板关闭时由 disposeSearch() 收掉。
-        if (this.searchKeys) {
-            document.removeEventListener("keydown", this.searchKeys, true);
-        }
+        this.releaseSearchKeys();
         const onKeyDown = (event: KeyboardEvent): void => this.handleSearchKey(event);
         this.searchKeys = onKeyDown;
-        document.addEventListener("keydown", onKeyDown, true);
+        this.searchKeysDocument = panel.ownerDocument;
+        panel.ownerDocument.addEventListener("keydown", onKeyDown, true);
+    }
+
+    /**
+     * 收掉快捷键监听；幂等。
+     *
+     * 必须记住当初挂在哪份文档上：独立设置窗口模式下它不是插件所属窗口的 `document`，
+     * 照着 `document` 删会留下一个永远解不掉的监听。
+     */
+    private releaseSearchKeys(): void {
+        if (!this.searchKeys) {
+            return;
+        }
+        this.searchKeysDocument?.removeEventListener("keydown", this.searchKeys, true);
+        this.searchKeys = undefined;
+        this.searchKeysDocument = undefined;
     }
 
     /**
@@ -1855,7 +1957,7 @@ export class SettingsPanel {
             return;
         }
         if (event.key === "/" && !withCommand) {
-            if (isEditingControl(document.activeElement)) {
+            if (isEditingControl(this.dialog.element.ownerDocument.activeElement)) {
                 return;
             }
             event.preventDefault();
@@ -2174,7 +2276,7 @@ export class SettingsPanel {
         const touched = new Set<Element>();
         root.querySelectorAll(`mark.${HIT_CLASS}`).forEach((mark) => {
             const parent = mark.parentElement;
-            mark.replaceWith(document.createTextNode(mark.textContent ?? ""));
+            mark.replaceWith(root.ownerDocument.createTextNode(mark.textContent ?? ""));
             if (parent) {
                 touched.add(parent);
             }
@@ -2384,10 +2486,7 @@ export class SettingsPanel {
 
     /** 收掉搜索留下的东西：快捷键监听、补帧与状态；幂等，面板关闭与重新打开都会走这里。 */
     private disposeSearch(): void {
-        if (this.searchKeys) {
-            document.removeEventListener("keydown", this.searchKeys, true);
-            this.searchKeys = undefined;
-        }
+        this.releaseSearchKeys();
         if (this.scrollFrame !== undefined) {
             window.cancelAnimationFrame(this.scrollFrame);
             this.scrollFrame = undefined;

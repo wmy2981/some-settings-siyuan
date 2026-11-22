@@ -46,15 +46,18 @@ const LAYER_CSS = `
 /**
  * 注入（或重写）预热样式。
  *
+ * 文档由对话框自己决定：独立设置窗口模式下它在另一个窗口的文档里，插件所属窗口的
+ * `document` 管不到它。
+ *
  * 每次都重写 `textContent`，不能在元素已存在时直接返回：禁用 / 启用、重载插件都不会
  * 重载页面，`<head>` 里的 `<style>` 会留下来，于是新代码会配上一份旧样式表。
  */
-const ensureLayerCss = (): void => {
-    let element = document.getElementById(LAYER_CSS_ID) as HTMLStyleElement | null;
+const ensureLayerCss = (doc: Document): void => {
+    let element = doc.getElementById(LAYER_CSS_ID) as HTMLStyleElement | null;
     if (!element) {
-        element = document.createElement("style");
+        element = doc.createElement("style");
         element.id = LAYER_CSS_ID;
-        document.head.append(element);
+        doc.head.append(element);
     }
     if (element.textContent !== LAYER_CSS) {
         element.textContent = LAYER_CSS;
@@ -67,6 +70,6 @@ const ensureLayerCss = (): void => {
  * 幂等：同一个弹窗重复调用只会补一次类、重写一次同样的样式内容。
  */
 export const preheatDialogLayer = (dialog: Dialog): void => {
-    ensureLayerCss();
+    ensureLayerCss(dialog.element.ownerDocument);
     dialog.element.querySelector<HTMLElement>(".b3-dialog__container")?.classList.add(LAYER_CLASS);
 };

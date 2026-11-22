@@ -1124,7 +1124,10 @@ export const PANEL_CSS = `
 const PANEL_CSS_ID = `${PANEL_CLASS}-local-css`;
 
 /**
- * 在当前文档里确保设置面板的局部样式**是最新的一份**。
+ * 在面板**自己所在的那份文档**里确保设置面板的局部样式是**最新的一份**。
+ *
+ * 文档必须由调用方给：独立设置窗口模式下，面板的 DOM 在另一个窗口的文档里，
+ * 插件所属窗口的 `document` 管不到它。
  *
  * 这里必须每次都重写 `textContent`，不能在元素已存在时直接返回：
  * 关掉插件再打开、或者「重载插件」都不会重载页面，`<style>` 元素还留在 `<head>` 里，
@@ -1132,12 +1135,12 @@ const PANEL_CSS_ID = `${PANEL_CLASS}-local-css`;
  * 但字重、间距还是改动前那一套（CSS 没生效）」，而且怎么重载插件都不好，
  * 只有整页刷新才恢复正常。样式内容由本文件生成，重写一次的开销可以忽略。
  */
-export const ensurePanelCss = (): void => {
-    let element = document.getElementById(PANEL_CSS_ID) as HTMLStyleElement | null;
+export const ensurePanelCss = (doc: Document): void => {
+    let element = doc.getElementById(PANEL_CSS_ID) as HTMLStyleElement | null;
     if (!element) {
-        element = document.createElement("style");
+        element = doc.createElement("style");
         element.id = PANEL_CSS_ID;
-        document.head.append(element);
+        doc.head.append(element);
     }
     if (element.textContent !== PANEL_CSS) {
         element.textContent = PANEL_CSS;
