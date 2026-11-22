@@ -18,10 +18,7 @@ import {
 } from "vitest";
 import {defaultConfig} from "../../src/core/config";
 import {FEATURES} from "../../src/core/registry";
-import {
-    categoriesOf,
-    FEATURE_CATEGORIES,
-} from "../../src/core/types";
+import {FEATURE_CATEGORIES} from "../../src/core/types";
 import type {
     FeatureDefinition,
     SettingField,
@@ -107,7 +104,7 @@ describe("feature declarations", () => {
 
     it("every feature declares at least one valid category and an explicit enabled", () => {
         FEATURES.forEach((feature) => {
-            const categories = categoriesOf(feature);
+            const categories = feature.category;
             expect(categories.length, feature.id).toBeGreaterThan(0);
             expect(new Set(categories).size, feature.id).toBe(categories.length);
             categories.forEach((category) => {

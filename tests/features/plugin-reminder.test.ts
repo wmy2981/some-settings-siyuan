@@ -145,7 +145,7 @@ describe("about this plugin", () => {
         expect(definition.enabled).toBe(true);
         expect(definition.isEnabled!({})).toBe(false);
         expect(definition.mount).toBeUndefined();
-        expect(definition.category).toBe("plugin");
+        expect(definition.category).toEqual(["plugin"]);
     });
 
     it("without a funding link in the manifest the button is absent and openDonate is a no-op", async () => {

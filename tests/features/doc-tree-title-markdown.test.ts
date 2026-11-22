@@ -301,7 +301,7 @@ describe("doc tree titles render inline Markdown", () => {
 
     it("declaration: the version cap lands before the host projects rich titles, and the switch is off by default", () => {
         expect(definition.id).toBe("doc-tree-title-markdown");
-        expect(definition.category).toBe("doc-tree");
+        expect(definition.category).toEqual(["doc-tree"]);
         expect(definition.enabled).toBe(true);
         // 3.8.10-alpha.2 起标题里的行内格式由宿主负责，再往后这份补丁必须退场
         expect(definition.maxAppVersion).toBe("3.8.10-alpha.1");

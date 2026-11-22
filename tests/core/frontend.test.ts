@@ -18,7 +18,7 @@ import {mockState} from "../mocks/siyuan";
 
 const definitionWith = (frontends?: FeatureDefinition["frontends"]): FeatureDefinition => ({
     id: "demo",
-    category: "editor",
+    category: ["editor"],
     name: "demo.name",
     enabled: true,
     settings: [],

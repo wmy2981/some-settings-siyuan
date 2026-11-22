@@ -63,10 +63,7 @@ import type {
     FeatureCategory,
     FeatureDefinition,
 } from "./types";
-import {
-    categoriesOf,
-    FEATURE_CATEGORIES,
-} from "./types";
+import {FEATURE_CATEGORIES} from "./types";
 
 export const FEATURES: FeatureDefinition[] = [
     // 第一个必须是「日志输出」：功能装载器按这个顺序挂载，它挂载时才打开详细日志，
@@ -170,6 +167,6 @@ export const featureById = (id: string): FeatureDefinition | undefined =>
 
 /** 按分类取功能，顺序与声明视图一致；一个功能可以同时属于多个分类。 */
 export const featuresOf = (category: FeatureCategory): FeatureDefinition[] =>
-    declarations.filter((feature) => categoriesOf(feature).includes(category));
+    declarations.filter((feature) => feature.category.includes(category));
 
 export const categoryOrder: FeatureCategory[] = FEATURE_CATEGORIES;

@@ -27,7 +27,7 @@ import {
 } from "../../src/core/registry";
 import {SEARCH_FEATURE_ID} from "../../src/core/search";
 import {
-    categoriesOf,
+    defineFeature,
     FEATURE_CATEGORIES,
 } from "../../src/core/types";
 import type {FeatureDefinition} from "../../src/core/types";
@@ -84,7 +84,7 @@ describe("The registry itself", () => {
 
     it("Every declared category must be a native category listed in the docs", () => {
         FEATURES.forEach((feature) => {
-            categoriesOf(feature).forEach((category) => {
+            feature.category.forEach((category) => {
                 expect(FEATURE_CATEGORIES).toContain(category);
             });
         });
@@ -149,9 +149,9 @@ describe("Lookups", () => {
         const editor = featuresOf("editor");
         expect(editor.length).toBeGreaterThan(0);
         editor.forEach((feature) => {
-            expect(categoriesOf(feature)).toContain("editor");
+            expect(feature.category).toContain("editor");
         });
-        const expected = FEATURES.filter((feature) => categoriesOf(feature).includes("editor"));
+        const expected = FEATURES.filter((feature) => feature.category.includes("editor"));
         expect(editor).toEqual(expected);
     });
 
@@ -162,9 +162,12 @@ describe("Lookups", () => {
             .toEqual(FEATURES.map((feature) => feature.id).sort());
     });
 
-    it("categoriesOf normalizes a single category and drops duplicates", () => {
-        expect(categoriesOf(FEATURES[0])).toEqual([FEATURES[0].category]);
-        expect(categoriesOf({...FEATURES[0], category: ["editor", "editor", "ai"]})).toEqual(["editor", "ai"]);
+    it("defineFeature turns a single category into a one-item list and drops duplicates", () => {
+        const base = FEATURES[0];
+        expect(defineFeature({...base, category: "editor"}).category).toEqual(["editor"]);
+        expect(defineFeature({...base, category: ["editor", "editor", "ai"]}).category).toEqual(["editor", "ai"]);
+        // 声明视图里永远是数组，所以下游不必再区分「一个还是多个」
+        expect(defineFeature({...base, category: ["appearance"]}).category).toEqual(["appearance"]);
     });
 
     it("Tab order is FEATURE_CATEGORIES itself", () => {
@@ -197,7 +200,7 @@ describe("the effective declaration view", () => {
 
     it("uses the patched category for the panel tabs and the search groups", () => {
         try {
-            setEffectiveFeatures(withFeature("log-output", {category: "editor"}));
+            setEffectiveFeatures(withFeature("log-output", {category: ["editor"]}));
             expect(featuresOf("editor").map((feature) => feature.id)).toContain("log-output");
             expect(featuresOf("plugin").map((feature) => feature.id)).not.toContain("log-output");
         } finally {
@@ -245,7 +248,7 @@ describe("activeFeatures", () => {
     it("A feature declared enabled: false never takes effect, even with a matching frontend and version", () => {
         const retired: FeatureDefinition = {
             id: "retired-demo",
-            category: "editor",
+            category: ["editor"],
             name: "demo.name",
             enabled: false,
             settings: [{kind: "switch", key: "enabled", title: "demo.t", default: false}],

@@ -147,7 +147,7 @@ describe("code snippet editor highlighting", () => {
 
     it("declaration: the switch defaults to off and the stylesheet is rewritten on every mount", () => {
         expect(definition.id).toBe("code-snippet-highlight");
-        expect(definition.category).toBe("settings");
+        expect(definition.category).toEqual(["settings"]);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},
         ]);

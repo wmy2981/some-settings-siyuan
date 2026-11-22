@@ -89,10 +89,7 @@ import type {
     FeatureDefinition,
     SettingField,
 } from "./types";
-import {
-    categoriesOf,
-    FEATURE_CATEGORIES,
-} from "./types";
+import {FEATURE_CATEGORIES} from "./types";
 import {
     actionButtonHtml,
     buttonRowHtml,
@@ -493,7 +490,7 @@ export class SettingsPanel {
 
     /** 当前分类（页签）下要显示设置界面的功能。 */
     private visibleFeatures(category: FeatureCategory): FeatureDefinition[] {
-        return this.visibleFeaturesAll().filter((feature) => categoriesOf(feature).includes(category));
+        return this.visibleFeaturesAll().filter((feature) => feature.category.includes(category));
     }
 
     /**
@@ -509,7 +506,7 @@ export class SettingsPanel {
 
     /** 当前分类（页签）下不可用的功能，顺序与注册表一致。 */
     private unavailableFeatures(category: FeatureCategory): FeatureDefinition[] {
-        return this.unavailableFeaturesAll().filter((feature) => categoriesOf(feature).includes(category));
+        return this.unavailableFeaturesAll().filter((feature) => feature.category.includes(category));
     }
 
     // ------------------------------------------------------------ 生命周期
@@ -1947,7 +1944,7 @@ export class SettingsPanel {
         const showUnavailable = isShowUnavailable();
         const unavailableAll = this.unavailableFeaturesAll();
         const unavailableIds = new Set(unavailableAll.map((feature) => feature.id));
-        const unavailableCategoriesOf = new Map(unavailableAll.map((feature) => [feature.id, categoriesOf(feature)]));
+        const unavailableCategoriesOf = new Map(unavailableAll.map((feature) => [feature.id, feature.category]));
         let shown = 0;
         root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
             if (pane.dataset.ssTabPanel === UNAVAILABLE_PANE_ID) {
@@ -2260,7 +2257,7 @@ export class SettingsPanel {
                 );
             }
         });
-        return {categories: categoriesOf(feature), id: feature.id, fields};
+        return {id: feature.id, fields};
     }
 
     /** 一条静态 i18n 文案的匹配域：当前语言那一份，加上各语言文件里的同一条。 */

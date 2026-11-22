@@ -19,7 +19,7 @@ import {mockState} from "../mocks/siyuan";
 
 const featureOf = (extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id: "demo",
-    category: "editor",
+    category: ["editor"],
     name: "demo.title",
     enabled: true,
     settings: [{kind: "switch", key: "enabled", title: "common.enabled", default: false}],

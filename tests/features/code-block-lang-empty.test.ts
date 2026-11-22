@@ -211,7 +211,7 @@ describe("code block language is not remembered", () => {
 
     it("declaration: editor category, off by default, a single enabled switch", () => {
         expect(definition.id).toBe("code-block-lang-empty");
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
         expect(definition.enabled).toBe(true);
         expect(definition.settings).toEqual([
             {kind: "switch", key: "enabled", title: "common.enabled", default: false},

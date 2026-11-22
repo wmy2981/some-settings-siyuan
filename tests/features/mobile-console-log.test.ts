@@ -126,7 +126,7 @@ afterEach(() => {
 describe("console log viewer", () => {
     it("declaration is mobile-only and off by default, with fixed defaults for capacity and the entry", () => {
         expect(definition.id).toBe("mobile-console-log");
-        expect(definition.category).toBe("settings");
+        expect(definition.category).toEqual(["settings"]);
         expect(definition.enabled).toBe(true);
         // 手机上根本没有开发者控制台，这个功能只在移动端有意义
         expect(definition.frontends).toEqual(["mobile"]);

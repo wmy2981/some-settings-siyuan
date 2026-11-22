@@ -23,8 +23,6 @@ export type SearchField = readonly string[];
 
 /** 索引里的一条功能记录。 */
 export interface SearchRecord {
-    /** 功能所属分类 id；可能不止一个。 */
-    categories: string[];
     /** 功能 id。 */
     id: string;
     /** 这个功能的全部字段，一个字段一组文案。 */

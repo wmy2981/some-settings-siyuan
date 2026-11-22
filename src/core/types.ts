@@ -333,13 +333,15 @@ export interface FeatureDefinition {
     /** 必须等于功能文件夹名，也等于它自己的配置文件名（`feature-<id>`）。 */
     id: string;
     /**
-     * 这个功能所在的设置页签。
+     * 这个功能所在的设置页签，至少一个。
      *
-     * 写一个分类 id 表示只属于那个页签；写数组表示同时出现在其中每一个页签里，
-     * 每个页签各渲染一份完整的设置行。配置仍是一份（按功能 id 存），功能也只挂载一次。
-     * 页签的先后顺序按 `FEATURE_CATEGORIES`，与数组顺序无关。
+     * 声明视图里**永远是数组**：写一个分类 id 的作者写法在 `defineFeature()` 里就归一化了，
+     * 所以读的时候不必区分「一个还是多个」，直接 `includes()` / `forEach()` 即可。
+     * 多个分类表示功能同时出现在每一个页签里，每个页签各渲染一份完整的设置行；
+     * 配置仍是一份（按功能 id 存），功能也只挂载一次。页签的先后顺序按
+     * `FEATURE_CATEGORIES`，与数组顺序无关。
      */
-    category: FeatureCategory | FeatureCategory[];
+    category: FeatureCategory[];
     /** i18n key，不是字面量。 */
     name: string;
     description?: string;
@@ -416,22 +418,30 @@ export interface FeaturePatchMarker {
  */
 export interface FeaturePatch {
     enabled?: boolean;
-    /** 一个分类 id 或一组分类 id；整组替换源码声明。 */
-    category?: FeatureCategory | FeatureCategory[];
+    /** 补丁解析后的分类列表（已经归一化成数组、去过重）；整组替换源码声明。 */
+    category?: FeatureCategory[];
     frontends?: FeatureFrontend[] | null;
     minAppVersion?: string | null;
     maxAppVersion?: string | null;
 }
 
-/** 定义辅助函数：只做类型约束，不改变行为。 */
-export const defineFeature = (definition: FeatureDefinition): FeatureDefinition => definition;
-
 /**
- * 一个功能所属的全部页签。
+ * 作者写声明时的形状：与 `FeatureDefinition` 相同，只是 `category` 允许直接写一个分类 id。
  *
- * `category` 可以写单个字符串（只属于一个分类）或数组（同时属于多个分类）；
- * 这里统一成数组并去掉重复项，注册表、设置面板与搜索都只认这个结果。
+ * 归一化只在这一处发生 —— 出了 `defineFeature()` 就只剩 `FeatureDefinition` 的数组形态，
+ * 于是「拿 `category` 跟字符串比」这种写法在编译期就过不去。
  */
-export const categoriesOf = (
-    definition: FeatureDefinition,
-): FeatureCategory[] => [...new Set(Array.isArray(definition.category) ? definition.category : [definition.category])];
+export type FeatureDefinitionInput = Omit<FeatureDefinition, "category"> & {
+    category: FeatureCategory | readonly FeatureCategory[];
+};
+
+/** 把声明里的 `category` 写法统一成一个去重的列表。 */
+const categoryList = (category: FeatureCategory | readonly FeatureCategory[]): FeatureCategory[] => [
+    ...new Set(typeof category === "string" ? [category] : category),
+];
+
+/** 定义辅助函数：把作者写法归一化成一个「分类永远是数组」的声明。 */
+export const defineFeature = (definition: FeatureDefinitionInput): FeatureDefinition => ({
+    ...definition,
+    category: categoryList(definition.category),
+});

@@ -175,7 +175,7 @@ describe("ref-crumbs plugin guide", () => {
 
     it("declaration: never mounts, has no config, and is a note plus one action button", () => {
         expect(definition.id).toBe("ref-crumbs-guide");
-        expect(definition.category).toBe("editor");
+        expect(definition.category).toEqual(["editor"]);
         expect(definition.enabled).toBe(true);
         // 没有运行期行为，所以显式「永不启用」，而不是加一个点了也没用的开关
         expect(definition.isEnabled?.({})).toBe(false);

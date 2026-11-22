@@ -200,12 +200,11 @@ const patchOf = (id: string, value: YamlValue, definition: FeatureDefinition): F
                 }
                 patch.enabled = fieldValue as boolean;
                 break;
-            case "category": {
-                const categories = categoryListOf(id, fieldValue);
-                // 只写一个分类时保持原来的字符串形态，面板与测试都不必区分「一个的数组」
-                patch.category = categories.length === 1 ? categories[0] : categories;
+            case "category":
+                // 声明视图里 `category` 只有列表一种形态（见 types.ts 的 categoryList），
+                // 补丁只写一个分类时也存成只含一项的列表
+                patch.category = categoryListOf(id, fieldValue);
                 break;
-            }
             case "frontends":
                 patch.frontends = frontendsOf(id, fieldValue);
                 break;

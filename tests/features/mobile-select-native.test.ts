@@ -129,7 +129,7 @@ const tap = (target: Element, x = 10, y = 10): MouseEvent => {
 describe("mobile selects use SiYuan's native styling", () => {
     it("declaration: shipped for mobile only, up to 3.8.7-alpha.2 (the host unifies selects afterwards)", () => {
         expect(definition.id).toBe("mobile-select-native");
-        expect(definition.category).toBe("appearance");
+        expect(definition.category).toEqual(["appearance"]);
         expect(definition.name).toBe("feature.mobileSelectNative.title");
         expect(definition.enabled).toBe(true);
         expect(definition.frontends).toEqual(["mobile"]);

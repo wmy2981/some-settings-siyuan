@@ -91,7 +91,7 @@ describe("agent send on Enter", () => {
 
     it("declaration: both frontends apply, and the only setting is a switch that is off by default", () => {
         expect(definition.id).toBe("agent-enter-to-send");
-        expect(definition.category).toBe("ai");
+        expect(definition.category).toEqual(["ai"]);
         expect(definition.enabled).toBe(true);
         expect(definition.name).toBe("feature.agentEnterToSend.title");
         expect(definition.frontends).toBeUndefined();

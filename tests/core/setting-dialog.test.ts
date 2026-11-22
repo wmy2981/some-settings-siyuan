@@ -132,7 +132,7 @@ const alphaSettings = (onClick: (context: FeatureActionContext) => void = () => 
 
 const featureOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `${id}.name`,
     description: `${id}.desc`,
     enabled: true,
@@ -291,8 +291,8 @@ describe("show: render", () => {
 
     it("one tab per non-empty category, the first one selected by default", async () => {
         const {qa, q} = await open([
-            featureOf("alpha", {category: "editor"}),
-            featureOf("secondary", {category: "appearance"}),
+            featureOf("alpha", {category: ["editor"]}),
+            featureOf("secondary", {category: ["appearance"]}),
         ]);
         const tabs = qa("[data-ss-tab]");
         expect(tabs.map((tab) => tab.dataset.ssTab)).toEqual(["editor", "appearance"]);
@@ -357,7 +357,7 @@ describe("show: render", () => {
 
     it("a feature switched by a selector promotes that select to the feature row", async () => {
         const {q} = await open([featureOf("switch-mode", {
-            category: "settings",
+            category: ["settings"],
             settings: [{
                 kind: "select",
                 key: "scope",
@@ -412,8 +412,8 @@ describe("show: render", () => {
 
     it("the last child row of each feature is marked so the guide line ends in a corner", async () => {
         const {qa} = await open([
-            featureOf("alpha", {category: "editor"}),
-            featureOf("secondary", {category: "editor"}),
+            featureOf("alpha", {category: ["editor"]}),
+            featureOf("secondary", {category: ["editor"]}),
         ]);
         const marked = qa(`.${PANEL_CLASS}__child--last`);
         // 两个功能各一个：末行是那个功能自己的最后一行，不是整页的最后一行
@@ -598,8 +598,8 @@ describe("read-only mode", () => {
 
 describe("tab interaction", () => {
     const twoTabs = (): FeatureDefinition[] => [
-        featureOf("alpha", {category: "editor"}),
-        featureOf("secondary", {category: "appearance"}),
+        featureOf("alpha", {category: ["editor"]}),
+        featureOf("secondary", {category: ["appearance"]}),
     ];
 
     it("clicking a tab switches the selection and the visible pane", async () => {
@@ -1617,8 +1617,8 @@ describe("search", () => {
 
     /** 同一页里放两个功能：命中一个，另一个应当整体收起。 */
     const twoInEditor = (): FeatureDefinition[] => [
-        featureOf("alpha", {category: "editor"}),
-        featureOf("secondary", {category: "editor"}),
+        featureOf("alpha", {category: ["editor"]}),
+        featureOf("secondary", {category: ["editor"]}),
     ];
 
     describe("position and initial state", () => {
@@ -1697,7 +1697,7 @@ describe("search", () => {
         /** 「设置面板搜索」本身也是一个功能：默认开启，面板靠它的配置变化显隐搜索框。 */
         const searchFeature = (): FeatureDefinition =>
             featureOf(SEARCH_FEATURE_ID, {
-                category: "plugin",
+                category: ["plugin"],
                 settings: [{kind: "switch", key: "enabled", title: "alpha.enabled", default: true}],
             });
 
@@ -1794,8 +1794,8 @@ describe("search", () => {
 
         it("a category name hit shows every feature of that category", async () => {
             const {root, q} = await open([
-                featureOf("alpha", {category: "editor"}),
-                featureOf("secondary", {category: "appearance"}),
+                featureOf("alpha", {category: ["editor"]}),
+                featureOf("secondary", {category: ["appearance"]}),
             ]);
             const input = searchBox(root);
 
@@ -1836,8 +1836,8 @@ describe("search", () => {
         it("categories and features keep the declared order instead of a relevance order", async () => {
             // 声明顺序是「外观」在前，但结果分组按 FEATURE_CATEGORIES 的顺序（编辑器在前）
             const {root, qa} = await open([
-                featureOf("secondary", {category: "appearance"}),
-                featureOf("alpha", {category: "editor"}),
+                featureOf("secondary", {category: ["appearance"]}),
+                featureOf("alpha", {category: ["editor"]}),
             ]);
             typeQuery(searchBox(root), "feature");
             const groups = qa("[data-ss-search-group]")
@@ -2015,8 +2015,8 @@ describe("search", () => {
             const release = gatePanelState(host);
             const {root, q} = await open(
                 [
-                    featureOf("alpha", {category: "editor"}),
-                    featureOf("secondary", {category: "appearance"}),
+                    featureOf("alpha", {category: ["editor"]}),
+                    featureOf("secondary", {category: ["appearance"]}),
                 ],
                 {"panel-state": {tab: "appearance"}},
                 host,
@@ -2249,8 +2249,8 @@ describe("search", () => {
     describe("other panel state is unaffected", () => {
         it("searching does not change persisted state, closing still writes the current tab", async () => {
             const {root, host, panel, q} = await open([
-                featureOf("alpha", {category: "editor"}),
-                featureOf("secondary", {category: "appearance"}),
+                featureOf("alpha", {category: ["editor"]}),
+                featureOf("secondary", {category: ["appearance"]}),
             ]);
             typeQuery(searchBox(root), "feature");
             panel.close();
@@ -2265,7 +2265,7 @@ describe("unavailable settings", () => {
     /** 控制开关的那个功能：面板靠它的配置变化重画不可用条目。 */
     const toggleOf = (): FeatureDefinition => ({
         id: "show-unavailable-settings",
-        category: "plugin",
+        category: ["plugin"],
         name: "toggle.name",
         enabled: true,
         settings: [{kind: "switch", key: "enabled", title: "common.enabled", default: false}],
@@ -2274,7 +2274,7 @@ describe("unavailable settings", () => {
     /** 一个不可用的功能：默认是开发者禁用，可以换成别的原因。 */
     const betaOf = (extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
         id: "beta",
-        category: "editor",
+        category: ["editor"],
         name: "beta.name",
         description: "beta.desc",
         enabled: true,
@@ -2389,7 +2389,7 @@ describe("unavailable settings", () => {
             [
                 featureOf("alpha"),
                 toggleOf(),
-                betaOf({id: "beta", category: "appearance", enabled: false}),
+                betaOf({id: "beta", category: ["appearance"], enabled: false}),
             ],
         );
         // 「外观」分类只有不可用的功能：页签仍然出现
@@ -2409,13 +2409,13 @@ describe("unavailable settings", () => {
 
     it("items are gathered at the very bottom of the results and cannot be found while the switch is off", async () => {
         const {q, root, store} = await open(
-            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
             {},
             undefined,
             [
-                featureOf("alpha", {category: "editor"}),
+                featureOf("alpha", {category: ["editor"]}),
                 toggleOf(),
-                betaOf({category: "appearance", enabled: false}),
+                betaOf({category: ["appearance"], enabled: false}),
             ],
         );
         const input = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
@@ -2458,11 +2458,11 @@ describe("unavailable settings", () => {
 
     it("a retired feature in several categories is found by any of their names", async () => {
         const {q, root, store} = await open(
-            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
             {},
             undefined,
             [
-                featureOf("alpha", {category: "editor"}),
+                featureOf("alpha", {category: ["editor"]}),
                 toggleOf(),
                 betaOf({category: ["appearance", "editor"], enabled: false}),
             ],
@@ -2495,13 +2495,13 @@ describe("unavailable settings", () => {
     it("clearing the search returns unavailable items to their category panes and they still follow the switch", async () => {
         setShowUnavailable(true);
         const {q, root} = await open(
-            [featureOf("alpha", {category: "editor"}), toggleOf()],
+            [featureOf("alpha", {category: ["editor"]}), toggleOf()],
             {},
             undefined,
             [
-                featureOf("alpha", {category: "editor"}),
+                featureOf("alpha", {category: ["editor"]}),
                 toggleOf(),
-                betaOf({category: "editor", enabled: false}),
+                betaOf({category: ["editor"], enabled: false}),
             ],
         );
         const pane = q('[data-ss-tab-panel="editor"]');

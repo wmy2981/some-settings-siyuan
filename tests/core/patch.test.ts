@@ -28,7 +28,7 @@ const settings = [{kind: "switch", key: "enabled", title: "common.enabled", defa
 
 const featureOf = (id: string, extra: Partial<FeatureDefinition> = {}): FeatureDefinition => ({
     id,
-    category: "editor",
+    category: ["editor"],
     name: `feature.${id}.title`,
     enabled: true,
     settings: [...settings],
@@ -124,7 +124,7 @@ describe("applyPatch: overriding", () => {
 
     it("moves a feature to another category", () => {
         const alpha = byId(patchedView("features:\n  alpha:\n    category: ai\n"), "alpha");
-        expect(alpha.category).toBe("ai");
+        expect(alpha.category).toEqual(["ai"]);
     });
 
     it("moves a feature to several categories", () => {
@@ -165,7 +165,7 @@ describe("applyPatch: overriding", () => {
         const view = patchedView(
             "features:\n  alpha:\n    enabled: false\n    category: doc-tree\n  beta:\n    maxAppVersion: null\n",
         );
-        expect(byId(view, "alpha").category).toBe("doc-tree");
+        expect(byId(view, "alpha").category).toEqual(["doc-tree"]);
         expect(byId(view, "alpha").enabled).toBe(false);
         expect(byId(view, "beta").maxAppVersion).toBeUndefined();
     });

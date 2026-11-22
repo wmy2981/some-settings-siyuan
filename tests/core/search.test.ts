@@ -89,9 +89,9 @@ describe("matchIndex", () => {
             appearance: fieldOf("外观"),
         },
         features: [
-            {categories: ["editor"], id: "alpha", fields: [fieldOf("alpha"), fieldOf("图片压缩")]},
-            {categories: ["editor"], id: "beta", fields: [fieldOf("beta"), fieldOf("导出配置")]},
-            {categories: ["appearance"], id: "gamma", fields: [fieldOf("gamma"), fieldOf("弹窗模糊")]},
+            {id: "alpha", fields: [fieldOf("alpha"), fieldOf("图片压缩")]},
+            {id: "beta", fields: [fieldOf("beta"), fieldOf("导出配置")]},
+            {id: "gamma", fields: [fieldOf("gamma"), fieldOf("弹窗模糊")]},
         ],
     };
 
