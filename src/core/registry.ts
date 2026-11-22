@@ -46,6 +46,7 @@ import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
+import mobileSheetAutoHeight from "../features/mobile-sheet-auto-height";
 import mobileSyncButton from "../features/mobile-sync-button";
 import modalBlur from "../features/modal-blur";
 import newDocFixedTarget from "../features/new-doc-fixed-target";
@@ -108,6 +109,7 @@ export const FEATURES: FeatureDefinition[] = [
     deepseekBalance,
     ossUsage,
     mobileRefPanelHeight,
+    mobileSheetAutoHeight,
     mobileSelectNative,
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,

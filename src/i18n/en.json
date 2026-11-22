@@ -270,6 +270,8 @@
   "feature.mobileRefPanelHeight.description": "Raises the height of the mobile candidate panel used for reference search and friends to a share of the viewport, without passing the bottom of the visible area.",
   "feature.mobileRefPanelHeight.maxHeight": "Target height",
   "feature.mobileRefPanelHeight.maxHeightTip": "Share of the viewport height; the real height is also capped by the space between the panel and the bottom of the screen",
+  "feature.mobileSheetAutoHeight.title": "Drawer height follows its content",
+  "feature.mobileSheetAutoHeight.description": "Keeps short mobile bottom drawers at their own height instead of filling half or the whole screen, as in 3.8.11 and earlier.",
   "feature.mobileSelectNative.title": "Native SiYuan style for mobile dropdowns",
   "feature.mobileSelectNative.description": "Opening a dropdown on mobile shows SiYuan's own menu and still fires change on selection.",
   "feature.mobileLongpressMenuLabel.title": "Labels in the mobile long-press menu",
