@@ -191,13 +191,36 @@ export const mountTabAutoClose = (host: FeatureHost): FeatureInstance => {
     let timer: number | undefined;
     let disposed = false;
 
-    /** 给当前所有页签重新计时：刚启用、刚回到前台时都不该立刻收东西。 */
+    /** 给当前所有页签重新计时：刚启用这个功能时不该立刻收东西。 */
     const restartIdleTimers = (reason: string): void => {
         const now = Date.now();
         [...desktopCandidates(activity), ...mobileCandidates(activity)].forEach((tab) => {
             activity.set(tab.id, now);
         });
         host.log.info(`idle timers restart (${reason})`);
+    };
+
+    /**
+     * 一轮下来一个都没收时，记一行「最接近阈值」的页签。
+     *
+     * 为什么不收只有它说得清，所以这行日志是排查这类问题的唯一线索；按整分钟比较，
+     * 最多每分钟一条，不会在详细日志里刷屏。
+     */
+    let nearestLogged = -1;
+    const logNearest = (candidates: IdleTabCandidate[], idleMs: number): void => {
+        const nearest = candidates
+            .filter((tab) => tab.closeable && !tab.active && !tab.pinned && tab.siblings > 1 && tab.lastActive)
+            .sort((left, right) => left.lastActive - right.lastActive)[0];
+        const minutes = nearest ? Math.floor((Date.now() - nearest.lastActive) / 60_000) : -1;
+        if (minutes === nearestLogged) {
+            return;
+        }
+        nearestLogged = minutes;
+        host.log.info("nothing to close yet", {
+            nearest: nearest?.title ?? "",
+            idleMinutes: minutes,
+            threshold: Math.round(idleMs / 60_000),
+        });
     };
 
     const scan = async (): Promise<void> => {
@@ -210,6 +233,7 @@ export const mountTabAutoClose = (host: FeatureHost): FeatureInstance => {
         const candidates = [...desktopCandidates(activity), ...mobileCandidates(activity)];
         const idle = pickIdleTabs(candidates, {now: Date.now(), idleMs, keywords}).slice(0, MAX_CLOSES_PER_ROUND);
         if (idle.length === 0) {
+            logNearest(candidates, idleMs);
             return;
         }
 
@@ -228,6 +252,11 @@ export const mountTabAutoClose = (host: FeatureHost): FeatureInstance => {
             }
         });
         const closed = await settleDesktopCloses(requests);
+        const stubborn = requests.filter(({header}) => header.isConnected).map(({tab}) => tab.id);
+        if (stubborn.length > 0) {
+            // 宿主的关闭入口没生效（正在上传、标题还在落盘等），下一轮会再试一次
+            host.log.warn("close request had no effect", {tabs: stubborn});
+        }
 
         if (remaining.length > 0) {
             const tabs = mobileTabs();
@@ -267,10 +296,22 @@ export const mountTabAutoClose = (host: FeatureHost): FeatureInstance => {
     ACTIVITY_EVENTS.forEach((type) => {
         window.addEventListener(type, onActivity, {capture: true, passive: true});
     });
+    /**
+     * 界面在后台时不扫描，但**后台的时间照常算闲置**，不在回来时把计时归零。
+     *
+     * 归零就等于「页签必须连续五分钟停在可见的界面上」才算闲置：习惯切出去看别的软件、
+     * 或者移动端频繁切前后台的人，永远等不到一次收起，功能看起来就是没生效。
+     * 回来时收掉后台期间闲置的页签，正是这个功能要做的事。
+     */
+    let hiddenAt = 0;
     const onVisibilityChange = () => {
-        if (document.visibilityState === "visible") {
-            restartIdleTimers("visible");
+        if (document.visibilityState === "hidden") {
+            hiddenAt = Date.now();
+            host.log.info("scanning paused while hidden");
+            return;
         }
+        host.log.info("scanning resumed", {hiddenMs: hiddenAt ? Date.now() - hiddenAt : 0});
+        hiddenAt = 0;
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
