@@ -1049,6 +1049,33 @@ describe("action rows", () => {
         expect(context.configOf("alpha").label).toBe("hi");
     });
 
+    it("an action rendered in two tabs runs only once", async () => {
+        let finish: () => void = () => undefined;
+        const onClick = vi.fn(() =>
+            new Promise<void>((done) => {
+                finish = done;
+            })
+        );
+        const {qa} = await open([featureOf("alpha", {
+            category: ["editor", "appearance"],
+            settings: alphaSettings(onClick),
+        })]);
+        const buttons = qa('[data-ss-button="alpha::run"]') as HTMLButtonElement[];
+        expect(buttons).toHaveLength(2);
+
+        buttons[0].click();
+        await vi.waitFor(() => expect(onClick).toHaveBeenCalledTimes(1));
+        // 两份一起禁：切到另一个页签再点也进不来
+        expect(buttons.every((button) => button.disabled)).toBe(true);
+        buttons[1].click();
+        await Promise.resolve();
+        expect(onClick).toHaveBeenCalledTimes(1);
+
+        // 结束后两份一起放开（面板里后面的用例还要用这个功能）
+        finish();
+        await vi.waitFor(() => expect(buttons.every((button) => !button.disabled)).toBe(true));
+    });
+
     it("updateConfig writes at once and syncs the switch in the panel", async () => {
         let context: FeatureActionContext | undefined;
         const {q, host} = await open([featureOf("alpha", {
