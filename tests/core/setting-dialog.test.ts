@@ -314,8 +314,10 @@ describe("show: render", () => {
         expect(qa("[data-ss-tab]").map((tab) => tab.dataset.ssTab)).toEqual(["editor", "appearance"]);
         const editor = qa('[data-ss-tab-panel="editor"]')[0];
         const appearance = qa('[data-ss-tab-panel="appearance"]')[0];
-        expect(editor.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(6);
-        expect(appearance.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(6);
+        const editorRows = editor.querySelectorAll('[data-ss-feature="alpha"]');
+        // 只断言「两份一样多、且不止一行」，不写死行数：fixture 加个字段不该让它变红
+        expect(editorRows.length).toBeGreaterThan(1);
+        expect(appearance.querySelectorAll('[data-ss-feature="alpha"]')).toHaveLength(editorRows.length);
         expect(editor.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
         expect(appearance.querySelectorAll('[data-ss-row="alpha::enabled"]')).toHaveLength(1);
     });
@@ -1840,9 +1842,12 @@ describe("search", () => {
             typeQuery(searchBox(root), "Alpha feature");
             expect(qa('[data-ss-tab-panel="editor"]')[0].classList.contains("fn__none")).toBe(false);
             expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(false);
-            const rows = qa('[data-ss-feature="alpha"]');
-            expect(rows).toHaveLength(12);
-            expect(rows.every((row) => !row.classList.contains("fn__none"))).toBe(true);
+            const editorRows = qa('[data-ss-tab-panel="editor"] [data-ss-feature="alpha"]');
+            const appearanceRows = qa('[data-ss-tab-panel="appearance"] [data-ss-feature="alpha"]');
+            // 两个页签各一份，都露出来；行数不写死，跟着 fixture 走
+            expect(editorRows.length).toBeGreaterThan(0);
+            expect(appearanceRows).toHaveLength(editorRows.length);
+            expect([...editorRows, ...appearanceRows].every((row) => !row.classList.contains("fn__none"))).toBe(true);
             // 分类名命中只翻出一组：搜「Editor」时外观组仍然收起
             typeQuery(searchBox(root), "Editor");
             expect(qa('[data-ss-tab-panel="appearance"]')[0].classList.contains("fn__none")).toBe(true);
