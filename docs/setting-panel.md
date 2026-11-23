@@ -212,7 +212,7 @@
     `icon` 填思源内置 symbol 名（如 `iconGithub`），`iconSvg` 原样插入一段现成的 SVG 标记 ——
     思源「关于」页那颗捐赠按钮前面那张渐变爱心就没有对应 symbol，只能走后者。只给「去点星」「捐赠」这类要突出的入口用，
     其余动作行仍是默认的 `b3-button--outline`，靠右定宽、不带图标。
-    点击由面板统一经 `bindPendingClick` 绑定：执行期间按钮禁用，重复点击不会把同一段流程
+    点击由面板统一经 `runPendingClick` 防重：执行期间按钮禁用，重复点击不会把同一段流程
     跑两遍（「导出配置」这类先异步准备再开窗的入口，连点会一次冒出多个弹窗），
     功能自己不用写防重。
   * `onClick` 会收到一个 `FeatureActionContext`：动作行**不参与挂载**，因此没有 `FeatureHost`，
