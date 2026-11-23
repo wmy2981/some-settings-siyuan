@@ -1,4 +1,4 @@
-[English](patch.md) | [简体中文](patch.zh-CN.md)
+[English](patch.md) | [简体中文](patch.zh-CN.md) | **繁體中文** | [日本語](patch.ja.md) | [Türkçe](patch.tr.md) | [Português](patch.pt-BR.md)
 
 # 使用者層級宣告補丁：`.patch.yml`
 

@@ -25,7 +25,10 @@
   "readme": {
     "default": "README.md",
     "zh-CN": "README.zh-CN.md",
-    "zh-TW": "README.zh-TW.md"
+    "zh-TW": "README.zh-TW.md",
+    "ja": "README.ja.md",
+    "tr": "README.tr.md",
+    "pt-BR": "README.pt-BR.md"
   },
   "icon": "icon.png",
   "preview": "preview.png",
