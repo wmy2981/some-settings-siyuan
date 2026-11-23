@@ -76,6 +76,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Custom marketplace icons
 * Block marketplace packages by author
 * Hide downloaded donation buttons
+* Plugin settings drawer opens full screen on mobile
 
 ### This plugin
 

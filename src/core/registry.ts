@@ -44,6 +44,7 @@ import mobileConsoleLog from "../features/mobile-console-log";
 import mobileDocTreeTitleSize from "../features/mobile-doc-tree-title-size";
 import mobileDockBlur from "../features/mobile-dock-blur";
 import mobileLongpressMenuLabel from "../features/mobile-longpress-menu-label";
+import mobilePluginSettingsFullscreen from "../features/mobile-plugin-settings-fullscreen";
 import mobileRefPanelHeight from "../features/mobile-ref-panel-height";
 import mobileSelectNative from "../features/mobile-select-native";
 import mobileSheetAutoHeight from "../features/mobile-sheet-auto-height";
@@ -110,6 +111,7 @@ export const FEATURES: FeatureDefinition[] = [
     ossUsage,
     mobileRefPanelHeight,
     mobileSheetAutoHeight,
+    mobilePluginSettingsFullscreen,
     mobileSelectNative,
     mobileLongpressMenuLabel,
     mobileBlockIconAlways,
