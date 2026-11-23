@@ -1,4 +1,4 @@
-[简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md)
+**English** | [简体中文](README.zh-CN.md) | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Türkçe](README.tr.md) | [Português](README.pt-BR.md)
 
 # Some Settings
 
@@ -118,7 +118,7 @@ Requires Node.js 24 or newer. After cloning the repository:
 npm ci              # install dependencies
 npm run dev         # watch sources, write index.js / index.css / i18n into the repository root
 npm run build       # check the feature declarations, then build dist/ and package.zip
-npm run check       # check the feature declarations and the three language files only
+npm run check       # check the feature declarations and every language file only
 npm run typecheck   # TypeScript typecheck
 npm run lint        # ESLint
 npm run format      # format with dprint (format:check only verifies)
