@@ -59,7 +59,8 @@ const planOf = (body: any) => ({
 });
 
 const defaultRoutes = (overrides: Record<string, (body: any) => unknown> = {}) => ({
-    "/api/block/getBlock": (body: any) => ({code: 0, data: {id: body.id, rootID: body.id, type: "d", box: NOTEBOOK}}),
+    "/api/query/sql": () => ({code: 0, data: [{id: TARGET, type: "d", root_id: TARGET, box: NOTEBOOK}]}),
+    "/api/block/getBlockInfo": () => ({code: 0, data: {rootID: TARGET}}),
     "/api/filetree/planDocCreate": (body: any) => ({code: 0, data: planOf(body)}),
     ...overrides,
 });
@@ -112,8 +113,8 @@ describe("new document to a fixed target", () => {
 
         const response = await window.fetch("/api/filetree/planDocCreate", planRequest());
 
-        expect(seen.map(request => request.path)).toEqual(["/api/block/getBlock", "/api/filetree/planDocCreate"]);
-        expect(seen[0].body).toEqual({id: TARGET});
+        expect(seen.map(request => request.path)).toEqual(["/api/query/sql", "/api/filetree/planDocCreate"]);
+        expect(seen[0].body).toEqual({stmt: "select id, type, root_id, box from blocks where id = '" + TARGET + "'"});
         expect(seen[1].body).toEqual({
             notebook: NOTEBOOK,
             contextID: TARGET,
@@ -142,7 +143,7 @@ describe("new document to a fixed target", () => {
 
         await window.fetch(`${location.origin}/api/filetree/planDocCreate?app=window1`, planRequest());
 
-        expect(seen[0].body).toEqual({id: TARGET});
+        expect(seen[0].body).toEqual({stmt: "select id, type, root_id, box from blocks where id = '" + TARGET + "'"});
         expect(seen[1].body).toMatchObject({contextID: TARGET, placement: "child"});
         expect(seen[1].url).toBe(`${location.origin}/api/filetree/planDocCreate?app=window1`);
     });
@@ -155,7 +156,7 @@ describe("new document to a fixed target", () => {
             ["/api/filetree/planDocCreate", planRequest({placement: "child"})],
             ["/api/filetree/planDocCreate", planRequest({purpose: "reference", placement: "configured"})],
             ["/api/filetree/planDocCreate", planRequest({purpose: "dailyNote", placement: undefined})],
-            ["/api/block/getBlock", planRequest()],
+            ["/api/block/getBlockInfo", planRequest()],
         ];
         for (const [url, init] of cases) {
             const response = await window.fetch(url, init);
@@ -193,7 +194,7 @@ describe("new document to a fixed target", () => {
 
     it("a missing document fails with the kernel message", async () => {
         const seen = installKernel(defaultRoutes({
-            "/api/block/getBlock": () => ({code: -1, msg: "block not found"}),
+            "/api/query/sql": () => ({code: -1, msg: "block not found"}),
         }));
         mountForTest(hostOf());
 
@@ -205,9 +206,9 @@ describe("new document to a fixed target", () => {
 
     it("plain paragraph blocks and closed notebooks cannot be targets", async () => {
         const seen = installKernel(defaultRoutes({
-            "/api/block/getBlock": (body: any) => ({
+            "/api/query/sql": () => ({
                 code: 0,
-                data: {id: body.id, rootID: "x", type: "p", box: NOTEBOOK},
+                data: [{id: TARGET, type: "p", root_id: "x", box: NOTEBOOK}],
             }),
         }));
         mountForTest(hostOf());
@@ -269,9 +270,9 @@ describe("new document to a fixed target", () => {
         await window.fetch("/api/filetree/planDocCreate", planRequest());
 
         expect(seen.map(request => request.path)).toEqual([
-            "/api/block/getBlock",
+            "/api/query/sql",
             "/api/filetree/planDocCreate",
-            "/api/block/getBlock",
+            "/api/query/sql",
             "/api/filetree/planDocCreate",
         ]);
         expect(seen[3].body).toMatchObject({contextID: TARGET, placement: "child"});
@@ -288,7 +289,7 @@ describe("new document to a fixed target", () => {
         await new Promise(resolve => setTimeout(resolve, 5));
         await window.fetch("/api/filetree/planDocCreate", planRequest());
 
-        expect(seen.map(request => request.path)).toEqual(["/api/block/getBlock", "/api/filetree/planDocCreate"]);
+        expect(seen.map(request => request.path)).toEqual(["/api/query/sql", "/api/filetree/planDocCreate"]);
         expect(seen[1].body).toMatchObject({contextID: TARGET, placement: "child"});
     });
 

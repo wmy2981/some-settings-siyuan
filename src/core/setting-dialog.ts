@@ -590,7 +590,7 @@ export class SettingsPanel {
         });
         this.setting = setting;
 
-        // 对话框由宿主建：新版宿主在移动端用 MobileDialog 把它渲染成底部抽屉，
+        // 对话框由宿主建：宿主在移动端用 AdaptiveDialog（旧版叫 MobileDialog）把它渲染成底部抽屉，
         // 桌面端仍是居中弹窗；设置窗口模式下 Setting.close() 还会替我们收掉那个窗口。
         // 普通打开时 open() 是同步的，返回时正文已经就绪，因此这里一次性填好整块面板内容 ——
         // 不逐项插入、不异步挂载，入场动画开始前内容就是完整的。

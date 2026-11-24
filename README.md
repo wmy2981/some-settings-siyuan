@@ -51,6 +51,7 @@ Categories follow the native SiYuan feature each setting affects, and match the 
 * Blur behind the mobile dock bar
 * Smoother mobile bars
 * Taller mobile candidate panel
+* Mobile drawers fit their content
 * Always show Sync on mobile
 * Native SiYuan style for mobile dropdowns
 * Labels in the mobile long-press menu

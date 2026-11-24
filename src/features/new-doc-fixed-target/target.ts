@@ -41,12 +41,20 @@ interface ApiResponse<T = unknown> {
     data?: T;
 }
 
-interface BlockInfo {
+interface BlockRow {
     id?: string;
-    rootID?: string;
     type?: string;
+    root_id?: string;
     box?: string;
 }
+
+/**
+ * 按 ID 查块的类型与所属笔记本。
+ *
+ * 内核没有「一次给出块 ID、类型和所在笔记本」的单块接口（`getBlockInfo` 只回文档根，
+ * `getBlockAttrs` 不含笔记本），所以走 SQL。ID 已经过格式校验，不会带出引号。
+ */
+const blockQuery = (id: string): string => "select id, type, root_id, box from blocks where id = '" + id + "'";
 
 interface Target {
     notebook: string;
@@ -160,12 +168,12 @@ const resolveTarget = async (rawId: string, host: FeatureHost, send: typeof fetc
     if (openNotebook(id)) {
         return {notebook: id, parentID: null};
     }
-    const response = await post<BlockInfo>(send, "/api/block/getBlock", {id});
-    const block = response.data;
+    const response = await post<BlockRow[]>(send, "/api/query/sql", {stmt: blockQuery(id)});
+    const block = Array.isArray(response.data) ? response.data[0] : undefined;
     if (response.code !== 0 || !block) {
         throw new Error(response.msg || host.i18n("feature.newDocFixedTarget.invalid"));
     }
-    if (block.type !== "d" || block.id !== id || block.rootID !== id || !block.box || !openNotebook(block.box)) {
+    if (block.type !== "d" || block.id !== id || block.root_id !== id || !block.box || !openNotebook(block.box)) {
         throw new Error(host.i18n("feature.newDocFixedTarget.invalid"));
     }
     return {notebook: block.box, parentID: id};
