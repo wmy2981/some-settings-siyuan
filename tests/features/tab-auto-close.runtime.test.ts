@@ -168,25 +168,24 @@ describe("mountTabAutoClose", () => {
             overview.className = "mobile-tabs";
             const double: MobileTabsDouble = {
                 tabs,
+                state: {activeTabID: tabs[0].id, tabs},
                 overviews: 0,
-                openOverview: () => undefined,
-            };
-            double.openOverview = () => {
-                double.overviews += 1;
-                model.style.transform = "translateX(0px)";
-                modelMain.replaceChildren(overview);
-            };
-            double.state = {activeTabID: tabs[0].id, tabs};
-            double.close = async (tabID: string) => {
-                const index = tabs.findIndex((item) => item.id === tabID);
-                if (index < 0) {
-                    return;
-                }
-                const wasActive = tabs[index].id === double.state.activeTabID;
-                tabs.splice(index, 1);
-                if (!wasActive) {
-                    double.openOverview();
-                }
+                close: async (tabID: string) => {
+                    const index = tabs.findIndex((item) => item.id === tabID);
+                    if (index < 0) {
+                        return;
+                    }
+                    const wasActive = tabs[index].id === double.state.activeTabID;
+                    tabs.splice(index, 1);
+                    if (!wasActive) {
+                        double.openOverview();
+                    }
+                },
+                openOverview: () => {
+                    double.overviews += 1;
+                    model.style.transform = "translateX(0px)";
+                    modelMain.replaceChildren(overview);
+                },
             };
             window.siyuan.mobile = {tabs: double} as unknown as typeof window.siyuan.mobile;
             return double;
