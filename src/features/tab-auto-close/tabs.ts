@@ -4,7 +4,8 @@
  * 只做三件事：采集页签、按 `policy.ts` 的规则判定、调用宿主自己的关闭入口。
  * 关闭走的是原生路径——桌面端点页签上的关闭按钮，移动端调页签模型的 `close()`，
  * 因此「保存排版、更新最近关闭时间、钉住的页签不参与」这些行为全部照宿主自己的逻辑走，
- * 本功能不复制一份，也不用改动宿主 DOM 结构。
+ * 本功能不复制一份，也不用改动宿主 DOM 结构。移动端那条路会顺手弹「页签总览」抽屉，
+ * 自动收起不能弹任何界面，所以只在调用期间把那一个入口遮蔽掉，关完立刻还原。
  *
  * 判定用的「最后一次活动」有两个来源，取较晚的那个：
  * - 宿主的 `data-activetime`（页签被切到前台的时间，见 `app/src/layout/util.ts`）；
@@ -49,6 +50,8 @@ interface MobileTabsLike {
         tabs?: MobileTabLike[];
     };
     close?: (tabID: string) => Promise<void> | void;
+    /** 打开「页签总览」抽屉；宿主关掉后台页签后会自己调它。 */
+    openOverview?: () => void;
 }
 
 const minutesOf = (value: unknown): number => {
@@ -154,18 +157,34 @@ const settleDesktopCloses = async (
 };
 
 /**
- * 移动端页签模型关掉后台页签时会顺手把「页签总览」抽屉打开（宿主用来交代上下文）。
- * 自动收起不该弹东西给用户看，所以只关掉我们自己打开的那一份：原本就开着就不动它。
+ * 「页签总览」抽屉是不是正开着。
+ *
+ * 宿主把它装在共用的 `#model` 抽屉里，所以除了看抽屉有没有移出来，还要认内容：
+ * 用户正看着文档树、更多菜单这些别的抽屉时不算，那时不该动人家的内容。
  */
-const closeMobileOverviewIfOpened = (wasOpen: boolean): void => {
-    if (wasOpen) {
-        return;
-    }
+const overviewOpen = (): boolean => {
     const model = document.getElementById("model");
-    if (!model?.style.transform || !model.querySelector("#modelMain .mobile-tabs")) {
-        return;
-    }
-    document.getElementById("modelClose")?.dispatchEvent(new MouseEvent("click", {bubbles: true}));
+    return Boolean(model?.style.transform) && Boolean(model.querySelector("#modelMain .mobile-tabs"));
+};
+
+/**
+ * 把页签模型实例上的「打开总览」入口暂时收起来，返回还原函数。
+ *
+ * 宿主关掉一个后台页签后会在 `close()` 的最后一步调它，自动收起是后台行为，不该弹任何界面。
+ * 那一步没有开关可关，只能在调用期间遮蔽这个入口；入口本来在原型上，所以还原是删掉这层遮蔽，
+ * 而不是把原函数写回实例 —— 否则实例上会多出一个属性，宿主自己改动时也跟随不上。
+ */
+const hideOverviewEntry = (tabs: MobileTabsLike): () => void => {
+    const own = Object.prototype.hasOwnProperty.call(tabs, "openOverview");
+    const original = tabs.openOverview;
+    tabs.openOverview = () => undefined;
+    return () => {
+        if (own) {
+            tabs.openOverview = original;
+        } else {
+            delete tabs.openOverview;
+        }
+    };
 };
 
 const markActivity = (activity: ActivityTable, event: Event): void => {
@@ -258,22 +277,22 @@ export const mountTabAutoClose = (host: FeatureHost): FeatureInstance => {
             host.log.warn("close request had no effect", {tabs: stubborn});
         }
 
-        if (remaining.length > 0) {
-            const tabs = mobileTabs();
-            const model = document.getElementById("model");
-            const overviewWasOpen = Boolean(model?.style.transform);
-            for (const tab of remaining) {
-                if (!tabs?.close) {
-                    break;
+        const tabs = remaining.length > 0 ? mobileTabs() : undefined;
+        if (tabs?.close) {
+            // 用户自己开着总览时不遮蔽：界面本来就是可见的，宿主重绘列表正好把收掉的页签摘掉
+            const restore = overviewOpen() ? undefined : hideOverviewEntry(tabs);
+            try {
+                for (const tab of remaining) {
+                    try {
+                        await tabs.close(tab.id);
+                        closed.push(tab);
+                    } catch (error) {
+                        host.log.warn("cannot close an idle mobile tab", {id: tab.id, error});
+                    }
                 }
-                try {
-                    await tabs.close(tab.id);
-                    closed.push(tab);
-                } catch (error) {
-                    host.log.warn("cannot close an idle mobile tab", {id: tab.id, error});
-                }
+            } finally {
+                restore?.();
             }
-            closeMobileOverviewIfOpened(overviewWasOpen);
         }
 
         if (closed.length === 0) {
