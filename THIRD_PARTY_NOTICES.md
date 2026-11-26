@@ -33,7 +33,7 @@ compiled JavaScript authored by this repository; none of their own runtime code 
 | `vite`                           | 8.x     | MIT        |
 | `typescript`                     | 6.x     | Apache-2.0 |
 | `eslint`                         | 10.x    | MIT        |
-| `dprint`                         | 0.57.x  | MIT        |
+| `dprint`                         | 0.65.x  | MIT        |
 | `vitest` / `@vitest/coverage-v8` | 5.x     | MIT        |
 | `jsdom`                          | 31.x    | MIT        |
 | `sharp`                          | 0.35.x  | Apache-2.0 |
