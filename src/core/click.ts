@@ -31,6 +31,46 @@ const copiesOf = (button: HTMLButtonElement, scope: string): HTMLButtonElement[]
 };
 
 /**
+ * 执行一次带防重的点击。事件绑定与守卫分开，面板可以把所有动作按钮委托给一个监听器。
+ */
+export const runPendingClick = (button: HTMLButtonElement, scope: string, run: () => unknown): void => {
+    // disabled 的按钮本来就不会派发 click；这里再判一次，挡住脚本 dispatchEvent 绕过来的点击
+    if (button.disabled || running.has(scope)) {
+        return;
+    }
+    // 同一动作的每一份都禁掉：只禁被点的那一颗，切个页签就能再点一次
+    const copies = copiesOf(button, scope);
+    const disabledBefore = copies.map((copy) => copy.disabled);
+    running.add(scope);
+    const release = (): void => {
+        running.delete(scope);
+        copies.forEach((copy, index) => {
+            copy.disabled = disabledBefore[index];
+        });
+    };
+    copies.forEach((copy) => {
+        copy.disabled = true;
+    });
+    let result: unknown;
+    try {
+        result = run();
+    } catch (error) {
+        release();
+        reportError(scope, error);
+        return;
+    }
+    if (result && typeof (result as PromiseLike<unknown>).then === "function") {
+        // 失败由调用方（通常已经包了 guardAsync）上报过，这里只负责把按钮放回去
+        void Promise.resolve(result).then(release, (error: unknown) => {
+            release();
+            reportError(scope, error);
+        });
+        return;
+    }
+    release();
+};
+
+/**
  * 绑定一次「执行期间不可再点」的点击。
  *
  * @param button 被点击的按钮，执行期间由这里负责禁用与恢复
@@ -38,40 +78,5 @@ const copiesOf = (button: HTMLButtonElement, scope: string): HTMLButtonElement[]
  * @param run 点击要做的事；返回 Promise 时一直禁用到它落定
  */
 export const bindPendingClick = (button: HTMLButtonElement, scope: string, run: () => unknown): void => {
-    button.addEventListener("click", () => {
-        // disabled 的按钮本来就不会派发 click；这里再判一次，挡住脚本 dispatchEvent 绕过来的点击
-        if (button.disabled || running.has(scope)) {
-            return;
-        }
-        // 同一动作的每一份都禁掉：只禁被点的那一颗，切个页签就能再点一次
-        const copies = copiesOf(button, scope);
-        const disabledBefore = copies.map((copy) => copy.disabled);
-        running.add(scope);
-        const release = (): void => {
-            running.delete(scope);
-            copies.forEach((copy, index) => {
-                copy.disabled = disabledBefore[index];
-            });
-        };
-        copies.forEach((copy) => {
-            copy.disabled = true;
-        });
-        let result: unknown;
-        try {
-            result = run();
-        } catch (error) {
-            release();
-            reportError(scope, error);
-            return;
-        }
-        if (result && typeof (result as PromiseLike<unknown>).then === "function") {
-            // 失败由调用方（通常已经包了 guardAsync）上报过，这里只负责把按钮放回去
-            void Promise.resolve(result).then(release, (error: unknown) => {
-                release();
-                reportError(scope, error);
-            });
-            return;
-        }
-        release();
-    });
+    button.addEventListener("click", () => runPendingClick(button, scope, run));
 };

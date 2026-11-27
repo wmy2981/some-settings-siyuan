@@ -1,5 +1,5 @@
 /**
- * 设置面板基准：打开一次面板、每敲一个字符过滤一次。
+ * 设置面板基准：移动端打开一次面板、每敲一个字符过滤一次。
  *
  * 用真实的注册表与真实的全部语言文件，行数、文案长度都与线上一致；
  * 时间花在字符串拼接、innerHTML 解析与逐行显隐上，正是用户能感知的那一段。
@@ -11,7 +11,10 @@ import {
 } from "vitest";
 import {ConfigStore} from "../../src/core/config";
 import {setDetailedLogging} from "../../src/core/log";
-import {activeFeatures} from "../../src/core/registry";
+import {
+    activeFeatures,
+    effectiveFeatures,
+} from "../../src/core/registry";
 import {setSearchEnabled} from "../../src/core/search";
 import {SettingsPanel} from "../../src/core/setting-dialog";
 import enLocale from "../../src/i18n/en.json";
@@ -52,13 +55,14 @@ class BenchHost {
 }
 
 const openPanel = async (): Promise<{panel: SettingsPanel; host: BenchHost; input: HTMLInputElement;}> => {
+    mockState.frontend = "mobile";
     const host = new BenchHost();
     const store = new ConfigStore(host.asPlugin());
     const features = activeFeatures();
     for (const definition of features) {
         await store.register(definition);
     }
-    const panel = new SettingsPanel({plugin: host.asPlugin(), store, features});
+    const panel = new SettingsPanel({plugin: host.asPlugin(), store, features, allFeatures: effectiveFeatures()});
     panel.show();
     const root = mockState.settings[mockState.settings.length - 1]?.dialog?.element as HTMLElement | undefined;
     const input = root?.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement | undefined;
@@ -83,7 +87,7 @@ describe("settings panel", () => {
         // 打开 / 关闭一次面板：包含拼行、innerHTML、绑定控件、恢复页签
         const opened = await openPanel();
         rows.push(
-            measure("panel.show() + close()", () => {
+            measure("mobile panel.show() + close()", () => {
                 opened.panel.show();
                 opened.panel.close();
             }, {iterations: 12, rounds: 7, warmup: 3}),

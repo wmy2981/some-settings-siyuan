@@ -21,7 +21,7 @@
 import {fetchPost} from "siyuan";
 import type {
     IMenu,
-    Menu,
+    IPopupMenu,
 } from "siyuan";
 import type {
     FeatureHost,
@@ -61,7 +61,7 @@ const labelOf = (host: FeatureHost, key: string, value?: string): string =>
     `${escapeHtml(host.i18n(key))}: ${escapeHtml(value ?? host.i18n("feature.assetInfoMenu.loading"))}`;
 
 /** 当前正在构建的那个菜单；不在菜单构建过程中时返回 undefined。 */
-const currentMenu = (): Menu | undefined => window.siyuan?.menus?.menu;
+const currentMenu = (): IPopupMenu | undefined => window.siyuan?.menus?.menu;
 
 const paint = (host: FeatureHost, row: Row): void => {
     if (!row.element) {

@@ -6,6 +6,7 @@
  *
  * 页面是「按宿主形状搭的假 DOM」，只求喂给采集逻辑：分屏里的 `data-type="wnd"`、
  * 页签栏、页签面板，以及点一下就消失的关闭按钮（真机上是过渡动画结束后移除）。
+ * 移动端那几例换成页签模型的替身，钉住「静默收起」：宿主关后台页签会顺手弹页签总览，这里不能弹。
  */
 import {
     afterEach,
@@ -62,6 +63,16 @@ const remainingTabs = (): string[] =>
 
 const closedLogs = (harness: HostHarness): string[] =>
     harness.records.logs.map((args) => String(args[0])).filter((text) => text.startsWith("closed "));
+
+/** 移动端页签模型的测试替身：关掉后台页签的最后一步会打开「页签总览」抽屉。 */
+interface MobileTabsDouble {
+    tabs: {id: string; current: {title: string; rootID: string;}; activeAt: number;}[];
+    state: {activeTabID?: string; tabs: MobileTabsDouble["tabs"];};
+    /** 「页签总览」抽屉被打开的次数。 */
+    overviews: number;
+    close: (tabID: string) => Promise<void>;
+    openOverview: () => void;
+}
 
 describe("mountTabAutoClose", () => {
     let harness: HostHarness | undefined;
@@ -132,5 +143,100 @@ describe("mountTabAutoClose", () => {
 
         expect(remainingTabs()).toEqual(["active"]);
         expect(closedLogs(host)).toEqual(["closed 1 idle tab(s)"]);
+    });
+
+    describe("mobile", () => {
+        /**
+         * 搭一份移动端页签模型，形状照宿主的 `MobileTabs`：
+         * 关掉后台页签的最后一步会打开「页签总览」抽屉（摆进共用的 `#model`）。
+         */
+        const renderMobile = (titles: string[]): MobileTabsDouble => {
+            const model = document.createElement("div");
+            model.id = "model";
+            const modelMain = document.createElement("div");
+            modelMain.id = "modelMain";
+            const modelClose = document.createElement("button");
+            modelClose.id = "modelClose";
+            model.append(modelMain, modelClose);
+            document.body.replaceChildren(model);
+            const tabs = titles.map((title, index) => ({
+                id: `tab-${index}`,
+                current: {title, rootID: `root-${index}`},
+                activeAt: BASE,
+            }));
+            const overview = document.createElement("div");
+            overview.className = "mobile-tabs";
+            const double: MobileTabsDouble = {
+                tabs,
+                state: {activeTabID: tabs[0].id, tabs},
+                overviews: 0,
+                close: async (tabID: string) => {
+                    const index = tabs.findIndex((item) => item.id === tabID);
+                    if (index < 0) {
+                        return;
+                    }
+                    const wasActive = tabs[index].id === double.state.activeTabID;
+                    tabs.splice(index, 1);
+                    if (!wasActive) {
+                        double.openOverview();
+                    }
+                },
+                openOverview: () => {
+                    double.overviews += 1;
+                    model.style.transform = "translateX(0px)";
+                    modelMain.replaceChildren(overview);
+                },
+            };
+            window.siyuan.mobile = {tabs: double} as unknown as typeof window.siyuan.mobile;
+            return double;
+        };
+
+        afterEach(() => {
+            Reflect.deleteProperty(window.siyuan, "mobile");
+        });
+
+        it("closes idle mobile tabs without opening the tab overview", async () => {
+            const mobile = renderMobile(["active", "old", "older"]);
+            const openOverview = mobile.openOverview;
+            const host = mount();
+
+            await vi.advanceTimersByTimeAsync(6 * MINUTE);
+
+            expect(mobile.tabs.map((tab) => tab.current.title)).toEqual(["active"]);
+            expect(mobile.overviews).toBe(0);
+            expect(document.getElementById("model")?.style.transform).toBe("");
+            expect(closedLogs(host)).toEqual(["closed 2 idle tab(s)"]);
+            // 遮蔽只活在关闭那一段里，关完要把宿主自己的入口还回去
+            expect(mobile.openOverview).toBe(openOverview);
+        });
+
+        it("refreshes the overview when the user is already looking at it", async () => {
+            const mobile = renderMobile(["active", "old"]);
+            mobile.openOverview();
+            mobile.overviews = 0;
+            mount();
+
+            await vi.advanceTimersByTimeAsync(6 * MINUTE);
+
+            expect(mobile.tabs.map((tab) => tab.current.title)).toEqual(["active"]);
+            // 界面本来就开着，宿主重绘列表正好把收掉的页签摘掉
+            expect(mobile.overviews).toBe(1);
+        });
+
+        it("leaves another open drawer alone", async () => {
+            const mobile = renderMobile(["active", "old"]);
+            document.getElementById("model")!.style.transform = "translateX(0px)";
+            const drawer = document.createElement("div");
+            drawer.className = "mobile-tree";
+            document.getElementById("modelMain")!.replaceChildren(drawer);
+            mount();
+
+            await vi.advanceTimersByTimeAsync(6 * MINUTE);
+
+            expect(mobile.tabs.map((tab) => tab.current.title)).toEqual(["active"]);
+            // 用户在看别的抽屉：不遮蔽就会把文档树换成页签列表
+            expect(mobile.overviews).toBe(0);
+            expect(document.querySelector("#modelMain .mobile-tree")).not.toBeNull();
+        });
     });
 });

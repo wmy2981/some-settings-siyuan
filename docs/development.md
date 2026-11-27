@@ -154,7 +154,7 @@ API 签名、样式类名、文件布局，以及每个功能**为什么**这么
   下拉控件上就再也划不动。原生弹层属于「点击」的默认行为，在 `touchend` 里取消一次就够
   （`pointerdown` / `mousedown` 上取消不影响触摸滚动，可以留着挡鼠标那条路径）。
 * **面板里的按钮点一次只能跑一次流程**（连点会冒出好几个弹窗、同一批配置导入两遍）。
-  用 `core/click.ts` 的 `bindPendingClick` 绑定，见 [setting-panel.md](./setting-panel.md)。
+  用 `core/click.ts` 的 `runPendingClick` 防重，见 [setting-panel.md](./setting-panel.md)。
 
 ## 已知盲区
 

@@ -1,4 +1,4 @@
-[简体中文](patch.zh-CN.md) | [繁體中文](patch.zh-TW.md)
+**English** | [简体中文](patch.zh-CN.md) | [繁體中文](patch.zh-TW.md) | [日本語](patch.ja.md) | [Türkçe](patch.tr.md) | [Português](patch.pt-BR.md)
 
 # User-level declaration patch: `.patch.yml`
 

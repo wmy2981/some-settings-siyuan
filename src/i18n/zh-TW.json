@@ -272,6 +272,8 @@
   "feature.mobileRefPanelHeight.maxHeightTip": "佔視窗高度的比例；實際高度還受面板到螢幕底部空間的限制",
   "feature.mobileSheetAutoHeight.title": "行動端抽屜高度按內容自適應",
   "feature.mobileSheetAutoHeight.description": "行動端底部抽屜不再被撐到半屏或全螢幕，短內容按自身高度顯示，回到 3.8.11 及以前的上下限規則。",
+  "feature.mobilePluginSettingsFullscreen.title": "行動端外掛設定抽屜預設全螢幕",
+  "feature.mobilePluginSettingsFullscreen.description": "行動端開啟外掛設定抽屜時直接撐滿可用高度，不再停在半屏；向下拖曳仍可關閉，也不必再拖一下把手才能展開。",
   "feature.mobileSelectNative.title": "行動端下拉選單使用思源原生樣式",
   "feature.mobileSelectNative.description": "行動端點開下拉選擇器時彈出思源原生選單，選取後照常觸發變更。",
   "feature.mobileLongpressMenuLabel.title": "行動端長按選單補上文字",

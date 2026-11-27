@@ -272,6 +272,8 @@
   "feature.mobileRefPanelHeight.maxHeightTip": "Share of the viewport height; the real height is also capped by the space between the panel and the bottom of the screen",
   "feature.mobileSheetAutoHeight.title": "Drawer height follows its content",
   "feature.mobileSheetAutoHeight.description": "Keeps short mobile bottom drawers at their own height instead of filling half or the whole screen, as in 3.8.11 and earlier.",
+  "feature.mobilePluginSettingsFullscreen.title": "Plugin settings drawer opens full screen on mobile",
+  "feature.mobilePluginSettingsFullscreen.description": "Opening a plugin's settings drawer on mobile fills the available height right away instead of stopping at half a screen; dragging it down still closes it.",
   "feature.mobileSelectNative.title": "Native SiYuan style for mobile dropdowns",
   "feature.mobileSelectNative.description": "Opening a dropdown on mobile shows SiYuan's own menu and still fires change on selection.",
   "feature.mobileLongpressMenuLabel.title": "Labels in the mobile long-press menu",

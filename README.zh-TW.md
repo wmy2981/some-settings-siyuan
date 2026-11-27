@@ -1,4 +1,4 @@
-[English](README.md) | [简体中文](README.zh-CN.md)
+[English](README.md) | [简体中文](README.zh-CN.md) | **繁體中文** | [日本語](README.ja.md) | [Türkçe](README.tr.md) | [Português](README.pt-BR.md)
 
 # 一些設定
 
@@ -76,6 +76,7 @@
 * 市集套件自訂圖示
 * 依作者封鎖市集套件
 * 隱藏市集已下載頁的捐贈按鈕
+* 行動端外掛設定抽屜預設全螢幕
 
 ### 外掛本身
 
@@ -115,7 +116,7 @@
 npm ci              # 安裝依賴
 npm run dev         # 監看原始碼，把 index.js / index.css / i18n 直接寫到倉庫根目錄
 npm run build       # 校驗功能宣告後打包出 dist/ 與 package.zip
-npm run check       # 只校驗功能宣告與三份語言檔
+npm run check       # 只校驗功能宣告與全部語言檔
 npm run typecheck   # TypeScript 型別檢查
 npm run lint        # ESLint
 npm run format      # dprint 格式化（format:check 只檢查不寫入）

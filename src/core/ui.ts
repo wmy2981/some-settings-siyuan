@@ -210,8 +210,8 @@ export const searchGroupHtml = (category: string, label: string): string =>
  * 它不是设置行（没有 `config-item`），所以不参与「最后一行」标记。
  * 打开「显示不可用的设置」后由面板切 `fn__none` 收起，换成下面那些灰显的不可用条目。
  */
-export const categoryEmptyHtml = (message: string): string =>
-    `<div class="${PANEL_CLASS}__category-empty">${escapeHtml(message)}</div>`;
+export const categoryEmptyHtml = (message: string, hidden = false): string =>
+    `<div class="${PANEL_CLASS}__category-empty${hidden ? " fn__none" : ""}">${escapeHtml(message)}</div>`;
 
 /**
  * 不可用条目的原因行：这个功能的最后一行，一条原因一行。

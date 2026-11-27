@@ -1,4 +1,4 @@
-[English](README.md) | [繁體中文](README.zh-TW.md)
+[English](README.md) | **简体中文** | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md) | [Türkçe](README.tr.md) | [Português](README.pt-BR.md)
 
 # 一些设置
 
@@ -76,6 +76,7 @@
 * 集市包自定义图标
 * 按作者屏蔽集市包
 * 隐藏集市已下载页捐赠按钮
+* 移动端插件设置抽屉默认全屏
 
 ### 插件自身
 
@@ -115,7 +116,7 @@
 npm ci              # 安装依赖
 npm run dev         # 监听源码，把 index.js / index.css / i18n 直接写到仓库根目录
 npm run build       # 校验功能声明后打包出 dist/ 与 package.zip
-npm run check       # 只校验功能声明与三份语言文件
+npm run check       # 只校验功能声明与全部语言文件
 npm run typecheck   # TypeScript 类型检查
 npm run lint        # ESLint
 npm run format      # dprint 格式化（format:check 只检查不写盘）

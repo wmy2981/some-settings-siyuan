@@ -54,7 +54,7 @@ import {
     SHOW_UNAVAILABLE_FEATURE_ID,
     unavailableReasons,
 } from "./availability";
-import {bindPendingClick} from "./click";
+import {runPendingClick} from "./click";
 import type {ConfigStore} from "./config";
 import {
     defaultConfig,
@@ -315,12 +315,14 @@ const tagRows = (rowsHtml: string, featureId: string): string =>
  * 所以说明块内部的段落不会被一起标记。属性必须加在整个 `class="…"` 之后，
  * 加在引号里会把类名拼坏。
  */
-const markUnavailableRows = (rowsHtml: string): string =>
+const markUnavailableRows = (rowsHtml: string, hidden = false): string =>
     rowsHtml.replace(
         /class="([^"]*)"/g,
         (whole: string, classes: string) =>
             isRowClass(classes) ?
-                `${whole.replace(classes, `${UNAVAILABLE_CLASS} ${classes}`)} ${UNAVAILABLE_ATTR}="1"` :
+                `${
+                    whole.replace(classes, `${hidden ? "fn__none " : ""}${UNAVAILABLE_CLASS} ${classes}`)
+                } ${UNAVAILABLE_ATTR}="1"` :
                 whole,
     );
 
@@ -882,6 +884,8 @@ export class SettingsPanel {
         }
         const readonly = isReadonly();
         const mobile = isMobileFrontend();
+        const showUnavailable = isShowUnavailable();
+        panel.classList.toggle(SHOW_UNAVAILABLE_CLASS, showUnavailable);
         const tabs: PanelTab[] = [];
         const panes: string[] = [];
         this.currentTab = undefined;
@@ -903,13 +907,17 @@ export class SettingsPanel {
                 );
             });
             // 这个分类一个可用的功能都没有：平时只显示这句提示；打开「显示不可用的设置」后
-            // 由下面那些灰显条目替代（收起 / 露出由 applyUnavailableVisibility() 切 fn__none）。
+            // 由下面那些灰显条目替代（之后翻开关由 applyUnavailableVisibility() 切 fn__none）。
             if (features.length === 0) {
-                rows.push(categoryEmptyHtml(this.t("panel.categoryEmpty")));
+                rows.push(categoryEmptyHtml(this.t("panel.categoryEmpty"), showUnavailable));
             }
-            unavailable.forEach((feature) => {
-                rows.push(markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id)));
-            });
+            const unavailableRows = unavailable.map((feature) =>
+                markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id), !showUnavailable)
+            ).join("");
+            // 首次拼行就直接落下正确的显隐与最后一行标记，不再把整块 DOM 扫描、改写第二遍。
+            const body = showUnavailable ?
+                markLastRow(rows.join("") + unavailableRows) :
+                markLastRow(rows.join("")) + unavailableRows;
             // 页签只在这里出现一次：顺序、文案与图标都由这一处决定，默认打开第一个有内容的页签
             tabs.push({
                 id: category,
@@ -919,7 +927,7 @@ export class SettingsPanel {
             // 分类名那一行是搜索结果的分组标题：平时收起，搜索时显示（见 searchGroupHtml）。
             panes.push(tabPaneHtml(
                 category,
-                searchGroupHtml(category, this.t(categoryKey(category), category)) + markLastRow(rows.join("")),
+                searchGroupHtml(category, this.t(categoryKey(category), category)) + body,
                 tabs.length === 1,
             ));
             this.currentTab ??= category;
@@ -929,13 +937,13 @@ export class SettingsPanel {
         // 不用在进 / 出搜索时搬运 DOM。
         const unavailableAll = this.unavailableFeaturesAll();
         if (unavailableAll.length > 0) {
+            const rows = unavailableAll.map((feature) =>
+                markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id), !showUnavailable)
+            ).join("");
             panes.push(tabPaneHtml(
                 UNAVAILABLE_PANE_ID,
-                searchGroupHtml(UNAVAILABLE_PANE_ID, this.t("panel.unavailable.group")) + markLastRow(
-                    unavailableAll.map((feature) =>
-                        markUnavailableRows(tagRows(this.unavailableBlockHtml(feature), feature.id))
-                    ).join(""),
-                ),
+                searchGroupHtml(UNAVAILABLE_PANE_ID, this.t("panel.unavailable.group")) +
+                    (showUnavailable ? markLastRow(rows) : rows),
                 false,
             ));
         }
@@ -960,8 +968,6 @@ export class SettingsPanel {
         this.bindSearch(panel);
         // 搜索框的显隐跟着「设置面板搜索」这个功能走：关掉时整块收起，不占位。
         this.applySearchAvailability();
-        // 不可用条目默认收起，只有「显示不可用的设置」打开时才露出来。
-        this.applyUnavailableVisibility();
         log.info(`panel rendered with ${tabs.length} tab(s)`, tabs.map((tab) => tab.id));
     }
 
@@ -1386,7 +1392,7 @@ export class SettingsPanel {
                 );
             case "note":
                 // 只读说明块：没有取值，只把 i18n 文案里的 {version} / {repo} 之类的占位符填上。
-                // 它底部的按钮与动作行同一套语义：只读 / 发布模式下禁用，点击统一走 bindPendingClick
+                // 它底部的按钮与动作行同一套语义：只读 / 发布模式下禁用，点击统一走 runPendingClick
                 return noteRowHtml(
                     bindKey(feature.id, field.key),
                     noteBodyHtml(this.t(field.text), field.values, field.labels),
@@ -1468,48 +1474,50 @@ export class SettingsPanel {
 
     // ------------------------------------------------------------ 交互
 
+    /**
+     * 控件事件统一委托给面板根节点：打开时只绑三种事件，不为每个控件各建一组闭包与监听器。
+     * 面板整块销毁时这些监听器也随 DOM 一起释放，行为与逐控件绑定一致。
+     */
     private bindControls(scope: HTMLElement): void {
-        // 开关与下拉：改一次写一次，没有草稿可存。
-        scope.querySelectorAll<HTMLInputElement>("[data-ss-switch]").forEach((input) => {
-            input.addEventListener(
-                "change",
-                () => this.commitControl(input.dataset.ssSwitch as string, input.checked),
-            );
+        scope.addEventListener("input", (event) => {
+            const input = event.target as HTMLInputElement | HTMLTextAreaElement | null;
+            const encoded = input?.dataset.ssNumber ?? input?.dataset.ssText ?? input?.dataset.ssTextarea;
+            if (encoded) {
+                this.typeInput(encoded, input.value);
+            }
         });
-        scope.querySelectorAll<HTMLSelectElement>("[data-ss-select]").forEach((select) => {
-            select.addEventListener(
-                "change",
-                () => this.commitControl(select.dataset.ssSelect as string, select.value),
-            );
+        scope.addEventListener("change", (event) => {
+            const control = event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | null;
+            const switchKey = control?.dataset.ssSwitch;
+            if (switchKey) {
+                this.commitControl(switchKey, (control as HTMLInputElement).checked);
+                return;
+            }
+            const selectKey = control?.dataset.ssSelect;
+            if (selectKey) {
+                this.commitControl(selectKey, control.value);
+                return;
+            }
+            const inputKey = control?.dataset.ssNumber ?? control?.dataset.ssText ?? control?.dataset.ssTextarea;
+            if (inputKey) {
+                this.commitInput(inputKey, control.value);
+            }
         });
-        // 文本 / 数字框：打字过程按静默期合并写盘（每敲一个字都写一次文件没有意义），
-        // 失焦 / 回车触发的 change 立即写。
-        scope.querySelectorAll<HTMLInputElement>("[data-ss-number]").forEach((input) => {
-            input.addEventListener("input", () => this.typeInput(input.dataset.ssNumber as string, input.value));
-            input.addEventListener("change", () => this.commitInput(input.dataset.ssNumber as string, input.value));
-        });
-        scope.querySelectorAll<HTMLInputElement>("[data-ss-text]").forEach((input) => {
-            input.addEventListener("input", () => this.typeInput(input.dataset.ssText as string, input.value));
-            input.addEventListener("change", () => this.commitInput(input.dataset.ssText as string, input.value));
-        });
-        // 多行文本与单行文本同一套静默期：打字过程合并写盘，失焦 / 回车立即写。
-        scope.querySelectorAll<HTMLTextAreaElement>("[data-ss-textarea]").forEach((area) => {
-            area.addEventListener("input", () => this.typeInput(area.dataset.ssTextarea as string, area.value));
-            area.addEventListener("change", () => this.commitInput(area.dataset.ssTextarea as string, area.value));
-        });
-        // 说明块里的链接：不让 <a> 走默认跳转 —— 移动端 WebView 可能把整个前端导航走。
-        scope.querySelectorAll<HTMLAnchorElement>(`.${PANEL_CLASS}__note a[href]`).forEach((anchor) => {
-            anchor.addEventListener("click", (event) => {
+        scope.addEventListener("click", (event) => {
+            // 不用 instanceof Element：独立设置窗口里的元素属于另一份 window。
+            const target = event.target as Element | null;
+            const anchor = target?.closest?.(`.${PANEL_CLASS}__note a[href]`) as HTMLAnchorElement | null | undefined;
+            if (anchor && scope.contains(anchor)) {
                 event.preventDefault();
                 openExternalLink(anchor.href, event);
-            });
-        });
-        // 动作行：点击立刻执行，不进草稿，因此不受「取消 / 保存」影响。
-        // 一律走 bindPendingClick：动作行常常是「先异步准备，再开窗」（导出配置就是这样），
-        // 执行期间按钮必须禁掉，否则连点几下会一次冒出好几个弹窗。
-        scope.querySelectorAll<HTMLButtonElement>("[data-ss-button]").forEach((button) => {
+                return;
+            }
+            const button = target?.closest?.("[data-ss-button]") as HTMLButtonElement | null | undefined;
+            if (!button || !scope.contains(button)) {
+                return;
+            }
             const encoded = button.dataset.ssButton as string;
-            bindPendingClick(button, encoded, () => {
+            runPendingClick(button, encoded, () => {
                 const [featureId, key] = parseBindKey(encoded);
                 const action = this.actionOf(featureId, key);
                 if (!action) {
