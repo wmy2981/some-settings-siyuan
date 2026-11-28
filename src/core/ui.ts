@@ -230,6 +230,20 @@ export const unavailableReasonRowHtml = (reasons: string[]): string =>
 </div>`;
 
 /**
+ * 外部插件接管 / 修改的黄色提示行：作为该功能的最后一行独立子行，一条来源一行。
+ *
+ * 形制与 `unavailableReasonRowHtml` 一致（带 `CHILD_CLASS`，保留缩进与树形引导线 └），
+ * 文字颜色取思源主题的警告色（深浅主题自动适配）。
+ */
+export const externalNoticeRowHtml = (lines: string[]): string =>
+    `<div class="b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__external-notice" data-ss-external-notice="1">
+    <div class="${PANEL_CLASS}__external-notice-body">${
+        lines.map((line) => `<div class="${PANEL_CLASS}__external-notice-text">${escapeHtml(line)}</div>`)
+            .join("")
+    }</div>
+</div>`;
+
+/**
  * 页签内容区：顶部一块搜索框（移动端传空串，搜索框在面板标题下方），下面是一叠页签。
  *
  * 搜索框是滚动容器**外面**的一行：桌面端每一页自己滚、搜索时由 `.some-settings-panel__panes`
@@ -884,6 +898,33 @@ export const PANEL_CSS = `
 /* 多条原因各占一行：行距比正文紧一点，仍看得出是同一段说明 */
 .${PANEL_CLASS} .${PANEL_CLASS}__unavailable-reason-text + .${PANEL_CLASS}__unavailable-reason-text {
     margin-top: 2px;
+}
+/* 外部插件接管 / 修改提示 -------------------------------------------------
+   作为该功能的最后一行独立子行，缩进与层级引导线照旧；文案用思源主题的警告色，
+   深浅主题下都保持清晰可读。 */
+.${PANEL_CLASS} .${PANEL_CLASS}__external-notice-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__external-notice-text {
+    color: var(--b3-card-warning-color, #d99000);
+    font-size: .85em;
+    line-height: 1.6;
+}
+.${PANEL_CLASS} .${PANEL_CLASS}__external-notice-text + .${PANEL_CLASS}__external-notice-text {
+    margin-top: 2px;
+}
+/* 被外部插件接管的功能：标题、说明与黄色提示照常清晰显示，仅操作控件变灰不可编辑。
+   包住开关的 <label> 不再显示可点击手型，避免误导用户。 */
+.${PANEL_CLASS} label.config-item.${PANEL_CLASS}__taken-over {
+    cursor: default;
+}
+.${PANEL_CLASS} .config-item.${PANEL_CLASS}__taken-over .b3-switch:disabled,
+.${PANEL_CLASS} .config-item.${PANEL_CLASS}__taken-over .b3-select:disabled,
+.${PANEL_CLASS} .config-item.${PANEL_CLASS}__taken-over .b3-text-field:disabled,
+.${PANEL_CLASS} .config-item.${PANEL_CLASS}__taken-over .b3-button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
 }
 /* 分类里一个可用的功能都没有时的提示；打开「显示不可用的设置」后由面板换成灰显条目 */
 .${PANEL_CLASS} .${PANEL_CLASS}__category-empty {

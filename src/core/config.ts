@@ -32,6 +32,9 @@ import type {
 /** 配置文件名前缀：一个功能一个文件。 */
 const FILE_PREFIX = "feature-";
 
+/** 本插件内部维护的非功能配置文件：列目录时按正常文件静默跳过，不打 WARN。 */
+const INTERNAL_STORAGE_FILES = new Set(["external-notices"]);
+
 /** 一个功能对应一个存储文件名。只用小写字母、数字与连字符，天然安全。 */
 export const storageNameOf = (id: string): string => `${FILE_PREFIX}${id}`;
 
@@ -334,6 +337,10 @@ export class ConfigStore {
     private async storedFiles(): Promise<{id: string; storageName: string;}[]> {
         const files: {id: string; storageName: string;}[] = [];
         for (const storageName of await listStoredFiles(this.plugin)) {
+            if (INTERNAL_STORAGE_FILES.has(storageName)) {
+                log.info(`${storageName} is internal plugin state, skipping it`);
+                continue;
+            }
             const id = idOfStoredFile(storageName);
             if (typeof id === "undefined") {
                 log.warn(`${storageName} is not a feature configuration file, leaving it alone`);

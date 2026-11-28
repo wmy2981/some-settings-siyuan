@@ -17,10 +17,16 @@ import {
 } from "vitest";
 import {setShowUnavailable} from "../../src/core/availability";
 import {ConfigStore} from "../../src/core/config";
+import {
+    EXTERNAL_NOTICES_STORAGE,
+    ExternalControlManager,
+} from "../../src/core/external-api";
 import {setDetailedLogging} from "../../src/core/log";
 import {
     activeFeatures,
     FEATURES,
+    resetEffectiveFeatures,
+    setEffectiveFeatures,
 } from "../../src/core/registry";
 import {
     SEARCH_FEATURE_ID,
@@ -88,6 +94,14 @@ class FakeHost {
         "panel.search.clear": "Clear search",
         "panel.search.empty": "No results",
         "panel.readonlyTip": "Read-only workspace",
+        "panel.external.takeoverEnabled": 'Managed by plugin "{plugin}" (enabled)',
+        "panel.external.takeoverDisabled": 'Managed by plugin "{plugin}" (disabled)',
+        "panel.external.takeoverValue": 'Managed by plugin "{plugin}" ({value})',
+        "panel.external.changedEnabled": 'Enabled by plugin "{plugin}". Edit this setting to dismiss this notice',
+        "panel.external.changedDisabled": 'Disabled by plugin "{plugin}". Edit this setting to dismiss this notice',
+        "panel.external.changedValue":
+            'Set to "{value}" by plugin "{plugin}". Edit this setting to dismiss this notice',
+        "panel.external.withReason": "{message}: {reason}",
         "action.done": "Action done",
     };
 
@@ -2662,5 +2676,202 @@ describe("unavailable settings", () => {
             expect(pane?.querySelector<HTMLInputElement>('[data-ss-number="beta::size"]')?.value).toBe("12")
         );
         expect(pane?.querySelector<HTMLInputElement>('[data-ss-switch="beta::enabled"]')?.checked).toBe(false);
+    });
+});
+
+describe("external control & notices", () => {
+    afterEach(() => {
+        resetEffectiveFeatures();
+    });
+
+    const openWithExternal = async (
+        definitions: FeatureDefinition[] = [featureOf("alpha")],
+        stored: Record<string, unknown> = {},
+        existingHost?: FakeHost,
+    ) => {
+        const host = existingHost ?? new FakeHost();
+        Object.entries(stored).forEach(([id, value]) => host.files.set(`feature-${id}`, value));
+        setEffectiveFeatures(definitions);
+        const plugin = host.asPlugin();
+        const store = new ConfigStore(plugin);
+        for (const definition of definitions) {
+            await store.register(definition);
+        }
+        const externalControl = new ExternalControlManager(plugin, store, Promise.resolve());
+        await externalControl.loadNotices();
+        const api = externalControl.createPublicApi();
+        const showPanel = () => {
+            const panel = new SettingsPanel({plugin, store, features: definitions, externalControl});
+            panel.show();
+            const root = mockState.settings[mockState.settings.length - 1]?.dialog?.element as HTMLElement;
+            return {
+                panel,
+                root,
+                q: <T extends HTMLElement>(selector: string) => root.querySelector(selector) as T | null,
+                qa: (selector: string) => [...root.querySelectorAll<HTMLElement>(selector)],
+            };
+        };
+        return {host, plugin, store, externalControl, api, showPanel};
+    };
+
+    it("locks controls while keeping text clear and renders yellow notice as the last child row on takeover", async () => {
+        const buttonClick = vi.fn();
+        const feature = featureOf("alpha", {settings: alphaSettings(buttonClick)});
+        const {api, showPanel} = await openWithExternal([feature], {alpha: {enabled: true, size: 16}});
+
+        const result = await api.disableFeature(
+            {name: "theme-helper", displayName: "Theme Helper"},
+            "alpha",
+            {takeover: true, reason: {"zh-CN": "样式冲突", en: "Style conflict"}},
+        );
+        expect(result.ok).toBe(true);
+
+        const {q, qa} = showPanel();
+        const rows = qa('[data-ss-feature="alpha"]');
+        expect(rows.length).toBeGreaterThan(2);
+        // 标题与行不带不可用的半透明类，只带接管类
+        expect(rows.every((row) => row.classList.contains(`${PANEL_CLASS}__taken-over`))).toBe(true);
+        expect(rows.some((row) => row.classList.contains(`${PANEL_CLASS}__unavailable`))).toBe(false);
+
+        // 所有控件都变灰禁用
+        const toggle = q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]') as HTMLInputElement;
+        const size = q<HTMLInputElement>('[data-ss-number="alpha::size"]') as HTMLInputElement;
+        const label = q<HTMLInputElement>('[data-ss-text="alpha::label"]') as HTMLInputElement;
+        const mode = q<HTMLSelectElement>('[data-ss-select="alpha::mode"]') as HTMLSelectElement;
+        const button = q<HTMLButtonElement>('[data-ss-button="alpha::run"]') as HTMLButtonElement;
+        expect(toggle.checked).toBe(false);
+        expect(toggle.disabled).toBe(true);
+        expect(size.disabled).toBe(true);
+        expect(label.disabled).toBe(true);
+        expect(mode.disabled).toBe(true);
+        expect(button.disabled).toBe(true);
+
+        // 最后一行是黄色提示子行并带 └ 标记
+        const noticeRow = rows[rows.length - 1];
+        expect(noticeRow.hasAttribute("data-ss-external-notice")).toBe(true);
+        expect(noticeRow.classList.contains(`${PANEL_CLASS}__child`)).toBe(true);
+        expect(noticeRow.classList.contains(`${PANEL_CLASS}__child--last`)).toBe(true);
+        expect(noticeRow.textContent).toContain('Managed by plugin "Theme Helper" (disabled): Style conflict');
+
+        // 即使强行触发控件事件也不生效
+        toggle.checked = true;
+        fire(toggle, "change");
+        expect(toggle.checked).toBe(false);
+        button.disabled = false;
+        button.click();
+        expect(buttonClick).not.toHaveBeenCalled();
+    });
+
+    it("shows yellow notice for non-takeover change and dismisses it once the user edits any setting", async () => {
+        const {host, api, showPanel} = await openWithExternal([featureOf("alpha")], {
+            alpha: {enabled: false, size: 12},
+        });
+
+        await api.enableFeature("helper-plugin", "alpha", {reason: "Recommended"});
+        expect(host.files.has(EXTERNAL_NOTICES_STORAGE)).toBe(true);
+
+        const {q, qa} = showPanel();
+        const toggle = q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]') as HTMLInputElement;
+        const size = q<HTMLInputElement>('[data-ss-number="alpha::size"]') as HTMLInputElement;
+        // 非接管不锁定控件
+        expect(toggle.checked).toBe(true);
+        expect(toggle.disabled).toBe(false);
+        expect(size.disabled).toBe(false);
+        expect(qa("[data-ss-external-notice]")).toHaveLength(1);
+        expect(q("[data-ss-external-notice]")?.textContent).toContain('Enabled by plugin "helper-plugin"');
+
+        // 用户修改该功能的参数后自动取消黄字并清除持久化记录
+        size.value = "18";
+        fire(size, "change");
+        await vi.waitFor(() => expect(qa("[data-ss-external-notice]")).toHaveLength(0));
+        expect(host.files.has(EXTERNAL_NOTICES_STORAGE)).toBe(false);
+        // 前一个真实子行重新拿到 └ 标记
+        const alphaRows = qa('[data-ss-feature="alpha"]');
+        expect(alphaRows[alphaRows.length - 1].classList.contains(`${PANEL_CLASS}__child--last`)).toBe(true);
+    });
+
+    it("live-syncs takeover, release, multi-category tabs, and select-switch labels while the panel is open", async () => {
+        const multiCategory = featureOf("alpha", {category: ["editor", "appearance"]});
+        const selectSwitch: FeatureDefinition = {
+            id: "switch-mode",
+            category: ["editor"],
+            name: "switch-mode.name",
+            enabled: true,
+            isEnabled: (config) => config.scope !== "off",
+            settings: [
+                {
+                    kind: "select",
+                    key: "scope",
+                    title: "switch-mode.scope",
+                    default: "off",
+                    options: [
+                        {value: "off", label: "switch-mode.off"},
+                        {value: "on", label: "switch-mode.on"},
+                    ],
+                },
+            ],
+        };
+        const {api, showPanel} = await openWithExternal([multiCategory, selectSwitch]);
+        const {root, q, qa} = showPanel();
+
+        // 打开面板期间调用接管：两个页签同时锁定并插入黄色提示行
+        const res = await api.enableFeature("live-plugin", "alpha", {takeover: true});
+        expect(res.ok).toBe(true);
+        expect(qa('[data-ss-switch="alpha::enabled"]').every((el) => (el as HTMLInputElement).checked)).toBe(true);
+        expect(qa('[data-ss-switch="alpha::enabled"]').every((el) => (el as HTMLInputElement).disabled)).toBe(true);
+        expect(qa('[data-ss-feature="alpha"][data-ss-external-notice]')).toHaveLength(2);
+
+        // 下拉开关设为具体档位时显示该选项的翻译标签
+        await api.enableFeature("live-plugin", "switch-mode", {value: "on", takeover: true});
+        const selectNotice = q('[data-ss-feature="switch-mode"][data-ss-external-notice]');
+        expect(selectNotice?.textContent).toContain('Managed by plugin "live-plugin" (On)');
+        expect(q<HTMLSelectElement>('[data-ss-select="switch-mode::scope"]')?.value).toBe("on");
+        expect(q<HTMLSelectElement>('[data-ss-select="switch-mode::scope"]')?.disabled).toBe(true);
+
+        // 释放接管：控件恢复可编辑、保留改后的值、提示行移除
+        api.releaseAll("live-plugin");
+        expect(qa('[data-ss-switch="alpha::enabled"]').every((el) => (el as HTMLInputElement).checked)).toBe(true);
+        expect(qa('[data-ss-switch="alpha::enabled"]').every((el) => !(el as HTMLInputElement).disabled)).toBe(true);
+        expect(qa("[data-ss-external-notice]")).toHaveLength(0);
+        // 页签里最后一行标记保持正确
+        const editorPane = root.querySelector<HTMLElement>('[data-ss-tab-panel="editor"]') as HTMLElement;
+        expect(editorPane.querySelectorAll(".config-item--last-visible")).toHaveLength(1);
+    });
+
+    it("renders special replacement tokens and HTML safely and stays consistent through search and clearAll", async () => {
+        const {host, api, showPanel} = await openWithExternal([featureOf("alpha")], {alpha: {enabled: false}});
+        await api.enableFeature(
+            {name: "tricky-plugin", displayName: "A $& {value} <b>bold</b>"},
+            "alpha",
+            {takeover: true, reason: "Keep $' {reason} <img src=x>"},
+        );
+
+        const {root, q, qa} = showPanel();
+        const noticeRow = q('[data-ss-feature="alpha"][data-ss-external-notice]') as HTMLElement;
+        expect(noticeRow.textContent?.trim()).toBe(
+            'Managed by plugin "A $& {value} <b>bold</b>" (enabled): Keep $\' {reason} <img src=x>',
+        );
+        expect(noticeRow.querySelector("b, img")).toBeNull();
+
+        // 搜索激活期间：按外部插件名可搜出该功能，释放接管并退出搜索后视图完整恢复
+        const search = root.querySelector<HTMLInputElement>("[data-ss-search]") as HTMLInputElement;
+        search.value = "tricky";
+        search.dispatchEvent(new Event("input", {bubbles: true}));
+        // 换用 displayName 中的字面段搜索
+        search.value = "bold";
+        search.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(noticeRow.classList.contains("fn__none")).toBe(false);
+        expect(noticeRow.querySelector("mark")?.textContent).toBe("bold");
+
+        api.releaseAll("tricky-plugin");
+        expect(qa("[data-ss-external-notice]")).toHaveLength(0);
+
+        search.value = "";
+        search.dispatchEvent(new Event("input", {bubbles: true}));
+        expect(q<HTMLInputElement>('[data-ss-switch="alpha::enabled"]')?.disabled).toBe(false);
+
+        // 非接管提示在 clearAllNotices / 写盘后一并清除
+        await api.disableFeature("tricky-plugin", "alpha");
+        expect(host.files.has(EXTERNAL_NOTICES_STORAGE)).toBe(true);
     });
 });

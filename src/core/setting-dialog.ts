@@ -66,6 +66,13 @@ import {
     guardSilent,
     reportError,
 } from "./error";
+import {
+    type ExternalControlManager,
+    type LocalizedReason,
+    resolveCallerDisplayName,
+    resolveFeatureSwitch,
+    resolveLocalizedReason,
+} from "./external-api";
 import {withoutMobileInputFocus} from "./frontend";
 import {preheatDialogLayer} from "./layer";
 import {openExternalLink} from "./link";
@@ -102,6 +109,7 @@ import {
     CHILD_CLASS,
     ensurePanelCss,
     escapeHtml,
+    externalNoticeRowHtml,
     isMobileFrontend,
     LAST_CHILD_CLASS,
     markLastChildRow,
@@ -185,6 +193,10 @@ export interface SettingsPanelOptions {
      * 不传就当作没有不可用功能：面板测试里直接给一份功能清单时不必额外准备第二份。
      */
     allFeatures?: FeatureDefinition[];
+    /**
+     * 外部插件接管与修改提示管理器；不传则视为没有外部接管与提示。
+     */
+    externalControl?: ExternalControlManager;
 }
 
 const isReadonly = (): boolean => Boolean(window.siyuan?.config?.readonly || window.siyuan?.isPublish);
@@ -232,6 +244,12 @@ const UNAVAILABLE_ATTR = "data-ss-unavailable";
 
 /** 不可用条目的行类名：整块灰显、不可操作。 */
 const UNAVAILABLE_CLASS = `${PANEL_CLASS}__unavailable`;
+
+/** 被外部插件接管的功能行类名：标题、说明与黄色提示正常显示，仅控件禁用变灰。 */
+const TAKEN_OVER_CLASS = `${PANEL_CLASS}__taken-over`;
+
+/** 外部接管 / 修改提示行的私有属性标记。 */
+const EXTERNAL_NOTICE_ATTR = "data-ss-external-notice";
 
 /**
  * 搜索结果里「不可用」那一组的页签 id。
@@ -324,6 +342,14 @@ const markUnavailableRows = (rowsHtml: string, hidden = false): string =>
                     whole.replace(classes, `${hidden ? "fn__none " : ""}${UNAVAILABLE_CLASS} ${classes}`)
                 } ${UNAVAILABLE_ATTR}="1"` :
                 whole,
+    );
+
+/** 把一段行 HTML 里的每一行打上「已被外部接管」的类名（仅用于样式区分，不做整行半透明）。 */
+const markTakenOverRows = (rowsHtml: string): string =>
+    rowsHtml.replace(
+        /class="([^"]*)"/g,
+        (whole: string, classes: string) =>
+            isRowClass(classes) ? whole.replace(classes, `${TAKEN_OVER_CLASS} ${classes}`) : whole,
     );
 
 /** `NodeFilter.SHOW_TEXT`：直接写数值，省得依赖全局 NodeFilter（测试环境里不一定有）。 */
@@ -468,6 +494,8 @@ export class SettingsPanel {
     private toggleUnsubscribe?: () => void;
     /** 「设置面板搜索」开关的订阅：开着面板时翻开关，搜索框立刻显隐。 */
     private searchToggleUnsubscribe?: () => void;
+    /** 外部插件接管 / 提示状态的订阅：面板开着时实时同步控件与黄色提示。 */
+    private externalUnsubscribe?: () => void;
     /** 当前页签；内存里先更新，关闭面板时再落盘。 */
     private currentTab?: FeatureCategory;
     /** 上一次打开面板时从磁盘读到的状态，用来挡掉没有变化的重复写盘。 */
@@ -588,6 +616,8 @@ export class SettingsPanel {
                 this.toggleUnsubscribe = undefined;
                 this.searchToggleUnsubscribe?.();
                 this.searchToggleUnsubscribe = undefined;
+                this.externalUnsubscribe?.();
+                this.externalUnsubscribe = undefined;
             },
         });
         this.setting = setting;
@@ -710,6 +740,11 @@ export class SettingsPanel {
         this.searchToggleUnsubscribe?.();
         this.searchToggleUnsubscribe = this.options.store.subscribe(SEARCH_FEATURE_ID, () => {
             this.applySearchAvailability();
+        });
+        // 外部插件调用 API 接管 / 释放 / 修改配置时，实时刷新对应功能的控件状态与黄色提示行。
+        this.externalUnsubscribe?.();
+        this.externalUnsubscribe = this.options.externalControl?.subscribe((featureId) => {
+            this.syncExternalState(featureId);
         });
         // 开关本来就开着：把不可用功能存过的值读回来，让灰显行显示实际配置而不是默认值。
         if (isShowUnavailable()) {
@@ -886,6 +921,8 @@ export class SettingsPanel {
         const mobile = isMobileFrontend();
         const showUnavailable = isShowUnavailable();
         panel.classList.toggle(SHOW_UNAVAILABLE_CLASS, showUnavailable);
+        // 渲染前先清掉已经从宿主卸载的接管方，避免残留已停用插件的锁与提示
+        this.options.externalControl?.pruneStaleTakeovers();
         const tabs: PanelTab[] = [];
         const panes: string[] = [];
         this.currentTab = undefined;
@@ -899,12 +936,17 @@ export class SettingsPanel {
             // 因此「哪一行是最后一行」要跨功能判定，不能交给 :last-child。
             const rows: string[] = [];
             features.forEach((feature) => {
-                rows.push(
-                    tagRows(
-                        this.featureBlockHtml(feature, this.options.store.get(feature.id), readonly),
-                        feature.id,
-                    ),
+                const takenOver = this.options.externalControl?.isTakenOver(feature.id) === true;
+                const externalNotices = this.externalNoticeLinesOf(feature);
+                const blockHtml = this.featureBlockHtml(
+                    feature,
+                    this.options.store.get(feature.id),
+                    readonly || takenOver,
+                    [],
+                    externalNotices,
                 );
+                const tagged = tagRows(blockHtml, feature.id);
+                rows.push(takenOver ? markTakenOverRows(tagged) : tagged);
             });
             // 这个分类一个可用的功能都没有：平时只显示这句提示；打开「显示不可用的设置」后
             // 由下面那些灰显条目替代（之后翻开关由 applyUnavailableVisibility() 切 fn__none）。
@@ -982,6 +1024,7 @@ export class SettingsPanel {
         config: FeatureConfig,
         disabled: boolean,
         reasons: string[] = [],
+        externalNotices: string[] = [],
     ): string {
         // 功能自己的开关跟着功能名走，不单独占一行；剩下的才是它的参数
         const toggle = feature.settings.find(
@@ -1025,11 +1068,189 @@ export class SettingsPanel {
         if (reasons.length > 0) {
             childRows.push(unavailableReasonRowHtml(reasons));
         }
+        if (externalNotices.length > 0) {
+            childRows.push(externalNoticeRowHtml(externalNotices));
+        }
         return subtitleRowHtml(
             this.nameOf(feature),
             feature.description ? this.t(feature.description) : "",
             inline || undefined,
         ) + markLastChildRow(childRows.join(""));
+    }
+
+    /** 一个功能此刻要展示的外部接管 / 修改黄色提示文案（每条来源一行）。 */
+    private externalNoticeLinesOf(feature: FeatureDefinition): string[] {
+        const view = this.options.externalControl?.viewOf(feature.id);
+        if (!view) {
+            return [];
+        }
+        if (view.takenOver) {
+            return view.takeovers.map((entry) => this.formatExternalNoticeLine(feature, "takeover", entry));
+        }
+        if (view.notice) {
+            return [this.formatExternalNoticeLine(feature, "changed", view.notice)];
+        }
+        return [];
+    }
+
+    private formatExternalNoticeLine(
+        feature: FeatureDefinition,
+        kind: "takeover" | "changed",
+        entry: {caller: string; displayName?: string; key: string; value: boolean | string; reason?: LocalizedReason;},
+    ): string {
+        const interpolate = (template: string, values: Record<string, string>): string =>
+            template.replace(/\{(\w+)\}/g, (whole, name: string) => values[name] ?? whole);
+        const pluginLabel = resolveCallerDisplayName(this.options.plugin, entry.caller, entry.displayName);
+        const switchField = resolveFeatureSwitch(feature);
+        let message: string;
+        if (switchField?.kind === "select") {
+            if (entry.value === switchField.offValue) {
+                message = interpolate(
+                    this.t(kind === "takeover" ? "panel.external.takeoverDisabled" : "panel.external.changedDisabled"),
+                    {plugin: pluginLabel},
+                );
+            } else {
+                const valueLabel = this.selectValueLabelOf(feature, entry.key, String(entry.value));
+                message = interpolate(
+                    this.t(kind === "takeover" ? "panel.external.takeoverValue" : "panel.external.changedValue"),
+                    {plugin: pluginLabel, value: valueLabel},
+                );
+            }
+        } else {
+            const enabled = entry.value === true;
+            const key = kind === "takeover" ?
+                (enabled ? "panel.external.takeoverEnabled" : "panel.external.takeoverDisabled") :
+                (enabled ? "panel.external.changedEnabled" : "panel.external.changedDisabled");
+            message = interpolate(this.t(key), {plugin: pluginLabel});
+        }
+        const reason = resolveLocalizedReason(entry.reason);
+        if (!reason) {
+            return message;
+        }
+        return interpolate(this.t("panel.external.withReason"), {message, reason});
+    }
+
+    /** 把下拉选项的值解析成当前语言下的展示标签，找不到时回落值本身。 */
+    private selectValueLabelOf(feature: FeatureDefinition, fieldKey: string, value: string): string {
+        const field = feature.settings.find(
+            (item): item is Extract<SettingField, {kind: "select";}> => item.kind === "select" && item.key === fieldKey,
+        );
+        if (!field) {
+            return value;
+        }
+        const option = this.selectOptionsOf(field).find((item) => item.value === value);
+        return option?.label ?? value;
+    }
+
+    /**
+     * 面板打开期间外部接管 / 提示发生变化时，原地同步对应功能的控件值、禁用态与黄色提示行。
+     *
+     * 不重建整张面板，保留用户当前的页签、滚动位置、搜索词与其他功能的在途输入。
+     */
+    private syncExternalState(targetFeatureId: string): void {
+        const root = this.dialog?.element;
+        if (!root) {
+            return;
+        }
+        const targets = targetFeatureId === "*" ?
+            this.options.features :
+            this.options.features.filter((feature) => feature.id === targetFeatureId);
+        if (targets.length === 0) {
+            return;
+        }
+        const readonly = isReadonly();
+        const touchedPanes = new Set<HTMLElement>();
+        targets.forEach((feature) => {
+            const takenOver = this.options.externalControl?.isTakenOver(feature.id) === true;
+            const disabled = readonly || takenOver;
+            if (takenOver) {
+                // 功能刚被接管时丢掉它还在静默队列里的输入，避免旧输入晚到写盘
+                this.pending.delete(feature.id);
+                const prefix = `${feature.id}${BIND_SEPARATOR}`;
+                for (const key of [...this.dirtyControls.keys()]) {
+                    if (key.startsWith(prefix)) {
+                        this.dirtyControls.delete(key);
+                    }
+                }
+            }
+            this.syncControls(feature.id);
+            const lines = this.externalNoticeLinesOf(feature);
+            root.querySelectorAll<HTMLElement>("[data-ss-tab-panel]").forEach((pane) => {
+                if (pane.dataset.ssTabPanel === UNAVAILABLE_PANE_ID) {
+                    return;
+                }
+                const rows = [...pane.querySelectorAll<HTMLElement>(".config-item")].filter(
+                    (row) => row.dataset.ssFeature === feature.id && !row.hasAttribute(UNAVAILABLE_ATTR),
+                );
+                if (rows.length === 0) {
+                    return;
+                }
+                touchedPanes.add(pane);
+                rows.forEach((row) => {
+                    row.classList.toggle(TAKEN_OVER_CLASS, takenOver);
+                    row.querySelectorAll<
+                        HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLButtonElement
+                    >("input, select, textarea, button").forEach((control) => {
+                        control.disabled = disabled;
+                    });
+                });
+                const existingNotice = rows.find((row) => row.hasAttribute(EXTERNAL_NOTICE_ATTR));
+                if (lines.length === 0) {
+                    if (existingNotice) {
+                        existingNotice.remove();
+                        this.featureRowsCache.delete(pane);
+                    }
+                    return;
+                }
+                const doc = pane.ownerDocument;
+                const fillLines = (body: HTMLElement): void => {
+                    body.replaceChildren(
+                        ...lines.map((line) => {
+                            const item = doc.createElement("div");
+                            item.className = `${PANEL_CLASS}__external-notice-text`;
+                            item.textContent = line;
+                            return item;
+                        }),
+                    );
+                };
+                if (existingNotice) {
+                    const body = existingNotice.querySelector<HTMLElement>(`.${PANEL_CLASS}__external-notice-body`);
+                    if (body) {
+                        fillLines(body);
+                    }
+                    existingNotice.classList.toggle(TAKEN_OVER_CLASS, takenOver);
+                    return;
+                }
+                const noticeRow = doc.createElement("div");
+                noticeRow.className = `${
+                    takenOver ? `${TAKEN_OVER_CLASS} ` : ""
+                }b3-label config-item ${CHILD_CLASS} ${PANEL_CLASS}__external-notice`;
+                noticeRow.setAttribute(EXTERNAL_NOTICE_ATTR, "1");
+                noticeRow.setAttribute(ROW_FEATURE_ATTR, feature.id);
+                if (rows[0].classList.contains("fn__none")) {
+                    noticeRow.classList.add("fn__none");
+                }
+                const body = doc.createElement("div");
+                body.className = `${PANEL_CLASS}__external-notice-body`;
+                fillLines(body);
+                noticeRow.append(body);
+                rows[rows.length - 1].after(noticeRow);
+                this.featureRowsCache.delete(pane);
+            });
+        });
+        touchedPanes.forEach((pane) => {
+            this.refreshChildMarks(this.rowsByFeature(pane));
+            this.refreshLastRow(pane);
+        });
+        if (touchedPanes.size > 0) {
+            log.info("synced external control state in panel", {
+                target: targetFeatureId,
+                panes: touchedPanes.size,
+            });
+        }
+        if (this.searchActive) {
+            this.filterSearch(parseQuery(this.searchText));
+        }
     }
 
     /**
@@ -1519,6 +1740,10 @@ export class SettingsPanel {
             const encoded = button.dataset.ssButton as string;
             runPendingClick(button, encoded, () => {
                 const [featureId, key] = parseBindKey(encoded);
+                if (this.options.externalControl?.isTakenOver(featureId)) {
+                    log.info(`action "${encoded}" blocked because ${featureId} is taken over`);
+                    return;
+                }
                 const action = this.actionOf(featureId, key);
                 if (!action) {
                     log.warn(`action "${encoded}" has no matching onClick, ignoring it`);
@@ -1581,7 +1806,12 @@ export class SettingsPanel {
             },
             configOf: (id: string) => ({...this.options.store.get(id)}),
             updateConfig: async (id: string, patch: FeatureConfig) => {
+                if (this.options.externalControl?.isTakenOver(id)) {
+                    log.info(`updateConfig on "${id}" blocked because it is taken over`);
+                    return;
+                }
                 await this.options.store.patch(id, patch);
+                await this.options.externalControl?.clearNotice(id);
                 // 开关状态变了就把面板上的控件一起改掉，不让界面和磁盘各说各话
                 this.syncControls(id);
             },
@@ -1594,10 +1824,13 @@ export class SettingsPanel {
                 // 清空成功后窗口很快会重新载入，这期间面板上还是清空前的值：继续接受输入
                 // 会把旧值当成新值写回文件。清空失败（不会重载）时解除封锁。
                 this.frozen = true;
-                return this.options.store.clearAll().catch((error: unknown) => {
-                    this.frozen = false;
-                    throw error;
-                });
+                return this.options.store.clearAll().then(
+                    () => this.options.externalControl?.clearAllNotices(),
+                    (error: unknown) => {
+                        this.frozen = false;
+                        throw error;
+                    },
+                );
             },
             exportConfigs: async () => {
                 // 导出读的是磁盘：静默期里还没落盘的输入先写掉，导出的才是用户此刻看到的值
@@ -1611,7 +1844,9 @@ export class SettingsPanel {
                 this.frozen = true;
                 try {
                     await this.flushPending();
-                    return await this.options.store.importMany(config);
+                    const outcome = await this.options.store.importMany(config);
+                    await this.options.externalControl?.clearAllNotices();
+                    return outcome;
                 } catch (error) {
                     this.frozen = false;
                     throw error;
@@ -1635,9 +1870,14 @@ export class SettingsPanel {
     /** 开关 / 下拉的一次改动：立即落盘。 */
     private commitControl(encodedKey: string, value: unknown): void {
         const target = this.targetOf(encodedKey);
-        if (target) {
-            void this.commit(target.featureId, {[target.key]: value});
+        if (!target) {
+            return;
         }
+        if (this.options.externalControl?.isTakenOver(target.featureId)) {
+            this.syncControls(target.featureId);
+            return;
+        }
+        void this.commit(target.featureId, {[target.key]: value});
     }
 
     /**
@@ -1648,7 +1888,7 @@ export class SettingsPanel {
      */
     private typeInput(encodedKey: string, raw: string): void {
         const target = this.targetOf(encodedKey);
-        if (!target) {
+        if (!target || this.options.externalControl?.isTakenOver(target.featureId)) {
             return;
         }
         if (!target.numeric) {
@@ -1667,9 +1907,14 @@ export class SettingsPanel {
     /** 文本 / 数字框失焦（或回车）触发的提交：立即落盘。 */
     private commitInput(encodedKey: string, raw: string): void {
         const target = this.targetOf(encodedKey);
-        if (target) {
-            void this.commit(target.featureId, {[target.key]: target.numeric ? Number(raw) : raw});
+        if (!target) {
+            return;
         }
+        if (this.options.externalControl?.isTakenOver(target.featureId)) {
+            this.syncControls(target.featureId);
+            return;
+        }
+        void this.commit(target.featureId, {[target.key]: target.numeric ? Number(raw) : raw});
     }
 
     /**
@@ -1792,6 +2037,8 @@ export class SettingsPanel {
         const editSeq = this.editSeq;
         try {
             await this.options.store.patch(featureId, patch);
+            // 非接管模式下，用户手动编辑该功能的设置后自动清除黄色提示
+            await this.options.externalControl?.clearNotice(featureId);
         } catch (error) {
             reportError(`settings.${featureId}`, error);
         } finally {
@@ -2222,7 +2469,9 @@ export class SettingsPanel {
             if (row.classList.contains("fn__none")) {
                 return;
             }
-            row.querySelectorAll<HTMLElement>(`.config-item__main, .${PANEL_CLASS}__note-body, .b3-button`)
+            row.querySelectorAll<HTMLElement>(
+                `.config-item__main, .${PANEL_CLASS}__note-body, .${PANEL_CLASS}__external-notice-body, .b3-button`,
+            )
                 .forEach((target) => this.highlightText(target, keywords));
         });
         const group = pane.querySelector<HTMLElement>("[data-ss-search-group]");
@@ -2367,6 +2616,10 @@ export class SettingsPanel {
                 );
             }
         });
+        const externalLines = this.externalNoticeLinesOf(feature);
+        if (externalLines.length > 0) {
+            fields.push(fieldOf(...externalLines));
+        }
         return {id: feature.id, fields};
     }
 

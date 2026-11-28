@@ -21,6 +21,10 @@ import {
     reportError,
 } from "./error";
 import {
+    ExternalControlManager,
+    type SomeSettingsPublicApi,
+} from "./external-api";
+import {
     currentFrontend,
     supportsCurrentFrontend,
 } from "./frontend";
@@ -90,6 +94,10 @@ interface MountedFeature {
 export class FeatureManager {
     private readonly plugin: Plugin;
     readonly store: ConfigStore;
+    readonly externalControl: ExternalControlManager;
+    readonly api: SomeSettingsPublicApi;
+    private readonly readyPromise: Promise<void>;
+    private resolveReady!: () => void;
     /**
      * 设置面板。补丁要先读回来才能建它（面板拿到的是应用补丁之后的声明视图），
      * 所以它不在构造函数里建，而是 `load()` 读完补丁之后才赋值。
@@ -104,6 +112,15 @@ export class FeatureManager {
     constructor(plugin: Plugin) {
         this.plugin = plugin;
         this.store = new ConfigStore(plugin);
+        this.readyPromise = new Promise<void>((resolve) => {
+            this.resolveReady = resolve;
+        });
+        this.externalControl = new ExternalControlManager(plugin, this.store, this.readyPromise);
+        this.api = this.externalControl.createPublicApi();
+    }
+
+    get isDisposed(): boolean {
+        return this.disposed;
     }
 
     /**
@@ -111,47 +128,55 @@ export class FeatureManager {
      * 由插件在 onload 阶段调用一次。
      */
     async load(): Promise<void> {
-        // 补丁必须在任何声明被读之前落地：配置预读、功能装载、面板与搜索读的都是同一份声明视图
-        await this.readPatch();
-        const declarations = effectiveFeatures();
-        const active = activeFeatures();
-        this.panel = new SettingsPanel({
-            plugin: this.plugin,
-            store: this.store,
-            features: active,
-            // 面板要把「不可用」的那部分也画出来（开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符），
-            // 所以除生效清单外还要拿到整张声明视图。
-            allFeatures: declarations,
-        });
-        // 先把各功能的读盘请求并发发出去：每个功能一个文件、互不依赖，逐个 await 会把
-        // N 次内核往返串成一条线。这里不等结果（每条请求各自兑现），所以某个文件读得慢
-        // 不会拖住排在它前面的功能；下面的注册与挂载仍按注册表顺序逐个进行。
-        await this.store.prefetch(active);
-        // 「日志输出」必须先落地：它挂载时才打开详细日志，排在别的功能后面的话，
-        // 它前面那些功能的装载日志会被开关吞掉。注册表里它也必须是第一个，
-        // `tests/core/registry.test.ts` 守着这条约定。
-        const logDefinition = active.find((definition) => definition.id === LOG_FEATURE_ID);
-        if (logDefinition && await this.register(logDefinition)) {
-            this.syncMount(logDefinition);
-        }
-        this.log.info(`loading ${active.length} of ${declarations.length} feature(s)`, {
-            frontend: currentFrontend(),
-            kernelVersion: window.siyuan?.config?.system?.kernelVersion ?? "unknown",
-            detailedLogging: isDetailedLogging(),
-        });
-        // 不生效的功能（前端对不上、宿主版本超出支持区间、声明或补丁里的 enabled: false）根本不在
-        // activeFeatures() 里：既不会读配置、也不会出现在面板里、更不会挂载。
-        // 它们最容易被误当成「功能坏了」，所以逐条写明跳过的原因。
-        declarations.filter((definition) => !active.includes(definition)).forEach((definition) => {
-            this.log.info(`skip ${definition.id}: ${skipReason(definition)}`);
-        });
-        for (const definition of active) {
-            if (definition === logDefinition) {
-                continue;
+        try {
+            // 补丁必须在任何声明被读之前落地：配置预读、功能装载、面板与搜索读的都是同一份声明视图
+            await this.readPatch();
+            const declarations = effectiveFeatures();
+            const active = activeFeatures();
+            this.panel = new SettingsPanel({
+                plugin: this.plugin,
+                store: this.store,
+                features: active,
+                // 面板要把「不可用」的那部分也画出来（开发者禁用 / 用户禁用 / 平台不符 / 版本区间不符），
+                // 所以除生效清单外还要拿到整张声明视图。
+                allFeatures: declarations,
+                externalControl: this.externalControl,
+            });
+            // 与配置预读并行读回外部非接管黄色提示，不增加启动阶段的串行等待
+            const noticesLoading = this.externalControl.loadNotices();
+            // 先把各功能的读盘请求并发发出去：每个功能一个文件、互不依赖，逐个 await 会把
+            // N 次内核往返串成一条线。这里不等结果（每条请求各自兑现），所以某个文件读得慢
+            // 不会拖住排在它前面的功能；下面的注册与挂载仍按注册表顺序逐个进行。
+            await this.store.prefetch(active);
+            // 「日志输出」必须先落地：它挂载时才打开详细日志，排在别的功能后面的话，
+            // 它前面那些功能的装载日志会被开关吞掉。注册表里它也必须是第一个，
+            // `tests/core/registry.test.ts` 守着这条约定。
+            const logDefinition = active.find((definition) => definition.id === LOG_FEATURE_ID);
+            if (logDefinition && await this.register(logDefinition)) {
+                this.syncMount(logDefinition);
             }
-            if (await this.register(definition)) {
-                this.syncMount(definition);
+            this.log.info(`loading ${active.length} of ${declarations.length} feature(s)`, {
+                frontend: currentFrontend(),
+                kernelVersion: window.siyuan?.config?.system?.kernelVersion ?? "unknown",
+                detailedLogging: isDetailedLogging(),
+            });
+            // 不生效的功能（前端对不上、宿主版本超出支持区间、声明或补丁里的 enabled: false）根本不在
+            // activeFeatures() 里：既不会读配置、也不会出现在面板里、更不会挂载。
+            // 它们最容易被误当成「功能坏了」，所以逐条写明跳过的原因。
+            declarations.filter((definition) => !active.includes(definition)).forEach((definition) => {
+                this.log.info(`skip ${definition.id}: ${skipReason(definition)}`);
+            });
+            for (const definition of active) {
+                if (definition === logDefinition) {
+                    continue;
+                }
+                if (await this.register(definition)) {
+                    this.syncMount(definition);
+                }
             }
+            await noticesLoading;
+        } finally {
+            this.resolveReady();
         }
     }
 
@@ -371,6 +396,9 @@ export class FeatureManager {
      * 用 `showMessage` 而不是模态框：它不该打断任何操作，也不需要用户确认。
      */
     openSettings(): void {
+        if (this.disposed) {
+            return;
+        }
         this.panel?.show();
         const problem = this.patchProblemOf();
         if (!problem || !this.panel?.isOpen) {
@@ -393,6 +421,9 @@ export class FeatureManager {
         this.disposed = true;
         this.log.info(`disposing ${this.mounted.size} mounted feature(s)`);
         guardSilent("panel.close", () => this.panel?.dispose());
+        guardSilent("external.dispose", () => this.externalControl.dispose());
+        // 若卸载发生在 load() 结束之前，仍需释放等待中的外部 API 调用，避免 Promise 永久悬着
+        this.resolveReady();
         // 「日志输出」永远最后卸载：它的 destroy 会关掉详细日志，早一步关掉，
         // 后面那些功能的卸载日志就全没了。其余功能后挂载的先卸载。
         // 不能只靠倒序：用户中途关掉再打开日志功能时，它在 Map 里的位置会变到末尾。
