@@ -107,8 +107,10 @@ caixa de diálogo habitual quando está desativada.
 
 ## Uso avançado
 
-Consulte [Patch de declaração no nível do usuário: `.patch.yml`](docs/patch.pt-BR.md) para substituir as declarações
-de funcionalidades e os textos da interface na sua própria máquina.
+* Consulte [Patch de declaração no nível do usuário: `.patch.yml`](docs/patch.pt-BR.md) para substituir as declarações
+  de funcionalidades e os textos da interface na sua própria máquina.
+* Consulte [API de Controle para Plugins Externos](docs/api.pt-BR.md) para ativar, desativar ou assumir o controle de
+  configurações a partir de outro plugin do SiYuan para resolver conflitos de compatibilidade.
 
 ## Gráfico de estatísticas do mercado
 

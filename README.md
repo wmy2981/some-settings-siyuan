@@ -104,7 +104,8 @@ plugin adds no top bar button, no status bar item and no dock item. The panel fo
 
 ## Advanced Use
 
-See [User-level declaration patch: `.patch.yml`](docs/patch.md) for overriding feature declarations and interface texts on your own machine.
+* See [User-level declaration patch: `.patch.yml`](docs/patch.md) for overriding feature declarations and interface texts on your own machine.
+* See [External Plugin Control API](docs/api.md) for enabling, disabling, or taking over settings from another SiYuan plugin to resolve compatibility conflicts.
 
 ## Bazaar Stats Graph
 

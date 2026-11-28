@@ -104,8 +104,10 @@ eklenti üst çubuk düğmesi, durum çubuğu öğesi ve dock öğesi eklemez. P
 
 ## Gelişmiş kullanım
 
-Kendi makinenizde özellik bildirimlerini ve arayüz metinlerini geçersiz kılmak için
-[Kullanıcı düzeyinde bildirim yaması: `.patch.yml`](docs/patch.tr.md) sayfasına bakın.
+* Kendi makinenizde özellik bildirimlerini ve arayüz metinlerini geçersiz kılmak için
+  [Kullanıcı düzeyinde bildirim yaması: `.patch.yml`](docs/patch.tr.md) sayfasına bakın.
+* Uyumluluk çakışmalarını gidermek amacıyla başka bir SiYuan eklentisinden bu eklentinin ayarlarını açmak, kapatmak veya
+  devralmak için [Harici Eklenti Kontrol API'si](docs/api.tr.md) sayfasına bakın.
 
 ## Mağaza istatistikleri grafiği
 
